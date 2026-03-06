@@ -24,8 +24,9 @@ TRIGGER KEYWORDS: "lock-in", "ELSS unlock", "when can I redeem ELSS", "allotment
 - Contains EXECUTED orders only (allotment/redemption completed)
 - PnL calculated from this using FIFO
 - If trade entry missing for allotted order → PnL/holdings issues
-- ELSS lock-in: 3 years from trade_date per BUY entry (FIFO basis)
-- If lock-in ends today → allotment T+1 day, redeemable next day
+- ELSS lock-in: exactly 3 calendar years from trade_date (allotment date) per BUY entry (FIFO basis)
+- trade_date = allotment date — NOT the order placement date or payment date
+- If lock-in ends today → units redeemable from tomorrow (T+1 settlement)
 - Zerodha fund house WhatsApp orders → trade entries posted here if allotted
 - Scheme name field is `tradingsymbol`
 </facts>
@@ -46,18 +47,25 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 
 ### Rule 1: ELSS Lock-in
 **if:** Customer asks when they can redeem ELSS
-**then:** Filter `tradingsymbol` for ELSS fund, `trade_type` = buy. Sort `trade_date` ascending (FIFO). Lock-in end = `trade_date` + 3 years per entry. If ends today → "Allotment is T+1. You can redeem after 24 hours."
+**then:**
+1. Filter `tradingsymbol` for ELSS fund, `trade_type` = buy.
+2. Sort `trade_date` ascending (FIFO). Lock-in end = `trade_date` + exactly 3 calendar years per entry.
+   - `trade_date` is the allotment date — NOT the order placement date or payment date.
+   - Example: allotted on 15-Mar-2022 → unlocks on 15-Mar-2025.
+3. If only one lot → share single unlock date: "Your [X units] allotted on [date] will unlock on [date]."
+4. If multiple lots → show earliest unlocking lot first:
+   "Your earliest [X units] (allotted [date]) unlock on [unlock date]. Remaining lots unlock on: [date] ([Y units]), [date] ([Z units])."
+5. If earliest lock-in ends today → "Your units will be redeemable from tomorrow. ELSS redemption follows T+1 settlement."
 
 ### Rule 2: Allotment Verification
 **if:** Order Allotted in **mf_order_history** but units missing
-**then:** Check if trade entry exists here for matching fund and date. If trade entry exists → units allotted, check **console_mf_holdings** for discrepancy. If missing → NFO: wait listing + T+1 day. Regular: escalate.
+**then:** Check if trade entry exists here for matching fund and date.
+- Trade entry exists → units allotted, check **console_mf_pseudo_holdings** (primary) for discrepancy.
+- Missing → NFO: wait listing + T+1 day. Regular fund: escalate.
 
 ### Rule 3: P&L FIFO
 **if:** Customer disputes P&L
-**then:** List BUY entries sorted by `trade_date` ascending. Match SELL entries against oldest BUY first. If calculation differs → check **console_mf_external_trades** for missing entries.
-
-### Rule 4: Cross-Tool
-- Units allotted but not in holdings → **console_mf_holdings** (`discrepant`)
-- Discrepancy → **console_mf_pseudo_holdings** (comparison)
-- `failure_date` populated in holdings → escalate to human
-- Missing external entries → **console_mf_external_trades**
+**then:**
+1. List BUY entries from this tool sorted by `trade_date` ascending. Match SELL entries against oldest BUY first (FIFO).
+2. **ALWAYS cross-reference console_mf_external_trades** for any transferred-in units — missing external entries will skew P&L regardless of whether tradebook entries look complete.
+3. If calculation still differs after both checks → escalate.

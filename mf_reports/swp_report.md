@@ -22,7 +22,8 @@ TRIGGER KEYWORDS: "SWP", "systematic withdrawal", "withdrawal plan", "SWP not tr
 <facts>
 - SWP triggers at 10:00 AM on scheduled date
 - Units = instalment_amount ÷ T-1 NAV; actual redemption at T day NAV (may differ)
-- Non-DDPI/POA: authorize CDSL T-PIN after 10 AM trigger before 3 PM
+- Non-DDPI/POA: authorize CDSL T-PIN after 10 AM trigger before 3 PM on trigger day. If missed, order is rejected.
+- Enabling DDPI avoids T-PIN requirement every cycle — recommend as permanent fix
 - SWP created within 2 working days of next instalment → starts next cycle
 - Scheme name field is `fund`
 </facts>
@@ -43,22 +44,23 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 
 ### Rule 1: SWP Not Triggered
 **if:** Customer says SWP didn't trigger
-**then:** Check:
-1. `created` within 2 working days of instalment → starts next cycle
-2. Was it modified? → **sip_modification_log** (swp_edit)
-3. Check **mf_order_history** for SELL order on trigger date → if Failed, check `status_message`
-4. No order → **console_mf_holdings** (`margin`, `available`) for pledged/insufficient units
-5. All normal, no order → backend issue. Suggest manual redemption.
+**then:** Complete ALL steps sequentially before concluding:
+1. `created` within 2 working days of instalment → starts next cycle. Inform client.
+2. Was it modified? → **sip_modification_log** (swp_edit). If modified within T-2 of trigger → skipped this cycle. Inform client.
+3. Check **mf_order_history** for SELL order on trigger date:
+   - Order found, status = Failed → check `status_message` for rejection reason (T-PIN, free_qty_less, etc.) → apply relevant rule.
+   - Order found, status = Redeemed → SWP did trigger. Clarify with client.
+   - No order found → proceed to Step 4.
+4. **CRITICAL — always complete this step:** Check pledged units via **console_mf_pseudo_holdings** (`margin`) and available units via **console_mf_holdings** (`available`):
+   - `margin` > 0 → units pledged. "Some of your units are pledged and cannot be redeemed. Please unpledge first: Console → Portfolio → Holdings → [fund] → Unpledge."
+   - `available` = 0 or insufficient → units not available for redemption. Inform client.
+5. All checks normal, no order found → backend issue. Suggest manual redemption.
 
 ### Rule 2: Amount Differs
-**if:** SWP redeemed different amount
-**then:** "SWP calculates units using T-1 NAV, but redemption happens at T day NAV. Small difference is normal."
+**if:** SWP redeemed different amount than expected
+**then:** "The final amount credited to your bank account may differ from your intended SWP amount because the calculation uses the previous day's NAV (T-1), but the actual redemption uses the current day's NAV (T). You receive more if the current day's NAV is higher, and less if it is lower."
 
 ### Rule 3: T-PIN Required
 **if:** SWP order rejected with "units not authorized"
-**then:** "CDSL T-PIN authorization needed between 10 AM and 3 PM on trigger day. Authorize and place manual redemption."
-
-### Rule 4: Cross-Tool
-- SWP modification history → **sip_modification_log** (swp_edit/swp_delete)
-- SWP order status → **mf_order_history**
-- Unit availability → **console_mf_holdings** (`available`, `margin`)
+**then:** "CDSL T-PIN authorization must be completed on the same day the SWP triggers, between 10:00 AM and 3:00 PM. Since it was not completed on time, the order was rejected. Please place a fresh manual redemption request for this cycle.
+To avoid this every cycle, we recommend enabling DDPI on your account — this allows automatic debit of units without requiring T-PIN authorization each time."

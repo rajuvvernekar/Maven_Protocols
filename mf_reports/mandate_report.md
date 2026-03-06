@@ -23,7 +23,8 @@ TRIGGER KEYWORDS: "mandate status", "mandate pending", "mandate failed", "eNACH"
 - All MF/Coin mandates with current status
 - **CRITICAL: This report is for MF/Coin mandates ONLY. Console/equity mandates are a SEPARATE report and NOT interchangeable. If client asks about a mandate for SIP/Coin, always use THIS tool, not Console eMandate.**
 - mandate_id prefix: ZERODHA* = UPI autopay; ENA* = Digio eNACH
-- eNACH activation: 3 working days (up to 5); UPI autopay: immediate
+- eNACH activation: 3 working days (up to 5); UPI autopay: activates within 2 minutes of PIN confirmation
+- UPI mandate requires client to complete UPI PIN confirmation to activate. If PIN not completed, mandate stays in pending/created and is auto-cancelled by 11 PM on the same day.
 - Mandate must be linked to SIP for auto-debit
 - To delete mandate: unlink all active/paused SIPs first
 - Coin mandates ≠ Console mandates (not interchangeable)
@@ -57,24 +58,22 @@ TRIGGER KEYWORDS: "mandate status", "mandate pending", "mandate failed", "eNACH"
 Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 
 ### Rule 0.5: Tool Routing
-**if:** Client asks about mandate for SIP, Coin, or mutual fund
-**then:** Use THIS tool (MF Mandate Report). Do NOT use Console eMandate report.
-**if:** Client asks about mandate for equity, F&O, or Console
-**then:** Use Console eMandate report, NOT this tool.
+**CRITICAL:** Always identify mandate context before selecting tool:
+- Client asks about mandate for SIP, Coin, or mutual fund → use THIS tool (MF Mandate Report). NEVER use Console eMandate report.
+- Client asks about mandate for equity, F&O, or Console trading → use Console eMandate report, NOT this tool.
+- If unclear → default to THIS tool and verify using `mandate_id` prefix: ZERODHA* or ENA* = Coin/MF mandate; other prefixes = Console mandate.
 
 ### Rule 1: Activation Status
 **if:** Customer asks when mandate activates
 **then:** Check `status` + `mandate_id` prefix:
 - created/pending + ENA* → "eNACH takes up to 3 working days. Created on [time_created]."
-- created/pending + ZERODHA* → "UPI mandate should activate immediately. If still pending, create new one."
+- created/pending + ZERODHA* → Check `time_created`:
+  - Created within last 2 minutes → "Your UPI mandate is being activated. Please wait a moment and check again."
+  - Created more than 2 minutes ago → "UPI mandate activation requires completing the UPI PIN confirmation. If you did not complete the PIN step, the mandate will be auto-cancelled by 11 PM today. Please create a new mandate and ensure you complete the UPI PIN confirmation to activate it."
 - success/register_success → "Mandate is active."
-- failed/register_failed → "Mandate failed. Create new one. Try UPI autopay for instant activation."
-- eNACH pending > 5 working days → escalate
+- failed/register_failed → "Mandate failed. Please create a new one. Try UPI autopay for faster activation — it activates within 2 minutes of PIN confirmation."
+- eNACH pending > 5 working days → escalate.
 
 ### Rule 2: Active But SIP Not Debiting
 **if:** Mandate success but SIP not debiting
 **then:** Check **sip_report** `fund_source`. If blank/pool → mandate not linked to SIP. → Check **mandate_debit_report** for debit attempt.
-
-### Rule 3: Cross-Tool
-- SIP mandate linkage → **sip_report** (`fund_source`)
-- Debit execution status → **mandate_debit_report**

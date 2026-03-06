@@ -23,7 +23,7 @@ TRIGGER KEYWORDS: "transferred from Groww/Kuvera", "wrong buy average", "P&L inc
 - Contains orders executed OUTSIDE Coin
 - trade_id and order_id always "DISCREPANT"
 - pending_recalc: false = PnL recalculated; true = pending
-- Transferred-in units always show as discrepant until external entries added
+- Transferred-in units always show as discrepant until external entries added by the client
 - External entries cannot be deleted by client — needs backend
 - **CRITICAL: If all purchases for a fund were made through Coin (no transfer from another platform), external trade entries should NOT exist for that fund. If found, they were incorrectly entered and need deletion via backend.**
 </facts>
@@ -42,16 +42,14 @@ TRIGGER KEYWORDS: "transferred from Groww/Kuvera", "wrong buy average", "P&L inc
 ### Rule 0: Field Protection
 Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 
-### Rule 0.1: Blank External Trades Report (NEW)
-**if:** External trades report returns empty / no records found
-**then:** Check sequentially:
-1. **Check discrepancy:** Query **console_mf_holdings** and **console_mf_pseudo_holdings** for the fund client is asking about.
-2. **If discrepant > 0:** Transferred-in units detected. Inform: "We've identified units transferred to your account. Please add external trade details: Console → Portfolio → Holdings → [fund name] → Add External Trade. Include the purchase date, quantity, and price from your previous platform."
-3. **If discrepant = 0 AND no external entries:** No transferred units found. Escalate to agent with note: "External trades report blank; console_mf_holdings and console_mf_pseudo_holdings show no discrepancy. Confirm if transfer was initiated or if this is a data sync issue."
-
 ### Rule 1: Discrepancy After Transfer
-**if:** Transferred MF has wrong buy average / discrepancy
-**then:** Check if external entries exist. If missing → "Add external trades: Console → Portfolio → Holdings → fund → Add External Trade." If `pending_recalc` = true → "Recalculation pending. Check again in 24 hours."
+**if:** Client reports wrong buy average or discrepancy
+**then:**
+**FIRST — Coin-only check:** Verify whether client transferred units from another platform or all purchases were made through Coin.
+- If ALL purchases made through Coin (no external transfer) → do NOT advise adding external trades. Go to **Rule 3.5**.
+- If units transferred from another platform → check if external entries exist:
+  - Missing → "Add external trades: Console → Portfolio → Holdings → fund → Add External Trade."
+  - `pending_recalc` = true → "Recalculation pending. Check again in 24 hours."
 
 ### Rule 2: Wrong Buy Average
 **if:** Entries exist but average still wrong
