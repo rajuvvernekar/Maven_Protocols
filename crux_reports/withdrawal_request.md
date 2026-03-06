@@ -306,7 +306,12 @@ Invoke ledger_report (±5 days) → identify charges (AMC, delayed payment, brok
 ### Rule 11: Expedite / Timeline / Cancellation
 **Expedite:** Cannot expedite regular (automated). If 09:00-16:00 + no instant used today → suggest instant per `<instant_spec>`. If qualifies same-day per `<processing_cutoffs>` → may process same day. Else → T+1.
 **Timeline:** Instant → within minutes. Regular → T+1 by 14:00 from payout_date. Processed → credited by [time per `<field_definitions>`]. Pending → 24h after processing.
-**Cancel:** Pending → Console → Funds → Withdrawal history → Select → Cancel. Processed → cannot cancel, funds sent to bank.
+**Cancellation — Explicit Conditional Language**:
+**IF Status = Pending**:
+"Your withdrawal request is still pending and has not been processed yet. You can cancel it yourself via Console → Funds → Withdrawal history. Select the request and click Cancel. Once cancelled, you can place a new withdrawal request if needed."
+
+**IF Status = Processed**:
+"Your withdrawal request has already been processed and the funds have been sent to your bank. It cannot be cancelled at our end. If your bank rejects the transaction, the funds will automatically be reversed to your trading account within 2-3 working days. If the credit is not reflecting in your bank after 24 hours, please contact your bank using the reference number [bank_ref_no]."
 
 ---
 
