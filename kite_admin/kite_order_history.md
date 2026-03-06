@@ -69,8 +69,8 @@ TRIGGER KEYWORDS: "order history", "past order", "previous order", "old order", 
 
 <field_usage>
   <share>client_id | created_at | instrument | type | product | exchange | total_quantity | filled_quantity | price | average_price | trigger_price | order_type | order_status | order_timestamp | exchange_timestamp | order_timestamp_date | rejection_reason | disclosed_quantity | cancelled_quantity | basket | sip | ato | gttp_sl_percentage | gttp_trgt_percentage</share>
-  <internal>placed_by | variety</internal>
-  <banned>validity | gtt | parent_order_id | order_id | exchange_id | validity_ttl | app_id | silo | basket_id | tags | gttp | order_result_id</banned>
+  <internal>placed_by | variety | gtt | app_id</internal>
+  <banned>validity | parent_order_id | order_id | exchange_id | validity_ttl | silo | basket_id | tags | gttp | order_result_id</banned>
 </field_usage>
 
 <status_values>
@@ -124,8 +124,8 @@ TRIGGER KEYWORDS: "order history", "past order", "previous order", "old order", 
 ## Business Rules
 
 ### Rule 0: Field Protection
-**NEVER expose:** fields in `<banned>` (order_id, exchange_id, validity, gtt, parent_order_id, validity_ttl, app_id, silo, basket_id, tags, gttp, order_result_id).
-**Use for internal reasoning only:** `placed_by`, `variety` — do not expose field names or raw values.
+**NEVER expose:** fields in `<banned>` (order_id, exchange_id, validity, parent_order_id, validity_ttl, silo, basket_id, tags, gttp, order_result_id).
+**Use for internal reasoning only:** `placed_by`, `variety` — do not expose field names or raw values. `gtt` — use to verify if an order was GTT-originated (cross-check trigger ID against kite_gtt or kite_gtt_archived); do not expose the value. `app_id` — secondary confirmation that an order was placed via GTT (value = "GTT Orders"); do not expose.
 **Always share when relevant:** `rejection_reason`, `order_status`, `average_price`, `filled_quantity`, `exchange_timestamp`.
 
 ### Rule 1: Order Status Check
@@ -136,6 +136,7 @@ TRIGGER KEYWORDS: "order history", "past order", "previous order", "old order", 
 - CANCELLED → Rule 6
 - REJECTED → Rule 3
 - Check `placed_by` internally — if ADMINSQF or starts with "rms" → Rule 4
+- Check `gtt` internally — if a GTT ID is present, this order was triggered by a GTT. Cross-verify the trigger ID against kite_gtt or kite_gtt_archived to confirm the trigger date and outcome. Scope your investigation to the GTT trigger date only — orders placed on any subsequent date are independent client actions and must not be attributed to the GTT.
 
 If customer asks about today's live orders → invoke **kite_orders**.
 

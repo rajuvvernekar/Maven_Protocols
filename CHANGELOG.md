@@ -12,6 +12,18 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 
 ---
 
+### 2026-03-06 — kite_order_history
+- [Modified]: `<field_usage>` — Moved `gtt` and `app_id` from banned to internal for GTT origin verification
+- [Modified]: Rule 0 — Updated field protection to document `gtt` and `app_id` internal usage
+- [Modified]: Rule 1 — Added GTT field check step; scope investigation to trigger date only
+- Issues resolved: 1
+
+### 2026-03-06 — kite_gtt
+- [Modified]: Rule 3.3 — Anchor order investigation to GTT trigger date only; use `gtt` field for order linkage confirmation; do not attribute subsequent orders to GTT
+- Issues resolved: 1
+
+---
+
 ### 2026-03-06 — account_modification_report
 - [Added]: `<facts>` — ReKYC auto re-enables Coin/MF bullet
 - [Added]: `<account_closure>` — `<post_closure_new_account_error>` tag (escalate to human agent)
