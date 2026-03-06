@@ -12,6 +12,17 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 
 ---
 
+### 2026-03-06 — account_modification_report
+- [Added]: `<facts>` — ReKYC auto re-enables Coin/MF bullet
+- [Added]: `<account_closure>` — `<post_closure_new_account_error>` tag (escalate to human agent)
+- [Modified]: Rule 3 — Added explicit contact detail timeline example (mobile/email → activation)
+- [Modified]: Rule 4 — Mandatory pre-check for existing ReKYC request before giving guidance; rejected ReKYC escalates to KYC team
+- [Added]: Rule 5 — Post-closure new account error handling (escalate to agent)
+- [Modified]: Rule 7 Dormancy step 3 — Coin/MF excluded from segment activation guidance; added get_all_client_data cross-check
+- Issues resolved: 4
+
+---
+
 ### 2026-03-06 — Initial Setup
 - All 62 tool protocols extracted from Maven CSV export
 - Repository structure created
