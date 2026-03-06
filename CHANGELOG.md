@@ -12,6 +12,10 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 
 ---
 
+### 2026-03-06 — ledger_report
+- [Modified]: `<facts>` — Added T+1 settlement grouping rule; distinct settlement numbers per trading day; share settlement numbers only when explicitly asked
+- Issues resolved: 1
+
 ### 2026-03-06 — kite_order_history
 - [Modified]: `<field_usage>` — Moved `gtt` and `app_id` from banned to internal for GTT origin verification
 - [Modified]: Rule 0 — Updated field protection to document `gtt` and `app_id` internal usage
