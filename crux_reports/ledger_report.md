@@ -179,7 +179,9 @@ If after verification the balances still don't match → escalate.
 
 ### Rule 15: Ledger vs Kite Funds Page Mismatch
 **if:** Client says ledger balance differs from Kite funds page
-**then:** "The Kite funds page shows real-time available margin including collateral, while the ledger shows the historical cash movement record. The ledger closing balance matches the 'Available Cash' on Kite, not the 'Available Margin' (which includes collateral).
+**then:** Invoke **kite_margins** to fetch the current Kite funds data. Compare ledger closing balance against 'Available Cash' from kite_margins.
+
+"The Kite funds page shows real-time available margin including collateral, while the ledger shows the historical cash movement record. The ledger closing balance matches the 'Available Cash' on Kite, not the 'Available Margin' (which includes collateral).
 
 If the ledger closing balance and Kite 'Available Cash' still differ, it may be due to pending entries not yet reflected. Please check after market hours."
 
