@@ -67,7 +67,7 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 
 ### Rule 3: Success But Order Not Processed
 **if:** `status` = Success AND order not allotted
-**then:** Use `cashier_reference` → check **fund_allocation_report** (`cfppg_bank_ref_no`). Say: "Your bank has been debited. The payment is being mapped to your order. Allow T+1 to T+2 business days."
+**then:** Use `cashier_reference` → check **fund_allocation_report** (`cfppg_bank_ref_no`). If payment mapped → check **mf_order_history** for the corresponding order status. Say: "Your bank has been debited. The payment is being mapped to your order. Allow T+1 to T+2 business days."
 
 ### Rule 4: Mandate Deletion
 **if:** Client asks how to delete a mandate
