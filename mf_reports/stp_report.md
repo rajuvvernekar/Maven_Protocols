@@ -46,10 +46,10 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 **if:** STP not transferring funds
 **then:** Check:
 1. `status` = false → inactive. Share status.
-2. Modified recently? → check **sip_modification_log** for stp_edit/stp_delete events. If modified within T-2 of trigger → skipped this cycle.
+2. Modified recently? → Get `id` from this report → pass as `sip_id` to **sip_modification_log** for stp_edit/stp_delete events. If modified within T-2 of trigger → skipped this cycle.
 3. SWP leg → **swp_report** (via `view_swp`). Check trigger/next instalment.
 4. SIP leg → **sip_report** (via `view_sips`). Check status + mandate linkage.
-5. Mandate → if SIP leg has no mandate, purchase leg won't execute.
+5. Mandate → check **mandate_report** for mandate status. If SIP leg has no mandate, purchase leg won't execute.
 6. T-PIN → SWP order rejected with "units unauthorized"? → "CDSL T-PIN authorization must be completed on the same day the SWP order is placed, before 3:00 PM. Since it was not completed on the order date, the order was rejected. Place a fresh redemption request. To avoid this in future, enable DDPI."
 7. Units → **console_mf_pseudo_holdings** for source fund margin/pledged check; **console_mf_holdings** for `available` units.
 

@@ -46,7 +46,7 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 **if:** Customer says SWP didn't trigger
 **then:** Complete ALL steps sequentially before concluding:
 1. `created` within 2 working days of instalment → starts next cycle. Inform client.
-2. Was it modified? → **sip_modification_log** (swp_edit). If modified within T-2 of trigger → skipped this cycle. Inform client.
+2. Was it modified? → Get `swp_id` from this report → pass as `sip_id` to **sip_modification_log** (swp_edit). If modified within T-2 of trigger → skipped this cycle. Inform client.
 3. Check **mf_order_history** for SELL order on trigger date:
    - Order found, status = Failed → check `status_message` for rejection reason (T-PIN, free_qty_less, etc.) → apply relevant rule.
    - Order found, status = Redeemed → SWP did trigger. Clarify with client.

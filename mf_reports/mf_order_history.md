@@ -182,8 +182,9 @@ Check `payment_updated_at` time against `<nav_cutoffs>` for the `fund_source` ty
 ### Rule 2.5: SIP Order Verification
 **if:** Query about SIP order (variety = SIP) or client asks "will my SIP trigger"
 **then:**
+0. **Fetch SIP details first:** Check **sip_report** for this fund — get `sip_type`, `next_sip_date`, and `public_id`.
 1. **Check initial investment first:** For Zerodha SIPs (`sip_type` = sip), the SIP will NOT trigger until the initial lumpsum order is allotted and settled. Check **console_mf_pseudo_holdings**. If no units → "The initial investment needs to be allotted first. Please place a lumpsum order. Once allotted, the SIP will trigger from the next cycle."
-2. **Check upcoming trigger:** If next SIP date is within 5 days, check MF Order History for an already-placed SIP order and report its actual status.
+2. **Check upcoming trigger:** If `next_sip_date` (from **sip_report**) is within 5 days, check MF Order History for an already-placed SIP order and report its actual status.
 3. **AMC SIP orders:** Always check the full MF Order History for allotment status. Do NOT rely only on the SIP order book. Search by fund name and date range.
 
 ### Rule 3: Failed — Share Rejection

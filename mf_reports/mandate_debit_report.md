@@ -51,7 +51,7 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 
 ### Rule 1: Debit Not Initiated
 **if:** No debit record for expected SIP date
-**then:** Check **sip_report** (active? mandate linked?) → **sip_modification_log** (modified near trigger?) → If no debit record at all → "Technical issue. Place manual lumpsum order."
+**then:** Check **sip_report** (active? mandate linked? get `public_id`) → pass `public_id` as `sip_id` to **sip_modification_log** (modified near trigger?) → If no debit record at all → "Technical issue. Place manual lumpsum order."
 
 ### Rule 2: Debit Status Handling
 **if:** Checking debit status for a SIP
