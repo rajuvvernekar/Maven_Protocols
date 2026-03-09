@@ -10,6 +10,13 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-03-09 — withdrawal_request
+- [Modified]: `<facts>` — Replaced primary-only bank rule with multi-bank withdrawal support (primary, secondary, tertiary); added penny-drop verification requirement for non-primary accounts
+- [Added]: `<bank_update_links>` — Added `<bank_verification>` link for account verification steps
+- [Added]: Rule 15 — Unresolved Fallback for all withdrawal types (screenshot request when no root cause identified)
+- [Modified]: Rule 8 Step 3 — Screenshot fallback now references Rule 15 instead of inline text
+- Issues resolved: 3
+
 ---
 
 ### 2026-03-06 — ledger_report
