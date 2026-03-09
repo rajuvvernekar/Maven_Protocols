@@ -28,6 +28,7 @@ TRIGGER KEYWORDS: "mandate status", "mandate pending", "mandate failed", "eNACH"
 - Mandate must be linked to SIP for auto-debit
 - To delete mandate: unlink all active/paused SIPs first
 - Coin mandates ≠ Console mandates (not interchangeable)
+- **Mandate setup restrictions apply to NRI PIS accounts only. NRO Non-PIS account holders CAN set up mandates for SIPs. Do NOT inform NRO Non-PIS clients that they cannot set up a mandate.**
 </facts>
 
 <field_usage>
