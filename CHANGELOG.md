@@ -10,6 +10,15 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-03-09 — account_modification_report
+- [Modified]: Rule 3 — Added second CRITICAL: cross-reference actual segment fields in get_all_client_data before communicating activation status
+- [Modified]: Rule 6 — Added raw segment identifiers (NSE_COM, NSE_FO, BSE_EQ, MCX_FO) to banned fields; added NSE_COM → "NSE Commodity" translation
+- [Modified]: Rule 7 `Activated` — Made timestamp check mandatory for 0 funds/order rejection; added "do NOT state any other reason" guard
+- [Modified]: `<nomination>` KB — Added online/offline modification paths, ReKYC ban, support article link
+- [Modified]: Rule 10 — Added explicit ReKYC ban for nominee modifications with support article redirect
+- [Modified]: `<account_closure>` KB — Simplified post_closure_new_account_error escalation text
+- Issues resolved: 4
+
 ### 2026-03-09 — withdrawal_request
 - [Modified]: `<facts>` — Replaced primary-only bank rule with multi-bank withdrawal support (primary, secondary, tertiary); added penny-drop verification requirement for non-primary accounts
 - [Added]: `<bank_update_links>` — Added `<bank_verification>` link for account verification steps
