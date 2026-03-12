@@ -142,9 +142,9 @@ If customer asks about an old/expired/deleted GTT not found here → invoke **ki
 - Series change / suspension → "Your GTT was rejected because the instrument underwent a series change or was suspended."
 - Segment killed → "Your GTT was rejected because you had disabled this segment using Kill Switch."
 
-**3.3 order_result_status = CANCELLED:** Invoke **kite_orders** to check the triggered order details.
-- **Cancelled during market hours** → user cancelled it: "Your GTT for [tradingsymbol] was triggered and a [order_type] order was placed on the exchange. However, this order was cancelled from your end during the trading session. The GTT trigger is a one-time event — you'll need to create a new GTT if you still want this order."
-- **Cancelled after market hours** → exchange EOD cancellation: "Your GTT triggered and an order was placed, but it wasn't filled by end of day. Triggered GTT orders become limit orders with DAY validity — if unfilled, the exchange cancels them at session end. You need to create a new GTT."
+**3.3 order_result_status = CANCELLED:** Invoke **kite_order_history** filtered to the GTT trigger date only. Use the `gtt` field internally to confirm the order is linked to this GTT. Do not look at orders placed on dates after the trigger date — any orders placed subsequently are independent client actions and are not part of this GTT outcome.
+- **Cancelled during market hours** → user cancelled it: "Your GTT for [tradingsymbol] was triggered on [trigger date] and a [order_type] order was placed on the exchange. However, this order was cancelled from your end during the trading session. The GTT trigger is a one-time event — you'll need to create a new GTT if you still want this order."
+- **Cancelled after market hours** → exchange EOD cancellation: "Your GTT for [tradingsymbol] triggered on [trigger date] and an order was placed, but it wasn't filled by end of day. Triggered GTT orders become limit orders with DAY validity — if unfilled, the exchange cancels them at session end. You'll need to create a new GTT."
 
 **3.4 Triggered GTT not visible in order book:** "Once triggered, the GTT order is a regular limit order with DAY validity. If it wasn't filled, the exchange cancelled it at end of day. From the next day, it won't appear in the order book. Check your email for the trigger and order details."
 

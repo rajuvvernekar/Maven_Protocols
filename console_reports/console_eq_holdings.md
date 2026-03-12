@@ -252,11 +252,11 @@ Please note:
 
 ### Rule 8: Stock Split — Qty/Price Query
 **if:** Client asks about stock split impact on holdings OR reports split shares not reflecting in Kite
-**then:** Check `kite_holdings` (real-time holdings as seen by client on Kite) to verify whether the split shares have already been credited.
+**then:** Use `total_quantity`, `available`, and `pending` from `console_eq_holdings` as the basis for explaining the split — do NOT derive quantity from recent trade history. Then check `kite_holdings` to verify whether split shares have already been credited.
 
-- **If `kite_holdings` shows the full post-split quantity** → "Your split shares have been successfully credited to your account. Your Kite holdings now reflect the updated quantity of [total qty]. Please note that the buy average may take 2–3 working days to update, but you can sell your shares in the meantime — this will not impact your P&L."
+- **If `kite_holdings` shows the full post-split quantity** → "Your split shares have been successfully credited to your account. You currently have [available] shares of [tradingsymbol] available for trading, totalling [total_quantity] shares after the split. Please note that the buy average may take 2–3 working days to update, but you can sell your shares in the meantime — this will not impact your P&L."
 
-- **If `kite_holdings` does not show the full post-split quantity** AND Console shows shares still being processed for credit → "Your split shares are currently being processed for credit. They are typically credited within T+2 days from the record date and will become tradeable after 4–5 days once the exchange grants trading approval. CDSL will notify you via SMS once the shares are credited to your demat account."
+- **If `kite_holdings` does not show the full post-split quantity** AND Console shows shares still being processed for credit → "You currently have [available] shares of [tradingsymbol], with [pending] shares being processed for credit, totalling [total_quantity] shares after the split. These are typically credited within T+2 days from the record date and will become tradeable after 4–5 days once the exchange grants trading approval. CDSL will notify you via SMS once the shares are credited to your demat account."
 
 **if:** More than 5 trading days since record date AND split shares still not credited → escalate.
 
