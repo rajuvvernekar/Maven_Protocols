@@ -69,6 +69,15 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 **then:** "STP is available on Coin web (coin.zerodha.com) only, not the app."
 
 ### Rule 5: Target Fund Not in Holdings
-**if:** Client cannot create STP, OR setup fails because target fund is not available
+**if:** Client cannot create STP, OR setup fails because target fund is not available to select
 **then:** "STP cannot be created unless the target fund is already in your holdings. Please make a lumpsum purchase in [target fund] first. Once the units are allotted and appear in your Coin holdings, you can proceed to set up the STP."
 Note: STP allows up to 5 target funds — all must be existing holdings before they can be selected.
+
+### Rule 6: STP Setup Error — Source Fund Navigation
+**if:** Client reports an error when trying to set up an STP, OR cannot find the Create STP option, AND target fund is already in holdings (Rule 5 does not apply)
+**then:**
+1. Check **console_mf_holdings** for the intended source fund (the fund from which money will be transferred):
+   - `available` units > 0 AND `margin` = 0 → source fund is ready. Issue is likely navigation. Guide client: "To set up an STP on Coin web, go to Dashboard → Mutual Funds → select the **source fund** (the fund you want to transfer FROM) in your holdings → click the menu icon → select Create STP. The STP must be initiated from the source fund — not the target fund."
+   - `margin` > 0 → pledged units present. "Please unpledge units in [source fund] first before creating an STP: Console → Portfolio → Holdings → [fund] → Unpledge. Once unpledged, try creating the STP again."
+   - `available` = 0 → no free units. "The fund you are trying to transfer from has no available units. Please check the source fund selection."
+2. If error persists after correct navigation → escalate with screenshot.
