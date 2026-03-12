@@ -25,7 +25,7 @@ TRIGGER KEYWORDS: "quarterly settlement", "settlement", "when is settlement", "s
 <facts>
 - Settlement is mandatory; frequency (monthly/quarterly) set at account opening, cannot be changed
 - Transfers to PRIMARY bank account only, free of charge
-- Inactive 30+ days in a month → settlement becomes monthly (applies to both preferences; reverts when active)
+- Inactive 30+ days in a month → settlement becomes monthly (applies to both preferences; reverts when active). Inactivity = no trades executed for 30+ calendar days. Segment activation status, KYC status, and account type do NOT determine inactivity — only trading activity does.
 - Outstanding positions: 225% of EOD margins blocked, rest transferred
 - Account opened after previous settlement date: no payout that quarter
 - Bank transfer completes within 24 hours, statement emailed
