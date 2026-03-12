@@ -17,7 +17,7 @@ TRIGGER KEYWORDS: "delayed payment charges", "DPC", "interest charges", "debit b
 
 ## Protocol
 
-# DELATED PAYMENT CHARGES PROTOCOL
+# DELAYED PAYMENT CHARGES PROTOCOL
 
 ## PROTOCOL
 
@@ -70,6 +70,7 @@ TRIGGER KEYWORDS: "delayed payment charges", "DPC", "interest charges", "debit b
   <dpc_mismatch>DPC report values don't match ledger debit entry for the same period</dpc_mismatch>
   <collateral_wrong>Collateral amount in DPC report differs from pledged holdings report for same date</collateral_wrong>
   <margin_wrong>Margin blocked in DPC doesn't match ledger "With Margin" margin entries</margin_wrong>
+  <waiver_request>Client requests waiver, reversal, or reimbursement of DPC for any reason</waiver_request>
 </escalation_triggers>
 
 </knowledge_base>
@@ -152,3 +153,7 @@ If client still disputes → compare with `pledge_request_report` for the same d
 - Margin blocked in DPC report doesn't match ledger "With Margin" entries
 - Client has valid calculation showing different amount from report
 **then:** Escalate with: client ID, date range, specific discrepancy, and DPC report values.
+
+### Rule 11: DPC Waiver or Reversal Request
+**if:** Client requests a waiver, reversal, or reimbursement of delayed payment charges for any reason (including AMC-induced debit, lack of notification, or account inactivity)
+**then:** ESCALATE TO AGENT. Do not attempt to approve, deny, or calculate reversal amounts. Escalate with: client ID, charge dates, interest amounts, and client's stated reason for dispute.

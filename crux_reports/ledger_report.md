@@ -41,7 +41,7 @@ TRIGGER KEYWORDS: "withdrawal failed", "partial amount", "can't withdraw", "zero
 - net_balance suffix: Cr = credit (client has funds), Dr = debit (client owes). Cr is NOT crores.
 - Opening balance of day N = closing balance of day N-1 (may differ if late entries posted)
 - T+1 rule: same-day deposits and unsettled trade proceeds block withdrawals until next trading day
-- Settlement entries: net obligation credited/debited per settlement cycle — combines buy/sell obligations
+- Settlement entries: net obligation credited/debited per settlement cycle — combines buy/sell obligations for that trading day. Each trading day settles under a distinct settlement number posted the next trading day (T+1) — never group trades from different trading days under the same settlement number. Share settlement numbers with clients only when explicitly asked.
 - Margin entries (With Margin only): Span/Exposure/Delivery margin blocked — reversed next day and re-blocked at new levels
 - cost_center identifies segment: NSE-EQ = equity, NSE-F&O = F&O, MCX-F&O = commodity (internal use only)
 - Single ledger system: equity and commodity share same ledger — no separate commodity funds needed
@@ -179,7 +179,9 @@ If after verification the balances still don't match → escalate.
 
 ### Rule 15: Ledger vs Kite Funds Page Mismatch
 **if:** Client says ledger balance differs from Kite funds page
-**then:** "The Kite funds page shows real-time available margin including collateral, while the ledger shows the historical cash movement record. The ledger closing balance matches the 'Available Cash' on Kite, not the 'Available Margin' (which includes collateral).
+**then:** Invoke **kite_margins** to fetch the current Kite funds data. Compare ledger closing balance against 'Available Cash' from kite_margins.
+
+"The Kite funds page shows real-time available margin including collateral, while the ledger shows the historical cash movement record. The ledger closing balance matches the 'Available Cash' on Kite, not the 'Available Margin' (which includes collateral).
 
 If the ledger closing balance and Kite 'Available Cash' still differ, it may be due to pending entries not yet reflected. Please check after market hours."
 

@@ -29,7 +29,8 @@ TRIGGER KEYWORDS: "withdraw", "withdrawal", "payout", "transfer to bank", "not r
 - Regular: ₹1 to available balance, up to ₹5 crore via Console (above ₹5 crore → escalate)
 - Regular withdrawals process once at applicable cutoff, NOT in batches
 - One instant AND one regular can be pending simultaneously
-- Withdrawals only to primary bank account (secondary can be converted to primary)
+- Withdrawals can be made to any linked bank account (primary, secondary, or tertiary). When placing a withdrawal on Console, the client can select the preferred bank account after entering the amount.
+- Secondary/tertiary accounts that are not penny-drop verified will show as unavailable with the message "Account verification is pending." Client must complete verification before using those accounts for withdrawal. Verification steps: https://support.zerodha.com/category/funds/fund-withdrawal/withdrawal-process/articles/select-bank-for-withdrawal
 - Same-day deposits non-withdrawable (T+1 rule)
 - T+1 settlement = next working day (weekends/holidays excluded)
 - Withdrawable balance updates 17:00-21:00 daily, may show zero intermittently
@@ -100,6 +101,7 @@ NOTE: Settlement credits appear in ledger same day (after 17:00-21:00 update) bu
 <bank_update_links>
 <regular>https://support.zerodha.com/category/funds/adding-bank-accounts/primary-bank-account/articles/how-do-i-change-my-primary-bank-account-linked-with-zerodha</regular>
 <nri>Courier form + bank proof. If Aadhaar-linked mobile, esign and submit via ticket.</nri>
+<bank_verification>https://support.zerodha.com/category/funds/fund-withdrawal/withdrawal-process/articles/select-bank-for-withdrawal</bank_verification>
 </bank_update_links>
 </knowledge_base>
 
@@ -265,7 +267,7 @@ Invoke ledger_report → verify funds are settled and available. If unsettled fu
 - Before 09:25 → intermittent issue, retry after 09:25. NEVER suggest retrying at any specific time between 09:00 and 09:25.
 - After 09:25 → close all open withdrawal/Console pages, wait 15-20 minutes, re-login to Console, and retry instant withdrawal via https://console.zerodha.com/funds/overview → Withdraw → Instant Withdrawal.
 - If issue continues → try from an alternate device.
-- If no blocker found and no successful instant withdrawal exists for today → ask client to share the error screenshot for further investigation.
+- If no blocker found and no successful instant withdrawal exists for today → apply the Unresolved Fallback in Rule 15.
 - Fallback: use regular withdrawal (processed EOD, credited within 24h).
 
 **Step 4 — If still unresolved after all above:**
@@ -309,6 +311,7 @@ Invoke ledger_report (±5 days) → identify charges (AMC, delayed payment, brok
 **Cancellation — Explicit Conditional Language**:
 **IF Status = Pending**:
 "Your withdrawal request is still pending and has not been processed yet. You can cancel it yourself via Console → Funds → Withdrawal history. Select the request and click Cancel. Once cancelled, you can place a new withdrawal request if needed."
+
 **IF Status = Processed**:
 "Your withdrawal request has already been processed and the funds have been sent to your bank. It cannot be cancelled at our end. If your bank rejects the transaction, the funds will automatically be reversed to your trading account within 2-3 working days. If the credit is not reflecting in your bank after 24 hours, please contact your bank using the reference number [bank_ref_no]."
 
@@ -336,3 +339,8 @@ Do NOT provide settlement/balance information — address the UI issue first.
 **Troubleshooting steps:**
 1. **Alternative:** Place withdrawal via Console web: https://console.zerodha.com/funds/overview
 2. **If issue persists:** Try from an alternate device and write back for further assistance.
+
+---
+
+### Rule 15: Unresolved Fallback
+**If** all mandatory checks (client data, last 3 withdrawals, ledger, kite_margins, kite_orders) are completed and no root cause can be identified for the customer's inability to withdraw → ask: "Could you share a screenshot of the error you're seeing? This will help us investigate further."

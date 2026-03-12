@@ -10,6 +10,49 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-03-09 — account_modification_report
+- [Modified]: Rule 3 — Added second CRITICAL: cross-reference actual segment fields in get_all_client_data before communicating activation status
+- [Modified]: Rule 6 — Added raw segment identifiers (NSE_COM, NSE_FO, BSE_EQ, MCX_FO) to banned fields; added NSE_COM → "NSE Commodity" translation
+- [Modified]: Rule 7 `Activated` — Made timestamp check mandatory for 0 funds/order rejection; added "do NOT state any other reason" guard
+- [Modified]: `<nomination>` KB — Added online/offline modification paths, ReKYC ban, support article link
+- [Modified]: Rule 10 — Added explicit ReKYC ban for nominee modifications with support article redirect
+- [Modified]: `<account_closure>` KB — Simplified post_closure_new_account_error escalation text
+- Issues resolved: 4
+
+### 2026-03-09 — withdrawal_request
+- [Modified]: `<facts>` — Replaced primary-only bank rule with multi-bank withdrawal support (primary, secondary, tertiary); added penny-drop verification requirement for non-primary accounts
+- [Added]: `<bank_update_links>` — Added `<bank_verification>` link for account verification steps
+- [Added]: Rule 15 — Unresolved Fallback for all withdrawal types (screenshot request when no root cause identified)
+- [Modified]: Rule 8 Step 3 — Screenshot fallback now references Rule 15 instead of inline text
+- Issues resolved: 3
+
+---
+
+### 2026-03-06 — ledger_report
+- [Modified]: `<facts>` — Added T+1 settlement grouping rule; distinct settlement numbers per trading day; share settlement numbers only when explicitly asked
+- Issues resolved: 1
+
+### 2026-03-06 — kite_order_history
+- [Modified]: `<field_usage>` — Moved `gtt` and `app_id` from banned to internal for GTT origin verification
+- [Modified]: Rule 0 — Updated field protection to document `gtt` and `app_id` internal usage
+- [Modified]: Rule 1 — Added GTT field check step; scope investigation to trigger date only
+- Issues resolved: 1
+
+### 2026-03-06 — kite_gtt
+- [Modified]: Rule 3.3 — Anchor order investigation to GTT trigger date only; use `gtt` field for order linkage confirmation; do not attribute subsequent orders to GTT
+- Issues resolved: 1
+
+---
+
+### 2026-03-06 — account_modification_report
+- [Added]: `<facts>` — ReKYC auto re-enables Coin/MF bullet
+- [Added]: `<account_closure>` — `<post_closure_new_account_error>` tag (escalate to human agent)
+- [Modified]: Rule 3 — Added explicit contact detail timeline example (mobile/email → activation)
+- [Modified]: Rule 4 — Mandatory pre-check for existing ReKYC request before giving guidance; rejected ReKYC escalates to KYC team
+- [Added]: Rule 5 — Post-closure new account error handling (escalate to agent)
+- [Modified]: Rule 7 Dormancy step 3 — Coin/MF excluded from segment activation guidance; added get_all_client_data cross-check
+- Issues resolved: 4
+
 ---
 
 ### 2026-03-12 — mf_order_history
