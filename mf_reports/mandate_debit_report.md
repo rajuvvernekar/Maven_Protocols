@@ -21,10 +21,12 @@ TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted fro
 <knowledge_base>
 <facts>
 - Mandate debit schedule with transaction status for SIP auto-debits
-- Status: Created (instruction sent), Success (bank debited), Failed (bank rejected)
+- Status: Created (instruction sent, bank confirmation pending), Success (bank debited), Failed (bank rejected)
 - cashier_reference links to cfppg_bank_ref_no in fund_allocation_report
-- If status = Created/Success and client claims debited → SIP will process based on ICCL receipt
+- If status = Success → bank debited; SIP will process based on ICCL receipt
+- If status = Created AND SIP date has passed → debit was not processed; client must place manual order
 - If status = Failed → order won't process; client must place manual order
+- Do NOT suggest manual order for AMC SIPs — check `sip_type` in sip_report first
 </facts>
 
 <field_usage>
@@ -34,9 +36,9 @@ TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted fro
 </field_usage>
 
 <debit_status_values>
-  <created>Debit instruction sent to bank — pending</created>
-  <success>Bank debited successfully — payment will be mapped</success>
-  <failed>Bank rejected — insufficient funds, revoked mandate, or bank error</failed>
+  <created>Debit instruction sent to bank — pending bank confirmation. Bank has NOT debited yet.</created>
+  <success>Bank debited successfully — payment will be mapped to order</success>
+  <failed>Bank rejected debit — order will not process this cycle</failed>
 </debit_status_values>
 </knowledge_base>
 
@@ -49,22 +51,28 @@ Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
 
 ### Rule 1: Debit Not Initiated
 **if:** No debit record for expected SIP date
-**then:** Check **sip_report** (active? mandate linked?) → **sip_modification_log** (modified near trigger?) → If no debit record at all → "Technical issue. Place manual lumpsum order."
+**then:** Check **sip_report** (active? mandate linked? get `public_id`) → pass `public_id` as `sip_id` to **sip_modification_log** (modified near trigger?) → If no debit record at all → "Technical issue. Place manual lumpsum order."
 
-### Rule 2: Debit Failed
-**if:** `status` = Failed
-**then:** Common causes:
-- Insufficient funds → "Ensure sufficient balance before SIP date."
-- Mandate revoked → "Bank revoked mandate. Create new one."
-- Bank rejected → "Check with bank if auto-debit is enabled."
-"For this month, place a manual lumpsum order."
+### Rule 2: Debit Status Handling
+**if:** Checking debit status for a SIP
+**Status = Created:**
+- SIP `preferred_date` NOT yet passed → "The debit instruction has been sent to your bank. Your funds will be debited on your SIP date. Once debited, the order will be processed automatically."
+- SIP `preferred_date` HAS passed → "Your auto-debit was not processed for this SIP cycle. Please place a manual lumpsum order to ensure your investment is not missed."
+  - **CRITICAL:** Check `sip_type` in **sip_report** first. Do NOT suggest manual order for AMC SIPs.
+**Status = Failed:**
+- "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date. To invest for this month, please place a manual lumpsum order."
+  - **CRITICAL:** Check `sip_type` in **sip_report** first. Do NOT suggest manual order for AMC SIPs.
+**Status = Success:**
+- Bank debited successfully. Route to Rule 3.
 
 ### Rule 3: Success But Order Not Processed
 **if:** `status` = Success AND order not allotted
-**then:** Use `cashier_reference` → check **fund_allocation_report** (`cfppg_bank_ref_no`). "Bank debited. Payment being mapped. Allow T+1 to T+2 business days."
+**then:** Use `cashier_reference` → check **fund_allocation_report** (`cfppg_bank_ref_no`). If payment mapped → check **mf_order_history** for the corresponding order status. Say: "Your bank has been debited. The payment is being mapped to your order. Allow T+1 to T+2 business days."
 
-### Rule 4: Cross-Tool
-- SIP config/status → **sip_report**
-- SIP modification near trigger → **sip_modification_log**
-- Payment-to-order mapping → **fund_allocation_report** (match `cashier_reference` = `cfppg_bank_ref_no`)
-- Order status after mapping → **mf_order_history**
+### Rule 4: Mandate Deletion
+**if:** Client asks how to delete a mandate
+**then:**
+1. "Before deleting a mandate, you must first unlink it from all active or paused SIPs. Deleting a mandate with linked SIPs will cause those SIPs to fail for future cycles."
+2. Steps to unlink: Coin → SIPs → [each SIP] → Unlink mandate. Once all SIPs are unlinked → Coin → Mandates → [mandate] → Delete.
+3. If client has no SIPs linked → they can delete directly from Coin → Mandates.
+4. Note: Deleting a mandate does NOT cancel your SIPs — SIPs remain active but will require a new mandate or manual payment going forward.
