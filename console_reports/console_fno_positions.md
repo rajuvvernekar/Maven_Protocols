@@ -4,14 +4,13 @@
 
 WHEN TO USE:
 
-- Client asks about open F&O positions (futures or options) for a specific date
-- Client questions unrealized P&L on F&O positions
-- Agent needs to verify open quantity, average cost, or closing value of an F&O position
-- Client reports position quantity mismatch between Kite and Console
-- Client asks about MTM (Mark-to-Market) obligation on their positions
-- Client questions carry-forward positions or overnight margin
-- Agent needs to check position data for a past date (historical snapshot)
-- Client asks about position value on a specific date (e.g., for margin or settlement queries)
+When clients:
+- Ask about open F&O positions (futures or options) for a specific date
+- Question unrealized P&L on F&O positions
+- Report position quantity mismatch between Kite and Console
+- Ask about MTM (Mark-to-Market) obligation on their positions
+- Question carry-forward positions or overnight margin
+- Ask about position value on a specific date (e.g., for margin or settlement queries)
 
 TRIGGER KEYWORDS: "F&O position", "FnO position", "futures position", "options position", "open position", "open quantity", "carry forward position", "MTM", "mark to market", "position P&L", "position value", "overnight position", "position not showing", "position wrong", "unrealized F&O"
 
@@ -19,108 +18,205 @@ TRIGGER KEYWORDS: "F&O position", "FnO position", "futures position", "options p
 
 # CONSOLE FNO POSITIONS PROTOCOL
 
-## PROTOCOL
+---
 
-<knowledge_base>
-
-<facts>
-- This tool shows a snapshot of open F&O positions as of a selected trade date — you can check previous days' positions by selecting the date, but it does not show real-time intraday data
-- Segments: FO (equity F&O), CDS (currency derivatives), COM (commodities) — must select correct segment
-- Unrealized P&L = closing_value − open_value = (close_price − open_average) × open_quantity
-- Positive open_quantity = long position; negative open_quantity = short position
-- Closing price used is the settlement price for that date — may differ from last traded price
-- MTM (Mark-to-Market) is settled daily: profit credited / loss debited based on closing price vs previous day closing price
-- Positions auto-squared-off on expiry if not closed by client — ITM options exercised, OTM expire worthless
-- Physical delivery applicable for stock F&O positions expiring ITM — shares delivered/received T+1 after expiry
-- Carry-forward positions: positions held overnight incur margin requirements; margin recalculated at EOD
-- Contract symbol includes: underlying + expiry date + strike (for options) + CE/PE (e.g., NIFTY2621727100CE)
-- If position shows on a past date but not current date → position was closed/expired between those dates
-- Console positions use settlement/closing price; Kite positions use LTP — values will differ during market hours
-</facts>
-
-<field_usage>
-  <share>trade_date | tradingsymbol | open_quantity | open_average | open_value | close_price | closing_value | unrealized_profit | unrealized_profit_percentage</share>
-  <banned>client_id</banned>
-</field_usage>
-
-<segments>
-  <fo>Equity Futures & Options — NIFTY, BANKNIFTY, SENSEX, stock futures/options</fo>
-  <cds>Currency Derivatives — USDINR, EURINR, etc.</cds>
-  <com>Commodities — GOLD, SILVER, CRUDEOIL, NATURALGAS, etc. (MCX)</com>
-</segments>
-
-<cross_reference>
-  <console_fno_tradebook>Trade-level execution details feeding into positions. Use to verify entry trades.</console_fno_tradebook>
-  <console_fno_pnl>Realized P&L for closed/expired positions.</console_fno_pnl>
-</cross_reference>
-
-<escalation_triggers>
-  <position_mismatch>Open quantity differs between Console and Kite after EOD (not during market hours)</position_mismatch>
-  <wrong_avg>Open average doesn't match expected entry price after verifying with tradebook</wrong_avg>
-  <missing_position>Position expected but not found for the selected date and segment</missing_position>
-</escalation_triggers>
-
-</knowledge_base>
+## Section A: Reference Data
 
 ---
 
-## Business Rules
+### A1 — Tool Purpose & Fundamentals
 
-### Rule 0: Segment Selection
-**if:** Agent looks up positions
-**then:** Always confirm correct segment: FO for equity F&O, CDS for currency, COM for commodities. Wrong segment = no results.
+This tool shows a **snapshot of open F&O positions** as of a selected trade date. It supports historical lookups (select any past date to see positions on that day) but does not show real-time intraday data.
 
-### Rule 1: Field Protection
-**NEVER expose:** `client_id`
-**ALWAYS share when relevant:** `trade_date`, `tradingsymbol`, `open_quantity`, `open_average`, `open_value`, `close_price`, `closing_value`, `unrealized_profit`, `unrealized_profit_percentage`
+**Unrealized P&L** = closing_value − open_value = (close_price − open_average) × open_quantity.
 
-### Rule 2: Position Verification
-**if:** Client asks about their open F&O position
-**then:** "Your open position in [tradingsymbol] as of [trade_date]: [open_quantity] lots at an average price of ₹[open_average]. The closing price on that date was ₹[close_price], giving an unrealized P&L of ₹[unrealized_profit] ([unrealized_profit_percentage]%)."
+Positive `open_quantity` = long position. Negative `open_quantity` = short position.
 
-Note: Positive open_quantity = long; negative = short. Frame accordingly: "You are long/short [abs(open_quantity)] lots."
+Closing price used is the **settlement price** for that date — may differ from last traded price.
 
-### Rule 3: MTM Obligation Explanation
-**if:** Client questions MTM debit/credit on their ledger
-**then:** "Mark-to-Market (MTM) is settled daily for F&O positions. Each day, the difference between today's closing price and the previous day's closing price is credited (if favorable) or debited (if unfavorable) from your account. This is the daily settlement mechanism for futures and ITM options.
+Console positions use settlement/closing price; Kite positions use LTP — values will differ during market hours.
+
+**Input:** Client ID + segment + trade date.
+
+---
+
+### A2 — Field Usage Rules
+
+**Shareable fields:**
+
+`trade_date` | `tradingsymbol` | `open_quantity` | `open_average` | `open_value` | `close_price` | `closing_value` | `unrealized_profit` | `unrealized_profit_percentage`
+
+**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+
+`client_id`
+
+---
+
+### A3 — Segment Mapping
+
+| Segment Code | Covers | Examples |
+|---|---|---|
+| FO | Equity Futures & Options | NIFTY, BANKNIFTY, SENSEX, stock futures/options |
+| CDS | Currency Derivatives | USDINR, EURINR, etc. |
+| COM | Commodities (MCX) | GOLD, SILVER, CRUDEOIL, NATURALGAS, etc. |
+
+---
+
+### A4 — Cross-Reference Tools
+
+| Tool | When to Use |
+|---|---|
+| `console_fno_tradebook` | Trade-level execution details feeding into positions. Use to verify entry trades. |
+| `console_fno_pnl` | Realized P&L for closed/expired positions. |
+
+---
+
+### A5 — Escalation Data Template
+
+When escalating, always include: **client ID, tradingsymbol, trade_date, segment, and specific discrepancy.**
+
+---
+
+### A6 — Key F&O Mechanics
+
+**MTM (Mark-to-Market):** Settled daily — profit credited / loss debited based on closing price vs previous day's closing price. Applies to futures and ITM options.
+
+**Positions auto-squared-off on expiry:** ITM options exercised, OTM expire worthless.
+
+**Physical delivery:** Applicable for stock F&O positions expiring ITM. Shares delivered/received T+1 after expiry. Delivery margin blocked from the Wednesday before expiry for stock F&O positions.
+
+**Carry-forward positions:** Positions held overnight incur margin requirements; margin recalculated at EOD.
+
+**Contract symbol format:** underlying + expiry date + strike (for options) + CE/PE (e.g., NIFTY2621727100CE).
+
+**Position disappeared:** If position shows on a past date but not current date → position was closed or expired between those dates.
+
+---
+
+### A7 — Response Templates
+
+**R1 — Position verification:**
+"Your open position in [tradingsymbol] as of [trade_date]: [long/short] [abs(open_quantity)] lots at an average price of ₹[open_average]. The closing price on that date was ₹[close_price], giving an unrealized P&L of ₹[unrealized_profit] ([unrealized_profit_percentage]%)."
+
+**R2 — MTM explanation:**
+"Mark-to-Market (MTM) is settled daily for F&O positions. Each day, the difference between today's closing price and the previous day's closing price is credited (if favorable) or debited (if unfavorable) from your account. This is the daily settlement mechanism for futures and ITM options.
 
 Your position in [tradingsymbol] closed at ₹[close_price] on [trade_date]. The MTM for that day is calculated as: (today's closing price − previous day's closing price) × quantity."
 
-**if:** Client asks for detailed MTM calculation → **AGENT HAS TO MANUALLY HANDLE.** This tool shows position snapshot, not day-by-day MTM breakdown. Agent must calculate from consecutive days' closing prices or refer to contract note/ledger.
+**R3 — Console vs Kite value difference:**
+"Console positions show values based on the settlement/closing price for the selected date, while Kite shows values based on the live last traded price (LTP). These will differ during market hours and may also differ slightly after market close if the settlement price differs from the last traded price."
 
-### Rule 4: Console vs Kite Position Value Difference
-**if:** Client says position value differs between Console and Kite
-**then:** "Console positions show values based on the settlement/closing price for the selected date, while Kite shows values based on the live last traded price (LTP). These will differ during market hours and may also differ slightly after market close if the settlement price differs from the last traded price."
+**R4 — Expired / closed position:**
+"Your [tradingsymbol] position was closed or expired between [earlier date] and [requested date]. If it expired, ITM options were exercised and OTM options expired worthless."
 
-If values differ AFTER EOD settlement → verify both show same open_quantity. If quantity matches but value differs → closing price source difference (normal). If quantity differs → escalate.
-
-### Rule 5: Expired / Closed Position Not Showing
-**if:** Client asks about a position that no longer appears
-**then:** Check the position for the previous trade date.
-- If found on earlier date but not on requested date → "Your [tradingsymbol] position was closed or expired between [earlier date] and [requested date]. If it expired, ITM options were exercised and OTM options expired worthless."
-- For realized P&L on closed positions → use `console_fno_pnl`.
-
-### Rule 6: Physical Delivery on Expiry
-**if:** Client asks about stock F&O position expiring ITM and physical delivery
-**then:** "Stock futures and ITM stock options that expire are subject to physical delivery. If you held a long futures/ITM call position, shares will be credited to your demat account. If you held a short futures/ITM put position, shares will be debited. Physical delivery happens T+1 after expiry.
+**R5 — Physical delivery on expiry:**
+"Stock futures and ITM stock options that expire are subject to physical delivery. If you held a long futures/ITM call position, shares will be credited to your demat account. If you held a short futures/ITM put position, shares will be debited. Physical delivery happens T+1 after expiry.
 
 Delivery margin is blocked from the Wednesday before expiry for stock F&O positions."
 
-**if:** Client questions delivery margin or charges → **AGENT HAS TO MANUALLY HANDLE.** Delivery margin and penalty calculations depend on multiple factors not available in this tool.
-
-### Rule 7: Historical Position Snapshot
-**if:** Agent or client needs position data for a past date
-**then:** This tool provides historical snapshots. Enter the specific trade_date to see what positions were open on that day, their quantities, and closing values.
-
+**R6 — Historical snapshot:**
 "Your positions as of [trade_date] were: [list tradingsymbol, open_quantity, open_average, unrealized_profit for each]."
 
-### Rule 8: Margin Shortfall Queries
-**if:** Client asks about margin shortfall or penalty related to F&O positions
-**then:** This tool does not contain margin requirement or penalty calculations. Escalate directly with: client ID, tradingsymbol, trade_date, and client's concern about margin shortfall/penalty. Do not attempt to calculate or share partial information with the client.
+---
 
-### Rule 9: Escalation Criteria
-**if:** Any of the following:
-- Open quantity differs between Console and Kite after EOD settlement (Rule 4)
-- Open average doesn't match entry price after verifying with `console_fno_tradebook` (KB trigger)
-- Position expected but not found for selected date and correct segment (KB trigger)
-**then:** Escalate with: client ID, tradingsymbol, trade_date, segment, and specific discrepancy.
+## Section B: Decision Flow
+
+---
+
+### Preflight (run on every query)
+
+```
+1. Confirm correct segment selected (per A3)
+   └─ FO for equity F&O, CDS for currency, COM for commodities.
+      Wrong segment = no results.
+```
+
+### Route
+
+```
+Intent / Condition                                          → Rule
+──────────────────────────────────────────────────────────────────────
+Client asks about open F&O position                         → Rule 1
+MTM debit/credit on ledger                                  → Rule 2
+Position value differs between Console and Kite             → Rule 3
+Expired / closed position not showing                       → Rule 4
+Physical delivery on expiry (stock F&O ITM)                 → Rule 5
+Historical position snapshot for a past date                → Rule 6
+Margin shortfall / penalty query                            → Rule 7
+```
+
+### Scope
+
+- Address the client's query about their F&O position snapshots, unrealized P&L, MTM, and expiry handling.
+- Use **A2** field rules in all client communication.
+- Frame long/short based on `open_quantity` sign (positive = long, negative = short).
+
+### Fallback
+
+If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A5**.
+
+---
+
+## Section C: Rules
+
+---
+
+### Rule 1 — Position Verification
+
+1. Respond per **A7-R1**. Frame as long (positive qty) or short (negative qty).
+
+---
+
+### Rule 2 — MTM Obligation Explanation
+
+1. Respond per **A7-R2**. MTM mechanics per **A6**.
+2. If client asks for detailed day-by-day MTM calculation → Escalate to support agent. This tool shows position snapshots, not day-by-day MTM breakdown. 
+---
+
+### Rule 3 — Console vs Kite Position Value Difference
+
+1. Respond per **A7-R3**.
+2. If values differ after EOD settlement → verify both show same `open_quantity`.
+   a. Quantity matches but value differs → closing price source difference (normal).
+   b. Quantity differs → escalate per **A5**.
+
+---
+
+### Rule 4 — Expired / Closed Position Not Showing
+
+1. Check the position for the previous trade date.
+2. If found on earlier date but not on requested date → respond per **A7-R4**.
+3. For realized P&L on closed positions → use `console_fno_pnl` (per **A4**).
+
+---
+
+### Rule 5 — Physical Delivery on Expiry
+
+1. Respond per **A7-R5**. Delivery mechanics per **A6**.
+2. If client questions delivery margin or charges → Escalate to support agent . Delivery margin and penalty calculations depend on multiple factors not available in this tool.
+
+---
+
+### Rule 6 — Historical Position Snapshot
+
+1. Enter the specific trade_date to retrieve positions open on that day.
+2. Respond per **A7-R6** — list each position's tradingsymbol, open_quantity, open_average, and unrealized_profit.
+
+---
+
+### Rule 7 — Margin Shortfall Queries
+
+1. This tool does not contain margin requirement or penalty calculations.
+2. Escalate per **A5** with: client ID, tradingsymbol, trade_date, and client's concern about margin shortfall/penalty.
+3. Margin calculations require data outside this tool — escalate to a support agent 
+---
+
+## Section D: General Notes
+
+- This tool shows snapshots, not real-time data. Select a specific trade date to view positions as of that day.
+- Segment selection is critical — FO (equity F&O), CDS (currency), COM (commodities). Wrong segment returns no results.
+- Console uses settlement/closing price; Kite uses LTP. Values will differ during market hours and may differ slightly after close.
+- MTM is settled daily — this tool shows the snapshot, not the daily P&L breakdown.
+- Physical delivery applies to stock F&O positions expiring ITM. Delivery margin blocked from Wednesday before expiry.
+- Positions that disappear from one date to the next were closed or expired in between.
+- Margin shortfall and penalty calculations are not available in this tool.

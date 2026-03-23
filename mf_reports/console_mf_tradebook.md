@@ -4,12 +4,12 @@
 
 WHEN TO USE:
 
-When customer asks about:
-- ELSS lock-in period / when they can redeem ELSS
-- Allotment verification — order shows Allotted but units missing
-- Exact NAV/price at which units were allotted
-- P&L verification using FIFO
-- Trade entry existence for allotted/redeemed orders
+When clients:
+- Ask about ELSS lock-in period or when they can redeem ELSS
+- Report order shows Allotted but units missing
+- Ask about exact NAV/price at which units were allotted
+- Need P&L verification using FIFO
+- Ask about trade entry existence for allotted/redeemed orders
 
 TRIGGER KEYWORDS: "lock-in", "ELSS unlock", "when can I redeem ELSS", "allotment date", "trade date", "FIFO", "allotted but not visible", "coin"
 
@@ -17,55 +17,115 @@ TRIGGER KEYWORDS: "lock-in", "ELSS unlock", "when can I redeem ELSS", "allotment
 
 # CONSOLE MF TRADEBOOK PROTOCOL
 
-## Knowledge Base
+---
 
-<knowledge_base>
-<facts>
-- Contains EXECUTED orders only (allotment/redemption completed)
-- PnL calculated from this using FIFO
-- If trade entry missing for allotted order → PnL/holdings issues
-- ELSS lock-in: exactly 3 calendar years from trade_date (allotment date) per BUY entry (FIFO basis)
-- trade_date = allotment date — NOT the order placement date or payment date
-- If lock-in ends today → units redeemable from tomorrow (T+1 settlement)
-- Zerodha fund house WhatsApp orders → trade entries posted here if allotted
-- Scheme name field is `tradingsymbol`
-</facts>
+## Section A: Reference Data
 
-<field_usage>
-  <share>trade_date (if asked) | tradingsymbol (as fund name) | trade_type | quantity | price (if asked)</share>
-  <internal>order_execution_time (NAV cutoff check) | order_id | trade_id | client_id</internal>
-  <banned>exchange | instrument_id | isin | scheme_code | settlement_type</banned>
-</field_usage>
-</knowledge_base>
+All rules reference these blocks as single sources of truth.
+
+### A1 — Tool Purpose & Scope
+
+- Contains executed orders only (allotment/redemption completed).
+- P&L is calculated from this tool's data using FIFO.
+- If a trade entry is missing for an allotted order → P&L and holdings issues will result.
+- Zerodha fund house WhatsApp orders → trade entries posted here if allotted.
+- Scheme name field is `tradingsymbol`.
+
+### A2 — ELSS Lock-in Rules
+
+- ELSS lock-in: exactly 3 calendar years from `trade_date` (allotment date) per BUY entry, on a FIFO basis.
+- `trade_date` = allotment date — not the order placement date or payment date.
+- Example: allotted on 15-Mar-2022 → unlocks on 15-Mar-2025.
+- If lock-in ends today → units redeemable from tomorrow (T+1 settlement).
+
+### A3 — Field Rules
+
+**Shareable with client (if asked):** `trade_date` (as allotment date), `tradingsymbol` (as fund name), `trade_type`, `quantity`, `price`.
+
+**Internal reasoning only (use for analysis, never share):** `order_execution_time` (NAV cutoff check), `order_id`, `trade_id`, `client_id`.
+
+**Suppress (no client use, only reasoning  purpose): exchange, instrument_id, isin, scheme_code, settlement_type
+
+### A4 — Cross-Reference Protocols
+
+| Topic | Refer to |
+|---|---|
+| Units missing after allotment — discrepancy diagnosis | console_mf_pseudo_holdings (primary source) |
+| Transferred-in units affecting P&L / buy average | console_mf_external_trades |
+| Redeemable units verification | console_mf_holdings (`available` field) |
 
 ---
 
-## Business Rules
+## Section B: Decision Flow
 
-### Rule 0: Field Protection
-Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
+### Preflight (run on every query)
 
-### Rule 1: ELSS Lock-in
-**if:** Customer asks when they can redeem ELSS
-**then:**
-1. Filter `tradingsymbol` for ELSS fund, `trade_type` = buy.
-2. Sort `trade_date` ascending (FIFO). Lock-in end = `trade_date` + exactly 3 calendar years per entry.
-   - `trade_date` is the allotment date — NOT the order placement date or payment date.
-   - Example: allotted on 15-Mar-2022 → unlocks on 15-Mar-2025.
-3. If only one lot → share single unlock date: "Your [X units] allotted on [date] will unlock on [date]."
-4. If multiple lots → show earliest unlocking lot first:
+1. Fetch the MF tradebook data for the client and relevant date range/fund.
+2. Apply field protection per **A3** — identify shareable, internal, and banned fields.
+3. Identify the fund using `tradingsymbol`.
+4. Format amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
+
+### Routing Tree
+
+```
+Query relates to MF tradebook →
+│
+├─ Client asks when ELSS units can be redeemed
+│  → Rule 1
+│
+├─ Order allotted but units missing (flagged by mf_order_history)
+│  → Rule 2
+│
+├─ Client disputes MF P&L
+│  → Rule 3
+│
+└─ General tradebook query
+   → Check data, apply field protection, respond with shareable fields
+```
+
+### Scope
+
+- Address: ELSS lock-in dates, allotment verification, P&L FIFO calculations, and trade entry verification.
+- Do not volunteer: internal field values (per **A3**), tool/system names, or information the client hasn't asked about.
+
+### Fallback
+
+If trade data seems inconsistent or missing entries cannot be explained → escalate with client ID, fund name, trade dates, and the specific discrepancy.
+
+---
+
+## Section C: Rules
+
+Rules reference Section A blocks. They do not redefine what is already defined there.
+
+### Rule 1 — ELSS Lock-in
+
+1. Filter `tradingsymbol` for the ELSS fund, `trade_type` = BUY.
+2. Sort by `trade_date` ascending (FIFO). Calculate lock-in end = `trade_date` + exactly 3 calendar years per entry (per **A2**).
+3. If only one lot: "Your [X units] allotted on [date] will unlock on [unlock date]."
+4. If multiple lots — show earliest unlocking lot first:
    "Your earliest [X units] (allotted [date]) unlock on [unlock date]. Remaining lots unlock on: [date] ([Y units]), [date] ([Z units])."
-5. If earliest lock-in ends today → "Your units will be redeemable from tomorrow. ELSS redemption follows T+1 settlement."
+5. If earliest lock-in ends today: "Your units will be redeemable from tomorrow. ELSS redemption follows T+1 settlement." (Per **A2**.)
 
-### Rule 2: Allotment Verification
-**if:** Order Allotted in **mf_order_history** but units missing
-**then:** Check if trade entry exists here for matching fund and date.
-- Trade entry exists → units allotted, check **console_mf_pseudo_holdings** (primary) for discrepancy.
-- Missing → NFO: wait listing + T+1 day. Regular fund: escalate.
+### Rule 2 — Allotment Verification
 
-### Rule 3: P&L FIFO
-**if:** Customer disputes P&L
-**then:**
-1. List BUY entries from this tool sorted by `trade_date` ascending. Match SELL entries against oldest BUY first (FIFO).
-2. **ALWAYS cross-reference console_mf_external_trades** for any transferred-in units — missing external entries will skew P&L regardless of whether tradebook entries look complete.
+1. Triggered when mf_order_history shows an order as allotted but units are missing.
+2. Check if a trade entry exists here for the matching fund and date.
+3. Trade entry exists → units are allotted. Check console_mf_pseudo_holdings (per **A4**) for discrepancy diagnosis.
+4. Trade entry missing:
+   - NFO (new fund offer): wait for listing + T+1 day.
+   - Regular fund: escalate.
+
+### Rule 3 — P&L FIFO Verification
+
+1. List BUY entries sorted by `trade_date` ascending. Match SELL entries against the oldest BUY first (FIFO).
+2. Always cross-reference console_mf_external_trades (per **A4**) for any transferred-in units — missing external entries will skew P&L regardless of whether tradebook entries look complete.
 3. If calculation still differs after both checks → escalate.
+
+---
+
+## Section D: General Notes
+
+1. `trade_date` is the allotment date, not the order placement or payment date. This distinction matters for ELSS lock-in calculations and P&L accuracy — always use `trade_date` from this tool.
+2. P&L disputes almost always require checking both this tool (tradebook entries) and console_mf_external_trades (transferred-in units). Missing external trade entries are a common cause of P&L discrepancies even when tradebook data looks complete.
+3. This tool contains only executed orders. For order status, placement history, or pending orders, use mf_order_history instead.

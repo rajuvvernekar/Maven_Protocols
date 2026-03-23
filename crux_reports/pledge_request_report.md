@@ -4,147 +4,246 @@
 
 WHEN TO USE:
 
-- Agent needs to check older pledge/unpledge request history (more than 30 days old)
-- Client asks about a specific pledge or unpledge request status from weeks/months ago
-- Client reports collateral margin reduced and agent needs to trace which unpledge caused it
-- Agent needs to verify pledge/unpledge history for a date range (e.g., for DPC dispute or margin audit)
-- Client disputes collateral amount shown in DPC report — need to verify what was pledged on specific dates
-- Agent needs to check Pledged Holdings snapshot (current pledged securities, qty, value, collateral margin)
-- Client asks why collateral margin value changed — need to check current pledged holdings breakdown
-- Client reports pledged shares not showing collateral — need to verify pledge status in historical records
+When clients:
+- Ask about a specific pledge or unpledge request status from weeks/months ago
+- Report collateral margin reduced and need to trace which unpledge caused it
+- Dispute collateral amount shown in DPC report (need to verify what was pledged on specific dates)
+- Ask why collateral margin value changed (need to check current pledged holdings breakdown)
+- Report pledged shares not showing collateral (need to verify pledge status in historical records)
+- Need older pledge/unpledge request history (more than 30 days old)
+- Need pledge/unpledge history for a date range (e.g., for DPC dispute or margin audit)
+- Need Pledged Holdings snapshot (current pledged securities, qty, value, collateral margin)
 
 TRIGGER KEYWORDS: "pledge history", "old pledge request", "unpledge history", "pledge last month", "collateral reduced why", "pledged holdings", "collateral value", "collateral margin breakdown", "pledge charges history", "pledge from [date]", "what is pledged currently", "pledged securities list"
 
 ## Protocol
 
-# PLEDGE REQUEST REPORT PROTOCOL
+# PLEDGE REQUEST REPORT PROTOCOL 
+---
 
-## PROTOCOL
+## Section A: Reference Data
 
-<knowledge_base>
+All rules reference these blocks as single sources of truth.
 
-<facts>
-- This tool has TWO modes accessed via a dropdown:
-  1. Pledge Request Report: historical pledge/unpledge requests for a date range
-  2. Pledged Holdings Report: snapshot of currently pledged securities with value and collateral margin
-- Pledge Request Report: shows each pledge/unpledge request with status, qty, security, date
-- Pledged Holdings Report: shows current pledged qty, market value, and collateral margin per security
-- Use Pledge Request Report for historical investigations; Pledged Holdings for current state
-- Status values (Pledge Request): Processed (successful), Pending (awaiting CDSL), Rejected/Failed
-- Pending status: if pledge → collateral not yet reflected; if unpledge → shares not yet released
-- Pledge charges: ₹0 standard — but Journal Entry appears on ledger for specific pledge types (some instruments)
-- Collateral margin = market value × (1 − haircut%). Haircut varies by security — typically 50% for equity, ~10% for liquid ETFs/LIQUIDBEES
-- NEVER share breakup of collateral holdings with client — use Pledged Holdings only when client complains about reduction in collateral amount on margins page
-- Collateral value changes daily based on market price and haircut updates
-- MF pledge/unpledge: handled via Coin — same status tracking but different flow
-</facts>
+### A1 — Tool Modes
 
-<field_usage>
-  <pledge_request>
-    <share>pledge_date (if asked) | tradingsymbol (if asked) | quantity (if asked) | status (translated)</share>
-    <banned>pledge_time | client_id | isin | previous_quantity | pledge_type (use internally) | remarks | cdsl_status | pledge_verification_date</banned>
-  </pledge_request>
-  <pledged_holdings>
-    <share>tradingsymbol | quantity | value | collateral_margin (only if client complains about collateral reduction)</share>
-    <banned>pledge_date | client_id | isin | status | creation</banned>
-  </pledged_holdings>
-</field_usage>
+This tool has two modes, accessed via a dropdown:
 
-<cross_reference>
-  <console_instant_pledge>Recent pledge requests (last 30 days) — use instead of this tool for recent data</console_instant_pledge>
-  <delayed_payment_charges>DPC report uses collateral values — verify here if client disputes DPC collateral</delayed_payment_charges>
-  <ledger_report>Pledge/unpledge charge entries appear on ledger</ledger_report>
-  <console_eq_holdings>Verify if pledged shares still appear in holdings (pledged qty vs free qty)</console_eq_holdings>
-</cross_reference>
+| Mode | Purpose | Use When |
+|---|---|---|
+| Pledge Request Report | Historical pledge/unpledge requests for a date range — shows each request with status, qty, security, date | Investigating past requests, tracing status, checking what happened on a specific date |
+| Pledged Holdings Report | Snapshot of currently pledged securities with value and collateral margin per security | Checking current state, verifying total collateral, investigating collateral reduction |
 
-<escalation_triggers>
-  <pledge_processed_no_collateral>Pledge Request status = Processed but collateral margin not reflected after 24+ hours</pledge_processed_no_collateral>
-  <pledged_qty_mismatch>Pledged Holdings qty differs from what client actually pledged per request history</pledged_qty_mismatch>
-  <collateral_value_wrong>Collateral margin in Pledged Holdings significantly differs from expected (market value × expected haircut)</collateral_value_wrong>
-  <external_pledge_stuck>Client pledged externally (with another institution) but shares still showing in Console</external_pledge_stuck>
-</escalation_triggers>
+### A2 — Pledge Fundamentals
 
-</knowledge_base>
+- Pledge charges: ₹30+18% GST= ₹35.4 standard. A Journal Entry may appear on the ledger for specific pledge types (some instruments).
+- Collateral margin = market value × (1 − haircut%). Haircut varies by security — typically 50% for equity, ~10% for liquid ETFs/LIQUIDBEES.
+- Collateral value changes daily based on market price and haircut updates.
+- MF pledge/unpledge: handled via Coin (Zerodha's MF platform) — same status tracking but different flow. This tool does not cover MF pledge details.
+
+### A3 — Status Values (Pledge Request Report)
+
+| Status | Meaning | Action |
+|---|---|---|
+| Processed | Request completed successfully | Collateral should be reflected (pledge) or shares released (unpledge) |
+| Pending | Awaiting CDSL processing | If pledge → collateral not yet reflected. If unpledge → shares not yet released. |
+| Rejected / Failed | Request did not complete | Investigate cause — security not approved, insufficient qty, margin utilized, or technical issue |
+
+A Pending status older than 30 days is abnormal → escalate (per Rule 9).
+
+### A4 — Collateral Haircut Reference
+
+| Security Type | Typical Haircut | Collateral Margin Example (₹1,00,000 market value) |
+|---|---|---|
+| Liquid ETFs (LIQUIDBEES, LIQUIDCASE etc.) | ~10% | ~₹90,000 |
+| Large-cap equity | ~50% (varies) | ~₹50,000 |
+| Mid/small-cap equity | Higher than 50% (varies) | Less than ₹50,000 |
+
+Haircut percentages are set by the exchange and can change. The collateral margin shown in Pledged Holdings reflects the current applied haircut.
+
+### A5 — Field Rules
+
+**Pledge Request Report:**
+
+| Shareable (if client asks) | Internal reasoning only (never share) |
+|---|---|
+| `pledge_date`, `tradingsymbol`, `quantity`, `status` (translated per **A3**) | `pledge_time`, `client_id`, `isin`, `previous_quantity`, `pledge_type` (use internally to determine pledge vs unpledge), `remarks`, `cdsl_status`, `pledge_verification_date` |
+
+**Pledged Holdings Report:**
+
+| Shareable | Internal reasoning only (No client use) |
+|---|---|
+| `tradingsymbol`, `quantity`, `value`, `collateral_margin` (share only when client complains about collateral reduction) | `pledge_date`, `client_id`, `isin`, `status`, `creation` |
+
+**Collateral holdings breakup:** Share per-security collateral details only when the client specifically complains about collateral reduction or asks about a particular stock's collateral value. Provide a summary total by default — not the full list. (This is counterintuitive — the model may default to sharing detailed data when it's available. Always summarize unless the client explicitly asks for per-security detail or reports a collateral reduction.)
+
+### A6 — Collateral Reduction Causes
+
+Check in this order when a client reports reduced collateral:
+
+| Cause | How to Verify | Client-Facing Explanation |
+|---|---|---|
+| Unpledge processed | Check Pledge Request Report for recent unpledge requests | "An unpledge of [qty] shares of [tradingsymbol] was processed on [date], which reduced your collateral." |
+| Market price drop | Compare current value against prior period | "The market value of your pledged securities has decreased, which reduced the collateral margin." |
+| Haircut change | Collateral margin changed without qty or price change | "The haircut percentage for [tradingsymbol] may have been updated, affecting collateral value." |
+| Stock removed from approved list | Security no longer generating collateral margin | "If [tradingsymbol] was removed from the approved pledge list, it would no longer count as collateral." |
+
+Share the specific security and reduction amount only when the client asks.
+
+### A7 — Pledge Failure Reasons
+
+| Reason | Client-Facing Explanation |
+|---|---|
+| Security not on approved list | "Some securities are not approved for pledging. If [tradingsymbol] is not on the approved list, the pledge request will fail. You can check the list of approved securities on Zerodha's pledge page." |
+| T1 holdings (bought today, not settled) | "Shares bought today haven't settled yet and cannot be pledged until settlement is complete." |
+| Insufficient free qty | "You don't have enough free (unpledged) shares of [tradingsymbol] to complete this pledge request." |
+| Technical issue | "If the security is approved and you have sufficient free qty, try re-logging and placing the request again." |
+
+### A8 — Cross-Reference Protocols
+
+| Topic | Refer to |
+|---|---|
+| Recent pledge requests (last 30 days) | Console Instant Pledge — use instead of this tool for recent data |
+| DPC collateral verification (client disputes DPC collateral amount) | Delayed Payment Charges protocol |
+| Pledge/unpledge charge entries on ledger | Ledger Report protocol |
+| Pledged shares vs free shares in holdings | Console EQ Holdings |
+
+### A9 — Escalation Triggers (Consolidated)
+
+Escalate when any of the following occur:
+- Pledge status = Processed but collateral margin not reflected after 24+ hours.
+- Pledged Holdings qty differs from what client actually pledged per request history.
+- Collateral margin in Pledged Holdings significantly differs from expected (market value × expected haircut).
+- External pledge shares stuck in Console (client pledged with another institution).
+- Pledge/unpledge page persistently failing for an approved security with sufficient free qty (after basic troubleshooting).
+- Pending status stuck for more than 30 days.
+- MF pledge/unpledge issue (handled via Coin — escalate directly).
+
+Include in escalation: client ID, tradingsymbol, pledge_date, status, and the specific issue.
 
 ---
 
-## Business Rules
+## Section B: Decision Flow
 
-### Rule 0: Field Protection
-**Pledge Request Report — NEVER expose:** `pledge_time`, `client_id`, `isin`, `previous_quantity`, `pledge_type` (use internally only), `remarks`, `cdsl_status`, `pledge_verification_date`
-**Pledged Holdings Report — NEVER expose:** `pledge_date`, `client_id`, `isin`, `status`, `creation`
+### Preflight (run on every query)
 
-**CRITICAL:** Never share the full breakup of collateral holdings with the client proactively. Use Pledged Holdings data ONLY when the client specifically complains about collateral amount reduction.
+1. Determine which tool mode is needed: Pledge Request Report (historical) or Pledged Holdings Report (current state). Use **A1** to decide.
+2. Fetch the relevant report data.
+3. Apply field protection per **A5** — identify shareable vs internal-only fields for the active mode.
+4. Translate status values using **A3** for client communication.
+5. Format amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
 
-### Rule 1: Historical Pledge/Unpledge Status
-**if:** Client asks about a specific pledge or unpledge request from more than 30 days ago
-**then:** Look up Pledge Request Report for the date range. Find matching tradingsymbol.
+### Routing Tree
 
-"Your [pledge/unpledge] request for [quantity] shares of [tradingsymbol] on [pledge_date]: Status — [Processed/Pending/Rejected].
+```
+Query relates to pledge/unpledge/collateral →
+│
+├─ Client asks about a specific past pledge/unpledge request
+│  → Rule 1
+│
+├─ Client reports collateral margin reduced
+│  → Rule 2
+│
+├─ Client asks what is currently pledged / total collateral value
+│  → Rule 3
+│
+├─ Client asks why collateral margin is less than market value
+│  → Rule 4
+│
+├─ Client asks about mutual fund pledge / reports MF pledge issue
+│  → Rule 5 (Escalate)
+│
+├─ Client reports "Pledging is not allowed" or similar error
+│  → Rule 6
+│
+├─ Unpledge rejected with "Margin already utilized"
+│  → Rule 7
+│
+├─ External pledge (pledged with another institution)
+│  → Rule 8
+│
+└─ Data mismatch / no root cause found
+   → Rule 9 (Escalation)
+```
 
-- Processed: The request was completed successfully.
-- If still showing Pending for a request older than 30 days → this is unusual. Let me investigate further." (Escalate)
+### Scope
 
-### Rule 2: Collateral Reduced — Trace Cause
-**if:** Client reports collateral margin reduced and wants to know why
-**then:** Check BOTH reports:
-1. Pledged Holdings: current pledged qty and collateral_margin per security
-2. Pledge Request Report: look for recent unpledge requests
+- Address: pledge/unpledge request status, collateral margin queries, pledge errors, and collateral reduction investigations.
+- Do not volunteer: full collateral holdings breakup (per **A5**), internal field values, or information the client hasn't asked about.
 
-Possible causes (check in order):
-- Unpledge processed → "An unpledge of [qty] shares of [tradingsymbol] was processed on [date], which reduced your collateral."
-- Market price drop → "The market value of your pledged securities has decreased, which reduced the collateral margin."
-- Haircut change → "The haircut percentage for [tradingsymbol] may have been updated, affecting collateral value."
-- Stock removed from approved list → "If [tradingsymbol] was removed from the approved pledge list, it would no longer count as collateral."
+### Fallback
 
-Share the specific security and reduction amount ONLY when client asks.
+If no root cause is identified after checking all relevant rules → escalate per Rule 9.
 
-### Rule 3: Pledged Holdings Snapshot
-**if:** Client asks what is currently pledged or total collateral value
-**then:** Use Pledged Holdings Report. Share summary only — not full breakup.
+---
 
-"Your total collateral margin from pledged securities is ₹[sum of collateral_margin]. This is based on [N] pledged securities."
+## Section C: Rules
 
-Only share per-security details if client specifically asks about a particular stock's collateral value. Never volunteer the full list.
+Rules reference Section A blocks. They do not redefine what is already defined there.
 
-### Rule 4: Collateral Margin Calculation
-**if:** Client asks why collateral margin is less than market value of pledged shares
-**then:** "The collateral margin is the market value of your pledged shares minus a haircut percentage. The haircut varies by security:
-- Liquid ETFs (LIQUIDBEES, LIQUIDCASE etc.): ~10% haircut
-- Large-cap equity: ~50% haircut (varies)
-- Mid/small-cap: higher haircut
+### Rule 1 — Historical Pledge/Unpledge Status
 
-So if you pledged shares worth ₹1,00,000 with a 50% haircut, your collateral margin would be approximately ₹50,000."
+1. For requests older than 30 days, use the Pledge Request Report. For recent requests (last 30 days), prefer Console Instant Pledge (per **A8**).
+2. Find the matching `tradingsymbol` in the report.
+3. Respond: "Your [pledge/unpledge] request for [quantity] shares of [tradingsymbol] on [pledge_date]: Status — [Processed / Pending / Rejected]."
+4. If Processed: "The request was completed successfully."
+5. If Pending and the request is older than 30 days → escalate per Rule 9.
+6. If Rejected/Failed → investigate cause using **A7** and advise accordingly.
 
-### Rule 5: MF Pledge/Unpledge via Coin
-**if:** Client asks about mutual fund pledge or reports MF pledge issue
-**then:** Escalate directly. MF pledge/unpledge is handled through Coin (Zerodha's MF platform) and this tool does not cover MF pledge details. Escalate with: client ID, MF scheme name if provided, and the specific issue.
+### Rule 2 — Collateral Reduced: Trace Cause
 
-### Rule 6: Pledge Not Allowed Error
-**if:** Client reports "Pledging is not allowed" or "Something went wrong" error
-**then:** Check if the security is in the approved pledge list.
-"Some securities are not approved for pledging. If [tradingsymbol] is not on the approved list, the pledge request will fail. You can check the list of approved securities on Zerodha's pledge page.
+1. Check both reports: Pledged Holdings (current state) and Pledge Request Report (recent unpledge activity).
+2. Work through the causes in **A6** in order: unpledge processed → market price drop → haircut change → stock removed from approved list.
+3. Respond with the identified cause using the client-facing explanation from **A6**.
+4. Share the specific security and reduction amount only when the client asks for detail.
 
-Other reasons for failure: T1 holdings (bought today, not settled), insufficient free qty, or technical issue. If the security is approved and you have sufficient free qty, try re-logging and placing the request again."
+### Rule 3 — Pledged Holdings Snapshot
 
-If issue persists after basic troubleshooting → escalate.
+1. Use the Pledged Holdings Report.
+2. Respond with a summary: "Your total collateral margin from pledged securities is ₹[sum of collateral_margin]. This is based on [N] pledged securities."
+3. Share per-security details only if the client specifically asks about a particular stock's collateral value. Do not volunteer the full list (per **A5**).
 
-### Rule 7: Unpledge Rejected — Margin Utilized
-**if:** Unpledge request rejected with "Margin already utilized"
-**then:** "Your unpledge request for [tradingsymbol] was rejected because the collateral margin from these pledged shares is currently being used against your open positions. To unpledge, you would need to either close positions using this margin or add equivalent funds first."
+### Rule 4 — Collateral Margin Calculation Explanation
 
-### Rule 8: External Pledge (Pledged with Another Institution)
-**if:** Client pledged shares externally (not through Zerodha) but shares still show in Console
-**then:** "If you pledged your shares with another institution (external pledge), the shares may still appear in Console as holdings. However, they are encumbered and cannot be traded or transferred. For external pledge-related queries, please check with the DP team."
+1. Respond using the haircut reference from **A4**:
+   "The collateral margin is the market value of your pledged shares minus a haircut percentage. The haircut varies by security:
+   - Liquid ETFs (LIQUIDBEES, LIQUIDCASE etc.): ~10% haircut
+   - Large-cap equity: ~50% haircut (varies)
+   - Mid/small-cap: higher haircut
 
-Escalate if client needs the external pledge shares removed from Console view.
+   So if you pledged shares worth ₹1,00,000 with a 50% haircut, your collateral margin would be approximately ₹50,000."
 
-### Rule 9: Escalation Criteria
-**if:** Any of the following:
-- Pledge shows Processed but collateral not reflected after 24+ hours (KB trigger)
-- Pledged Holdings qty doesn't match pledge request history (KB trigger)
-- Collateral margin significantly wrong compared to market value × expected haircut (KB trigger)
-- Pledge/unpledge page persistently failing for approved security with free qty (Rule 6)
-- Pending status stuck for >30 days (Rule 1)
-- External pledge shares stuck in Console (Rule 8)
-**then:** Escalate with: client ID, tradingsymbol, pledge_date, status, and specific issue.
+### Rule 5 — MF Pledge/Unpledge via Coin
+
+1. Escalate directly. MF pledge/unpledge is handled through Coin (per **A2**) and this tool does not cover MF pledge details.
+2. Include in escalation: client ID, MF scheme name if provided, and the specific issue.
+
+### Rule 6 — Pledge Not Allowed Error
+
+1. Check if the security is on the approved pledge list.
+2. Work through the failure reasons in **A7**: security not approved → T1 holdings → insufficient free qty → technical issue.
+3. Respond with the applicable explanation from **A7**.
+4. If the issue persists after basic troubleshooting (re-login, retry) and the security is approved with sufficient free qty → escalate per Rule 9.
+
+### Rule 7 — Unpledge Rejected: Margin Utilized
+
+1. Respond: "Your unpledge request for [tradingsymbol] was rejected because the collateral margin from these pledged shares is currently being used against your open positions. To unpledge, you would need to either close positions using this margin or add equivalent funds first."
+
+### Rule 8 — External Pledge
+
+1. Respond: "If you pledged your shares with another institution (external pledge), the shares may still appear in Console as holdings. However, they are encumbered and cannot be traded or transferred. For external pledge-related queries, please check with the DP team."
+2. If the client needs external pledge shares removed from Console view → escalate per Rule 9.
+
+### Rule 9 — Escalation
+
+Escalate when any trigger in **A9** is met.
+
+Include in escalation: client ID, tradingsymbol, pledge_date, status, and the specific issue.
+
+---
+
+## Section D: General Notes
+
+1. For recent pledge activity (last 30 days), Console Instant Pledge is the preferred source over the Pledge Request Report tool — it provides more up-to-date data.
+2. Collateral values are dynamic — they change daily based on market price and haircut updates. A collateral reduction does not necessarily indicate an error; always check **A6** causes before escalating.
+3. The Pledged Holdings Report shows current state only, not history. For "what happened" questions, always use the Pledge Request Report.

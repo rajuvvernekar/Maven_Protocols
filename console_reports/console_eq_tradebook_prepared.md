@@ -4,94 +4,168 @@
 
 WHEN TO USE:
 
-- Client asks about equity trade history older than 100 days
-- Client needs full tradebook for tax filing, audit, employer compliance, or legal purposes
-- Client requests tradebook since account inception or for a past financial year
-- Agent needs to verify old trades to explain historical buy average, P&L, or corporate action impact
-- Account is closed and client requests historical trade data
-- Client questions tax P&L values and agent needs to verify old trades beyond 100-day window
+When clients:
+- Ask about equity trade history older than 100 days
+- Need full tradebook for tax filing, audit, employer compliance, or legal purposes
+- Request tradebook since account inception or for a past financial year
+- Question tax P&L values and need to verify old trades beyond 100-day window
+- Have a closed account and request historical trade data
 
 TRIGGER KEYWORDS: "old trades", "last year trades", "FY 2023-24", "FY 2024-25", "since inception", "full tradebook", "trade history more than 100 days", "historical trades", "closed account tradebook", "tax filing tradebook", "audit", "old tradebook"
 
 ## Protocol
 
-# CONSOLE EQ TRADEBOOK PREPARED
-
-## PROTOCOL
-
-<knowledge_base>
-
-<facts>
-- This tool has no date range limitation — can fetch trades since account inception
-- Identical schema and data as `console_eq_tradebook` — same fields, same data source
-- Use this tool ONLY when date range exceeds 100 days; for recent trades use `console_eq_tradebook`
-- P&L is calculated from tradebook using FIFO (First In First Out)
-- For closed accounts, this is the only way to retrieve historical trade data
-- Large date ranges with high trade volume may take longer to load
-- All facts about series, T2T, FIFO, CN from `console_eq_tradebook` apply here equally
-</facts>
-
-<field_usage>
-  <share>trade_date | order_execution_time | tradingsymbol | exchange | order_id | trade_id | trade_type | quantity | price | isin | series</share>
-  <banned>instrument_id | settlement_type | client_id</banned>
-</field_usage>
-
-<cross_reference>
-  <console_eq_tradebook>Same schema, limited to last 100 days. Use for recent trade queries.</console_eq_tradebook>
-  <console_eq_external_trades>Off-platform trades. If trade not found here, check external trades.</console_eq_external_trades>
-  <console_eq_pnl>Realized P&L computed from tradebook FIFO.</console_eq_pnl>
-</cross_reference>
-
-<escalation_triggers>
-  <data_not_loading>Report fails to load or times out for large date ranges</data_not_loading>
-  <trade_missing>Trade expected but not found in either tradebook or external trades</trade_missing>
-</escalation_triggers>
-
-</knowledge_base>
+# CONSOLE EQ TRADEBOOK PREPARED PROTOCOL 
 
 ---
 
-## Business Rules
+## Section A: Reference Data
 
-### Rule 0: Field Protection
-**NEVER expose:** `instrument_id`, `settlement_type`, `client_id`
-**ALWAYS share when relevant:** `trade_date`, `order_execution_time`, `tradingsymbol`, `exchange`, `order_id`, `trade_id`, `trade_type`, `quantity`, `price`, `isin`, `series`
+---
 
-### Rule 1: When to Use This Tool
-**if:** Requested date range is within last 100 days
-**then:** Use `console_eq_tradebook` instead — faster and same data.
+### A1 — Tool Purpose & Fundamentals
 
-**if:** Requested date range exceeds 100 days OR client needs full history
-**then:** Use this tool. Enter Client ID, From Date, and To Date.
+This tool fetches a client's equity tradebook with **no date range limitation** — it can retrieve trades since account inception. It has identical schema and data as `console_eq_tradebook` (same fields, same data source).
 
-### Rule 2: Full Tradebook Requests (Tax/Audit/Compliance)
-**if:** Client requests full tradebook for tax filing, audit, employer compliance, or legal purposes AND account is active
-**then:** Do NOT generate and share the report directly. Instead, guide the client to download it themselves:
+Use this tool only when the date range exceeds 100 days or the client needs full history. For recent trades (last 100 days), use `console_eq_tradebook` — it is faster and returns the same data.
 
+For closed accounts, escalate to support agent for historical trade data retrieval.
+
+All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook` apply here equally.
+
+**Input:** Client ID + From Date + To Date.
+
+---
+
+### A2 — Field Usage Rules
+
+**Shareable fields:**
+
+`trade_date` | `order_execution_time` | `tradingsymbol` | `exchange` | `order_id` | `trade_id` | `trade_type` | `quantity` | `price` | `isin` | `series`
+
+**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+
+`instrument_id` | `settlement_type` | `client_id`
+
+---
+
+### A3 — Cross-Reference Tools
+
+| Tool | When to Use |
+|---|---|
+| `console_eq_tradebook` | Same schema, limited to last 100 days. Use for recent trade queries. |
+| `console_eq_external_trades` | Off-platform trades. If trade not found here, check external trades. |
+| `console_eq_pnl` | Realized P&L computed from tradebook FIFO. |
+
+---
+
+### A4 — Self-Service Download Links
+
+| Topic | URL |
+|---|---|
+| How to download trade and funds reports | https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf |
+| Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |
+
+---
+
+### A5 — Escalation Data Template
+
+When escalating, always include: **client ID, date range requested, tradingsymbol (if specific), and error details.**
+
+---
+
+### A6 — Response Templates
+
+**R1 — Self-service download guidance (active account):**
 "You can download your tradebook and other reports from Console. Here are the guides:
 - How to download trade and funds reports: https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf
 - Where to see trades for a particular period: https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period"
 
-**if:** Client asks for tradebook in PDF format → share the same links above.
+**R2 — Tradebook vs Tax P&L difference:**
+"The tradebook shows gross trade values for each individual trade. The Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L. Both reports are correct for their respective purposes. The Tax P&L is the report to use for income tax filing."
 
-### Rule 3: Closed Account Trade Data
-**if:** Client's account is closed and they need historical trade data
-**then:** This tool can still retrieve data using the client ID. Generate the report for the requested period and share trade details. (This is the only scenario where the agent shares report data directly.)
+---
 
-### Rule 4: Trade Verification for Old Dates
-**if:** Agent needs to verify old trades (for buy avg, P&L, or CA impact explanation)
-**then:** Same rules as `console_eq_tradebook` — verify trade existence, check series for T2T, explain FIFO. All business rules from `console_eq_tradebook` (Rules 2-10) apply identically here.
+## Section B: Decision Flow
 
-### Rule 5: Contract Note Queries for Old Dates
-**if:** Client asks about charges, MTM, or obligation details for old trades
-**then:** **AGENT HAS TO MANUALLY HANDLE.** This tool does not contain charge or obligation data. Agent must refer to the actual contract note.
+---
 
-### Rule 6: Tradebook vs Tax P&L Difference
-**if:** Client says tradebook sell value doesn't match Tax P&L for a financial year
-**then:** "The tradebook shows gross trade values for each individual trade. The Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L. Both reports are correct for their respective purposes. The Tax P&L is the report to use for income tax filing."
+### Preflight (run on every query)
 
-### Rule 7: Escalation Criteria
-**if:** Any of the following:
-- Report fails to load or times out for large date ranges
-- Trade expected but not found in both tradebook tools and external trades
-**then:** Escalate with: client ID, date range requested, tradingsymbol if specific, and error details.
+```
+1. Check if requested date range is within last 100 days
+   └─ If yes → use console_eq_tradebook instead (per A3).
+
+2. If date range exceeds 100 days OR full history needed → proceed.
+```
+
+### Route
+
+```
+Intent / Condition                                          → Rule
+──────────────────────────────────────────────────────────────────────
+Full tradebook request (tax/audit/compliance, active acct)  → Rule 1
+Closed account — need historical trade data                 → Rule 2
+Trade verification for old dates                            → Rule 3
+Tradebook vs Tax P&L difference                             → Rule 4
+Report fails to load / times out                            → Rule 5
+```
+
+### Scope
+
+- Address the client's query about historical trade data beyond the 100-day window.
+- Use **A2** field rules in all client communication.
+- All business rules from `console_eq_tradebook` protocol (series, T2T, FIFO, execution price, intraday vs delivery) apply identically here.
+
+### Fallback
+
+If no route matches, cross-reference with **A3** tools for additional context. If no root cause is found, escalate per **A5**.
+
+---
+
+## Section C: Rules
+
+---
+
+### Rule 1 — Full Tradebook Request (Tax / Audit / Compliance)
+
+1. If client's account is active → guide client to self-service download. Respond per **A6-R1**.
+2. If client asks for tradebook in PDF format → share the same links per **A4**.
+
+---
+
+### Rule 2 — Closed Account Trade Data
+
+1. Client's account is closed and they need historical trade data.
+2. Escalate to support agent.
+
+---
+
+### Rule 3 — Trade Verification for Old Dates
+
+1. Same rules as `console_eq_tradebook` protocol — verify trade existence, check series for T2T, explain FIFO.
+2. All business rules from `console_eq_tradebook` (Rules 1–9 in that protocol's v2) apply identically here.
+3. If trade not found → check `console_eq_external_trades` (per **A3**). If still not found → escalate per **A5**.
+
+---
+
+### Rule 4 — Tradebook vs Tax P&L Difference
+
+1. Respond per **A6-R2**.
+
+---
+
+### Rule 5 — Report Fails to Load / Times Out
+
+1. Large date ranges with high trade volume may cause timeouts.
+2. Try narrowing the date range (e.g., one financial year at a time).
+3. If the issue persists → escalate per **A5**.
+
+---
+
+## Section D: General Notes
+
+- This tool has no date range limitation — use it only when `console_eq_tradebook` (100-day limit) is insufficient.
+- Identical schema and data source as `console_eq_tradebook`. All series, T2T, FIFO, and contract note rules from that protocol apply equally.
+- For active accounts, guide clients to download reports themselves via Console (per **A4** links). For closed accounts, escalate to support agent.
+- P&L is calculated from tradebook using FIFO. Tax P&L applies FIFO matching across financial years and may exclude intraday from delivery P&L.

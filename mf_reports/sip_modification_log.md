@@ -18,56 +18,127 @@ TRIGGER KEYWORDS: "modified SIP", "changed SIP date", "paused SIP", "who changed
 
 # SIP MODIFICATION LOG PROTOCOL
 
-## Knowledge Base
+---
 
-<knowledge_base>
-<facts>
-- Shows historical modifications for a specific SIP/SWP/STP
-- REQUIRES public_id from sip_report as input (field here is `sip_id`, same value)
-- type values: sip_edit, sip_delete, swp_edit, swp_delete, stp_edit, stp_delete — always translate to plain language, never share raw values
-- Modification within 1-2 days of trigger date → current SIP order will not be placed, starts from next SIP date
-- All modifications initiated from client's device (no system pauses except AMC SIP auto-cancel)
-- **CRITICAL: This tool is the ONLY authoritative source for SIP pause/modify/delete dates. The `last_sip_at` field in sip_report is the date of the last SIP order execution, NOT the pause or modification date. NEVER use `last_sip_at` as the pause date.**
-</facts>
+## Section A: Reference Data
 
-<field_usage>
-  <share>type (as plain language — see Rule 1) | modified_at (date of change) — in customer-friendly language</share>
-  <internal>sip_id (= public_id from sip_report)</internal>
-  <banned>client_id | status (null) | swp_status (null) | timestamp</banned>
-</field_usage>
-</knowledge_base>
+All rules reference these blocks as single sources of truth.
+
+### A1 — Tool Purpose & Scope
+
+- Shows historical modifications for a specific SIP/SWP/STP.
+- Requires `public_id` from sip_report as input (field here is `sip_id`, same value). This tool cannot be queried without it.
+- All modifications are initiated from the client's device (no system pauses except AMC SIP auto-cancel).
+- This tool is the only authoritative source for SIP/SWP/STP pause/modify/delete dates.
+
+### A2 — last_sip_at Distinction
+
+`last_sip_at` in sip_report is the date of the last SIP order execution — not the pause, modification, or deletion date. Never use `last_sip_at` as the pause/modify date.
+
+To find when a SIP was paused/modified/deleted → use `modified_at` from this tool only. If this tool shows no modification entries → the SIP was not paused or modified. Do not infer a modification date from any other field (including `last_sip_at` or `next_sip_date`).
+
+### A3 — Type Translations
+
+| Internal Value | Client-Facing Language |
+|---|---|
+| sip_edit | "Your SIP was modified" |
+| sip_delete | "Your SIP was deleted/cancelled" |
+| swp_edit | "Your SWP was modified" |
+| swp_delete | "Your SWP was deleted/cancelled" |
+| stp_edit | "Your STP was modified" |
+| stp_delete | "Your STP was deleted/cancelled" |
+
+Never share raw `type` values with the client.
+
+### A4 — Modification Timing Impact
+
+A modification within 1–2 days of the trigger date means the current instalment will not be placed. The SIP/SWP/STP starts from the next cycle date.
+
+### A5 — Field Rules
+
+**Shareable with client (in plain language):** `type` (translated per **A3**), `modified_at` (date of change).
+
+**Internal reasoning only:** `sip_id` (= `public_id` from sip_report).
+
+**Never share with client:** `client_id`, `status` (null), `swp_status` (null), `timestamp`.
+
+### A6 — Cross-Reference Protocols
+
+| Topic | Refer to |
+|---|---|
+| Get public_id for this tool | sip_report (`public_id` field) |
+| SIP-not-triggered sequential diagnostic | sip_report Rule 1 |
+| last_sip_at field (order execution date, not modification) | sip_report |
 
 ---
 
-## Business Rules
+## Section B: Decision Flow
 
-### Rule 0: Get public_id First — HARD BLOCK
-**if:** This tool invoked
-**then:** STOP. Verify `public_id` is available from **sip_report** before querying this tool.
-- `public_id` available → proceed.
-- `public_id` NOT available → fetch **sip_report** first to retrieve `public_id`. Do NOT query this tool without it — results will be incorrect or empty.
+### Preflight (run on every query)
 
-### Rule 0.5: last_sip_at Is NOT the Modification Date
-**CRITICAL:** NEVER use `last_sip_at` from sip_report as the SIP pause, modification, or deletion date. `last_sip_at` is the date of the last SIP order execution only.
-- To find when a SIP was paused/modified/deleted → use `modified_at` from THIS tool only.
-- If this tool shows no modification entries → the SIP was not paused or modified. Do not infer a pause date from any other field.
+1. **public_id gate (hard block):** Verify `public_id` is available from sip_report before querying this tool. If not available → fetch sip_report first. Do not query this tool without `public_id` — results will be incorrect or empty.
+2. Fetch the SIP modification log using `public_id` as `sip_id`.
+3. Apply field protection per **A5**.
+4. **Date verification:** When reading `modified_at`, verify the full date (day, month, year) carefully before sharing. Common errors include confusing months or years. Double-check before including in the response.
+5. Format dates as DD MMM YYYY.
 
-### Rule 1: Modification Near Trigger
-**if:** SIP didn't trigger AND modification found near preferred_date
-**then:** Translate `type` to plain language before sharing — never share raw values:
-- edit types (sip_edit, swp_edit, stp_edit) → "Your SIP/SWP/STP was modified"
-- delete types (sip_delete, swp_delete, stp_delete) → "Your SIP/SWP/STP was deleted/cancelled"
-Say: "Your [SIP/SWP/STP] was [modified/deleted] on [modified_at], within 1-2 days of the execution date. Your current instalment will not be placed. It will start from the next cycle."
+### Routing Tree
 
-### Rule 2: Customer Claims No Change
-**if:** Customer says they didn't modify
-**then:** "Our records show a change was made to your SIP on [modified_at] from your account. SIP changes can only be made from the Coin app or web." Never expose internal IDs or raw field values.
+```
+Query relates to SIP/SWP/STP modification history →
+│
+├─ Preflight: public_id available?
+│  ├─ NO → Fetch sip_report first (STOP)
+│  └─ YES → Continue
+│
+├─ Modification found near trigger date
+│  → Rule 1
+│
+├─ Client claims they didn't modify
+│  → Rule 2
+│
+├─ No modification entries found
+│  → Rule 3
+│
+└─ General modification history query
+   → Translate type per A3, share modified_at
+```
 
-### Rule 4: Date Accuracy
-**CRITICAL:** When reading `modified_at`, verify the full date (day, month, year) carefully before sharing with the client. Common errors include confusing months (e.g., January vs February) or years. Always double-check the date value before including it in the response.
+### Scope
 
-### Rule 5: No Modification Found
-**if:** No entries found in sip_modification_log for this SIP/SWP/STP
-**then:** "Our records show no modifications, pauses, or cancellations were made to this SIP."
-- If investigating SIP-not-triggered → route back to **sip_report** Rule 1 sequential check to continue diagnosis (mandate, order status, etc.).
-- Do NOT infer a modification from any other field (e.g. `last_sip_at`, `next_sip_date`).
+- Address: SIP/SWP/STP modification history, timing impact on instalments, and modification date verification.
+- Do not volunteer: internal field values (per **A5**), raw type values, or information the client hasn't asked about.
+
+### Fallback
+
+If no entries found → report that no modifications were made and route back to sip_report Rule 1 for continued diagnosis.
+
+---
+
+## Section C: Rules
+
+Rules reference Section A blocks. They do not redefine what is already defined there.
+
+### Rule 1 — Modification Near Trigger Date
+
+1. Translate `type` to plain language per **A3**.
+2. Respond: "Your [SIP/SWP/STP] was [modified/deleted] on [modified_at], within 1–2 days of the execution date. Your current instalment will not be placed. It will start from the next cycle." (Per **A4**.)
+
+### Rule 2 — Client Claims No Change
+
+1. Respond: "Our records show a change was made to your [SIP/SWP/STP] on [modified_at] from your account. SIP changes can only be made from the Coin app or web." (Per **A1** — all modifications initiated from client's device.)
+2. Never expose internal IDs or raw field values.
+
+### Rule 3 — No Modification Found
+
+1. Respond: "Our records show no modifications, pauses, or cancellations were made to this [SIP/SWP/STP]."
+2. If investigating SIP-not-triggered → route back to sip_report Rule 1 sequential diagnostic (per **A6**) to continue diagnosis (mandate, order status, etc.).
+3. Do not infer a modification from any other field (per **A2**).
+
+---
+
+## Section D: General Notes
+
+1. The `public_id` gate in Preflight is absolute — this tool is useless without it. Always fetch sip_report first if `public_id` is not already available.
+2. The `last_sip_at` vs `modified_at` distinction (**A2**) is the single most important fact in this protocol. `last_sip_at` from sip_report is the last order execution date, not the modification date. Confusing these leads to incorrect diagnosis of when a SIP was paused or modified.
+3. Date accuracy matters: always double-check `modified_at` before sharing. Month and year confusion is a known error pattern when reading date values.

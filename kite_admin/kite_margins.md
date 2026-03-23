@@ -4,26 +4,26 @@
 
 WHEN TO USE:
 
-Customer asks about:
-- Available margin, available cash, used margin, or opening balance values
-- What any field on the Kite funds page means — payin, payout, SPAN, exposure, delivery margin, option premium, collateral, M2M
-- Balance seeming wrong, not matching, or showing an unexpected amount
-- Why profits from today or yesterday are not reflecting in the balance (T+1 settlement)
-- Account in negative balance or debit — interest charges, consequences, how to resolve
-- Margin shortfall, margin call, or how to avoid margin penalty (CC snapshots, deadline to add funds)
-- Why margin shortfall exists even after closing positions (peak snapshot already captured)
-- Collateral margin — liquid collateral (cash equivalent), equity collateral (non-cash), total collateral, 50% cash requirement for F&O
-- Unsettled funds or when profits will be available for trading/withdrawal
-- Used margin showing negative (credit from selling holdings or closing long options)
-- MTM (Mark to Market) — how M2M realised works, daily revaluation of futures, short options margin behavior
-- Option premium field showing positive (sold) or negative (bought)
-- Free cash calculation or how available margin is computed
-- Difference between Kite positions P&L and funds page P&L (entry price vs MTM settlement price)
-- Opening balance not matching expected amount (T+1 settlement, MTM, charges, holidays)
-- Sale proceeds availability — 100% same day for holdings (since Oct 2024)
-- Available cash rounding on Kite (1 decimal display, full amount withdrawable)
-- Market order causing negative balance (validation vs execution price difference)
-- Weekend or holiday payin visibility (appears on Monday)
+When clients:
+- Ask about available margin, available cash, used margin, or opening balance values
+- Ask what any field on the Kite funds page means (payin, payout, SPAN, exposure, delivery margin, option premium, collateral, M2M)
+- Report balance seeming wrong, not matching, or showing an unexpected amount
+- Ask why profits from today or yesterday are not reflecting in the balance (T+1 settlement)
+- Report account in negative balance or debit (interest charges, consequences, how to resolve)
+- Ask about margin shortfall, margin call, or how to avoid margin penalty (CC snapshots, deadline to add funds)
+- Ask why margin shortfall exists even after closing positions (peak snapshot already captured)
+- Ask about collateral margin (liquid collateral, equity collateral, total collateral, 50% cash requirement for F&O)
+- Ask about unsettled funds or when profits will be available for trading/withdrawal
+- Report used margin showing negative (credit from selling holdings or closing long options)
+- Ask about MTM (Mark to Market) — how M2M realised works, daily revaluation of futures, short options margin behavior
+- Ask about option premium field showing positive (sold) or negative (bought)
+- Ask about free cash calculation or how available margin is computed
+- Report difference between Kite positions P&L and funds page P&L (entry price vs MTM settlement price)
+- Report opening balance not matching expected amount (T+1 settlement, MTM, charges, holidays)
+- Ask about sale proceeds availability (100% same day for holdings since Oct 2024)
+- Report available cash rounding on Kite (1 decimal display, full amount withdrawable)
+- Report market order causing negative balance (validation vs execution price difference)
+- Ask about weekend or holiday payin visibility (appears on Monday)
 
 TRIGGER KEYWORDS: "available margin", "available cash", "opening balance", "used margin", "fund balance", "funds page", "funds tab", "collateral", "SPAN", "exposure margin", "delivery margin", "option premium", "free cash", "negative balance", "debit balance", "margin shortfall", "margin call", "margin penalty", "MTM", "mark to market", "M2M", "unsettled funds", "profit not showing", "yesterday profit", "payin", "payout", "balance incorrect", "balance wrong", "balance mismatch", "margin blocked", "sale proceeds", "interest on negative", "opening balance wrong"
 
@@ -31,192 +31,386 @@ TRIGGER KEYWORDS: "available margin", "available cash", "opening balance", "used
 
 # KITE MARGINS PROTOCOL
 
-## Knowledge Base
+---
 
-<knowledge_base>
-<facts>
-- Available Margin = total funds for trading (cash + collateral + premium received + realised/unrealised P&L - used margin)
-- Available Cash = previous day closing balance + payin - payout ± day's settled activity; if negative → 0.05%/day (18% p.a.) interest
-- Opening Balance = previous day's closing balance after reversing blocked margin
-- Used Margin = margin blocked for open positions + open orders; negative when selling holdings or closing long options
-- Free Cash = Cash Margin Available + Pay In + Direct Collateral - Margin Used
-- Payin = funds added during the day; weekend payins appear on Monday
-- Payout = funds withdrawn during the day
-- Total Collateral = Liquid Collateral + Equity Collateral
-- Liquid Collateral = pledged LiquidBees/liquid MFs after haircut; treated as cash equivalent
-- Equity Collateral = pledged stocks/ETFs/MFs after haircut
-- Option Premium = premium paid (-ve for buying) or received (+ve for selling); included in available cash, shown separately
-- SPAN = exchange-calculated risk margin for F&O; revised throughout day
-- Exposure = margin over SPAN (index: 2% contract value; stock: 3.5% or 1.5 SD)
-- SPAN + Exposure = Initial Margin
-- Delivery Margin = T1 sale proceeds + physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry
-- M2M Realised = realised MTM P&L from closed F&O positions
-- M2M Unrealised = unrealised MTM P&L from open F&O positions (BANNED — never share)
-- Intraday/F&O profits available only after T+1 settlement; not usable same day
-- Sale proceeds from holdings: 100% available same day (effective Oct 7, 2024)
-- Exchange requires 50% of F&O margin in cash/cash-equivalent; non-cash shortfall → 0.035%/day (12.775% p.a.)
-- MTM: exchange revalues open futures daily at closing price; settles P&L to account
-- Short options: no daily MTM; margin increases as options move ITM
-- Positions P&L uses entry price; Funds page uses last MTM settlement price → may differ intraday
-- CC takes 4 random margin snapshots/day; peak used for shortfall calculation
-- Available Cash on Kite rounded to 1 decimal; full amount withdrawable
-- Only Equity category is relevant; ignore Commodity category
-</facts>
-
-<field_usage>
-  <share>opening_balance | available_margin | used_margin | available_cash | payin | payout | span | delivery_margin | exposure_margin | option_premium | liquid_collateral | equity_collateral | total_collateral | m2m_realised</share>
-  <internal></internal>
-  <banned>m2m_unrealised</banned>
-</field_usage>
-
-<margin_call_rules>
-  <before_market>Add funds immediately</before_market>
-  <after_market>Add funds by 11:59 PM same day</after_market>
-  <no_action>Positions squared off at Zerodha's discretion</no_action>
-  <snapshots>CC takes 4 random snapshots/day; peak used for shortfall</snapshots>
-</margin_call_rules>
-
-<negative_balance>
-  <interest>0.05%/day or 18% p.a.</interest>
-  <brokerage>₹40 per executed F&O order (instead of ₹20)</brokerage>
-  <action>Positions may be squared off without notice</action>
-</negative_balance>
-
-<collateral_rules>
-  <cash_requirement>50% of F&O margin must be cash or cash-equivalent</cash_requirement>
-  <cash_equivalent>LiquidBees ETF, liquid mutual funds (after haircut)</cash_equivalent>
-  <non_cash_shortfall_charge>0.035%/day or 12.775% p.a.</non_cash_shortfall_charge>
-  <usable_for>Equity intraday, futures, options buying and writing</usable_for>
-</collateral_rules>
-
-<links>
-  <margin_calculator>zerodha.com/margin-calculator</margin_calculator>
-  <intraday_leverages>zerodha.com/marketintel/bulletin/249809/latest-intraday-leverages-mis-bo-co</intraday_leverages>
-  <approved_securities>zerodha.com/approved-securities</approved_securities>
-  <verify_equity_collateral>investorhelpline.nseindia.com/ClientCollateral/welcomeCLUser</verify_equity_collateral>
-  <verify_commodity_collateral>clientreports.mcxccl.com</verify_commodity_collateral>
-</links>
-</knowledge_base>
+## Section A: Reference Data
 
 ---
 
-## Business Rules
+### A1 — Tool Purpose & Fundamentals
 
-### Rule 0: Field Protection
-**if:** Responding to any query
-**then:** NEVER share `m2m_unrealised`. All other fields in `<share>` can be shown to the customer. Always use `₹` formatting for amounts.
+This tool shows the client's **funds/margin page on Kite** — available margin, cash, collateral, used margin, and settlement details. Only the **Equity** category is relevant; ignore the Commodity category.
 
-### Rule 1: Explain Funds Page Field
-**if:** Customer asks what a specific field on the funds page means
-**then:** Explain using `<facts>` definitions. Map customer language to field:
-- "balance" / "available balance" → `available_margin` or `available_cash`
-- "margin used" / "blocked margin" → `used_margin`
-- "collateral" → check `liquid_collateral`, `equity_collateral`, or `total_collateral`
-- "premium" → `option_premium`
-- "SPAN" / "exposure" → `span`, `exposure_margin`
-- "delivery margin" → `delivery_margin`
-- "opening balance" → `opening_balance`
-- "payin" / "funds added" → `payin`
-- "payout" / "withdrawal" → `payout`
-- "MTM" / "M2M" → `m2m_realised` (never share unrealised)
+Available Cash on Kite is rounded to 1 decimal place for display; the full amount is withdrawable.
 
-### Rule 2: Balance Inquiry
-**if:** Customer asks about their current balance, available margin, or available cash
-**then:** Share `available_margin` (₹[available_margin]), `available_cash` (₹[available_cash]), `opening_balance` (₹[opening_balance]), and `used_margin` (₹[used_margin]). If `used_margin` is negative, explain: negative used margin means credit from selling holdings or closing long options positions. If customer asks why margin is blocked or about a specific order blocking margin → invoke **kite_orders**.
+Positions P&L uses entry price; Funds page uses last MTM settlement price → may differ intraday. Overall P&L will be the same once positions are closed.
 
-### Rule 3: Profit Not Showing in Balance
-**if:** Customer asks why today's or yesterday's intraday/F&O profits are not reflected
-**then:** "Intraday and F&O profits are available only after T+1 settlement (next trading day). Your current available margin of ₹[available_margin] does not include today's unsettled profits. These will reflect in your opening balance on the next trading day. If the next day is a settlement holiday, it takes an additional day."
-If customer asks about specific position P&L → invoke **kite_positions**.
+**Input:** Client ID.
 
-### Rule 4: Negative Available Cash
-**if:** `available_cash` < 0
-**then:** "Your available cash is ₹[available_cash]. A negative cash balance attracts interest at 0.05% per day (18% p.a.). Please add funds to clear the negative balance. If no funds are added, open positions may be squared off."
+---
 
-### Rule 5: Used Margin Negative
-**if:** `used_margin` < 0 AND customer is confused
-**then:** "Your used margin shows ₹[used_margin] (negative) because you have received credit from selling holdings or closing long option positions today. This credit is included in your available margin."
-If customer asks which holdings were sold → invoke **kite_holdings**.
+### A2 — Field Usage Rules
 
-### Rule 6: Collateral Query
-**if:** Customer asks about collateral, pledge margin, or why collateral isn't being used
-**then:** Share `liquid_collateral` (₹[liquid_collateral]), `equity_collateral` (₹[equity_collateral]), `total_collateral` (₹[total_collateral]).
-- Liquid collateral = cash equivalent; can satisfy 50% cash requirement for F&O.
-- Equity collateral = non-cash; if used beyond 50% cash limit, attracts 0.035%/day charge.
-- Collateral usable for: equity intraday, futures, options buying and writing.
-- Verify details: `<verify_equity_collateral>` for equity, `<verify_commodity_collateral>` for commodity.
-- Approved list and haircuts: `<approved_securities>`.
+**Shareable fields:**
 
-### Rule 7: Margin Shortfall / Margin Call
-**if:** Customer received margin call or asks about margin shortfall
-**then:** "Please add funds to your Zerodha account to cover the shortfall.
+`opening_balance` | `available_margin` | `used_margin` | `available_cash` | `payin` | `payout` | `span` | `delivery_margin` | `exposure_margin` | `option_premium` | `liquid_collateral` | `equity_collateral` | `total_collateral` | `m2m_realised`
+
+**Internal-only fields** (use for reasoning only; communicate outcomes in plain language):
+
+`m2m_unrealised`
+
+Always use ₹ formatting for amounts.
+
+---
+
+### A3 — Field Definitions
+
+| Field | Definition |
+|---|---|
+| Available Margin | Total funds for trading: cash + collateral + premium received + realised/unrealised P&L − used margin |
+| Available Cash | Previous day closing balance + payin − payout ± day's settled activity. If negative → interest applies. |
+| Opening Balance | Previous day's closing balance after reversing blocked margin |
+| Used Margin | Margin blocked for open positions + open orders. Negative when selling holdings or closing long options. |
+| Free Cash | Cash Margin Available + Pay In + Direct Collateral − Margin Used |
+| Payin | Funds added during the day. Weekend payins appear on Monday. |
+| Payout | Funds withdrawn during the day. |
+| Total Collateral | Liquid Collateral + Equity Collateral |
+| Liquid Collateral | Pledged LiquidBees/liquid MFs after haircut — treated as cash equivalent |
+| Equity Collateral | Pledged stocks/ETFs/MFs after haircut |
+| Option Premium | Premium paid (−ve for buying) or received (+ve for selling). Included in available cash, shown separately. |
+| SPAN | Exchange-calculated risk margin for F&O. Revised throughout day. |
+| Exposure | Margin over SPAN (index: 2% contract value; stock: 3.5% or 1.5 SD). |
+| SPAN + Exposure | = Initial Margin |
+| Delivery Margin | T1 sale proceeds + physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry |
+| M2M Realised | Realised MTM P&L from closed F&O positions |
+| M2M Unrealised | Unrealised MTM P&L from open F&O positions (internal use only) |
+
+---
+
+### A4 — Customer Language → Field Mapping
+
+| Customer Says | Maps To |
+|---|---|
+| "balance" / "available balance" | `available_margin` or `available_cash` |
+| "margin used" / "blocked margin" | `used_margin` |
+| "collateral" | `liquid_collateral`, `equity_collateral`, or `total_collateral` |
+| "premium" | `option_premium` |
+| "SPAN" / "exposure" | `span`, `exposure_margin` |
+| "delivery margin" | `delivery_margin` |
+| "opening balance" | `opening_balance` |
+| "payin" / "funds added" | `payin` |
+| "payout" / "withdrawal" | `payout` |
+| "MTM" / "M2M" | `m2m_realised` (internal only for unrealised) |
+
+---
+
+### A5 — Negative Balance Rules
+
+| Condition | Consequence |
+|---|---|
+| Negative available cash | Interest: 0.05%/day (18% p.a.) |
+| Negative balance + F&O orders | Brokerage: ₹40 per executed F&O order (instead of ₹20) |
+| No funds added | Positions may be squared off without notice |
+
+---
+
+### A6 — Collateral Rules
+
+| Rule | Detail |
+|---|---|
+| Cash requirement | 50% of F&O margin must be cash or cash-equivalent |
+| Cash equivalent | LiquidBees ETF, liquid mutual funds (after haircut) |
+| Non-cash shortfall charge | 0.035%/day (12.775% p.a.) |
+| Usable for | Equity intraday, futures, options buying and writing |
+
+---
+
+### A7 — Margin Call Rules
+
+| Timing | Action Required |
+|---|---|
+| Before market hours | Add funds immediately |
+| After market hours | Add funds by 11:59 PM same day |
+| No action taken | Positions squared off at Zerodha's discretion |
+
+CC takes 4 random margin snapshots/day; peak used for shortfall calculation. Shortfall can occur even after closing positions if a snapshot was already captured.
+
+---
+
+### A8 — Settlement & Availability
+
+| Source | When Available |
+|---|---|
+| Intraday/F&O profits | After T+1 settlement (next trading day). If T+1 is settlement holiday → additional day. |
+| Sale proceeds from holdings | 100% available same day (effective Oct 7, 2024) |
+| Unsettled funds | Pending T+1 settlement — cannot withdraw until complete |
+
+---
+
+### A9 — Links
+
+| Topic | URL |
+|---|---|
+| Margin calculator | zerodha.com/margin-calculator |
+| Intraday leverages | zerodha.com/marketintel/bulletin/249809/latest-intraday-leverages-mis-bo-co |
+| Approved securities (pledge haircuts) | zerodha.com/approved-securities |
+| Verify equity collateral | investorhelpline.nseindia.com/ClientCollateral/welcomeCLUser |
+| Verify commodity collateral | clientreports.mcxccl.com |
+
+---
+
+### A10 — Escalation Data Template
+
+When escalating, always include: **client ID, current margin values, and specific issue.**
+
+---
+
+### A11 — Response Templates
+
+**R1 — Balance inquiry:**
+Share: `available_margin` (₹), `available_cash` (₹), `opening_balance` (₹), `used_margin` (₹).
+
+**R2 — Used margin negative:**
+"Your used margin shows ₹[used_margin] (negative) because you have received credit from selling holdings or closing long option positions today. This credit is included in your available margin."
+
+**R3 — Profit not in balance:**
+"Intraday and F&O profits are available only after T+1 settlement (next trading day). Your current available margin of ₹[available_margin] does not include today's unsettled profits. These will reflect in your opening balance on the next trading day. If the next day is a settlement holiday, it takes an additional day."
+
+**R4 — Negative available cash:**
+"Your available cash is ₹[available_cash]. A negative cash balance attracts interest at 0.05% per day (18% p.a.). Please add funds to clear the negative balance. If no funds are added, open positions may be squared off."
+
+**R5 — Collateral details:**
+Share: `liquid_collateral` (₹), `equity_collateral` (₹), `total_collateral` (₹). Explain: liquid = cash equivalent (satisfies 50% cash requirement), equity = non-cash (attracts 0.035%/day if used beyond 50% cash limit). Usable for: equity intraday, futures, options buying and writing.
+
+**R6 — Margin call / shortfall:**
+"Please add funds to your Zerodha account to cover the shortfall.
 - If margin call received before market hours → add funds immediately.
 - If received after market hours → add by 11:59 PM same day.
 - If funds are not added, positions may be squared off at Zerodha's discretion.
 
 Note: The Clearing Corporation takes 4 random margin snapshots during the day. The peak requirement is used — so a shortfall can occur even after closing positions if a snapshot was already captured."
-If customer asks which positions caused the shortfall → invoke **kite_positions**.
 
-### Rule 8: Shortfall After Closing Positions
-**if:** Customer asks why shortfall exists even though positions are already closed
-**then:** "The Clearing Corporation captures 4 random margin snapshots during the day and uses the peak margin requirement. Even if you've closed your positions, a shortfall can occur if a snapshot was already captured when your margin was at its peak. Please add the shortfall amount mentioned in the email by 11:59 PM today to avoid a margin penalty."
+**R7 — Shortfall after closing positions:**
+"The Clearing Corporation captures 4 random margin snapshots during the day and uses the peak margin requirement. Even if you've closed your positions, a shortfall can occur if a snapshot was already captured when your margin was at its peak. Please add the shortfall amount mentioned in the email by 11:59 PM today to avoid a margin penalty."
 
-### Rule 9: Option Premium Field
-**if:** Customer asks about option premium showing positive or negative
-**then:** "The option premium field shows:
-- Positive (+ve): premium received from selling/writing options.
-- Negative (-ve): premium paid for buying options.
-This amount is included in your available cash and shown separately for visibility."
+**R8 — Option premium:**
+"The option premium field shows: positive (+ve) = premium received from selling/writing options; negative (−ve) = premium paid for buying options. This amount is included in your available cash and shown separately for visibility."
 
-### Rule 10: SPAN / Exposure / Delivery Margin
-**if:** Customer asks about SPAN, exposure, or delivery margin being blocked
-**then:** Share `span` (₹[span]), `exposure_margin` (₹[exposure_margin]), `delivery_margin` (₹[delivery_margin]).
-- SPAN + Exposure = Initial Margin required by exchange for F&O positions.
-- Delivery margin is blocked for: T1 holding sale proceeds, ITM stock options during expiry week (physical delivery), or MCX contracts near expiry.
-- SPAN is revised by exchanges throughout the day.
-- Check margin requirements: `<margin_calculator>`.
-If customer asks which position is blocking margin → invoke **kite_positions**. If customer asks about a specific order's margin requirement → invoke **kite_orders**.
+**R9 — SPAN / exposure / delivery margin:**
+Share: `span` (₹), `exposure_margin` (₹), `delivery_margin` (₹). Explain: SPAN + Exposure = Initial Margin required by exchange for F&O. Delivery margin blocked for: T1 sale proceeds, ITM stock options during expiry week, MCX contracts near expiry. SPAN revised by exchanges throughout the day.
 
-### Rule 11: Payin/Payout Query
-**if:** Customer asks about payin or payout values
-**then:** Share `payin` (₹[payin]) and `payout` (₹[payout]).
-- Payin = funds added to your account today.
-- Payout = funds withdrawn today.
-- Weekend payins appear under payin on Monday.
+**R10 — Payin / payout:**
+Share: `payin` (₹), `payout` (₹). Payin = funds added today. Payout = funds withdrawn today. Weekend payins appear on Monday.
 
-### Rule 12: P&L Mismatch — Positions vs Funds Page
-**if:** Customer asks why P&L in positions differs from funds page
-**then:** "Kite positions calculates P&L based on your original entry price. The funds page uses the last Mark to Market (MTM) settlement price for open futures and short options positions. The overall P&L will be the same once positions are closed, but intraday values may differ due to this MTM adjustment."
-Share `m2m_realised` (₹[m2m_realised]) as reference. If customer wants position-level P&L breakdown → invoke **kite_positions**.
+**R11 — P&L mismatch (positions vs funds):**
+"Kite positions calculates P&L based on your original entry price. The funds page uses the last Mark to Market (MTM) settlement price for open futures and short options positions. The overall P&L will be the same once positions are closed, but intraday values may differ due to this MTM adjustment."
 
-### Rule 13: Opening Balance Mismatch
-**if:** Customer says today's opening balance doesn't match expected amount
-**then:** "Your opening balance of ₹[opening_balance] is the previous day's closing balance after reversing any blocked margin. Differences may occur due to:
-- Settlement of previous day's trades (T+1)
-- MTM settlement on open F&O positions
-- Charges/brokerage deducted
-- Settlement holiday delays"
-If customer asks about specific charges or ledger entries → invoke **ledger_report**.
+**R12 — Opening balance mismatch:**
+"Your opening balance of ₹[opening_balance] is the previous day's closing balance after reversing any blocked margin. Differences may occur due to: settlement of previous day's trades (T+1), MTM settlement on open F&O positions, charges/brokerage deducted, or settlement holiday delays."
 
-### Rule 14: Sale Proceeds Availability
-**if:** Customer asks when proceeds from selling holdings will be available
-**then:** "As of October 7, 2024, 100% of the proceeds from selling your holdings are available on the same day for all trades, including stocks and F&O positions."
-If customer asks about specific holdings sold → invoke **kite_holdings**.
+**R13 — Sale proceeds availability:**
+"As of October 7, 2024, 100% of the proceeds from selling your holdings are available on the same day for all trades, including stocks and F&O positions."
 
-### Rule 15: Unsettled Funds
-**if:** Customer asks about unsettled funds
-**then:** "Unsettled funds are credits you expect from profits or sold holdings that are pending T+1 settlement. You cannot withdraw these until settlement is complete. If T+1 falls on a settlement holiday, it takes an additional day."
+**R14 — Unsettled funds:**
+"Unsettled funds are credits you expect from profits or sold holdings that are pending T+1 settlement. You cannot withdraw these until settlement is complete. If T+1 falls on a settlement holiday, it takes an additional day."
 
-### Rule 16: Available Cash Rounding
-**if:** Customer notices decimal discrepancy in funds page
-**then:** "Available cash on Kite is rounded to 1 decimal place for display. For example, ₹1005.53 shows as ₹1005.5. The full amount is withdrawable."
+**R15 — Available cash rounding:**
+"Available cash on Kite is rounded to 1 decimal place for display. For example, ₹1005.53 shows as ₹1005.5. The full amount is withdrawable."
 
-### Rule 17: Market Order Causing Negative Balance
-**if:** Customer asks why account went negative after a market order
-**then:** "Market orders are validated at the best available price but execution can occur at a different price — especially at market opening. This price difference can cause a negative balance. A negative cash balance attracts interest at 0.05%/day (18% p.a.), and a brokerage of ₹40 per executed F&O order applies. Please add funds to clear the negative balance."
-If customer asks about the specific order → invoke **kite_orders**. If customer asks about order history → invoke **kite_order_history**.
+**R16 — Market order caused negative balance:**
+"Market orders are validated at the best available price but execution can occur at a different price — especially at market opening. This price difference can cause a negative balance. A negative cash balance attracts interest at 0.05%/day (18% p.a.), and a brokerage of ₹40 per executed F&O order applies. Please add funds to clear the negative balance."
 
-### Rule 18: MTM Explanation
-**if:** Customer asks about MTM / Mark to Market
-**then:** "Mark to Market (MTM) is the daily revaluation of open futures positions by the exchange at the closing price. Profits or losses are settled to your account daily. This is reflected in `m2m_realised` (₹[m2m_realised]) for closed positions. Short options don't undergo daily MTM — instead, margin increases as they move in-the-money."
-If customer asks about specific position MTM → invoke **kite_positions**.
+**R17 — MTM explanation:**
+"Mark to Market (MTM) is the daily revaluation of open futures positions by the exchange at the closing price. Profits or losses are settled to your account daily. Short options don't undergo daily MTM — instead, margin increases as they move in-the-money."
+
+---
+
+## Section B: Decision Flow
+
+---
+
+### Preflight (run on every query)
+
+```
+1. Load margin data for the client.
+2. Note: only Equity category is relevant — ignore Commodity.
+```
+
+### Route
+
+```
+Intent / Condition                                          → Rule
+──────────────────────────────────────────────────────────────────────
+Explain a specific funds page field                         → Rule 1
+Balance / available margin / available cash inquiry          → Rule 2
+Profit not showing in balance                               → Rule 3
+Negative available cash                                     → Rule 4
+Used margin negative (confusion)                            → Rule 5
+Collateral query                                            → Rule 6
+Margin call / shortfall                                     → Rule 7
+Shortfall despite positions closed                          → Rule 8
+Option premium field query                                  → Rule 9
+SPAN / exposure / delivery margin query                     → Rule 10
+Payin / payout query                                        → Rule 11
+P&L mismatch — positions vs funds page                      → Rule 12
+Opening balance mismatch                                    → Rule 13
+Sale proceeds availability                                  → Rule 14
+Unsettled funds query                                       → Rule 15
+Decimal discrepancy on funds page                           → Rule 16
+Negative balance after market order                         → Rule 17
+MTM explanation                                             → Rule 18
+```
+
+### Scope
+
+- Address the client's query about their funds page, margin, cash balance, collateral, and settlement.
+- Use **A2** field rules in all client communication. Always use ₹ formatting.
+- `m2m_unrealised` is internal-only — use for reasoning, communicate the outcome.
+
+### Fallback
+
+If no route matches, explain from **A3** field definitions. If no root cause is found, escalate per **A10**.
+
+---
+
+## Section C: Rules
+
+---
+
+### Rule 1 — Explain Funds Page Field
+
+1. Map customer language to field using **A4**.
+2. Explain using **A3** definitions.
+
+---
+
+### Rule 2 — Balance Inquiry
+
+1. Respond per **A11-R1**.
+2. If `used_margin` is negative → also explain per **A11-R2**.
+3. If client asks why margin is blocked or about a specific order → invoke `kite_orders`.
+
+---
+
+### Rule 3 — Profit Not Showing in Balance
+
+1. Respond per **A11-R3**. Settlement per **A8**.
+2. If client asks about specific position P&L → invoke `kite_positions`.
+
+---
+
+### Rule 4 — Negative Available Cash
+
+1. `available_cash` < 0 → respond per **A11-R4**. Interest/consequences per **A5**.
+
+---
+
+### Rule 5 — Used Margin Negative
+
+1. Respond per **A11-R2**.
+2. If client asks which holdings were sold → invoke `kite_holdings`.
+
+---
+
+### Rule 6 — Collateral Query
+
+1. Respond per **A11-R5**. Rules per **A6**.
+2. Verification links per **A9** (equity collateral, commodity collateral).
+3. Approved list and haircuts per **A9** (approved securities).
+
+---
+
+### Rule 7 — Margin Call / Shortfall
+
+1. Respond per **A11-R6**. Timing per **A7**.
+2. If client asks which positions caused shortfall → invoke `kite_positions`.
+
+---
+
+### Rule 8 — Shortfall After Closing Positions
+
+1. Respond per **A11-R7**. Snapshot logic per **A7**.
+
+---
+
+### Rule 9 — Option Premium Field
+
+1. Respond per **A11-R8**.
+
+---
+
+### Rule 10 — SPAN / Exposure / Delivery Margin
+
+1. Respond per **A11-R9**. Definitions per **A3**. Margin calculator per **A9**.
+2. If client asks which position is blocking margin → invoke `kite_positions`.
+3. If client asks about a specific order's margin requirement → invoke `kite_orders`.
+
+---
+
+### Rule 11 — Payin / Payout Query
+
+1. Respond per **A11-R10**.
+
+---
+
+### Rule 12 — P&L Mismatch (Positions vs Funds)
+
+1. Respond per **A11-R11**. Share `m2m_realised`.
+2. If client wants position-level breakdown → invoke `kite_positions`.
+
+---
+
+### Rule 13 — Opening Balance Mismatch
+
+1. Respond per **A11-R12**.
+2. If client asks about specific charges or ledger entries → invoke `ledger_report`.
+
+---
+
+### Rule 14 — Sale Proceeds Availability
+
+1. Respond per **A11-R13**. Per **A8**.
+2. If client asks about specific holdings sold → invoke `kite_holdings`.
+
+---
+
+### Rule 15 — Unsettled Funds
+
+1. Respond per **A11-R14**. Per **A8**.
+
+---
+
+### Rule 16 — Available Cash Rounding
+
+1. Respond per **A11-R15**.
+
+---
+
+### Rule 17 — Negative Balance After Market Order
+
+1. Respond per **A11-R16**. Consequences per **A5**.
+2. If client asks about the specific order → invoke `kite_orders`.
+3. If client asks about order history → invoke `kite_order_history`.
+
+---
+
+### Rule 18 — MTM Explanation
+
+1. Respond per **A11-R17**. Share `m2m_realised`.
+2. If client asks about specific position MTM → invoke `kite_positions`.
+
+---
+
+## Section D: General Notes
+
+- Available Margin = cash + collateral + premium + P&L − used margin.
+- Available Cash: if negative → 0.05%/day interest (18% p.a.) + ₹40/order F&O brokerage.
+- Used Margin can be negative (credit from selling holdings / closing long options).
+- Intraday/F&O profits available after T+1 only. Holdings sale proceeds: 100% same day (from Oct 7, 2024).
+- 50% of F&O margin must be cash/cash-equivalent. Non-cash shortfall: 0.035%/day (12.775% p.a.).
+- Exchange revalues futures daily (MTM). Short options: no daily MTM, margin increases as they move ITM.
+- Positions P&L uses entry price; Funds uses MTM settlement price — may differ intraday.
+- CC takes 4 random snapshots/day; peak used for shortfall. Shortfall can occur after closing positions.
+- Available Cash on Kite rounded to 1 decimal; full amount withdrawable.
+- Only Equity category is relevant; ignore Commodity category.
+- Weekend payins appear on Monday.

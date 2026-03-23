@@ -4,12 +4,12 @@
 
 WHEN TO USE:
 
-When customer asks about:
-- Money debited but order not allotted — payment mapping
-- Refund status or refund UTR
-- Payment mapped to different order
-- Bulk payment order mapping
-- NAV dispute (cross-check with MF Order History payment_updated_at)
+When clients:
+- Report money debited but order not allotted (payment mapping)
+- Ask about refund status or refund UTR
+- Report payment mapped to different order
+- Ask about bulk payment order mapping
+- Dispute NAV (cross-check with MF Order History payment_updated_at)
 
 TRIGGER KEYWORDS: "money deducted but not invested", "refund UTR", "payment mapped", "refund status", "double debit", "coin"
 
@@ -17,53 +17,134 @@ TRIGGER KEYWORDS: "money deducted but not invested", "refund UTR", "payment mapp
 
 # MF FUND ALLOCATION REPORT PROTOCOL
 
-## Knowledge Base
+---
 
-<knowledge_base>
-<facts>
-- Shows payments reported to BSE StAR MF and mapping to orders
-- One UTR can map to multiple orders (bulk payment)
-- Unmapped payments refunded within 5-7 working days
-- settlement_number = exchange_order_id from mf_order_history
-- cashier_reference from mandate_debit_report = cfppg_bank_ref_no here
-- **CRITICAL: NEFT/RTGS/IMPS payments go directly to ICCL and will NOT appear in this report. Do NOT check this report for NEFT/RTGS/IMPS orders. If `fund_source` = neft-rtgs in mf_order_history, skip this tool entirely.**
-- settled_flag = Y means payment has been settled with the exchange. settled_flag = N means payment has NOT been settled — the order will not be processed.
-- allotment_flag = Y means units have been allotted. allotment_flag = N means allotment has NOT happened yet.
-</facts>
-<field_usage>
-  <share>order_number | utr_no | payment_date | total_allocated_amount | total_settlement_amount | total_allotment_amount | refund_amount (if entry exists) | date_of_refund (if entry exists) | refund_utr (if entry exists)</share>
-  <internal>settled_flag (Y/N) | allotment_flag (Y/N) | settlement_number (= exchange_order_id) | remitter_acct_no | error_remarks | cfppg_bank_ref_no</internal>
-  <banned>order_process_duplicate_pg_bank | duplicate_pg_bank | import_filename | total_amount | remaining_amount | remaining_amount_settlement | remaining_amount_allotment | cm_bankname | ifsc_code | cm_tax_status | account_type | payment_mode | id | starmf_id</banned>
-</field_usage>
-</knowledge_base>
+## Section A: Reference Data
+
+All rules reference these blocks as single sources of truth.
+
+### A1 — Tool Purpose & Scope
+
+- Shows payments reported to BSE StAR MF and their mapping to orders.
+- One UTR can map to multiple orders (bulk payment).
+- Unmapped payments are refunded within 5–7 working days (excluding weekends and holidays).
+- Key cross-reference fields: `settlement_number` = `settlement_id` from mf_order_history. `cashier_reference` from mandate_debit_report = `cfppg_bank_ref_no` here.
+
+### A2 — NEFT/RTGS/IMPS Exclusion
+
+NEFT/RTGS/IMPS payments go directly to ICCL and will not appear in this report. If `fund_source` = neft-rtgs in mf_order_history, or client mentions NEFT/RTGS/IMPS payment, do not check this report. Refer to mf_order_history Rule 7 for NEFT/RTGS/IMPS handling.
+
+### A3 — Settlement & Allotment Flags
+
+| settled_flag | allotment_flag | Meaning | Client-Facing Communication |
+|---|---|---|---|
+| Y | Y | Payment settled, units allotted | "Your payment has been settled and units allotted by the exchange. There is a short delay in the update reflecting on Coin due to a file sync. Your holdings will update automatically — no action required." |
+| Y | N | Payment settled, allotment pending | "Your payment has been settled. Allotment is pending from the AMC." |
+| N | — (within T+1 of payment) | Payment pending settlement | "Your payment is pending settlement with the exchange. Allow one business day." |
+| N | — (beyond T+2) | Payment not settled, order will not process | Check refund status per **A4** |
+
+### A4 — Refund Status Logic
+
+| Condition | Client-Facing Communication |
+|---|---|
+| `refund_utr` populated | "Your refund of ₹[refund_amount] has been processed on [date_of_refund]. Use reference number [refund_utr] to track it with your bank." Do not add the 5–7 day disclaimer — refund is already initiated. Only share `date_of_refund` if available in the report — never infer or compute from other fields. |
+| `refund_utr` empty | "Your payment could not be settled and the order will not be processed. The debited amount will be refunded to your bank account within 5–7 working days (excluding weekends and holidays)." |
+| No entry at all | "Payment not yet reflected. Allow 24 hours. If not visible, the amount will be refunded within 5–7 working days (excluding weekends and holidays)." |
+
+Always provide the 5–7 working day range for refund timelines. Specific refund credit dates are not available — only the range is accurate.
+
+### A5 — Error Remarks Escalation
+
+If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → escalate to agent immediately. Typically occurs after a bank modification. Do not continue to further checks.
+
+### A6 — Field Rules
+
+**Shareable with client:** `order_number`, `utr_no`, `payment_date`, `total_allocated_amount`, `total_settlement_amount`, `total_allotment_amount`, `refund_amount` (if entry exists), `date_of_refund` (if entry exists), `refund_utr` (if entry exists).
+
+**Internal reasoning only (use for analysis, do not share):** `settled_flag` (Y/N), `allotment_flag` (Y/N), `settlement_number` (= settlement_id), `remitter_acct_no`, `error_remarks`, `cfppg_bank_ref_no`.
+
+**Suppress (no client use):** `order_process_duplicate_pg_bank`, `duplicate_pg_bank`, `import_filename`, `total_amount`, `remaining_amount`, `remaining_amount_settlement`, `remaining_amount_allotment`, `cm_bankname`, `ifsc_code`, `cm_tax_status`, `account_type`, `payment_mode`, `id`, `starmf_id`.
+
+**Communication rule:** Use plain language for all field values in client responses. Say "Payment settled" instead of "Settled Flag = Y". Describe outcomes, not field names.
+
+### A7 — Cross-Reference Protocols
+
+| Topic | Refer to |
+|---|---|
+| Order status / settlement_id matching | mf_order_history (settlement_number = exchange_order_id) |
+| Mandate debit cross-reference | mandate_debit_report (cashier_reference = cfppg_bank_ref_no) |
+| NEFT/RTGS/IMPS payment handling | mf_order_history Rule 7 |
 
 ---
 
-## Business Rules
+## Section B: Decision Flow
 
-### Rule 0: Field Protection
-Never share `<banned>` fields. Use `<internal>` fields for reasoning only. NEVER mention field names like "Settled Flag", "Allotment Flag", or any internal field names/values to the customer. Use plain language: "Payment settled" not "Settled Flag = Y".
+### Preflight (run on every query)
 
-### Rule 0.5: NEFT/RTGS/IMPS — Do Not Use
-**if:** `fund_source` = neft-rtgs in **mf_order_history**, OR client mentions NEFT/RTGS/IMPS payment
-**then:** Do NOT check this report. NEFT/RTGS/IMPS payments go directly to ICCL and will not appear here. Refer to **mf_order_history** Rule 7 for NEFT/RTGS/IMPS handling.
+1. **NEFT/RTGS/IMPS gate:** Check if payment method is NEFT/RTGS/IMPS per **A2**. If yes → do not use this tool. Route to mf_order_history.
+2. Fetch the fund allocation report for the client's payment/date/UTR.
+3. Apply field protection per **A6** — identify shareable, internal, and banned fields.
+4. Check `error_remarks` immediately per **A5** — if "INVALID BANK ACCOUNT DETAIL" → escalate before any other processing.
+5. Format amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
 
-### Rule 1: Payment Debited But Not Allotted
-**if:** Customer says money debited, order not allotted
-**then:** Find payment by date/UTR. IMMEDIATELY check `error_remarks` first:
-- `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → **ESCALATE TO AGENT immediately.** Typically occurs after a bank modification. Do not continue to further checks.
-- Then check `settled_flag` and `allotment_flag`:
-  - `settled_flag` = Y AND `allotment_flag` = Y → incremental file sync delay. Say: "Your payment has been settled and units allotted by the exchange. There is a short delay in the update reflecting on Coin due to a file sync. Your holdings will update automatically — no action required."
-  - `settled_flag` = Y AND `allotment_flag` = N → "Payment settled. Allotment pending from AMC."
-  - `settled_flag` = N AND within T+1 business day of payment → "Your payment is pending settlement with the exchange. Allow one business day."
-  - `settled_flag` = N AND beyond T+2 business days → payment has not been settled and the order will not be processed. Check `refund_utr`:
-    - `refund_utr` populated → "Your payment could not be settled. A refund of ₹[refund_amount] has been processed. Use reference number [refund_utr] to track it with your bank."
-    - `refund_utr` empty → "Your payment could not be settled and the order will not be processed. The debited amount will be refunded to your bank account within 5-7 working days (excluding weekends and holidays)."
-- No entry → "Payment not yet reflected. Allow 24h. If not visible, refund within 5-7 working days (excluding weekends and holidays)."
+### Routing Tree
 
-### Rule 2: Refund Status
-**if:** Customer asks about refund
-**then:** Check `refund_amount`, `date_of_refund`, `refund_utr`:
-- `refund_utr` populated → "Your refund of ₹[refund_amount] has been processed on [date_of_refund]. Use reference number [refund_utr] to track it with your bank." Do NOT add the 5-7 working day disclaimer — the refund is already initiated. Only share `date_of_refund` if it is available in the report — NEVER infer or compute a refund date from order_timestamp or any other field.
-- `refund_utr` empty → "Your refund is being processed and will be credited within 5-7 working days (excluding weekends and holidays)."
-**CRITICAL — REFUND DATE:** NEVER compute or commit to a specific refund credit date. Always give the range only. Do not say "you will receive the refund by [date]."
+```
+Query relates to MF payment / fund allocation →
+│
+├─ Preflight: NEFT/RTGS/IMPS payment?
+│  → Do NOT use this tool. Route to mf_order_history (STOP)
+│
+├─ Preflight: error_remarks = "INVALID BANK ACCOUNT DETAIL"?
+│  → Escalate immediately (STOP)
+│
+├─ Payment debited but order not allotted
+│  → Rule 1
+│
+├─ Client asks about refund status
+│  → Rule 2
+│
+└─ No matching entry
+   → "Payment not yet reflected. Allow 24 hours." (per A4)
+```
+
+### Scope
+
+- Address: payment-to-order mapping, settlement/allotment status, and refund tracking.
+- Do not volunteer: internal field names or values (per **A6**), flag values, or information the client hasn't asked about.
+
+### Fallback
+
+If no entry found and payment is beyond 24 hours → advise 5–7 working day refund timeline per **A4**.
+
+---
+
+## Section C: Rules
+
+Rules reference Section A blocks. They do not redefine what is already defined there.
+
+### Rule 1 — Payment Debited But Not Allotted
+
+1. Find the payment by date/UTR.
+2. Check `error_remarks` first per **A5**. If "INVALID BANK ACCOUNT DETAIL" → escalate immediately. Do not continue.
+3. Check `settled_flag` and `allotment_flag` and respond using the matching row from **A3**.
+4. If `settled_flag` = N and beyond T+2 → check refund status per **A4**:
+   - `refund_utr` populated → share refund details.
+   - `refund_utr` empty → "Refund will be credited within 5–7 working days."
+5. If no entry found → "Payment not yet reflected. Allow 24 hours. If not visible, refund within 5–7 working days (excluding weekends and holidays)." (Per **A4**.)
+
+### Rule 2 — Refund Status
+
+1. Check `refund_amount`, `date_of_refund`, and `refund_utr`.
+2. Respond using the matching condition from **A4**.
+3. If `refund_utr` is populated → share amount, date (if available), and reference number. Do not add the 5–7 day disclaimer.
+4. If `refund_utr` is empty → "Your refund is being processed and will be credited within 5–7 working days (excluding weekends and holidays)."
+5. Always provide the range only — specific refund credit dates are not available (per **A4**).
+
+---
+
+## Section D: General Notes
+
+1. The NEFT/RTGS/IMPS exclusion (**A2**) is an absolute gate — these payments bypass BSE StAR MF entirely and go directly to ICCL. Checking this report for NEFT/RTGS/IMPS payments will always return no results and may lead to incorrect refund advice.
+2. Always check `error_remarks` before `settled_flag`/`allotment_flag` (**A5**). The "INVALID BANK ACCOUNT DETAIL" error requires immediate escalation — no amount of waiting will resolve it.
+3. Avoid committing a specific refund date. The 5–7 working day range is the only guidance to provide. If `refund_utr` exists, the refund is already initiated — do not add the timeline disclaimer on top of it.

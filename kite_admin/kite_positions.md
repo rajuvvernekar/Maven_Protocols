@@ -4,204 +4,399 @@
 
 WHEN TO USE:
 
-Customer asks about:
-- Current open positions — intraday (MIS/CO), F&O (NRML), or same-day delivery (CNC)
-- Position showing profit when buy average is higher than LTP or vice versa (multiple trades in same instrument, realised P&L included)
-- P&L mismatch between positions page and funds page (entry price vs MTM settlement price)
-- P&L changed after 3:30 PM, after market hours, or before market opens next day (closing price switch, BHAVCOPY update)
-- Net vs day positions — difference between actual portfolio and today's trading activity
-- Auto square-off — why it happened, timings (Equity 3:25 PM, F&O 3:26 PM, MCX), charges (₹50 + GST)
-- Auto square-off failure — MIS position carried forward as CNC/NRML, circuit limit impact
-- Circuit limit impact on MIS — upper circuit on sell position (short delivery risk), lower circuit on buy position (delivery conversion)
-- Hedged positions — can't close hedge leg due to margin requirement increase on remaining leg
-- Peak margin penalty from exiting one leg of a hedge (intraday snapshots catching one leg open)
-- Product conversion — MIS↔CNC, MIS↔NRML (allowed with margin), CO conversion (blocked)
-- Margin call, margin shortfall, or margin penalty on open positions
-- F&O expiry — physical settlement for ITM stock options/futures, OTM expiring worthless, index F&O cash-settled
-- Settlement price showing 0 for options (OTM — normal regardless of LTP)
-- Higher margins blocked close to expiry (4 days before for ITM long options, expiry day for futures/short options)
-- Fresh OTM stock option buy blocked in last 2 days before expiry
-- Sold holdings appearing as negative positions during the day (tagged HOLDING — normal)
-- Overnight quantity or carry-forward positions
-- Margin shown when exiting a position (increase in utilised portfolio margin — order still executes)
-- When intraday/F&O profits, delivery sale proceeds, BTST proceeds, or option premium become available
-- NRI Non-PIS sale proceeds availability (75% same day, rest T+1)
+When clients:
+- Ask about current open positions (intraday MIS/CO, F&O NRML, or same-day delivery CNC)
+- Report position showing profit when buy average is higher than LTP or vice versa (multiple trades in same instrument, realised P&L included)
+- Report P&L mismatch between positions page and funds page (entry price vs MTM settlement price)
+- Report P&L changed after 3:30 PM, after market hours, or before market opens next day (closing price switch, BHAVCOPY update)
+- Ask about net vs day positions (difference between actual portfolio and today's trading activity)
+- Ask about auto square-off (why it happened, timings, charges ₹50 + GST)
+- Report auto square-off failure (MIS position carried forward as CNC/NRML, circuit limit impact)
+- Ask about circuit limit impact on MIS (upper circuit on sell position, lower circuit on buy position)
+- Report can't close hedge leg due to margin requirement increase on remaining leg
+- Ask about peak margin penalty from exiting one leg of a hedge
+- Ask about product conversion (MIS↔CNC, MIS↔NRML allowed with margin, CO conversion blocked)
+- Ask about margin call, margin shortfall, or margin penalty on open positions
+- Ask about F&O expiry (physical settlement for ITM stock options/futures, OTM expiring worthless, index F&O cash-settled)
+- Report settlement price showing 0 for options (OTM — normal regardless of LTP)
+- Ask about higher margins blocked close to expiry (4 days before for ITM long options, expiry day for futures/short options)
+- Ask why fresh OTM stock option buy blocked in last 2 days before expiry
+- Report sold holdings appearing as negative positions during the day (tagged HOLDING — normal)
+- Ask about overnight quantity or carry-forward positions
+- Ask about margin shown when exiting a position (increase in utilised portfolio margin — order still executes)
+- Ask when intraday/F&O profits, delivery sale proceeds, BTST proceeds, or option premium become available
+- Ask about NRI Non-PIS sale proceeds availability (75% same day, rest T+1)
 
 TRIGGER KEYWORDS: "position", "open position", "intraday", "MIS", "NRML", "carry forward", "overnight", "square off", "squared off", "auto square off", "P&L positions", "MTM", "mark to market", "margin call", "margin shortfall", "margin penalty", "hedged position", "convert position", "conversion", "expiry", "physical settlement", "physical delivery", "ITM expiry", "OTM expiry", "settlement price", "net position", "day position", "negative position", "profit available", "withdrawal after selling", "circuit limit position", "CO conversion", "BTST proceeds", "option premium available"
 
 ## Protocol
 
-# KITE_POSITIONS PROTOCOL
-
-## Knowledge Base
-
-<knowledge_base>
-<facts>
-- Positions = open trades for current day: intraday (MIS/CO), F&O (NRML), and same-day delivery (CNC). Holdings = settled shares in demat
-- CNC buy on same day appears in Positions → moves to Holdings on T+1
-- Net position = actual current portfolio (overnight + today's trades). Day position = only today's trading activity
-- P&L in positions includes both realised (closed trades) and unrealised (open trades). Calculated from original entry price
-- Funds page uses MTM settlement price for futures/short options — will differ from positions P&L
-- P&L during market hours uses LTP. After 3:30 PM: equity uses closing price; F&O uses LTP at 3:30 PM. Next day before 9:15 AM: uses previous close
-- F&O settlement prices update on positions page between 6:30–7:00 AM when BHAVCOPY arrives from NSE
-- Settlement price = 0 for OTM options regardless of LTP — this is normal
-- Multiple trades in same instrument same day: buy avg calculated across ALL trades, not just current position. Can show profit even if current buy avg > LTP
-- Intraday profits available only after T+1 settlement. Sale proceeds from delivery available T+1
-- Option premium from selling/exiting can be used only for buying options in same segment same day. Available for all trades from next day
-- 100% of delivery sale proceeds available for new trades on same day (stocks or F&O). NRI Non-PIS: only 75% same day, rest T+1
-- Intraday equity/F&O profits not usable on T day — available only after T+1 settlement
-- BTST (T1 holdings) sale proceeds: available from next day only (no change)
-- Margin shown when exiting a position = increase in utilised portfolio margin. Order will execute regardless
-- Zerodha does NOT square off for freak trades — unrealised loss lasts only a fraction of a second
-</facts>
-
-<field_usage>
-  <share>instrument_name | product | exchange | quantity | overnight_quantity | avg_price | pnl | buy_quantity | buy_value | buy_average_price | sell_quantity | sell_value | sell_average_price | last_close_price | net_change_percentage</share>
-  <internal>ltp | day_buy_quantity | day_buy_price | day_sell_quantity | day_sell_price | day_sell_value</internal>
-  <banned>None</banned>
-</field_usage>
-
-<auto_squareoff>
-  <timings>
-    <equity>3:25 PM</equity>
-    <equity_fo>3:26 PM</equity_fo>
-    <mcx>10 min before market close (MCX closes Nov–Mar: 11:55 PM; Mar–Nov: 11:30 PM — shifts with US DST)</mcx>
-  </timings>
-  <charge>₹50 + 18% GST per order squared off</charge>
-  <failure_reasons>System/link failure, stock at circuit limit, connectivity issues</failure_reasons>
-  <failure_consequence>MIS converts to CNC (equity) or NRML (F&O). Client responsible for closing. Zerodha may square off at discretion without margin call</failure_consequence>
-</auto_squareoff>
-
-<product_conversion>
-  <allowed>MIS↔CNC (equity), MIS↔NRML (F&O/commodity), CNC↔NRML not applicable</allowed>
-  <requires>Sufficient margin for target product type. Sell MIS→CNC also requires holdings</requires>
-  <blocked>CO positions cannot be converted to any other product type</blocked>
-  <blocked_agri>Agricultural commodity contracts (cardamom, mentha oil) cannot convert to MIS one day before tender period</blocked_agri>
-</product_conversion>
-
-<expiry_physical_settlement>
-  <stock_fo>ITM stock options + futures: compulsory physical delivery of underlying stock</stock_fo>
-  <otm>OTM stock options expire worthless — no obligation</otm>
-  <index_fo>Cash-settled (no physical delivery)</index_fo>
-  <margin_increase>4 days before expiry for ITM long options. Expiry day for futures/short options</margin_increase>
-  <otm_buy_block>Fresh long OTM stock option positions blocked last 2 days before expiry</otm_buy_block>
-  <delivery_timeline>Stocks credited T+1 after expiry. Short delivery: up to T+2</delivery_timeline>
-</expiry_physical_settlement>
-
-<margin_shortfall>
-  <causes>Exiting hedge leg (remaining leg needs full margin), expiry of hedge leg, MTM loss exceeding 50% of funds, pledged stock value drop, haircut increase</causes>
-  <margin_call>SMS + email + voice message. Add funds by 11:59 PM same day (after hours) or immediately (before hours)</margin_call>
-  <penalty_rate>0.5% of shortfall (< ₹1L), 1% (≥ ₹1L). Up to 5% for 3+ instances/month</penalty_rate>
-  <snapshots>4 random intraday snapshots (all segments except commodity). 8 for commodity. Peak margin penalty if snapshot catches one leg open</snapshots>
-</margin_shortfall>
-
-<hedged_positions>
-- Cannot close hedge leg unless sufficient margin for remaining unhedged position
-- Hedged margin < unhedged margin. Closing low-risk leg increases margin requirement
-- Order sequence matters: buy hedge first → lower margin. Sell/short first → full margin until hedge placed
-</hedged_positions>
-
-<circuit_limit_impact>
-- MIS sell position + upper circuit: cannot buy back → converts to delivery. If no shares in demat → short delivery + auction penalty
-- MIS buy position + lower circuit: cannot sell → converts to CNC. Must maintain margin for delivery
-</circuit_limit_impact>
-
-<links>
-  <short_delivery>https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences</short_delivery>
-  <margin_calculator>https://zerodha.com/margin-calculator</margin_calculator>
-  <bulletin>https://zerodha.com/marketintel/bulletin</bulletin>
-  <approved_securities>https://zerodha.com/approved-securities</approved_securities>
-</links>
-</knowledge_base>
+# KITE POSITIONS PROTOCOL 
 
 ---
 
-## Business Rules
+## Section A: Reference Data
 
-### Rule 0: Field Protection
-**NEVER share:** `ltp`, `day_buy_quantity`, `day_buy_price`, `day_sell_quantity`, `day_sell_price`, `day_sell_value`
-**Always share when relevant:** All fields in `<field_usage><share>`
+---
 
-### Rule 1: First Check — Locate Position
-**if:** Customer asks about a specific instrument
-**then:**
-1. Search kite_positions by `instrument_name`
-2. If found: note `product`, `quantity`, `overnight_quantity`, `avg_price`, `pnl`, `buy_quantity`, `sell_quantity`
-3. If NOT found and customer says "I have a position": check if it was already squared off today (quantity = 0 with buy/sell history), or if it's a holdings query → invoke **kite_holdings**
+### A1 — Tool Purpose & Fundamentals
 
-### Rule 2: P&L Questions
+This tool shows **open trades for the current day**: intraday (MIS/CO), F&O (NRML), and same-day delivery (CNC). Holdings = settled shares in demat (separate tool).
 
-**2.1 Profit showing when buy avg > LTP (or vice versa):** "When you make multiple trades in the same stock during the day, Kite calculates buy average across ALL trades — not just your current position. Your realised profit from earlier trades is included, which can show overall profit even if the current position's entry price is above the market price."
+CNC buy on the same day appears in Positions → moves to Holdings on T+1.
 
-**2.2 P&L changed after 3:30 PM / before market opens:** "After 3:30 PM, equity P&L switches to the exchange closing price. For F&O, settlement prices update between 6:30–7:00 AM next day when the exchange sends the BHAVCOPY. This commonly causes P&L to shift."
+**Net position** = actual current portfolio (overnight + today's trades). **Day position** = only today's trading activity.
 
-**2.3 Positions P&L ≠ funds page:** "The Positions page calculates P&L from your original entry price. The Funds page uses the MTM (Mark-to-Market) settlement price for futures and short options. These are different calculations — the funds page reflects what's actually settled in your account." If customer wants to see funds page breakdown → invoke **kite_margins**.
+P&L in positions includes both realised (closed trades) and unrealised (open trades), calculated from original entry price. Multiple trades in same instrument same day: buy avg calculated across ALL trades, not just current position — can show profit even if current buy avg > LTP.
 
-**2.4 Settlement price = 0 for options:** "A settlement price of 0 means your option expired OTM (Out of The Money). This is normal regardless of what the LTP was — the settlement price is based on the underlying's weighted average in the last 30 minutes."
+Zerodha does not square off for freak trades — unrealised loss lasts only a fraction of a second.
 
-### Rule 3: Net vs Day Positions
-**if:** Customer confused about net/day position data
-**then:** "Net position shows your actual current portfolio after combining overnight carry-forward and today's trades. Day position shows only today's trading activity. Example: if you carried forward 75 NIFTY FUT and squared off today — net shows 0 (current state), day shows -75 (today's sell action)."
+**Input:** Client ID.
 
-### Rule 4: Auto Square-off
+---
 
-**4.1 Why was my position squared off?** Check `product` = MIS or CO. "Intraday positions are auto-squared off at [refer `<auto_squareoff><timings>`]. Auto square-off charge: ₹50 + GST per order. To avoid this, close intraday positions before the square-off time." If customer asks about the square-off order → invoke **kite_orders**.
+### A2 — Field Usage Rules
 
-**4.2 Why was my position NOT squared off (carried forward)?** "Auto square-off can fail due to: circuit limits hit, system issues, or connectivity problems. Your MIS position has been converted to [CNC for equity / NRML for F&O] and carried forward. You must close it yourself. Ensure sufficient margin is available — Zerodha may square off at its discretion." Invoke **kite_margins** to check if margin is sufficient for the carried-forward position.
+**Shareable fields:**
 
-**4.3 Circuit limit impact on MIS:** "If your MIS sell position hits upper circuit — you can't buy back, so it converts to delivery. If you don't have shares in your demat, this results in [short delivery and auction penalties](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences). If your MIS buy position hits lower circuit — it converts to CNC and you must maintain delivery margin." If customer asks about holdings in demat for delivery → invoke **kite_holdings**.
+`instrument_name` | `product` | `exchange` | `quantity` | `overnight_quantity` | `avg_price` | `pnl` | `buy_quantity` | `buy_value` | `buy_average_price` | `sell_quantity` | `sell_value` | `sell_average_price` | `last_close_price` | `net_change_percentage`
 
-### Rule 5: Product Conversion
-**if:** Customer asks about converting positions
-**then:**
+**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
 
-**5.1 MIS↔CNC or MIS↔NRML:** "You can convert via Kite: Positions → tap/click on position → Convert Position. Requires sufficient margin for the target product type. [If sell MIS→CNC: also needs sufficient holdings.]" If margin insufficient → invoke **kite_margins** to check available margin.
+`ltp` | `day_buy_quantity` | `day_buy_price` | `day_sell_quantity` | `day_sell_price` | `day_sell_value`
 
-**5.2 CO conversion:** "Cover Order positions cannot be converted to any other product type."
+**Client-facing terminology:**
 
-**5.3 Agricultural commodity restriction:** "Agricultural commodity contracts (cardamom, mentha oil) cannot be converted to MIS one day before the tender period starts."
+| Internal Term | Client-Facing Alternative |
+|---|---|
+| `ltp` | "current market price" |
+| `day_buy_*` / `day_sell_*` fields | (use for internal calculations; describe outcomes in plain language) |
 
-### Rule 6: Hedged Positions & Margin
+---
 
-**6.1 Can't close hedge leg:** "You need sufficient margin to cover the remaining unhedged position. Closing the hedge leg increases your margin requirement." Invoke **kite_margins** to check `available_margin` and `used_margin`. "Options: add funds first, or exit both legs simultaneously."
+### A3 — P&L Timing Rules
 
-**6.2 Peak margin penalty from exiting one leg:** "Even if you close both legs, the exchange takes random intraday snapshots (4 for equity F&O, 8 for commodity). If a snapshot catches one leg open, you may face a penalty. Penalty: [refer `<margin_shortfall><penalty_rate>`]."
+| Time Window | Equity P&L Source | F&O P&L Source |
+|---|---|---|
+| Market hours (9:15 AM – 3:30 PM) | LTP | LTP |
+| After 3:30 PM | Exchange closing price | LTP at 3:30 PM |
+| Next day before 9:15 AM | Previous close | Previous close |
+| 6:30–7:00 AM (F&O only) | — | Settlement prices update (BHAVCOPY from NSE) |
 
-### Rule 7: Margin Call / Shortfall
-**if:** Customer received margin call or asks about margin penalty
-**then:**
+Settlement price = 0 for OTM options regardless of LTP — this is normal.
 
-**7.1 Margin call received:** "Add funds by 11:59 PM same day (if received after hours) or immediately (if before hours). If not resolved, Zerodha may square off positions at its discretion." Invoke **kite_margins** to check current shortfall amount.
+Funds page uses MTM settlement price for futures/short options — will differ from positions P&L.
 
-**7.2 Margin penalty charged:** "Exchange imposes margin penalty when insufficient margin is detected during intraday snapshots or at end of day. Penalty: 0.5% for shortfall under ₹1 lakh, 1% for ₹1 lakh+, up to 5% for 3+ instances in a month."
+---
 
-**7.3 Why margin shortfall if positions are closed:** "Shortfall can occur from intraday snapshots taken while your position was still open. Even if you closed it later, the snapshot captured the shortfall at that moment."
+### A4 — Auto Square-Off
 
-### Rule 8: F&O Expiry & Physical Settlement
-**if:** Customer asks about expiry outcome or physical settlement
-**then:**
+| Segment | Time |
+|---|---|
+| Equity | 3:25 PM |
+| Equity F&O | 3:26 PM |
+| MCX | 10 min before market close (Nov–Mar: 11:55 PM; Mar–Nov: 11:30 PM — shifts with US DST) |
 
-**8.1 Stock F&O — ITM:** "ITM stock options and futures result in compulsory physical delivery. You need full cash or shares. Stocks credited T+1 after expiry. Margins increase 4 days before expiry for ITM long options and on expiry day for futures/short options." If customer asks about delivery shares → invoke **kite_holdings** to check if shares are credited.
+**Charge:** ₹50 + 18% GST per order squared off.
 
-**8.2 Stock F&O — OTM:** "OTM stock options expire worthless — no delivery obligation, no action needed."
+**Failure reasons:** System/link failure, stock at circuit limit, connectivity issues.
 
-**8.3 Index F&O:** "Index options and futures are cash-settled. ITM index options are auto-exercised; P&L settled in cash. OTM/ATM expire worthless."
+**Failure consequence:** MIS converts to CNC (equity) or NRML (F&O). Client responsible for closing. Zerodha may square off at discretion without margin call.
 
-**8.4 OTM buy blocked near expiry:** "Fresh long OTM stock option positions are blocked in the last 2 days before expiry due to physical settlement risk."
+---
 
-**8.5 Higher margins near expiry:** "Margin requirements increase as contracts approach expiry and physical delivery. Check the [margin calculator](https://zerodha.com/margin-calculator) for current requirements." Invoke **kite_margins** to check current `delivery_margin`.
+### A5 — Product Conversion Rules
 
-### Rule 9: Sold Holdings as Negative Positions
-**if:** Customer sees sold holdings as negative in positions
-**then:** "When you sell shares from holdings during the trading day, they appear as a negative position tagged HOLDING in Positions. This is normal — allows intraday traders to buy back. If you don't intend to rebuy, ignore it. Shares debited from demat by end of day." If customer asks about holdings status → invoke **kite_holdings**.
+| Conversion | Allowed? | Notes |
+|---|---|---|
+| MIS ↔ CNC (equity) | Yes | Requires sufficient margin. Sell MIS→CNC also requires holdings. |
+| MIS ↔ NRML (F&O/commodity) | Yes | Requires sufficient margin. |
+| CNC ↔ NRML | N/A | Not applicable. |
+| CO → anything | No | Cover Order positions cannot be converted. |
+| Agricultural commodity → MIS | No | Blocked 1 day before tender period (cardamom, mentha oil). |
 
-### Rule 10: Profit Availability
-**if:** Customer asks when profits become available
-**then:**
-- **Delivery sale proceeds:** 100% available for new trades on the same day (stocks or F&O).
-- **NRI Non-PIS:** Only 75% of sale proceeds available same day; remaining 25% available T+1.
-- **BTST (T1 holdings) sale:** Proceeds available from next trading day only.
-- **Intraday profits (equity/F&O):** Not usable on T day. Available after T+1 settlement.
-- **Options sold/exited:** Proceeds usable only for buying options in the same segment same day. Available for all trades from T+1.
+---
 
-If customer asks why their balance doesn't reflect the profit → invoke **kite_margins** to show `available_margin` and explain T+1 settlement. If customer asks about order execution details → invoke **kite_orders**. If customer asks about historical trades → invoke **kite_order_history**.
+### A6 — Expiry & Physical Settlement
+
+| Scenario | Outcome |
+|---|---|
+| Stock F&O — ITM | Compulsory physical delivery of underlying stock. Stocks credited T+1. Short delivery: up to T+2. |
+| Stock F&O — OTM | Expire worthless — no obligation. |
+| Index F&O | Cash-settled (no physical delivery). ITM auto-exercised. OTM/ATM expire worthless. |
+| Margin increase | 4 days before expiry for ITM long options. Expiry day for futures/short options. |
+| Fresh OTM long buy blocked | Last 2 days before expiry for stock options (physical settlement risk). |
+
+---
+
+### A7 — Margin Shortfall & Penalty
+
+**Causes:** Exiting hedge leg (remaining leg needs full margin), expiry of hedge leg, MTM loss exceeding 50% of funds, pledged stock value drop, haircut increase.
+
+**Margin call:** SMS + email + voice message. Add funds by 11:59 PM same day (after hours) or immediately (before hours).
+
+**Penalty rate:** 0.5% of shortfall (< ₹1L), 1% (≥ ₹1L). Up to 5% for 3+ instances/month.
+
+**Snapshots:** 4 random intraday snapshots (all segments except commodity). 8 for commodity. Peak margin penalty if snapshot catches one leg open.
+
+---
+
+### A8 — Hedged Positions
+
+- Cannot close hedge leg unless sufficient margin for remaining unhedged position.
+- Hedged margin < unhedged margin. Closing low-risk leg increases margin requirement.
+- Order sequence matters: buy hedge first → lower margin. Sell/short first → full margin until hedge placed.
+
+---
+
+### A9 — Circuit Limit Impact on MIS
+
+| Scenario | Consequence |
+|---|---|
+| MIS sell + upper circuit | Cannot buy back → converts to delivery. No shares in demat → short delivery + auction penalty. |
+| MIS buy + lower circuit | Cannot sell → converts to CNC. Must maintain margin for delivery. |
+
+---
+
+### A10 — Profit Availability
+
+| Source | When Available |
+|---|---|
+| Delivery sale proceeds | 100% available for new trades same day (stocks or F&O) |
+| NRI Non-PIS delivery sale | 75% same day; remaining 25% available T+1 |
+| BTST (T1 holdings) sale | Proceeds available from next trading day only |
+| Intraday profits (equity/F&O) | Not usable on T day. Available after T+1 settlement. |
+| Options sold/exited | Usable only for buying options in same segment same day. Available for all trades from T+1. |
+
+---
+
+### A11 — Links
+
+| Topic | URL |
+|---|---|
+| Short delivery info | https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences |
+| Margin calculator | https://zerodha.com/margin-calculator |
+| Bulletin (restrictions) | https://zerodha.com/marketintel/bulletin |
+| Approved securities | https://zerodha.com/approved-securities#tab-noncash_equity |
+
+---
+
+### A12 — Escalation Data Template
+
+When escalating, always include: **client ID, instrument_name, product type, and specific issue.**
+
+---
+
+### A13 — Response Templates
+
+**R1 — Profit when buy avg > LTP:**
+"When you make multiple trades in the same stock during the day, Kite calculates buy average across ALL trades — not just your current position. Your realised profit from earlier trades is included, which can show overall profit even if the current position's entry price is above the market price."
+
+**R2 — P&L changed after 3:30 PM / before market:**
+"After 3:30 PM, equity P&L switches to the exchange closing price. For F&O, settlement prices update between 6:30–7:00 AM next day when the exchange sends the BHAVCOPY. This commonly causes P&L to shift."
+
+**R3 — Positions P&L ≠ funds page:**
+"The Positions page calculates P&L from your original entry price. The Funds page uses the MTM (Mark-to-Market) settlement price for futures and short options. These are different calculations — the funds page reflects what's actually settled in your account."
+
+**R4 — Settlement price = 0:**
+"A settlement price of 0 means your option expired OTM (Out of The Money). This is normal regardless of what the LTP was — the settlement price is based on the underlying's weighted average in the last 30 minutes."
+
+**R5 — Net vs day positions:**
+"Net position shows your actual current portfolio after combining overnight carry-forward and today's trades. Day position shows only today's trading activity. Example: if you carried forward 75 NIFTY FUT and squared off today — net shows 0 (current state), day shows -75 (today's sell action)."
+
+**R6 — Auto square-off explanation:**
+"Intraday positions are auto-squared off at [time per A4]. Auto square-off charge: ₹50 + GST per order. To avoid this, close intraday positions before the square-off time."
+
+**R7 — Auto square-off failed (carried forward):**
+"Auto square-off can fail due to: circuit limits hit, system issues, or connectivity problems. Your MIS position has been converted to [CNC for equity / NRML for F&O] and carried forward. You must close it yourself. Ensure sufficient margin is available — Zerodha may square off at its discretion."
+
+**R8 — Circuit + MIS sell (upper circuit):**
+"If your MIS sell position hits upper circuit — you can't buy back, so it converts to delivery. If you don't have shares in your demat, this results in short delivery and auction penalties."
+
+**R9 — Circuit + MIS buy (lower circuit):**
+"If your MIS buy position hits lower circuit — it converts to CNC and you must maintain delivery margin."
+
+**R10 — Conversion guidance:**
+"You can convert via Kite: Positions → tap/click on position → Convert Position. Requires sufficient margin for the target product type."
+
+**R11 — CO cannot convert:**
+"Cover Order positions cannot be converted to any other product type."
+
+**R12 — Agricultural commodity restriction:**
+"Agricultural commodity contracts (cardamom, mentha oil) cannot be converted to MIS one day before the tender period starts."
+
+**R13 — Can't close hedge leg:**
+"You need sufficient margin to cover the remaining unhedged position. Closing the hedge leg increases your margin requirement. Options: add funds first, or exit both legs simultaneously."
+
+**R14 — Peak margin penalty from closing one leg:**
+"Even if you close both legs, the exchange takes random intraday snapshots (4 for equity F&O, 8 for commodity). If a snapshot catches one leg open, you may face a penalty."
+
+**R15 — Margin call received:**
+"Add funds by 11:59 PM same day (if received after hours) or immediately (if before hours). If not resolved, Zerodha may square off positions at its discretion."
+
+**R16 — Margin penalty charged:**
+"Exchange imposes margin penalty when insufficient margin is detected during intraday snapshots or at end of day. Penalty: 0.5% for shortfall under ₹1 lakh, 1% for ₹1 lakh+, up to 5% for 3+ instances in a month."
+
+**R17 — Shortfall despite positions closed:**
+"Shortfall can occur from intraday snapshots taken while your position was still open. Even if you closed it later, the snapshot captured the shortfall at that moment."
+
+**R18 — Stock F&O ITM expiry:**
+"ITM stock options and futures result in compulsory physical delivery. You need full cash or shares. Stocks credited T+1 after expiry. Margins increase 4 days before expiry for ITM long options and on expiry day for futures/short options."
+
+**R19 — Stock F&O OTM expiry:**
+"OTM stock options expire worthless — no delivery obligation, no action needed."
+
+**R20 — Index F&O expiry:**
+"Index options and futures are cash-settled. ITM index options are auto-exercised; P&L settled in cash. OTM/ATM expire worthless."
+
+**R21 — OTM buy blocked near expiry:**
+"Fresh long OTM stock option positions are blocked in the last 2 days before expiry due to physical settlement risk."
+
+**R22 — Higher margins near expiry:**
+"Margin requirements increase as contracts approach expiry and physical delivery."
+
+**R23 — Sold holdings as negative positions:**
+"When you sell shares from holdings during the trading day, they appear as a negative position tagged HOLDING in Positions. This is normal — allows intraday traders to buy back. If you don't intend to rebuy, ignore it. Shares debited from demat by end of day."
+
+**R24 — Margin shown when exiting:**
+"The margin shown when exiting a position reflects the increase in your utilised portfolio margin, not a charge. Your order will execute regardless."
+
+---
+
+## Section B: Decision Flow
+
+---
+
+### Preflight (run on every query)
+
+```
+1. Search kite_positions by instrument_name.
+2. If found:
+   └─ Note product, quantity, overnight_quantity, avg_price, pnl,
+      buy_quantity, sell_quantity.
+3. If NOT found + client says "I have a position":
+   ├─ Check if already squared off today (quantity = 0 with buy/sell history)
+   └─ Or it's a holdings query → invoke kite_holdings
+```
+
+### Route
+
+```
+Intent / Condition                                          → Rule
+──────────────────────────────────────────────────────────────────────
+P&L questions (unexpected profit, post-3:30, funds mismatch)→ Rule 1
+Net vs day position confusion                               → Rule 2
+Auto square-off query                                       → Rule 3
+Product conversion query                                    → Rule 4
+Hedged positions & margin                                   → Rule 5
+Margin call / shortfall / penalty                           → Rule 6
+F&O expiry & physical settlement                            → Rule 7
+Sold holdings showing as negative positions                 → Rule 8
+When are profits available                                  → Rule 9
+```
+
+### Scope
+
+- Address the client's query about today's open trades — P&L, square-off, conversions, margins, and expiry.
+- Use **A2** field rules and client-facing terminology in all client communication.
+- For settled holdings queries, redirect to `kite_holdings`. For order-level details, redirect to `kite_orders`.
+
+### Fallback
+
+If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A12**.
+
+---
+
+## Section C: Rules
+
+---
+
+### Rule 1 — P&L Questions
+
+1. Profit when buy avg > LTP → respond per **A13-R1**.
+2. P&L changed after 3:30 PM / before market → respond per **A13-R2**. Timing per **A3**.
+3. Positions P&L ≠ funds page → respond per **A13-R3**. If client wants funds breakdown → invoke `kite_margins`.
+4. Settlement price = 0 for options → respond per **A13-R4**.
+
+---
+
+### Rule 2 — Net vs Day Positions
+
+1. Respond per **A13-R5**.
+
+---
+
+### Rule 3 — Auto Square-Off
+
+1. Position squared off → check `product` = MIS or CO. Respond per **A13-R6**. Times per **A4**. If client asks about the order → invoke `kite_orders`.
+2. Position NOT squared off (carried forward) → respond per **A13-R7**. Invoke `kite_margins` to check margin sufficiency.
+3. Circuit limit impact on MIS:
+   a. Sell + upper circuit → respond per **A13-R8**. Short delivery risk per **A9**.
+   b. Buy + lower circuit → respond per **A13-R9**. Per **A9**.
+   c. If client asks about holdings for delivery → invoke `kite_holdings`.
+
+---
+
+### Rule 4 — Product Conversion
+
+1. MIS ↔ CNC or MIS ↔ NRML → respond per **A13-R10**. Rules per **A5**. If margin insufficient → invoke `kite_margins`.
+2. CO conversion → respond per **A13-R11**.
+3. Agricultural commodity restriction → respond per **A13-R12**.
+
+---
+
+### Rule 5 — Hedged Positions & Margin
+
+1. Can't close hedge leg → respond per **A13-R13**. Rules per **A8**. Invoke `kite_margins` to check available_margin and used_margin.
+2. Peak margin penalty from exiting one leg → respond per **A13-R14**. Snapshot rules per **A7**.
+
+---
+
+### Rule 6 — Margin Call / Shortfall / Penalty
+
+1. Margin call received → respond per **A13-R15**. Invoke `kite_margins` for current shortfall.
+2. Margin penalty charged → respond per **A13-R16**. Rates per **A7**.
+3. Shortfall despite positions closed → respond per **A13-R17**. Snapshot explanation per **A7**.
+
+---
+
+### Rule 7 — F&O Expiry & Physical Settlement
+
+1. Stock F&O ITM → respond per **A13-R18**. Details per **A6**. If client asks about delivery shares → invoke `kite_holdings`.
+2. Stock F&O OTM → respond per **A13-R19**.
+3. Index F&O → respond per **A13-R20**.
+4. OTM buy blocked near expiry → respond per **A13-R21**. Per **A6**.
+5. Higher margins near expiry → respond per **A13-R22**. Invoke `kite_margins` for current delivery_margin.
+
+---
+
+### Rule 8 — Sold Holdings as Negative Positions
+
+1. Respond per **A13-R23**.
+2. If client asks about holdings status → invoke `kite_holdings`.
+
+---
+
+### Rule 9 — Profit Availability
+
+1. Respond with the applicable row from **A10** based on the trade type.
+2. If client asks why balance doesn't reflect profit → invoke `kite_margins` to show available_margin and explain T+1 settlement.
+3. If client asks about order execution details → invoke `kite_orders`.
+4. If client asks about historical trades → invoke `kite_order_history`.
+
+---
+
+## Section D: General Notes
+
+- Positions = today's open trades. Holdings = settled shares in demat.
+- CNC buys appear in Positions same day → move to Holdings T+1.
+- Net position = overnight + today. Day position = today only.
+- P&L includes both realised + unrealised. Multiple same-day trades: avg across ALL trades.
+- Funds page uses MTM settlement price — will differ from positions P&L.
+- Settlement price = 0 for OTM options — normal.
+- F&O settlement prices update 6:30–7:00 AM when BHAVCOPY arrives.
+- Intraday profits available after T+1 only. Delivery sale proceeds 100% same day (NRI Non-PIS: 75%).
+- Option premium from sell/exit usable only for buying options same segment same day.
+- Margin shown when exiting = increase in utilised portfolio margin, not a charge.
+- Zerodha does not square off for freak trades.
+- Circuit limit can cause MIS → CNC/NRML conversion with short delivery or auction risk.

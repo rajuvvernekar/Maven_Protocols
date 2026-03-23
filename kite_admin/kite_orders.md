@@ -4,302 +4,479 @@
 
 WHEN TO USE:
 
-Customer asks about:
-- Today's order status — whether it was executed, pending, cancelled, or rejected
-- Order rejection reason or error message when placing an order
-- Order pending or not getting executed despite being placed
-- Order cancelled at end of day or by exchange
-- Partial fill — only some quantity executed, rest cancelled
-- Execution price different from expected — market order filled at multiple levels, limit order got a better price, SL triggered at unexpected price
-- Market orders blocked for a specific instrument (stock options, T2T, illiquid, deep ITM, ETFs)
-- MIS or intraday orders blocked for a stock or contract (T2T, ASM/GSM, ban period, low liquidity)
-- Auto square-off — position squared off by Zerodha/RMS, timings, charges, or why it failed and carried forward
-- Unauthorized order — customer says they didn't place an order
-- AMO (After Market Order) — placement, rejection, conversion to limit in pre-open, timing
-- Product type conversion — MIS↔CNC, MIS↔NRML, CO conversion blocked
-- Circuit limit or ban period impact on open orders
-- Order types (MARKET, LIMIT, SL, SL-M), product types (CNC, MIS, NRML, MTF, CO), or validity types (DAY, IOC, TTL)
-- Auto square-off timings, charges (₹50 + GST), or consequences of failed square-off
-- Order book display issues — rejected order not visible, downloaded file showing dates instead of quantities, execution time beyond market hours
+When clients:
+- Ask about today's order status (executed, pending, cancelled, or rejected)
+- Ask about order rejection reason or error message when placing an order
+- Report order pending or not getting executed despite being placed
+- Report order cancelled at end of day or by exchange
+- Report partial fill (only some quantity executed, rest cancelled)
+- Question execution price different from expected (market order filled at multiple levels, limit order got a better price, SL triggered at unexpected price)
+- Ask why market orders are blocked for a specific instrument (stock options, T2T, illiquid, deep ITM, ETFs)
+- Ask why MIS or intraday orders are blocked for a stock or contract (T2T, ASM/GSM, ban period, low liquidity)
+- Ask about auto square-off (position squared off by Zerodha/RMS, timings, charges, or why it failed and carried forward)
+- Report unauthorized order they didn't place
+- Ask about AMO (After Market Order) placement, rejection, conversion to limit in pre-open, timing
+- Ask about product type conversion (MIS↔CNC, MIS↔NRML, CO conversion blocked)
+- Ask about circuit limit or ban period impact on open orders
+- Ask about order types (MARKET, LIMIT, SL, SL-M), product types (CNC, MIS, NRML, MTF, CO), or validity types (DAY, IOC, TTL)
+- Ask about auto square-off timings, charges (₹50 + GST), or consequences of failed square-off
+- Report order book display issues (rejected order not visible, downloaded file showing dates instead of quantities, execution time beyond market hours)
 
 TRIGGER KEYWORDS: "order rejected", "order pending", "order cancelled", "not executed", "not filled", "rejection reason", "squared off", "square off", "auto square", "RMS", "ADMINSQF", "market order blocked", "MIS blocked", "intraday blocked", "AMO", "after market order", "wrong price", "different price", "execution price", "circuit limit", "ban period", "order status", "product conversion", "convert MIS", "convert CNC", "convert NRML", "unauthorized order", "order error", "order not placed", "partial fill", "IOC", "SL triggered", "stoploss triggered", "cover order", "iceberg", "order book", "order window"
 
 ## Protocol
 
-# KITE_ORDERS PROTOCOL
+# KITE ORDERS PROTOCOL 
+---
 
-## Knowledge Base
-
-<knowledge_base>
-<facts>
-- kite_orders returns today's orders only — for historical, use kite_order_history
-- Clicking instrument hyperlink opens Order History sub-view showing full lifecycle: OPEN PENDING → OPEN → COMPLETE/CANCELLED/REJECTED with timestamps, exchange times, filled qty, avg price, variety
-- Orders follow price-time priority: first come, first served at same price
-- Unmatched order cancellation: Equity 4:00 PM | Currency 5:00 PM | Commodities at MCX market close (MCX shifts with US DST: Nov–Mar closes 11:55 PM, Mar–Nov closes 11:30 PM)
-- Max 5,000 orders/day across all segments; 400 orders/minute; 25 modifications per order
-- Max order value ₹10 Crore equity; max quantity 1,00,000 equity (regular can exceed; iceberg/CO cannot)
-- Zerodha pre-validates orders — some rejections won't appear in order book (shown in status notification only)
-- Market orders may fill at multiple price points if insufficient depth at one level
-- Limit orders may execute at better price (price improvement by exchange matching engine)
-- SL orders trigger on exchange tick data, not chart data — charts show snapshots at 250ms intervals, not every trade
-- SL-M discontinued on BSE for all segments — use SL-L instead
-- Market orders in pre-open session convert to limit at equilibrium/previous close price
-- BSE market orders convert to limit with 3% market protection from LTP
-- CO positions cannot be converted to CNC/NRML
-- Auto square-off charge: ₹50 + 18% GST per order
-- If auto square-off fails (system failure, circuit hit, connectivity), MIS converts to CNC/NRML and carries forward — client must close next day
-- Order execution time may show beyond market hours due to exchange reconciliation after disconnection — actual time visible in tradebook
-- Downloaded order book may show dates instead of quantities due to Excel auto-formatting — open in Notepad
-</facts>
-
-<field_usage>
-  <share>instrument | type | product | exchange | total_quantity | filled_quantity | price | average_price | trigger_price | order_type | order_status | validity_day_ioc | time | exchange_time | exchange_updated_time | rejection_reason | disclosed_quantity | cancelled_quantity</share>
-  <internal>parent_order_id | placed_by</internal>
-  <banned>order_id | exchange_id</banned>
-</field_usage>
-
-<status_values>
-  <complete>Fully executed — all quantity filled</complete>
-  <open>Pending execution — limit not hit, in queue, or circuit hit</open>
-  <cancelled>By user, system (IOC unmatched "16388: Unmatched orders cancelled by the system"), or exchange (end of session / LPP range)</cancelled>
-  <rejected>Failed validation — check rejection_reason</rejected>
-</status_values>
-
-<product_types>
-  <cnc>Longterm / delivery — equity only, no leverage, no auto square-off, no short selling</cnc>
-  <mis>Intraday — leveraged, auto squared off (Equity 3:25 PM, F&O 3:26 PM, MCX 10 min before close). Charge ₹50 + 18% GST if auto squared off</mis>
-  <nrml>Overnight — F&O carry till expiry, full margin required</nrml>
-  <mtf>Margin Trading Facility — partial funding, interest charged, equity only</mtf>
-  <co>Cover Order — intraday with compulsory SL, cannot convert to other product types</co>
-</product_types>
-
-<order_types>
-  <market>Best available price — may fill at multiple price points</market>
-  <limit>Specified price or better — may remain pending in queue</limit>
-  <sl>Stop-Loss Limit — triggers at trigger_price, places limit at price</sl>
-  <sl_m>Stop-Loss Market — triggers at trigger_price, places market order. Blocked on BSE</sl_m>
-</order_types>
-
-<validity_types>
-  <day>Active till market close</day>
-  <ioc>Immediate or Cancel — partial fill possible, unfilled cancelled</ioc>
-  <ttl>Minutes validity (1-120 min) — not available in BFO and MCX</ttl>
-</validity_types>
-
-<market_order_blocks>
-  <stock_options>All stock options</stock_options>
-  <illiquid_index_options>FinNifty/MidCPNifty/Sensex: only if OI > 500 lots. Nifty/BankNifty: current+next week/month only, deep ITM (>5%) blocked</illiquid_index_options>
-  <t2t_debt>All T2T and debt instruments</t2t_debt>
-  <no_volume>Zero volume instruments during day</no_volume>
-  <long_dated_options>Illiquid long-dated</long_dated_options>
-  <deep_itm_index>Deep ITM index options</deep_itm_index>
-  <etf_first_2min>Certain ETFs 9:15-9:17 AM for market/SL-M/AMO</etf_first_2min>
-  <index_option_amo>Index options via AMO</index_option_amo>
-  <resolution>Use limit order or market order with market protection enabled</resolution>
-</market_order_blocks>
-
-<mis_blocks>
-- T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrips
-- Unsolicited SMS watchlist stocks | F&O ban period contracts
-- FINNIFTY contracts with OI less than 20,000 qty (500 lots)
-- Resolution: use CNC (equity) or NRML (F&O) instead
-</mis_blocks>
-
-<common_rejections>
-  <insufficient_margin>Not enough margin — cross-check kite_margins</insufficient_margin>
-  <negative_cash>Negative cash from MTM losses — must add cash before new trades. Can still exit existing positions</negative_cash>
-  <max_order_value>Exceeds ₹10 Crore — split orders, use iceberg or basket</max_order_value>
-  <max_quantity>Exceeds 1,00,000 — reduce qty, use iceberg, sticky window, or basket</max_quantity>
-  <max_orders_day>Exceeded 5,000 orders/day — contact support to exit positions</max_orders_day>
-  <max_modifications>Exceeded 25 modifications — cancel and place new order</max_modifications>
-  <trigger_price_invalid>SL buy: trigger must ≤ limit. SL sell: trigger must ≥ limit</trigger_price_invalid>
-  <sl_trigger_limit_gap>Trigger-to-limit gap exceeds exchange permissible range</sl_trigger_limit_gap>
-  <lpp_range>Price outside Limit Price Protection range — retry closer to market price</lpp_range>
-  <theoretical_price>Option price too far from theoretical — place closer to theoretical price</theoretical_price>
-  <limit_far_from_ltp>Limit order 50-150% from LTP blocked for stock/index options</limit_far_from_ltp>
-  <ban_period>F&O in ban — only exit allowed, no new positions or intraday</ban_period>
-  <exchange_restricted>Account restricted by exchange — new account (wait 3 days), KRA verification, or NRI status not updated</exchange_restricted>
-  <slm_bse>SL-M blocked on BSE — use SL-L instead</slm_bse>
-  <oi_restriction>NRML blocked for certain strikes due to broker OI cap. MIS allowed. Consider Orbis custodial for full access</oi_restriction>
-  <currency_nrml>NRML blocked for currency pair — broker OI limit near breach. MIS still allowed</currency_nrml>
-  <currency_position_limit>Client position limit exceeded: USDINR 85K lots, EURINR/GBPINR 5K, JPYINR 2K</currency_position_limit>
-  <mtf_sell_conflict>MTF buy blocked — open CNC sell or MTF sell for same stock. Buy via CNC instead</mtf_sell_conflict>
-  <order_being_processed>Already executed/cancelled — refresh page for updated status</order_being_processed>
-</common_rejections>
-
-<placed_by_values>
-  <client_id>Normal client-placed order (6-char client ID)</client_id>
-  <adminsqf>Auto square-off by Zerodha RMS</adminsqf>
-  <rms_prefix>Starts with "rms" + number (rms1, rms2...) — squared off by Zerodha RMS. Match pattern: placed_by starts with "rms"</rms_prefix>
-</placed_by_values>
-
-<amo_info>
-- After Market Orders: place outside market hours (4:00 PM–8:58 AM for NSE/BSE equity)
-- AMO market orders for index options blocked — use limit
-- Pre-open session AMO market orders convert to limit at equilibrium/previous close
-- Cannot place AMO during market hours (rejected)
-- AMO executes at market open next trading day
-</amo_info>
-
-<links>
-  <intraday_list>https://zerodha.com/margin/intraday</intraday_list>
-  <margin_calculator>https://zerodha.com/margin-calculator/</margin_calculator>
-  <bulletin>https://zerodha.com/marketintel/bulletin</bulletin>
-</links>
-</knowledge_base>
+## Section A: Reference Data
 
 ---
 
-## Business Rules
+### A1 — Tool Purpose & Fundamentals
 
-### Rule 0: Field Protection
-**NEVER expose:** `order_id`, `exchange_id`
-**Use for internal reasoning only:** `parent_order_id`, `placed_by`
-**Always share when relevant:** `rejection_reason`, `order_status`, `average_price`, `filled_quantity`, `time`, `exchange_time`
+This tool returns **today's orders only**. For historical orders, use `kite_order_history`.
 
-### Rule 1: First Check — Order Lifecycle
-**if:** Customer asks about any order
-**then:**
-1. Locate the order in kite_orders by instrument, type (BUY/SELL), time
-2. Click instrument hyperlink to open Order History sub-view
-3. Review lifecycle: timestamps, status transitions (OPEN PENDING → OPEN → COMPLETE/CANCELLED/REJECTED)
-4. Check `placed_by` internally — if ADMINSQF or starts with "rms", apply Rule 7
-5. Proceed to the matching status rule below
+Clicking the instrument hyperlink opens the **Order History sub-view** showing the full lifecycle: OPEN PENDING → OPEN → COMPLETE/CANCELLED/REJECTED with timestamps, exchange times, filled qty, avg price, and variety.
 
-If customer asks about an order from a previous day → invoke **kite_order_history**.
+Orders follow **price-time priority**: first come, first served at same price.
 
-### Rule 2: Status = COMPLETE
-**if:** `order_status` = COMPLETE
-**then:** "Your [type] order for [total_quantity] qty of [instrument] was executed at an average price of ₹[average_price] on [exchange_time]."
+Zerodha pre-validates orders — some rejections won't appear in the order book (shown in status notification only).
 
-**2.1** If customer questions the execution price:
-- If `order_type` = MARKET: orders fill at best available prices. If total_quantity is large, may fill at multiple price levels — this is normal exchange behavior.
-- If `order_type` = LIMIT and `average_price` differs from `price`: Limit BUY orders execute at the limit price **or lower**; limit SELL orders execute at the limit price **or higher**. E.g., customer places BUY LIMIT at ₹190 when current price is ₹186 → executes at ₹186. Explain: "Your limit buy order at ₹[price] executed at ₹[average_price] because the market had sellers at a lower price. Limit orders guarantee your price as the **worst** you'll get, not the exact price."
-  - **If customer wanted to buy only when price reaches a specific level** (e.g., breakout at ₹190): "For buying only when the price reaches ₹190, use a Stop-Loss (SL) order with trigger price ₹190 for intraday, or a GTT order with trigger ₹190 for a long-standing order valid up to 1 year." → invoke **kite_gtt** if customer wants to set up GTT.
-- If `order_type` = SL/SL-M and trigger seems "wrong": SL triggers on actual exchange ticks, not chart candles. Charts snapshot every 250ms and may miss brief price movements. The execution was at a valid market price.
+**Input:** Client ID — returns today's orders.
 
-**2.2** If `filled_quantity` < `total_quantity`: partial fill. Remaining was cancelled (check `cancelled_quantity`). For IOC orders: unfilled portion auto-cancelled.
+---
 
-If customer asks where the bought shares are → invoke **kite_holdings** (settled) or **kite_positions** (today's buy, not yet settled).
+### A2 — Field Usage Rules
 
-### Rule 3: Status = OPEN
-**if:** `order_status` = OPEN
-**then:** Check Order History sub-view for how long it's been pending, then:
+**Shareable fields:**
 
-**3.1** If `order_type` = LIMIT: "Your limit [type] order for [instrument] at ₹[price] is pending. The market hasn't reached your price yet, or earlier orders at the same price are ahead in the queue (price-time priority)."
+`instrument` | `type` | `product` | `exchange` | `total_quantity` | `filled_quantity` | `price` | `average_price` | `trigger_price` | `order_type` | `order_status` | `validity_day_ioc` | `time` | `exchange_time` | `exchange_updated_time` | `rejection_reason` | `disclosed_quantity` | `cancelled_quantity`
 
-**3.2** If instrument has hit circuit limit: "The instrument has hit its circuit limit. Your order will remain open but cannot fill until there are counterparties. If it doesn't fill, the exchange will cancel it at [segment close time per `<facts>`]."
+**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
 
-**3.3** If `order_type` = SL/SL-M and trigger not yet hit: "Your stop-loss order will activate when the price reaches your trigger price of ₹[trigger_price]. It is currently pending."
+`parent_order_id` | `placed_by`
 
-**3.4** Note: SL-M orders with trigger outside circuit limits stay open without rejection — this is normal exchange behavior.
+**Client-facing terminology:**
 
-### Rule 4: Status = CANCELLED
-**if:** `order_status` = CANCELLED
-**then:** Check Order History sub-view for cancellation timing and context:
+| Internal Term | Client-Facing Alternative |
+|---|---|
+| `order_id` | (omit — internal reference) |
+| `exchange_id` | (omit — internal reference) |
+| `placed_by` = ADMINSQF or starts with "rms" | "executed by Zerodha's risk management system" |
+| `placed_by` = client ID | (normal client-placed order — do not mention the field) |
 
-**4.1** If cancelled near market close: "Unmatched pending orders are auto-cancelled by the exchange at session end: [refer segment times from `<facts>`]. Place again next session, or use a GTT order for orders valid up to 1 year." → invoke **kite_gtt** if customer wants to set up GTT.
+---
 
-**4.2** If `rejection_reason` contains "limit price protection range" or "LPP": "The exchange cancelled your order because the price was outside the allowed Limit Price Protection range. Retry with a price closer to the current market price."
+### A3 — Order Statuses
 
-**4.3** If `validity_day_ioc` = IOC and `cancelled_quantity` > 0: "Your IOC (Immediate or Cancel) order was partially filled ([filled_quantity] of [total_quantity] qty). The unfilled portion was auto-cancelled — this is how IOC orders work."
+| Status | Meaning |
+|---|---|
+| Complete | Fully executed — all quantity filled |
+| Open | Pending execution — limit not hit, in queue, or circuit hit |
+| Cancelled | By user, system (IOC unmatched), or exchange (end of session / LPP range) |
+| Rejected | Failed validation — check `rejection_reason` |
 
-**4.4** If cancelled by user: "This order was cancelled [manually/by you]. No action needed."
+---
 
-### Rule 5: Status = REJECTED — Identify & Explain
-**if:** `order_status` = REJECTED
-**then:** Read `rejection_reason` and match against `<common_rejections>`. Respond with:
-1. What the rejection means in plain language
-2. How to fix it
-3. Cross-check other tools if needed
+### A4 — Product Types
 
-**5.1 Margin rejections** (insufficient margin / negative cash):
-Invoke **kite_margins** → identify the specific field causing the shortfall and share only that.
-"Your order was rejected due to insufficient margin. [State the exact reason from kite_margins data — e.g., 'Your available cash is ₹X which is insufficient for this order' or 'Your available margin is ₹X but ₹Y is already used for existing positions'.] Please add funds to place new orders. You can still exit existing positions."
+| Product | Description |
+|---|---|
+| CNC | Long-term / delivery — equity only, no leverage, no auto square-off, no short selling |
+| MIS | Intraday — leveraged, auto squared off (Equity 3:25 PM, F&O 3:26 PM, MCX 10 min before close). Charge ₹50 + 18% GST if auto squared off |
+| NRML | Overnight — F&O carry till expiry, full margin required |
+| MTF | Margin Trading Facility — partial funding, interest charged, equity only |
+| CO | Cover Order — intraday with compulsory SL, cannot convert to other product types |
 
-**5.2 Market order blocked:**
-Match instrument against `<market_order_blocks>`. "Market orders are blocked for [instrument] because [reason from KB]. Use a limit order instead, or enable market protection on the order window."
+---
 
-**5.3 MIS/intraday blocked:**
-Match against `<mis_blocks>`. "Intraday (MIS) orders are blocked for [instrument] because [reason]. Use CNC for equity or NRML for F&O instead."
+### A5 — Order Types
 
-**5.4 Quantity/value limits:**
-"Your order was rejected because [it exceeds ₹10 Crore / quantity exceeds 1,00,000]. You can split into smaller orders using iceberg orders, basket orders, or the sticky order window."
+| Order Type | Behavior |
+|---|---|
+| Market | Best available price — may fill at multiple price points |
+| Limit | Specified price or better — may remain pending in queue |
+| SL | Stop-Loss Limit — triggers at `trigger_price`, places limit at `price` |
+| SL-M | Stop-Loss Market — triggers at `trigger_price`, places market order. Discontinued on BSE. |
 
-**5.5 Trigger price errors:**
-"For a [BUY/SELL] stop-loss order, the trigger price must be [≤/≥] the limit price. Please correct and retry."
+---
 
-**5.6 Ban period:**
-"[instrument] is in the F&O ban period. Only exit orders are allowed — no new positions or intraday trades." If customer asks about current position in banned contract → invoke **kite_positions**.
+### A6 — Validity Types
 
-**5.7 OI restrictions (Nifty/BankNifty strikes):**
-"NRML orders for this strike are restricted due to SEBI's broker-level Open Interest cap. You can trade this strike using MIS (intraday). For unrestricted access to all strikes, consider opening an Orbis custodial account."
+| Validity | Behavior |
+|---|---|
+| Day | Active till market close |
+| IOC | Immediate or Cancel — partial fill possible, unfilled auto-cancelled |
+| TTL | Minutes validity (1–120 min) — not available in BFO and MCX |
 
-**5.8 BSE SL-M blocked:**
-"Stop-Loss Market orders are discontinued on BSE. Use a Stop-Loss Limit (SL) order instead — set the limit price slightly away from trigger to act like SL-M."
+---
 
-**5.9 Exchange restricted account:**
-"The exchange has temporarily restricted your account. This can happen if: your account is new (allow 3 working days), KRA mobile/email verification is pending, or NRI residential status needs updating. [Guide accordingly]."
+### A7 — Order Limits
 
-**5.10 MTF conflicts:**
-"MTF buy orders are blocked when you have an open CNC sell or MTF sell position for the same stock today. Buy using CNC (delivery) instead. Your MTF position will restore the next day."
+| Limit | Value |
+|---|---|
+| Max orders per day | 5,000 across all segments |
+| Max orders per minute | 400 |
+| Max modifications per order | 25 |
+| Max order value (equity) | ₹10 Crore |
+| Max quantity (equity) | 1,00,000 (regular can exceed; iceberg/CO cannot) |
 
-**5.11 For any rejection not matching above:** Share the `rejection_reason` text with the customer verbatim and suggest retrying or contacting support.
+---
 
-### Rule 6: AMO (After Market Orders)
-**if:** Customer asks about AMO
-**then:**
+### A8 — Unmatched Order Cancellation Times
 
-**6.1 Educational:** "AMO lets you place orders outside market hours (4:00 PM to 8:58 AM for NSE/BSE). Orders execute at next market open. You cannot place AMO during market hours."
+| Segment | Auto-Cancel Time |
+|---|---|
+| Equity | 4:00 PM |
+| Currency | 5:00 PM |
+| Commodities (MCX) | MCX market close (shifts with US DST: Nov–Mar 11:55 PM, Mar–Nov 11:30 PM) |
 
-**6.2 AMO market order for index options rejected:** "Market orders via AMO are blocked for index options. Use a limit order instead."
+---
 
-**6.3 AMO became limit order:** "Market orders placed in the pre-open session (including AMO) are converted to limit orders at the equilibrium price (or previous day's close if no equilibrium). This is standard exchange behavior."
+### A9 — MIS Auto Square-Off Times
 
-### Rule 7: RMS / Admin Square-off
-**if:** `placed_by` = "ADMINSQF" OR starts with "rms"
-**then:** This order was placed by Zerodha's Risk Management System. Investigate why:
+| Segment | Time |
+|---|---|
+| Equity | 3:25 PM |
+| F&O | 3:26 PM |
+| MCX | 10 min before market close |
 
-1. Invoke **kite_margins** to check for margin shortfall (`available_margin`, `used_margin`, `available_cash`)
-2. Check if `product` was MIS and time was near auto square-off window
-3. Check if account had negative cash balance
+Auto square-off charge: ₹50 + 18% GST per order. If auto square-off fails (system failure, circuit hit, connectivity), MIS converts to CNC/NRML and carries forward — client must close next day.
 
-Response: "This [type] order for [instrument] was executed by Zerodha's risk management system [at exchange_time]. This typically happens when:
+---
+
+### A10 — Market Order Blocks
+
+| Condition | Blocked For |
+|---|---|
+| Stock options | All stock options |
+| Illiquid index options | FinNifty/MidCPNifty/Sensex: only if OI > 500 lots. Nifty/BankNifty: current+next week/month only, deep ITM (>5%) blocked |
+| T2T and debt | All T2T and debt instruments |
+| Zero volume | Zero volume instruments during day |
+| Long-dated options | Illiquid long-dated options |
+| Deep ITM index | Deep ITM index options |
+| ETF first 2 min | Certain ETFs 9:15–9:17 AM for market/SL-M/AMO |
+| Index options AMO | Index options via AMO |
+
+**Resolution:** Use limit order or market order with market protection enabled.
+
+---
+
+### A11 — MIS/Intraday Blocks
+
+Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrips | unsolicited SMS watchlist stocks | F&O ban period contracts | FINNIFTY contracts with OI < 20,000 qty (500 lots).
+
+**Resolution:** Use CNC (equity) or NRML (F&O) instead.
+
+---
+
+### A12 — Common Rejections
+
+| Rejection | Meaning | Resolution |
+|---|---|---|
+| Insufficient margin | Not enough margin | Cross-check `kite_margins`. Add funds. Can still exit existing positions. |
+| Negative cash | Negative cash from MTM losses | Add cash before new trades. Can still exit existing positions. |
+| Max order value | Exceeds ₹10 Crore | Split orders, use iceberg or basket. |
+| Max quantity | Exceeds 1,00,000 | Reduce qty, use iceberg, sticky window, or basket. |
+| Max orders/day | Exceeded 5,000 | Contact support to exit positions. |
+| Max modifications | Exceeded 25 per order | Cancel and place new order. |
+| Trigger price invalid | SL buy: trigger must ≤ limit. SL sell: trigger must ≥ limit. | Correct trigger/limit relationship. |
+| SL trigger-limit gap | Gap exceeds exchange permissible range | Narrow the gap. |
+| LPP range | Price outside Limit Price Protection range | Retry closer to market price. |
+| Theoretical price | Option price too far from theoretical | Place closer to theoretical price. |
+| Limit far from LTP | Limit 50–150% from LTP for stock/index options | Place closer to LTP. |
+| Ban period | F&O in ban | Only exit allowed, no new positions or intraday. |
+| Exchange restricted | Account restricted by exchange | New account (wait 3 days), KRA verification, or NRI status not updated. |
+| SL-M on BSE | SL-M discontinued on BSE | Use SL-L instead — set limit slightly away from trigger. |
+| OI restriction | NRML blocked for certain strikes (broker OI cap) | Use MIS. Consider Orbis custodial for full access. |
+| Currency NRML | NRML blocked for currency pair (broker OI limit) | MIS still allowed. |
+| Currency position limit | Client limit exceeded | USDINR 85K lots, EURINR/GBPINR 5K, JPYINR 2K. |
+| MTF sell conflict | MTF buy blocked — open CNC sell or MTF sell for same stock | Buy via CNC instead. MTF position restores next day. |
+| Order being processed | Already executed/cancelled | Refresh page for updated status. |
+
+---
+
+### A13 — `placed_by` Values
+
+| Value | Meaning |
+|---|---|
+| Client ID (6-char) | Normal client-placed order |
+| ADMINSQF | Auto square-off by Zerodha RMS |
+| Starts with "rms" + number (rms1, rms2...) | Squared off by Zerodha RMS |
+
+---
+
+### A14 — AMO (After Market Orders)
+
+**Placement window:** 4:00 PM to 8:58 AM for NSE/BSE equity. Executes at next market open. Cannot place during market hours.
+
+**AMO market order for index options:** Blocked — use limit order instead.
+
+**Pre-open session conversion:** AMO market orders convert to limit at equilibrium price (or previous day's close if no equilibrium). Standard exchange behavior.
+
+---
+
+### A15 — Product Conversion Rules
+
+| Conversion | Allowed? | Notes |
+|---|---|---|
+| MIS → CNC | Yes | If sufficient margin. Go to Positions → Convert. |
+| MIS → NRML | Yes | If sufficient margin. |
+| CNC/NRML → MIS | Yes | Before auto square-off time only. |
+| CO → anything | No | Cover orders cannot be converted. |
+| Any → MIS (after square-off time) | No | No conversions to MIS after square-off time. |
+
+---
+
+### A16 — Links
+
+| Topic | URL |
+|---|---|
+| Intraday/MIS approved list | https://docs.google.com/spreadsheets/d/1XwWNCASDmrXfx5LtFNna0Kmkt5vHtqkjICvVcUZaQhw/edit#gid=0 |
+| Margin calculator | https://zerodha.com/margin-calculator/ |
+| Bulletin (restrictions) | https://zerodha.com/marketintel/bulletin |
+
+---
+
+### A17 — Escalation Data Template
+
+When escalating, always include: **client ID, instrument, order type, time, and specific issue.**
+
+---
+
+### A18 — Response Templates
+
+**R1 — Complete (basic):**
+"Your [type] order for [total_quantity] qty of [instrument] was executed at an average price of ₹[average_price] on [exchange_time]."
+
+**R2 — Market order price explanation:**
+"Market orders fill at the best available prices. If the order quantity is large, it may fill at multiple price levels — this is normal exchange behavior."
+
+**R3 — Limit order better price:**
+"Your limit [type] order at ₹[price] executed at ₹[average_price] because the market had [buyers/sellers] at a [better] price. Limit orders guarantee your price as the worst you'll get, not the exact price."
+
+**R4 — SL trigger vs chart:**
+"Stop-loss orders trigger on actual exchange tick data, not chart candles. Charts snapshot every 250ms and may miss brief price movements. The execution was at a valid market price."
+
+**R5 — Want to buy at breakout price:**
+"For buying only when the price reaches ₹[price], use a Stop-Loss (SL) order with trigger price ₹[price] for intraday, or a GTT order with trigger ₹[price] for a long-standing order valid up to 1 year."
+
+**R6 — Limit pending:**
+"Your limit [type] order for [instrument] at ₹[price] is pending. The market hasn't reached your price yet, or earlier orders at the same price are ahead in the queue (price-time priority)."
+
+**R7 — Circuit hit:**
+"The instrument has hit its circuit limit. Your order will remain open but cannot fill until there are counterparties. If it doesn't fill, the exchange will cancel it at [segment close time]."
+
+**R8 — SL pending:**
+"Your stop-loss order will activate when the price reaches your trigger price of ₹[trigger_price]. It is currently pending."
+
+**R9 — Cancelled at session end:**
+"Unmatched pending orders are auto-cancelled by the exchange at session end. Place again next session, or use a GTT order for orders valid up to 1 year."
+
+**R10 — LPP cancellation:**
+"The exchange cancelled your order because the price was outside the allowed Limit Price Protection range. Retry with a price closer to the current market price."
+
+**R11 — IOC partial fill:**
+"Your IOC (Immediate or Cancel) order was partially filled ([filled_quantity] of [total_quantity] qty). The unfilled portion was auto-cancelled — this is how IOC orders work."
+
+**R12 — User cancelled:**
+"This order was cancelled. No action needed."
+
+**R13 — RMS square-off:**
+"This [type] order for [instrument] was executed by Zerodha's risk management system [at exchange_time]. This typically happens when:
 - Your account had insufficient margin to maintain the position
-- It was an intraday (MIS) position auto squared off at the scheduled time ([refer auto square-off times])
+- It was an intraday (MIS) position auto squared off at the scheduled time
 - Your account had a negative cash balance requiring position closure
 
-[Include margin data from kite_margins if available.] Auto square-off charges: ₹50 + 18% GST per order."
+Auto square-off charges: ₹50 + 18% GST per order."
 
-If customer asks about the position that was squared off → invoke **kite_positions**.
+**R14 — AMO educational:**
+"AMO lets you place orders outside market hours (4:00 PM to 8:58 AM for NSE/BSE). Orders execute at next market open. You cannot place AMO during market hours."
 
-### Rule 8: Unauthorized / "I didn't place this"
-**if:** Customer says they didn't place an order AND `placed_by` = client's own ID (not ADMINSQF/rms)
-**then:** ASSIGN TO ESCALATION TEAM.
+**R15 — AMO index option blocked:**
+"Market orders via AMO are blocked for index options. Use a limit order instead."
 
-### Rule 9: Product Conversion
-**if:** Customer asks about converting MIS↔CNC↔NRML
-**then:**
-- MIS → CNC: Allowed if sufficient margin. Go to Positions → Convert. If margin insufficient → invoke **kite_margins** to check.
-- MIS → NRML: Allowed if sufficient margin.
-- CNC/NRML → MIS: Allowed before auto square-off time only.
-- CO → anything: **Not allowed.** Cover orders cannot be converted.
-- After auto square-off time: No conversions to MIS allowed.
+**R16 — AMO became limit:**
+"Market orders placed in the pre-open session (including AMO) are converted to limit orders at the equilibrium price (or previous day's close if no equilibrium). This is standard exchange behavior."
 
-### Rule 10: Circuit / Ban Period Impact
-**if:** Customer reports circuit limit or ban period issue
-**then:**
+**R17 — Pre-validated rejection not in order book:**
+"Some orders are rejected by Zerodha's pre-validation before reaching the exchange — these won't appear in the order book but the rejection reason shows in the order status notification on Kite."
 
-**10.1 Can't exit at circuit:** "When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time — this can lead to short delivery or auction risk." If customer asks about resulting position → invoke **kite_positions**.
+**R18 — Downloaded file date formatting:**
+"This is an Excel formatting issue — it converts values like '1/1' to dates. Open the file in Notepad or Notepad++ to see correct values."
 
-**10.2 Ban period:** "During the F&O ban period, only exit orders are allowed. No new positions, no intraday. This restriction lifts when open interest falls below 80% of the market-wide limit."
+**R19 — Execution time beyond market hours:**
+"This happens when Zerodha reconciles with the exchange after a brief disconnection. The actual execution happened during market hours — check the tradebook for the real execution time."
 
-### Rule 11: Order Book Display Issues
-**if:** Customer reports issues with order book or downloads
-**then:**
+**R20 — BSE market order conversion:**
+"BSE market orders are converted to limit orders with a 3% market protection from LTP. This is standard BSE behavior."
 
-**11.1 Rejected order not in order book:** "Some orders are rejected by Zerodha's pre-validation before reaching the exchange — these won't appear in the order book but the rejection reason shows in the order status notification on Kite."
+**R21 — Ban period:**
+"[instrument] is in the F&O ban period. Only exit orders are allowed — no new positions or intraday trades."
 
-**11.2 Downloaded file shows dates instead of quantities:** "This is an Excel formatting issue — it converts values like '1/1' to dates. Open the file in Notepad or Notepad++ to see correct values."
+**R22 — OI restriction (NRML blocked):**
+"NRML orders for this strike are restricted due to SEBI's broker-level Open Interest cap. You can trade this strike using MIS (intraday). For unrestricted access to all strikes, consider opening an Orbis custodial account."
 
-**11.3 Execution time beyond market hours:** "This happens when Zerodha reconciles with the exchange after a brief disconnection. The actual execution happened during market hours — check the tradebook for the real execution time."
+**R23 — Circuit + MIS risk:**
+"When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time — this can lead to short delivery or auction risk."
+
+---
+
+## Section B: Decision Flow
+
+---
+
+### Preflight (run on every query)
+
+```
+1. Locate the order by instrument, type (BUY/SELL), time.
+2. Open Order History sub-view (click instrument hyperlink)
+   → review lifecycle, timestamps, status transitions.
+3. Check placed_by internally:
+   └─ ADMINSQF or starts with "rms" → route to Rule 7 (RMS square-off).
+4. If customer asks about a previous day's order
+   → use kite_order_history instead.
+```
+
+### Route
+
+```
+Intent / Condition                                          → Rule
+──────────────────────────────────────────────────────────────────────
+Order complete — execution details / price questions        → Rule 1
+Order open / pending                                        → Rule 2
+Order cancelled                                             → Rule 3
+Order rejected                                              → Rule 4
+AMO query                                                   → Rule 5
+Product conversion query                                    → Rule 6
+RMS / admin square-off                                      → Rule 7
+"I didn't place this order"                                 → Rule 8
+Circuit / ban period impact                                 → Rule 9
+Order book display issues                                   → Rule 10
+```
+
+### Scope
+
+- Address the client's query about today's orders — status, execution, rejections, and conversions.
+- Use **A2** field rules and client-facing terminology in all client communication.
+- For historical orders, redirect to `kite_order_history`.
+
+### Fallback
+
+If no route matches, investigate using Order History sub-view and Section A reference data. If no root cause is found, escalate per **A17**.
+
+---
+
+## Section C: Rules
+
+---
+
+### Rule 1 — Order Complete
+
+1. Respond per **A18-R1**.
+2. If client questions execution price:
+   a. Market order → respond per **A18-R2**.
+   b. Limit order executed at better price → respond per **A18-R3**.
+   c. Client wanted to buy at breakout price (not immediately) → respond per **A18-R5**. Invoke `kite_gtt` if client wants to set up GTT.
+   d. SL trigger seems "wrong" → respond per **A18-R4**.
+3. If `filled_quantity` < `total_quantity` → partial fill. Check `cancelled_quantity`. IOC orders: unfilled portion auto-cancelled.
+4. If client asks where bought shares are → invoke `kite_holdings` (settled) or `kite_positions` (today's buy).
+
+---
+
+### Rule 2 — Order Open / Pending
+
+1. Limit order → respond per **A18-R6**.
+2. Circuit hit → respond per **A18-R7**. Auto-cancel times per **A8**.
+3. SL/SL-M trigger not yet hit → respond per **A18-R8**.
+4. SL-M orders with trigger outside circuit limits stay open without rejection — normal exchange behavior.
+
+---
+
+### Rule 3 — Order Cancelled
+
+1. Check Order History sub-view for cancellation timing and context:
+   a. Cancelled near market close → respond per **A18-R9**. Times per **A8**. Invoke `kite_gtt` if client wants persistent order.
+   b. LPP range cancellation → respond per **A18-R10**.
+   c. IOC partial fill + cancel → respond per **A18-R11**.
+   d. Cancelled by user → respond per **A18-R12**.
+
+---
+
+### Rule 4 — Order Rejected
+
+1. Read `rejection_reason` and match against **A12**.
+2. For margin rejections → invoke `kite_margins` to identify specific shortfall.
+3. For market order blocks → match against **A10**, respond with reason + resolution.
+4. For MIS blocks → match against **A11**, respond with reason + resolution.
+5. For quantity/value limits → refer to **A7**.
+6. For trigger price errors, ban period, OI restrictions, BSE SL-M, exchange restricted, MTF conflicts → use matching row in **A12**.
+7. For any rejection not matching **A12** → share the `rejection_reason` text verbatim and suggest retrying or contacting support.
+
+---
+
+### Rule 5 — AMO (After Market Orders)
+
+1. General AMO query → respond per **A18-R14**. Details per **A14**.
+2. AMO market order for index options rejected → respond per **A18-R15**.
+3. AMO became limit order → respond per **A18-R16**.
+
+---
+
+### Rule 6 — Product Conversion
+
+1. Check conversion rules per **A15**.
+2. If margin insufficient for conversion → invoke `kite_margins`.
+
+---
+
+### Rule 7 — RMS / Admin Square-Off
+
+1. `placed_by` = ADMINSQF or starts with "rms" (per **A13**).
+2. Invoke `kite_margins` to check for margin shortfall.
+3. Check if product was MIS and time was near auto square-off window (per **A9**).
+4. Check if account had negative cash balance.
+5. Respond per **A18-R13**. Include margin data from `kite_margins` if available.
+6. If client asks about the squared-off position → invoke `kite_positions`.
+
+---
+
+### Rule 8 — Unauthorized Order ("I didn't place this")
+
+1. Check `placed_by`:
+   a. ADMINSQF or starts with "rms" → apply Rule 7 (RMS square-off).
+   b. Client's own ID → escalate to escalation team immediately.
+
+---
+
+### Rule 9 — Circuit / Ban Period Impact
+
+1. Can't exit at circuit → respond per **A18-R23**. If client asks about resulting position → invoke `kite_positions`.
+2. Ban period → respond per **A18-R21**. Only exit allowed. Restriction lifts when OI falls below 80% of market-wide limit.
+
+---
+
+### Rule 10 — Order Book Display Issues
+
+1. Rejected order not in order book → respond per **A18-R17**.
+2. Downloaded file shows dates instead of quantities → respond per **A18-R18**.
+3. Execution time beyond market hours → respond per **A18-R19**.
+
+---
+
+## Section D: General Notes
+
+- This tool returns today's orders only. For historical orders, use `kite_order_history`.
+- Orders follow price-time priority. Market orders may fill at multiple price levels.
+- Limit orders may execute at better price (price improvement by exchange matching engine).
+- SL orders trigger on exchange tick data, not chart data — charts show snapshots at 250ms intervals, not every trade.
+- SL-M is discontinued on BSE for all segments — use SL-L instead.
+- Market orders in pre-open session convert to limit at equilibrium/previous close price.
+- BSE market orders convert to limit with 3% market protection from LTP.
+- CO positions cannot be converted to CNC/NRML.
+- If auto square-off fails (system failure, circuit hit, connectivity), MIS converts to CNC/NRML and carries forward — client must close next day.
+- Order execution time may show beyond market hours due to exchange reconciliation — actual time visible in tradebook.
+- Downloaded order book may show dates instead of quantities due to Excel auto-formatting — open in Notepad.
+- Max 5,000 orders/day, 400/minute, 25 modifications per order.
+- Max order value ₹10 Crore equity; max quantity 1,00,000 equity.

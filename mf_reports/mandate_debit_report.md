@@ -4,11 +4,11 @@
 
 WHEN TO USE:
 
-When customer asks about:
-- SIP auto-debit didn't happen — verify debit instruction
-- Bank debit status for SIP
-- Mandate debit failed — need failure reason
-- Bank debited but order not processed — trace debit to order
+When clients:
+- Report SIP auto-debit didn't happen (verify debit instruction)
+- Ask about bank debit status for SIP
+- Report mandate debit failed (need failure reason)
+- Report bank debited but order not processed (trace debit to order)
 
 TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted from bank", "mandate debit failed", "coin"
 
@@ -16,63 +16,150 @@ TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted fro
 
 # MANDATE DEBIT REPORT PROTOCOL
 
-## Knowledge Base
+---
 
-<knowledge_base>
-<facts>
-- Mandate debit schedule with transaction status for SIP auto-debits
-- Status: Created (instruction sent, bank confirmation pending), Success (bank debited), Failed (bank rejected)
-- cashier_reference links to cfppg_bank_ref_no in fund_allocation_report
-- If status = Success → bank debited; SIP will process based on ICCL receipt
-- If status = Created AND SIP date has passed → debit was not processed; client must place manual order
-- If status = Failed → order won't process; client must place manual order
-- Do NOT suggest manual order for AMC SIPs — check `sip_type` in sip_report first
-</facts>
+## Section A: Reference Data
 
-<field_usage>
-  <share>amount | status (as friendly phrase)</share>
-  <internal>cashier_reference (cross-ref with fund_allocation_report cfppg_bank_ref_no) | transaction_date | updated_at | created_at</internal>
-  <banned>mandate_id | transaction_id | all other fields</banned>
-</field_usage>
+All rules reference these blocks as single sources of truth.
 
-<debit_status_values>
-  <created>Debit instruction sent to bank — pending bank confirmation. Bank has NOT debited yet.</created>
-  <success>Bank debited successfully — payment will be mapped to order</success>
-  <failed>Bank rejected debit — order will not process this cycle</failed>
-</debit_status_values>
-</knowledge_base>
+### A1 — Tool Purpose & Scope
+
+- This report shows the mandate debit schedule with transaction status for SIP auto-debits.
+- `cashier_reference` links to `cfppg_bank_ref_no` in fund_allocation_report — use for cross-referencing payment mapping.
+
+### A2 — Debit Status Translations
+
+| Internal Status | Meaning | Client-Facing Communication |
+|---|---|---|
+| Created | Debit instruction sent to bank — pending bank confirmation. Bank has NOT debited yet. | If SIP date not passed: "The debit instruction has been sent to your bank. Your funds will be debited on your SIP date. Once debited, the order will be processed automatically." If SIP date passed: "Your auto-debit was not processed for this SIP cycle." |
+| Success | Bank debited successfully — payment will be mapped to order | "Your bank has been debited successfully." → Route to Rule 3 for order status. |
+| Failed | Bank rejected debit — order will not process this cycle | "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date." |
+
+### A3 — AMC SIP Manual Order Restriction
+
+When debit status = Created (SIP date passed) or Failed, check `sip_type` in sip_report before suggesting any action. Do not suggest placing a manual lumpsum order for AMC SIPs (`sip_type` = amc_sip). AMC SIP orders are placed by the AMC — the client cannot place manual orders for these.
+
+For Zerodha SIPs (`sip_type` = sip): "To invest for this month, please place a manual lumpsum order."
+
+### A4 — Field Rules
+
+**Shareable with client:** `amount`, `status` (translated per **A2** — use friendly phrases only).
+
+**Internal reasoning only (use for analysis, never share):** `cashier_reference` (cross-reference with fund_allocation_report `cfppg_bank_ref_no`), `transaction_date`, `updated_at`, `created_at`.
+
+**No client use and only reasoning purpose:** `mandate_id`, `transaction_id`, all other fields.
+
+### A5 — Mandate Deletion Process
+
+1. Before deleting a mandate, unlink it from all active or paused SIPs. Deleting a mandate with linked SIPs will cause those SIPs to fail for future cycles.
+2. Steps to unlink: Coin → SIPs → [each SIP] → Unlink mandate.
+3. Once all SIPs are unlinked: Coin → Mandates → [mandate] → Delete.
+4. If client has no SIPs linked → they can delete directly from Coin → Mandates.
+5. Deleting a mandate does not cancel SIPs — SIPs remain active but will require a new mandate or manual payment going forward.
+
+### A6 — Cross-Reference Protocols
+
+| Topic | Refer to |
+|---|---|
+| Payment mapping (cashier_reference → cfppg_bank_ref_no) | fund_allocation_report |
+| Order status after debit success | mf_order_history |
+| SIP type, mandate linkage, SIP status | sip_report |
+| SIP modification near trigger date | sip_modification_log (via public_id from sip_report) |
 
 ---
 
-## Business Rules
+## Section B: Decision Flow
 
-### Rule 0: Field Protection
-Never share `<banned>` fields. Use `<internal>` fields for reasoning only.
+### Preflight (run on every query)
 
-### Rule 1: Debit Not Initiated
-**if:** No debit record for expected SIP date
-**then:** Check **sip_report** (active? mandate linked? get `public_id`) → pass `public_id` as `sip_id` to **sip_modification_log** (modified near trigger?) → If no debit record at all → "Technical issue. Place manual lumpsum order."
+1. Fetch the mandate debit report for the client and relevant SIP/date.
+2. Apply field protection per **A4** — identify shareable, internal, and banned fields.
+3. Identify the debit status and translate per **A2**.
+4. If debit status requires suggesting manual order → check `sip_type` in sip_report per **A3** before responding.
+5. Format amounts with ₹ and Indian comma notation.
 
-### Rule 2: Debit Status Handling
-**if:** Checking debit status for a SIP
-**Status = Created:**
-- SIP `preferred_date` NOT yet passed → "The debit instruction has been sent to your bank. Your funds will be debited on your SIP date. Once debited, the order will be processed automatically."
-- SIP `preferred_date` HAS passed → "Your auto-debit was not processed for this SIP cycle. Please place a manual lumpsum order to ensure your investment is not missed."
-  - **CRITICAL:** Check `sip_type` in **sip_report** first. Do NOT suggest manual order for AMC SIPs.
-**Status = Failed:**
-- "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date. To invest for this month, please place a manual lumpsum order."
-  - **CRITICAL:** Check `sip_type` in **sip_report** first. Do NOT suggest manual order for AMC SIPs.
-**Status = Success:**
-- Bank debited successfully. Route to Rule 3.
+### Routing Tree
 
-### Rule 3: Success But Order Not Processed
-**if:** `status` = Success AND order not allotted
-**then:** Use `cashier_reference` → check **fund_allocation_report** (`cfppg_bank_ref_no`). If payment mapped → check **mf_order_history** for the corresponding order status. Say: "Your bank has been debited. The payment is being mapped to your order. Allow T+1 to T+2 business days."
+```
+Query relates to mandate debit →
+│
+├─ No debit record for expected SIP date
+│  → Rule 1
+│
+├─ Debit status check
+│  ├─ Created (SIP date not passed) → Rule 2a
+│  ├─ Created (SIP date passed) → Rule 2b (check A3 before suggesting manual order)
+│  ├─ Failed → Rule 2c (check A3 before suggesting manual order)
+│  └─ Success → Rule 3
+│
+├─ Success but order not processed / not allotted
+│  → Rule 3
+│
+├─ Client asks how to delete a mandate
+│  → Rule 4
+│
+└─ No matching scenario
+   → Check sip_report for SIP-level diagnosis
+```
 
-### Rule 4: Mandate Deletion
-**if:** Client asks how to delete a mandate
-**then:**
-1. "Before deleting a mandate, you must first unlink it from all active or paused SIPs. Deleting a mandate with linked SIPs will cause those SIPs to fail for future cycles."
-2. Steps to unlink: Coin → SIPs → [each SIP] → Unlink mandate. Once all SIPs are unlinked → Coin → Mandates → [mandate] → Delete.
-3. If client has no SIPs linked → they can delete directly from Coin → Mandates.
-4. Note: Deleting a mandate does NOT cancel your SIPs — SIPs remain active but will require a new mandate or manual payment going forward.
+### Scope
+
+- Address: debit status, payment processing, manual order guidance (with AMC SIP check), and mandate deletion.
+-Internal field values: Transaction IDs and internal field values (per **A4**) are not part of client-facing responses.
+
+### Fallback
+
+If no debit record exists and SIP-level checks are inconclusive → advise manual order (after AMC SIP check per **A3**) and escalate if issue persists.
+
+---
+
+## Section C: Rules
+
+Rules reference Section A blocks. They do not redefine what is already defined there.
+
+### Rule 1 — Debit Not Initiated
+
+1. No debit record found for the expected SIP date.
+2. Check sip_report (per **A6**): is the SIP active? Is a mandate linked (`fund_source` check)?
+3. Get `public_id` from sip_report → pass as `sip_id` to sip_modification_log (per **A6**): was the SIP modified near the trigger date?
+4. If no debit record and no modification explains it → "There was a technical issue with the auto-debit for this cycle."
+5. Check **A3** for SIP type, then advise: "Please place a manual lumpsum order to ensure your investment is not missed." (Zerodha SIP only.)
+
+### Rule 2 — Debit Status Handling
+
+**2a — Created, SIP date not yet passed:**
+Respond per **A2**: "The debit instruction has been sent to your bank. Your funds will be debited on your SIP date. Once debited, the order will be processed automatically."
+
+**2b — Created, SIP date has passed:**
+Check `sip_type` per **A3** before responding.
+- Zerodha SIP: "Your auto-debit was not processed for this SIP cycle. Please place a manual lumpsum order to ensure your investment is not missed."
+- AMC SIP: "Your auto-debit was not processed for this SIP cycle." (Do not suggest manual order.)
+
+**2c — Failed:**
+Check `sip_type` per **A3** before responding.
+- Zerodha SIP: "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date. To invest for this month, please place a manual lumpsum order."
+- AMC SIP: "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date." (Do not suggest manual order.)
+
+### Rule 3 — Success But Order Not Processed
+
+1. Confirm: `status` = Success but order is not yet allotted.
+2. Use `cashier_reference` → check fund_allocation_report for `cfppg_bank_ref_no` match (per **A6**).
+3. If payment mapped → check mf_order_history (per **A6**) for the corresponding order status.
+4. Respond: "Your bank has been debited. The payment is being mapped to your order. Allow T+1 to T+2 business days."
+
+### Rule 4 — Mandate Deletion
+
+1. Respond using the process from **A5**:
+   - "Before deleting a mandate, you must first unlink it from all active or paused SIPs. Deleting a mandate with linked SIPs will cause those SIPs to fail for future cycles."
+   - Steps to unlink: "Coin → SIPs → [each SIP] → Unlink mandate."
+   - Once all SIPs unlinked: "Coin → Mandates → [mandate] → Delete."
+2. If client has no SIPs linked → they can delete directly from Coin → Mandates.
+3. Add: "Deleting a mandate does not cancel your SIPs — SIPs remain active but will require a new mandate or manual payment going forward."
+
+---
+
+## Section D: General Notes
+
+1. The AMC SIP manual order restriction (**A3**) is the most important guard in this protocol. Always check `sip_type` before suggesting any manual order — AMC SIP clients cannot place manual orders for their SIP funds.
+2. `cashier_reference` is the key for cross-referencing debit success with payment mapping in fund_allocation_report. This is the only way to trace a successful debit to its corresponding order.
+3. Mandate deletion does not cancel SIPs. This is counterintuitive — clients often assume deleting the payment method stops the investment. Always mention that SIPs remain active and will need a new mandate or manual payment.

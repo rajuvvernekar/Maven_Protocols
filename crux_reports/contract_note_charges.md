@@ -4,70 +4,55 @@
 
 WHEN TO USE:
 
-- Client asks for total charges summary for a specific date range, exchange, or segment
-- Client wants aggregate charges breakdown (not per-trade, but totals by charge type)
-- Agent needs to verify total brokerage, STT, stamp duty, GST, exchange charges for a period
-- Client comparing aggregate charges across months or segments
-- Client asks about clearing charges, IPTF charges, or other CN-specific charge heads
+When clients:
+- Ask for total charges summary for a specific date range, exchange, or segment
+- Want aggregate charges breakdown (not per-trade, but totals by charge type)
+- Compare aggregate charges across months or segments
+- Ask about clearing charges, IPTF charges, or other CN-specific charge heads
 
 TRIGGER KEYWORDS: "contract note charges", "total charges", "aggregate charges", "charges summary", "total brokerage", "total STT", "total stamp duty", "charges for the month", "charges breakdown summary", "CN charges", "contract note"
 
 ## Protocol
 
-# CONTRACT NOTE CHARGES PROTOCOL
-
-## PROTOCOL
-
-<knowledge_base>
-
-<facts>
-- Report provides aggregate charges by account_head (charge type) for a selected date range, exchange, and segment
-- Required: Client ID, Exchange (NSE/BSE), Segment (EQ/FO/CDS/COM), From/To Date
-- Each row = one charge component (account_head) with its total charge amount
-- Total row provides sum of all charges for the period
-- Account heads: Stamp Duty, Exchange Transaction Charges, STT, SEBI Turnover Fees, Brokerage, Clearing Charges, CGST, SGST, IGST, Investor Protection Fund Tax (IPTF)
-- This is a SUMMARY tool — for order-level breakdown use tradewise_charges_report
-- Clearing charges: charges for clearing and settlement of trades (separate from exchange charges)
-- IPTF: contribution towards investor protection mechanisms — small amount per trade
-- XML contract notes may show slightly different charges than PDF CN due to IPFT inclusion timing
-</facts>
-
-<field_usage>
-  <share>account_head (as charge component name) | charge (as amount) | Total</share>
-  <banned>client_id | exchange (use internally) | segment (use internally)</banned>
-</field_usage>
-
-<account_heads>
-  <stamp_duty>Government stamp duty on trade value</stamp_duty>
-  <exchange_txn_charges>Exchange charges for trade execution</exchange_txn_charges>
-  <stt>Securities Transaction Tax — government tax on securities transactions</stt>
-  <sebi_turnover_fees>SEBI regulatory fee based on turnover</sebi_turnover_fees>
-  <brokerage>Zerodha's brokerage charges for executing trades</brokerage>
-  <clearing_charges>Charges for clearing and settlement</clearing_charges>
-  <cgst>Central GST (9%) on brokerage + exchange charges</cgst>
-  <sgst>State GST (9%) on brokerage + exchange charges</sgst>
-  <igst>Integrated GST (for inter-state — usually zero)</igst>
-  <iptf>Investor Protection Fund Tax</iptf>
-</account_heads>
-
-<cross_reference>
-  <tradewise_charges_report>Per-trade charge breakdown — use for order-level detail (snake_case TBD)</tradewise_charges_report>
-  <ledger_report>Charge debit entries on ledger</ledger_report>
-</cross_reference>
-
-</knowledge_base>
-
+# CONTRACT NOTE CHARGES PROTOCOL 
 ---
 
-## Business Rules
+## Section A: Reference Data
 
-### Rule 0: Field Protection
-**NEVER expose:** `client_id`, `exchange` (use internally), `segment` (use internally)
-**Share:** `account_head` (translated to client-friendly name), `charge`, `Total`
+All rules reference these blocks as single sources of truth.
 
-### Rule 1: Charges Summary
-**if:** Client asks for total charges for a period
-**then:** "Here's your charges summary for [period]:
+### A1 — Report Fundamentals
+
+- This report provides aggregate charges by account head (charge type) for a selected date range, exchange, and segment.
+- Required inputs: Client ID, Exchange (NSE/BSE), Segment (EQ/FO/CDS/COM), From/To Date.
+- Each row = one charge component (account head) with its total charge amount. A Total row provides the sum of all charges for the period.
+- This is a summary tool — for order-level breakdown, use the Tradewise Charges Report (per **A5**).
+- XML contract notes may show slightly different charges than PDF CN due to IPFT inclusion timing. The PDF version is the authoritative document.
+
+### A2 — Account Head Definitions
+
+| Account Head | Client-Facing Name | What It Is |
+|---|---|---|
+| Stamp Duty | Stamp duty | Government stamp duty on trade value |
+| Exchange Transaction Charges | Exchange transaction charges | Exchange charges for trade execution |
+| STT | STT (Securities Transaction Tax) | Government tax on securities transactions |
+| SEBI Turnover Fees | SEBI turnover fee | SEBI regulatory fee based on turnover |
+| Brokerage | Brokerage | Zerodha's brokerage charges for executing trades |
+| Clearing Charges | Clearing charges | Charges for clearing and settlement of trades (separate from exchange charges) |
+| CGST | CGST | Central GST (9%) on brokerage + exchange charges |
+| SGST | SGST | State GST (9%) on brokerage + exchange charges |
+| IGST | IGST | Integrated GST (for inter-state — usually zero) |
+| IPTF | Investor Protection Fund Tax | Contribution towards investor protection mechanisms — small amount per trade |
+
+### A3 — Field Rules
+
+**Shareable with client:** `account_head` (translated to client-facing name per **A2**), `charge` (as amount), `Total`.
+
+**Internal reasoning only (no client use):** `client_id`, `exchange` (use internally for segment identification), `segment` (use internally).
+
+### A4 — Charges Summary Template
+
+"Here's your charges summary for [period]:
 - Brokerage: ₹[brokerage]
 - Exchange transaction charges: ₹[exchange_txn]
 - STT: ₹[stt]
@@ -78,20 +63,96 @@ TRIGGER KEYWORDS: "contract note charges", "total charges", "aggregate charges",
 - Investor Protection Fund: ₹[iptf]
 - **Total charges: ₹[Total]**"
 
-### Rule 2: Per-Trade Redirect
-**if:** Client asks for per-order or per-trade breakdown from this aggregate view
-**then:** "This report shows the total charges for the period. For a per-trade breakdown showing charges for each individual order, I can check the tradewise charges report instead."
+### A5 — Cross-Reference Protocols
 
-Use tradewise_charges_report for per-order detail.
+| Topic | Refer to |
+|---|---|
+| Per-trade / per-order charge breakdown | Tradewise Charges Report protocol |
+| Charge debit entries on ledger | Ledger Report protocol |
 
-### Rule 3: Charge Component Explanation
-**if:** Client asks what a specific charge head means
-**then:** Use `<account_heads>` to explain the component in client-friendly language.
+### A6 — Escalation Triggers (Consolidated)
 
-### Rule 4: PDF vs XML CN Difference
-**if:** Client reports charge difference between PDF and XML contract note
-**then:** "The PDF contract note includes the most up-to-date charges. The XML version may occasionally differ slightly, particularly for exchange transaction charges and IPTF, as these may be adjusted after the initial CN generation. The PDF version is the authoritative document."
+Escalate when:
+- Total charges seem significantly wrong compared to trading volume for the period.
+- A specific charge head shows an unusual amount that cannot be explained by the account head definition.
 
-### Rule 5: Escalation Criteria
-**if:** Total charges seem significantly wrong compared to trading volume for the period, or specific charge head shows unusual amount
-**then:** Escalate with: client ID, date range, exchange, segment, and specific discrepancy.
+Include in escalation: client ID, date range, exchange, segment, and the specific discrepancy.
+
+---
+
+## Section B: Decision Flow
+
+### Preflight (run on every query)
+
+1. Fetch the contract note charges report for the client's date range, exchange, and segment.
+2. Apply field protection per **A3** — identify shareable vs internal-only fields.
+3. Translate account head names to client-facing terms per **A2**.
+4. Format all amounts with ₹ and Indian comma notation.
+
+### Routing Tree
+
+```
+Query relates to contract note charges →
+│
+├─ Client asks for total charges for a period
+│  → Rule 1
+│
+├─ Client asks for per-trade or per-order breakdown
+│  → Rule 2 (Redirect to Tradewise Charges)
+│
+├─ Client asks what a specific charge component means
+│  → Rule 3
+│
+├─ Client reports difference between PDF and XML contract note
+│  → Rule 4
+│
+└─ Charges seem significantly wrong / unusual amount
+   → Rule 5 (Escalation)
+```
+
+### Scope
+
+- Address: aggregate charge summaries, charge component explanations, and CN format differences.
+- Do not volunteer: internal field values (per **A3**), exchange/segment identifiers, or per-trade detail (redirect to Tradewise Charges per **A5**).
+
+### Fallback
+
+If no root cause is identified after checking all relevant rules → escalate per Rule 5.
+
+---
+
+## Section C: Rules
+
+Rules reference Section A blocks. They do not redefine what is already defined there.
+
+### Rule 1 — Charges Summary
+
+1. Present the charges using the template from **A4**, filling in the values from the report.
+2. Combine CGST + SGST into a single GST line for the client.
+
+### Rule 2 — Per-Trade Redirect
+
+1. Respond: "This report shows the total charges for the period. For a per-trade breakdown showing charges for each individual order, I can check the tradewise charges report instead." (Per **A5**.)
+2. If the client confirms, use the Tradewise Charges Report protocol.
+
+### Rule 3 — Charge Component Explanation
+
+1. Look up the charge component in **A2** and respond with the client-facing name and explanation.
+
+### Rule 4 — PDF vs XML Contract Note Difference
+
+1. Respond: "The PDF contract note includes the most up-to-date charges. The XML version may occasionally differ slightly, particularly for exchange transaction charges and IPTF, as these may be adjusted after the initial CN generation. The PDF version is the authoritative document." (Per **A1**.)
+
+### Rule 5 — Escalation
+
+Escalate when any trigger in **A6** is met.
+
+Include in escalation: client ID, date range, exchange, segment, and the specific discrepancy.
+
+---
+
+## Section D: General Notes
+
+1. This is a summary-level tool. For any question about charges on a specific trade or order, redirect to the Tradewise Charges Report protocol (**A5**) rather than attempting to break down the aggregates.
+2. The PDF contract note is always the authoritative document when there is a discrepancy between PDF and XML versions.
+3. Clearing charges and IPTF are smaller, less commonly questioned components. If a client asks about them, the definitions in **A2** provide sufficient explanation.
