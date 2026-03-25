@@ -39,6 +39,7 @@ All rules reference these blocks as single sources of truth.
 - Pre-IPO shares have 6-month lock-in from listing date. Not visible in Kite during lock-in.
 - Kite supports UPI only. ASBA must be done via bank portal or offline form.
 - Minors can apply using their own bank/demat only — cannot use parent/guardian bank.
+- REIT/InvIT IPOs have distinct category rules — all UPI bids are categorised as NII regardless of bid amount. Always check the IPO name from `ipo_details` tool data; if it contains "Investment Trust," it is a REIT/InvIT IPO — use the REIT/InvIT row in **A4** for all cancel/modify/reapply decisions.
 
 ### A2 — Thresholds
 
@@ -68,6 +69,7 @@ UPI limit (₹5L) and HNI category (≥₹2L) are independent thresholds.
 | Retail (below ₹2L) | Freely cancel/modify | Yes | Can reapply within window |
 | HNI Mainboard (≥₹2L) | Cannot cancel or reduce | Can only increase | Can reapply via ASBA only (warn: one per PAN, duplicates rejected) |
 | SME (all SME) | Cannot cancel or delete | Can only increase | Cannot reapply via ASBA — one UPI attempt per PAN. This is absolute. |
+| REIT/InvIT (all UPI bids) | Cannot cancel or reduce — all UPI applications are treated as Non-Individual Investor (NII) bids regardless of bid amount | Can only increase (up to ₹5L UPI limit per **A2**) | If UPI mandate was not completed, customer can apply separately via ASBA — this will be treated as a unique application. Guide per Rule 9 using **A7** demat details. |
 
 **Scope rule:** When explaining cancellation/modification policies, only state the rules for the customer's specific bid category. Do not mention other category restrictions unless the customer explicitly asks about switching categories or applying at different amounts.
 
@@ -102,7 +104,7 @@ UPI limit (₹5L) and HNI category (≥₹2L) are independent thresholds.
 | Any rejection reason | (omit — say "Mandate rejected by bank") |
 | Any ledger reference for IPO refunds | (omit — IPO refunds are bank-side only) |
 
-IPO type determination: always use the `ipo_details` nested object from tool data. Never infer IPO type from bid amount.
+IPO type determination: always use the `ipo_details` nested object from tool data. Bid amount determines category only for standard IPOs — for REIT/InvIT IPOs (identified by "Investment Trust" in the IPO name), category is always NII regardless of bid amount. Apply REIT-specific rules from **A4**.
 
 ### A7 — ASBA Details
 
@@ -129,6 +131,7 @@ ASBA keeps money in customer's bank account but blocks it until allotment. Allot
 | NSE ASBA form | https://www.nseindia.com/products/content/equities/ipos/asba_form.htm |
 | BSE ASBA form | https://www.bseindia.com/markets/PublicIssues/IPOIssues_new.aspx |
 | SCSB list (SEBI) | https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doRecognisedFpi=yes&intmId=34 |
+| REIT IPO UPI info | https://support.zerodha.com/category/trading-and-markets/ipo/ipo-application/articles/reit-ipos-using-upi |
 
 ### A9 — Special Account Rules
 
@@ -158,6 +161,8 @@ Collect for escalation: screenshot, IPO name, action attempted, device type.
 5. If customer doesn't mention IPO name → use Step 1 to identify from `symbol` and `type`, then proceed to Step 2.
 6. Apply field protection per **A6** — determine shareable vs internal-only fields.
 7. Determine the customer's bid category from tool data to apply the correct restrictions from **A4**.
+8. **REIT/InvIT check:** Check the IPO name from `ipo_details` — if it contains "Investment Trust" (indicating REIT/InvIT), flag as REIT/InvIT and apply REIT-specific category rules from **A4** instead of standard retail/HNI category logic based on bid amount.
+9. **Post-closure check:** If the IPO closing date (from Step 2) is earlier than the current date, mark the query as post-closure. Rules 1–5 must check this flag and apply post-closure logic instead of standard active-IPO guidance.
 
 ### Routing Tree
 
@@ -165,22 +170,27 @@ Collect for escalation: screenshot, IPO name, action attempted, device type.
 Query relates to IPO →
 │
 ├─ Mandate not received
+│  ├─ IPO already closed → Rule 1d (Post-closure)
 │  ├─ < 1 hour since application → Rule 1a (Wait)
 │  ├─ > 1 hour since application → Rule 1b (Category-specific action)
 │  └─ IPO closes today → Rule 1c (Urgent)
 │
 ├─ Mandate rejected / application failed
+│  ├─ IPO already closed → Rule 2 (post-closure path)
 │  ├─ Standard failure → Rule 2
 │  └─ Bank-specific UPI limit error → Rule 2 (bank limit note)
 │
 ├─ Wrong UPI ID entered
-│  → Rule 3
+│  ├─ IPO already closed → Rule 3 (post-closure path)
+│  └─ IPO still open → Rule 3
 │
 ├─ Cannot cancel application
-│  → Rule 4
+│  ├─ IPO already closed → Rule 4 (post-closure path)
+│  └─ IPO still open → Rule 4
 │
 ├─ Cannot modify application
-│  → Rule 5
+│  ├─ IPO already closed → Rule 5 (post-closure path)
+│  └─ IPO still open → Rule 5
 │
 ├─ Funds not refunded / still blocked
 │  → Rule 6
@@ -236,6 +246,8 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 ### Rule 1 — Mandate Not Received
 
+**Post-closure gate:** If the query is marked post-closure (Preflight Step 9), go directly to **1d**.
+
 **1a — Less than 1 hour since application:**
 "The UPI mandate is typically sent within 1 hour of application." Check: UPI ID correctness, app version, bank support at UPI partners page (**A8**), and ask customer to manually check their UPI app.
 
@@ -244,35 +256,55 @@ Apply the customer's category restrictions from **A4**:
 - Retail: Delete application, resubmit (new mandate within 1 hour).
 - HNI Mainboard: Cannot delete. Option: Apply via ASBA (warn: one per PAN, duplicates rejected). Guide per Rule 9.
 - SME: Cannot delete. No alternative (cannot reapply via ASBA).
+- REIT/InvIT: Cannot delete. Option: Apply via ASBA as a unique application (since UPI mandate was not completed). Guide per Rule 9.
 
 **1c — IPO closes today:**
 Same category logic as 1b, with added urgency: mandate must be accepted by 5:00 PM today (per **A3**).
 
+**1d — IPO already closed (post-closure inquiry):**
+"Since the IPO closed on [closing date] and the UPI mandate deadline was 5:00 PM on [closing date], your application will not be considered by the RTA as the mandate was not approved before the deadline. Your funds were not blocked, so no unblocking is needed. For future IPOs, ensure you approve the mandate within 1 hour of applying and before the 5:00 PM deadline on the closing day."
+
+If the IPO is a REIT/InvIT (Preflight Step 8), add: "For REIT IPOs, if the UPI mandate was not completed, you could have applied separately via ASBA as a unique application — please keep this option in mind for future REIT IPOs."
+
 ### Rule 2 — Mandate Rejected / Application Failed
 
+**Post-closure gate:** If the query is marked post-closure (Preflight Step 9) → "Since the IPO closed on [closing date], your application can no longer be acted upon. Your bank will unblock the funds — this may take until the mandate end date [mandate end date from schedule]. If funds remain blocked beyond this date, please contact your bank."
+
 1. Communicate status: "Your application failed." (Per **A5**.)
-2. Apply reapply options per **A4** for the customer's category.
+2. Apply reapply options per **A4** for the customer's category (including REIT/InvIT if applicable per Preflight Step 8).
 3. Add: "Funds will be unblocked by your bank (timeline varies)."
 4. If the failure is due to a bank-specific UPI limit error (₹2L–₹5L range): "This is your bank's own UPI limit, not the NPCI limit of ₹5 lakh. Please check with your bank for their specific limit, or apply via ASBA." Guide per Rule 9.
 
 ### Rule 3 — Wrong UPI ID
+
+**Post-closure gate:** If the query is marked post-closure (Preflight Step 9) → "Since the IPO closed on [closing date], it is no longer possible to modify or reapply. If the mandate was not approved or funds were not blocked, the application will not be considered and no action is needed. If funds were blocked, they will be unblocked by your bank before the mandate end date [mandate end date]."
 
 1. Do not share the customer's UPI ID unless they explicitly ask.
 2. Apply the customer's category restrictions from **A4**:
    - Retail: Cancel, reapply with correct UPI ID.
    - HNI Mainboard: Cannot cancel. Option: ASBA with correct bank (warn: one per PAN).
    - SME: Cannot cancel. No alternative.
+   - REIT/InvIT: Cannot cancel. Option: Apply via ASBA as a unique application if UPI mandate was not completed. Guide per Rule 9.
 
 ### Rule 4 — Cannot Cancel
 
+**Post-closure gate:** If the query is marked post-closure (Preflight Step 9) → "Since the IPO closed on [closing date], it is no longer possible to cancel your application. If the mandate was not approved or funds were not blocked, the application will not be considered by the RTA and the funds will be automatically unblocked by your bank before the mandate end date [mandate end date]. You can safely ignore this application."
+
 1. If `status` = "cancelled" → "Your application was cancelled." Then apply reapply guidance per **A4**.
-2. If Retail → application should be cancellable. Check: within trading window (per **A3**), IPO still open. Suggest: try refresh or web version at **A8** Kite IPO page.
-3. If HNI Mainboard or SME → cannot cancel per **A4**. Explain the restriction for their specific category only.
+2. If REIT/InvIT (Preflight Step 8) → cannot cancel per **A4**. "REIT IPO applications made through UPI are categorised as Non-Individual Investor (NII) bids. These bids cannot be cancelled or decreased once applied, but they can be increased up to ₹5 lakhs. If the UPI mandate was not completed, you can apply separately via ASBA — this will be treated as a unique application." Guide per Rule 9.
+3. If Retail → application should be cancellable. Check: within trading window (per **A3**), IPO still open. Suggest: try refresh or web version at **A8** Kite IPO page.
+4. If HNI Mainboard or SME → cannot cancel per **A4**. Explain the restriction for their specific category only.
+
+**Example response:**
+"The error message 'Cancellation of bid not allowed for issue RIIT and Category: OTHBID' occurs because REIT IPO applications made through UPI are categorized as Non-Individual Investor (NII) bids. These bids cannot be cancelled or decreased once applied, but they can be increased up to ₹5 lakhs. If you used an incorrect UPI ID or did not receive the mandate request, you cannot delete the application. However, you can still apply for the IPO using Netbanking ASBA. This application will be considered unique and eligible for allotment since the UPI mandate step was not completed."
 
 ### Rule 5 — Cannot Modify
 
-1. If ≥₹2L or SME and customer wants to reduce → "Your bid can only be increased, not reduced." (Per **A4**.)
-2. If 3 modifications already made → "The exchange allows a maximum of 3 modifications per application." (Per **A3**.)
+**Post-closure gate:** If the query is marked post-closure (Preflight Step 9) → "Since the IPO closed on [closing date], modifications are no longer possible. Your existing application will be processed as-is."
+
+1. If REIT/InvIT (Preflight Step 8) and customer wants to reduce → "REIT IPO bids can only be increased, not reduced or cancelled." (Per **A4**.)
+2. If ≥₹2L or SME and customer wants to reduce → "Your bid can only be increased, not reduced." (Per **A4**.)
+3. If 3 modifications already made → "The exchange allows a maximum of 3 modifications per application." (Per **A3**.)
 
 ### Rule 6 — Funds Not Refunded
 
@@ -336,6 +368,7 @@ Add urgency: "The UPI mandate deadline is 5:00 PM today. You must approve the ne
    - Retail: Cancel, update bank on Console if needed, reapply with new UPI.
    - HNI Mainboard: Cannot cancel. Apply via ASBA with new bank.
    - SME: Cannot cancel. No alternative.
+   - REIT/InvIT: Cannot cancel. Apply via ASBA with new bank as a unique application (if UPI mandate was not completed).
 3. Prevention advice: "Always verify your bank/UPI details before applying."
 
 ### Rule 14 — Pre-IPO Shares Lock-in
@@ -362,6 +395,7 @@ Add urgency: "The UPI mandate deadline is 5:00 PM today. You must approve the ne
 
 ## Section D: General Notes
 
-1. IPO type must always be determined from tool data (`ipo_details` nested object), never inferred from bid amount. Dates must always be fetched, never calculated from SEBI timelines or assumed.
-2. Category restrictions (**A4**) are the most critical reference in this protocol — nearly every rule routes through them. Always check the customer's specific category before advising on cancellation, modification, or reapplication.
+1. IPO type must always be determined from tool data (`ipo_details` nested object). Bid amount determines category only for standard IPOs. For REIT/InvIT IPOs (identified by "Investment Trust" in the IPO name), all UPI bids are categorised as NII — use the REIT/InvIT row in **A4** for all cancel/modify/reapply decisions. Dates must always be fetched from tool data, not calculated from SEBI timelines or assumed.
+2. Category restrictions (**A4**) are the most critical reference in this protocol — nearly every rule routes through them. Always check the customer's specific category before advising on cancellation, modification, or reapplication. For REIT/InvIT IPOs, the category is always NII regardless of bid amount.
 3. All fund-related queries (refund, unblocking, blocked amounts) are bank-side. Never reference Zerodha ledger for IPO refunds or blocked funds.
+4. Post-closure queries: Once an IPO's closing date has passed, active-IPO guidance (cancel, modify, reapply, wait for mandate) is no longer actionable. Always check the post-closure flag (Preflight Step 9) before advising on Rules 1–5.
