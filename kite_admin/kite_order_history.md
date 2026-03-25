@@ -292,6 +292,9 @@ Auto square-off charge: ₹50 + 18% GST per order."
 **R20 — No orders found:**
 "No orders found for [instrument] between [from_date] and [to_date]. Please verify the instrument name, exchange, and date range. Orders rejected pre-exchange (before reaching exchange) may not appear in history."
 
+**R21 — MIS sell instead of CNC (product mismatch):**
+"Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order."
+
 ---
 
 ## Section B: Decision Flow
@@ -459,7 +462,8 @@ If no route matches, investigate using Section A reference data. If no root caus
 1. **F&O buy average:** FIFO across MIS + NRML combined. Per **A12**.
 2. **Equity CNC sell + rebuy same day:** Original avg unchanged — speculative per income tax rules. Exception: T2T stocks. Per **A12**.
 3. **Identifying intraday:** Use patterns from **A12**.
-4. If client asks about current buy average → invoke `kite_holdings`. Current positions → invoke `kite_positions`.
+4. **MIS sell instead of CNC:** If client sold under MIS while holding CNC shares → the MIS sell created a fresh short intraday position, not a delivery exit. CNC holdings remain. MIS position auto-squared off at 3:25 PM. Respond per **A15-R21**.
+5. If client asks about current buy average → invoke `kite_holdings`. Current positions → invoke `kite_positions`.
 
 ---
 
@@ -492,3 +496,4 @@ If no route matches, investigate using Section A reference data. If no root caus
 - GTT-triggered orders: scope investigation to trigger date only — subsequent orders are independent.
 - Execution time beyond market hours = exchange reconciliation, not actual late execution.
 - AMO sell without DDPI/POA: T-day stocks after 6:30 AM next day; delivered stocks after 5 PM.
+- Selling CNC holdings under MIS product type creates a fresh short intraday position — it does not exit the delivery holdings. Use CNC to sell delivery holdings.

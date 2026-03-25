@@ -87,6 +87,17 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 - BTST carries short delivery risk if original seller defaults.
 - DP charges apply for BTST trades.
 
+**BTST detection method:**
+
+1. Invoke `kite_order_history` for the sell date and one previous trading day (account for holidays in between).
+2. If the stock was bought on the previous trading day and sold today → this is a BTST trade.
+3. As an additional confirmation, invoke `console_eq_holdings` for the sell date and check if the quantity exists under `t1`. Only the quantity under `t1` is considered BTST — remaining quantity is from older settled holdings.
+4. Blocked value for BTST = `filled_quantity × average_price` (from the sell order).
+
+**Example:** Client had 50 shares (settled) and bought 100 more yesterday. Today they sell 150 shares. 100 shares are BTST (bought yesterday, showing under t1), 50 are settled holdings. Proceeds for the 100 BTST shares are blocked; proceeds for the 50 settled shares are available immediately.
+
+For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds)
+
 ---
 
 ### A5 — Corporate Action Impact on Holdings
@@ -104,7 +115,7 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 
 | Reason | Explanation |
 |---|---|
-| Short delivery by seller | May arrive T+2 or cash settled. Zerodha notifies via SMS/email. |
+| Short delivery by seller | Investigate per **A12** checklist. Zerodha notifies via SMS/email. |
 | Pending settlement (T1) | Check `t1_t2_holdings` field. |
 | Corporate action in progress | Wait per **A5** timelines. |
 | ESOP with lock-in | Not shown on Kite. Verify on CDSL statement. |
@@ -148,6 +159,8 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 | Generate CDSL TPIN | https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/generate-cdsl-tpin |
 | Activate DDPI | https://support.zerodha.com/category/your-zerodha-account/your-profile/ddpi/articles/activate-ddpi |
 | Pledge approved list | https://zerodha.com/approved-securities/#tab-noncash_equity |
+| Short delivery info | https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences |
+| T1 holdings proceeds | https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds |
 
 ---
 
@@ -187,7 +200,7 @@ When escalating, always include: **client ID, instrument_name, and specific issu
 "You have [t1_t2_holdings] shares of [instrument_name] marked as T1, meaning they were purchased and are awaiting settlement. They'll be credited to your demat account by end of T+1 day ([next trading day])."
 
 **R10 — BTST proceeds not available:**
-"When you sell T1 shares (BTST), the sale proceeds are unavailable on the same day. The credit becomes available from the next trading day after the Early Pay-In process completes."
+"You sold [quantity] shares of [instrument_name] that were purchased on the previous trading day (T1/BTST). The sale proceeds of approximately ₹[blocked_value] are blocked and will be available from the next trading day after the Early Pay-In process completes. If a settlement holiday falls in between, it may take an additional day. For more details: [T1 holdings proceeds](https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds)"
 
 **R11 — Pledged shares:**
 "You have [collateral_quantity] shares of [instrument_name] pledged as collateral. The P symbol shows this pledged quantity. Your remaining [quantity] shares are available for trading."
@@ -199,7 +212,7 @@ When escalating, always include: **client ID, instrument_name, and specific issu
 "Shares bought today appear under Positions, not Holdings. They'll move to Holdings on T+1 day after settlement."
 
 **R14 — Short delivery:**
-"If shares were purchased but not delivered by the seller, this is a short delivery. Zerodha notifies via SMS/email. Shares may arrive on T+2, or the exchange will settle in cash. Check your registered email for notifications."
+"If shares were purchased but not delivered by the seller, this is a short delivery. There are two possible outcomes: (1) If the exchange can procure shares via auction, they will be credited to your demat by T+2. (2) If shares cannot be procured, your account will be credited with cash based on the close-out price. You will receive an email confirming which outcome applies. For more details: [What is short delivery?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)"
 
 **R15 — ESOP with lock-in:**
 "ESOP shares with lock-in periods may not appear on Kite. They're still in your demat account — verify via your CDSL statement (SOT/SOH)."
@@ -233,6 +246,30 @@ When escalating, always include: **client ID, instrument_name, and specific issu
 
 **R25 — CA shares not credited (bonus/split/demerger):**
 "After a [bonus/split/demerger], new shares are credited within [timeline per A5]. P&L may show a temporary drop until credited. If it's been longer than the expected timeline, please raise a ticket."
+
+**R26 — Short delivery (buy-side — client didn't receive stocks):**
+"A short delivery has occurred on your purchase of [instrument_name]. The seller did not deliver the shares. There are two possible outcomes: (1) If the exchange can procure shares via auction, they will be credited to your demat by T+2. (2) If shares cannot be procured, your account will be credited with cash based on the close-out price. You will receive an email confirming which outcome applies. For more details: [What is short delivery?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)"
+
+**R27 — Short delivery (sell-side — margin blocked):**
+"A short delivery has been recorded against your sale of [instrument_name]. An amount of ₹[debit_amount] (120% of the closing price on the sell trade date) has been blocked from your account for the exchange auction settlement. There are two possible outcomes: (1) If the exchange completes the auction, the blocked amount is used for settlement and any excess is refunded. (2) If the auction does not result in delivery, the settlement is done at close-out price. You will receive an email with the final outcome. For more details: [What is short delivery?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)"
+
+---
+
+### A12 — Short Delivery Investigation Checklist
+
+Use this checklist when a client reports shares missing or unexpected debit related to short delivery.
+
+**Step 1 — Confirm short delivery occurred:**
+Invoke `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details for cross-verification.
+
+**Step 2 — Determine buy-side or sell-side:**
+Invoke `ledger_report` (check the last 2 weeks) and search for a `remarks` entry stating "Short delivery margin blocked for sale of till exchange auction settlement".
+
+- **If ledger entry is NOT found:** This is a buy-side short delivery — the client purchased shares but the seller did not deliver. Use the `content` from the communications (Step 1) to share details with the client. Respond per **A11-R26**.
+
+- **If ledger entry IS found:** This is a sell-side short delivery — the client's sold shares are going through auction. Use the `posting_date` and `debit` amount from the ledger entry. The debit amount is 120% of the closing price on the date of the sell trade. Respond per **A11-R27**.
+
+**Reference:** [What is short delivery and what are its consequences?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)
 
 ---
 
@@ -310,8 +347,13 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 3 — T1 / Settlement / BTST
 
 1. T1 meaning → check `t1_t2_holdings`. Respond per **A11-R9**. Settlement per **A3**.
-2. BTST proceeds not available → respond per **A11-R10**. Rules per **A4**.
-   - Settlement holiday: may take T+2.
+2. BTST proceeds not available → detect and respond:
+   a. Invoke `kite_order_history` for the sell date and one previous trading day (account for any holidays in between).
+   b. If the stock was bought on the previous trading day and sold today, this is a BTST trade.
+   c. Invoke `console_eq_holdings` for the sell date. Check if the quantity exists under `t1` — only the `t1` quantity is BTST.
+   d. Calculate blocked value: `filled_quantity × average_price` (from the sell order for the BTST quantity).
+   e. Respond per **A11-R10** with the BTST quantity and blocked value.
+   f. Settlement holiday: if a settlement holiday falls between the buy and sell dates, settlement extends — BTST credit may take an additional day.
 3. If client asks why proceeds not reflected in balance → invoke `kite_margins`.
 
 ---
@@ -330,7 +372,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 1. Systematically check causes from **A6**:
    a. Recently purchased → respond per **A11-R13**. Invoke `kite_positions`.
    b. CA in progress (bonus/split/demerger) → respond per **A11-R25**. Timelines per **A5**.
-   c. Short delivery → respond per **A11-R14**.
+   c. Short delivery → investigate per **A12** checklist. Respond per **A11-R26** (buy-side) or **A11-R27** (sell-side) based on findings.
    d. ESOP with lock-in → respond per **A11-R15**.
    e. Suspended/delisted → respond per **A11-R16**.
    f. Transfer from another broker → respond per **A11-R17**.
