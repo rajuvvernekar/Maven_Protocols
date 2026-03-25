@@ -111,7 +111,14 @@ Applies to both Standard and NRI/NRE accounts. Use `bank_response_status` for in
 - Entry EXISTS → *"Your withdrawal was rejected by your bank and the funds have been credited back to your trading account. You can place a fresh withdrawal request."*
 - Entry NOT YET present → *"Your withdrawal was rejected by your bank. The funds will be reversed to your trading account within 24–48 working hours, after which you can place a fresh withdrawal request."*
 
-**Step 2 — Resolution:**
+**Step 2 — NPCI rejection check:**
+If `bank_response_remarks` contains "NPCI" AND `bank_response_status` = failed → the rejection originated from the banking/payments infrastructure (NPCI), not from Zerodha.
+- *"Your withdrawal was declined by your bank's payment network (NPCI). Please check with your bank for the specific reason."*
+- If `Instant_Payout` → today's instant attempt is used; only regular withdrawal is available for the rest of the day.
+- If `Payout` (Regular) → client can place a fresh regular withdrawal request after confirming with their bank that the issue is resolved.
+- Instant withdrawal remains unavailable for the entire day after an NPCI rejection, regardless of the bank's resolution.
+
+**Step 3 — Resolution:**
 - Download CMR (Console → Profile), cross-check bank statement.
 - Update bank details per: https://support.zerodha.com/category/funds/adding-bank-accounts/primary-bank-account/articles/how-do-i-change-my-primary-bank-account-linked-with-zerodha
 - If `Instant_Payout` → today's attempt is used; only regular available today.
@@ -144,6 +151,7 @@ If all pass → *"You can also use instant withdrawal (₹100–₹2,00,000, ava
 | Book Voucher | "Net obligation for CDS FNO" | CDS currency trade settlement |
 | Journal Entry | "DP Charges for Sale of [STOCK] on [DATE]" | Stock sold that day → root cause is T+1 settlement. Cite stock + amount. |
 | Journal Entry | "Delayed payment charges for [Month] - [Year]" | Delayed payment charges. Cite month + amount. |
+| Bank Payments | "Funds transferred back as part of quarterly settlement" or remarks containing "quarterly settlement" | Quarterly settlement (QS) — unused funds returned to client's primary bank account per SEBI mandate. |
 
 **Exclude from client responses:** All MTF entries (initial margin, MTF interest, pledge/unpledge charges, MTM obligation).
 
@@ -194,6 +202,10 @@ On every withdrawal query, execute in order:
    ├─ If NRI PIS → STOP. Escalate to NRI Team.
    ├─ Fetch last 3 withdrawals (both types, descending)
    ├─ Verify payout_type field for each (correct client if misidentified)
+   ├─ For each fetched withdrawal, compare amount vs processed_amount.
+   │   If processed_amount < amount AND the difference ≥ ₹1 → route to Rule 3 (Partial Withdrawals).
+   ├─ If any fetched withdrawal has a creation date of today, note its status.
+   │   Address this existing request's status before suggesting a new withdrawal request.
    └─ Communicate status of ALL fetched withdrawals relevant to client's query
 
 2. ROUTE by client intent
@@ -253,7 +265,7 @@ Always invoke `ledger_report` (±3 days from creation).
 | "Bank Receipts" on Sat/Sun + `Instant_Payout` | Weekend deposit | Use regular now or instant Tuesday. |
 | "Book Voucher" + settlement/obligation remarks | T+1 settlement | Use **A4** template. |
 | "Journal Entry" + "DP Charges for Sale of [STOCK]" on creation date | Stock sold same day | DP charges confirm the sale. Root cause is T+1 per **A4**. |
-| `bank_response_status` = failed | Bank rejection | Follow **A6**. |
+| `bank_response_status` = failed | Bank rejection | Follow **A6** (including NPCI rejection check in Step 2). |
 
 **Trading Activity Check:** Always check ledger for trading activity during the same period. If client traded with the funds, explain: *"The deposited/credited funds were utilized for trading on [date], leaving a balance of ₹[amount]."*
 
@@ -275,7 +287,12 @@ If `Instant_Payout` → state: processed instant ₹[processed_amount]. If bank_
 
 **Rounding:** If `(amount - processed_amount)` < ₹1 → display rounding, full balance processed.
 
-After explaining, always inform: *"You can place a fresh withdrawal request for the remaining amount."* If eligible per **A7** → suggest instant.
+**Before suggesting a fresh withdrawal request, verify:**
+1. Current withdrawable balance supports the remaining amount.
+2. If the root cause is same-day deposit or T+1 settlement, suggest the fresh request for the next working day (not today).
+3. If eligible per **A7** → suggest instant as an alternative.
+
+After explaining, always inform: *"You can place a fresh withdrawal request for the remaining amount of ₹[amount - processed_amount]."* with the applicable timing from the pre-checks above.
 
 ---
 
@@ -324,6 +341,7 @@ Invoke `ledger_report` + `kite_margins`.
 | "Bank Receipts" today | Same-day deposit — available next working day. |
 | "Bank Receipts" Sat/Sun | Weekend deposit — Regular: Monday. Instant: Tuesday. |
 | Settlement/obligation entry | Use **A4** template with specific T+1 date. |
+| Remarks containing "quarterly settlement" or "Funds transferred back as part of quarterly settlement" (check ledger ±14 days) | Quarterly settlement — *"Your funds of ₹[amount from ledger entry] were transferred back to your primary bank account as part of the quarterly settlement of unused funds, as mandated by SEBI. This settlement occurs on the first Friday of each quarter (January, April, July, October). If your account has been inactive for 30 consecutive days, settlement occurs monthly. Please check your bank account for the credited amount. You can add funds again and place a withdrawal request if needed."* |
 | Time 17:00–21:00, no above signals | Balance update window — re-login or retry after. |
 | Weekend/holiday, post stock sale | Non-working day — retry next working day. |
 | No signals, funds appear in ledger | Check kite_margins for Payin (same-day deposit → apply T+1). If no same-day deposit, balance may not have updated — suggest placing a regular withdrawal which will be processed at the applicable cutoff. If 17:00–21:00 → balance update window. |
@@ -356,8 +374,10 @@ When troubleshooting instant issues, use only instant withdrawal data. Instant a
 Invoke `kite_orders` (today) + `kite_positions`. Check for attached screenshot.
 
 **Step 1 — Check A2 blockers:**
-- If any blocker found → cite it. If orders/positions → *"Instant withdrawal is not available when any orders or positions exist on the same day (except CNC sell executed). Use regular withdrawal instead (processed EOD, credited within 24h)."* Once any order/position exists for the day, regular is the only same-day option.
+- Filter out CNC sell executed orders/positions first — these are confirmed non-blockers per **A2**.
+- Evaluate only the remaining orders/positions. If any non-CNC-sell-executed orders or positions exist → cite them: *"Instant withdrawal is not available when any orders or positions exist on the same day (except CNC sell executed). Use regular withdrawal instead (processed EOD, credited within 24h)."* Once any such order/position exists for the day, regular is the only same-day option.
 - Same-day deposit, weekend deposit, Paytm, Orbis, non-whole amount → cite specific blocker.
+- If `bank_response_remarks` contains "NPCI" AND `bank_response_status` = failed → follow **A6** Step 2 (NPCI rejection). Instant is unavailable for the rest of the day.
 
 **Step 2 — No blockers found → check settlement/balance:**
 Invoke `ledger_report`. If unsettled funds → explain T+1 per **A4**, suggest regular.
@@ -377,7 +397,7 @@ Invoke `ledger_report`. If unsettled funds → explain T+1 per **A4**, suggest r
 - Second instant same day → once/day regardless of outcome. Try tomorrow or use regular.
 - Second regular → wait for completion or cancel (Console → Funds → Withdrawal history) before placing new.
 
-**Instant + bank rejection:** Today's attempt is used regardless of failure (e.g., "cbs:10 Server Rejected Request", "Transaction Processing Error"). Only regular available today. Explain: *"Your instant withdrawal was rejected by the bank. Since instant withdrawal is allowed only once per day regardless of outcome, you can place a regular withdrawal instead (processed EOD, credited within 24h)."*
+**Instant + bank rejection:** Today's attempt is used regardless of failure (e.g., "cbs:10 Server Rejected Request", "Transaction Processing Error"). Only regular available today. Explain: *"Your instant withdrawal was rejected by the bank. Since instant withdrawal is allowed only once per day regardless of outcome, you can place a regular withdrawal instead (processed EOD, credited within 24h)."* If `bank_response_remarks` contains "NPCI" → also follow **A6** Step 2.
 
 **Balance after instant:** Only share remaining balance if client explicitly asks. Default response: *"Your withdrawable balance will be updated by the end of the day after settlement processing is complete."*
 
@@ -414,7 +434,7 @@ If client reports blank screen, page not loading, app not responding, or any UI 
 
 ## Section D: General Notes
 
-- Withdrawals can be made to any linked bank account (primary, secondary, tertiary). Client selects the preferred account on Console after entering the amount. Secondary/tertiary accounts that are not penny-drop verified will show as unavailable with "Account verification is pending." Verification steps: see **A11** bank verification link.
+- Withdrawals can be made to any linked bank account (primary, secondary, tertiary). Client selects the preferred account on Console after entering the amount. Secondary/tertiary accounts that are not penny-drop verified will show as unavailable with "Account verification is pending." Verification steps: see **A11** bank verification link. Secondary/tertiary accounts that are not penny-drop verified will show as unavailable with "Account verification is pending." Verification steps: see **A11** bank verification link.
 - Withdrawable balance updates 17:00–21:00 daily and may show zero intermittently during this window.
 - Dormant accounts can withdraw.
 - NRI PIS accounts require NRI team verification (handled in preflight).
