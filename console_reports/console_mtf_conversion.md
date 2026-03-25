@@ -238,3 +238,4 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 - After successful conversion: shares move from MTF to regular equity holdings; MTF interest stops on converted qty from the next day.
 - Stock removed from MTF approved list: existing positions are NOT auto-converted — client must convert manually or continue holding.
 - Short-delivered MTF positions auto-converted to CNC should stop accruing interest. If interest continues, escalate for reversal.
+- MTF-to-CNC conversion is a self-service action via Kite or Console. Support cannot process conversions on behalf of the client. Selling MTF holdings and rebuying in CNC is not a valid conversion method — it incurs unnecessary charges and tax events.

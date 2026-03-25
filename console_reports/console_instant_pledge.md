@@ -86,6 +86,7 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | Insufficient qty | Trying to pledge more qty than available free holdings |
 | Margin utilized (unpledge) | Unpledge rejected because collateral margin already used against open positions |
 | Overdue | CDSL confirmation delayed — request stuck in pending/overdue state |
+| Same-day pledge | Securities pledged today cannot be unpledged on the same day. The pledge is processed on the same day and collateral is credited within 15 minutes. An unpledge request can only be submitted from the next working day onwards. The client can sell the pledged shares on the same day, provided the collateral is not being utilised. |
 
 ---
 
@@ -143,6 +144,9 @@ When escalating, always include: **client ID, tradingsymbol, pledge_type, status
 **R12 — MTF auto-pledge explanation:**
 "If you purchased shares under MTF (Margin Trading Facility), those shares are automatically pledged as collateral for the funded amount. These auto-pledge entries are separate from pledges you initiate manually. MTF auto-pledge details are covered under your MTF holdings."
 
+**R13 — Same-day unpledge restriction:**
+"Securities pledged on the same day cannot be unpledged. The pledge is processed on the same day and the collateral is credited within 15 minutes, which can be used for trading immediately. However, an unpledge request can only be submitted from the next working day onwards. Please note that you can sell the pledged shares on the same day, provided the collateral is not being utilised against any open positions."
+
 ---
 
 ## Section B: Decision Flow
@@ -168,6 +172,7 @@ Unpledge rejected — margin utilized                         → Rule 4
 Overdue / stuck pledge request                              → Rule 5
 Holdings showing zero after pledge                          → Rule 6
 Unexpected pledge entries (MTF auto-pledge confusion)       → Rule 7
+Pledged today, cannot unpledge                              → Rule 8
 ```
 
 ### Scope
@@ -244,6 +249,21 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 ---
 
+### Rule 8 — Same-Day Unpledge Restriction
+
+1. If the client pledged securities today and is unable to unpledge → respond per **A8-R13**.
+
+2. The pledge is processed on the same day and collateral is available within 15 minutes. The unpledge request can only be placed from the next working day onwards.
+
+3. The client can sell the pledged shares on the same day, provided the collateral is not being utilised against open positions.
+
+4. Do not suggest alternative workarounds for same-day unpledging. This is a hard restriction.
+
+**Example response:**
+"Securities pledged on the same day cannot be unpledged. You will be able to place the unpledge request from the next working day onwards. However, you can sell the pledged shares today if the collateral is not being utilised."
+
+---
+
 ## Section D: General Notes
 
 - Collateral margin from pledging is reflected after CDSL confirmation — usually instant, can take up to 30 minutes.
@@ -253,3 +273,4 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 - Unpledge may be rejected if collateral margin is already utilized against open positions.
 - Overdue requests pending beyond 30 minutes are likely to fail — recommend a fresh request on the next trading day.
 - Pledged shares may not appear in Kite's standard holdings view but are visible on Console.
+- Securities pledged today cannot be unpledged on the same day — the unpledge request can only be submitted from the next working day. The client can sell pledged shares on the same day if the collateral is not utilised.

@@ -334,3 +334,4 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 - Conversions on ex-date of corporate actions are not processed.
 - MTF obligation in contract note shows full purchase value (gross obligation) — this is correct.
 - Short delivery auto-conversion from MTF to CNC should stop interest accrual; if it does not, escalate for reversal.
+- MTF-to-CNC conversion is a self-service action via Kite or Console. Support cannot process conversions on behalf of the client. Selling MTF holdings and rebuying in CNC is not a valid conversion method — it incurs unnecessary charges and tax events.
