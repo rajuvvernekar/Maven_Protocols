@@ -35,7 +35,7 @@ All rules reference these blocks as single sources of truth. If a definition exi
 | Field Value | Label | Specs |
 |---|---|---|
 | `Instant_Payout` | Instant | ₹100–₹2,00,000 · Once/day regardless of outcome · Window 09:00–16:00 daily (incl. weekends; intermittent before 09:25) · Credited within minutes · Cannot be cancelled |
-| `Payout` | Regular | ₹1 to available balance · Up to ₹5 crore via Console (above → escalate to Funds Team) · Processed once at applicable cutoff · Credited within 24h of processing · Can be cancelled while Pending via Console → Funds → Withdrawal history |
+| `Payout` | Regular | ₹1 to available balance · Up to ₹5 crore via Console (above → **ESCALATE** — funds team review needed) · Processed once at applicable cutoff · Credited within 24h of processing · Can be cancelled while Pending via Console → Funds → Withdrawal history |
 
 **Type verification is mandatory.** Always read the `payout_type` field — it is the only source of truth. If client's stated type ≠ actual field → correct explicitly before proceeding: *"This is a [actual type] withdrawal, not [stated type]."*
 
@@ -190,6 +190,8 @@ If all pass → *"You can also use instant withdrawal (₹100–₹2,00,000, ava
 | Bank verification for withdrawal | https://support.zerodha.com/category/funds/fund-withdrawal/withdrawal-process/articles/select-bank-for-withdrawal |
 | Console withdrawal page | https://console.zerodha.com/funds/overview |
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -199,7 +201,7 @@ On every withdrawal query, execute in order:
 ```
 1. PREFLIGHT
    ├─ get_all_client_data → check account type, active segments (ZBL_MCX)
-   ├─ If NRI PIS → STOP. Escalate to NRI Team.
+   ├─ If NRI PIS → STOP. **ESCALATE** — NRI team review needed.
    ├─ Fetch last 3 withdrawals (both types, descending)
    ├─ Verify payout_type field for each (correct client if misidentified)
    ├─ For each fetched withdrawal, compare amount vs processed_amount.
@@ -221,7 +223,7 @@ On every withdrawal query, execute in order:
    ├─ Expedite / cancel → Rule 10
    ├─ Commodity / charges / no records → Rule 11
    ├─ App/UI issue → Rule 12
-   └─ >₹5 crore → ESCALATE to Funds Team
+   └─ >₹5 crore → **ESCALATE** — funds team review needed
 
 3. FALLBACK
    If all mandatory checks completed and no root cause identified →
@@ -434,9 +436,9 @@ If client reports blank screen, page not loading, app not responding, or any UI 
 
 ## Section D: General Notes
 
-- Withdrawals can be made to any linked bank account (primary, secondary, tertiary). Client selects the preferred account on Console after entering the amount. Secondary/tertiary accounts that are not penny-drop verified will show as unavailable with "Account verification is pending." Verification steps: see **A11** bank verification link. Secondary/tertiary accounts that are not penny-drop verified will show as unavailable with "Account verification is pending." Verification steps: see **A11** bank verification link.
+- Withdrawals can be made to any linked bank account (primary, secondary, tertiary). Client selects the preferred account on Console after entering the amount. Secondary/tertiary accounts that are not penny-drop verified will show as unavailable with "Account verification is pending." Verification steps: see **A11** bank verification link.
 - Withdrawable balance updates 17:00–21:00 daily and may show zero intermittently during this window.
 - Dormant accounts can withdraw.
 - NRI PIS accounts require NRI team verification (handled in preflight).
 - All withdrawal requests are free of charge.
-- Amount >₹5 crore → escalate to Funds Team.
+- Amount >₹5 crore → **ESCALATE** — funds team review needed.

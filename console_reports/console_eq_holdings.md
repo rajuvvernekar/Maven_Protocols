@@ -323,6 +323,8 @@ Please note: While filing income tax returns, you may need to manually adjust th
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -374,7 +376,7 @@ Gift / off-market transfer (P&L / avg)                    → Rule 17
 
 ### Fallback
 
-If no route matches, interpret the holdings data using Section A reference data. If no root cause is found, escalate per **A12**.
+If no route matches, interpret the holdings data using Section A reference data. If no root cause is found, **ESCALATE** per **A12**.
 
 ---
 
@@ -394,7 +396,7 @@ If no route matches, interpret the holdings data using Section A reference data.
 1. If `buy_average` is null/N/A AND `discrepant` > 0:
    a. Check `console_eq_external_trades` for an existing entry for this ISIN.
    b. If entry exists AND still processing → respond per **A13-R6**.
-   c. If entry exists AND processed but avg still N/A → escalate per **A12** with entry details from `console_eq_external_trades`.
+   c. If entry exists AND processed but avg still N/A → **ESCALATE** per **A12** with entry details from `console_eq_external_trades`.
    d. If no entry exists → respond per **A13-R3** + **A13-R4**.
 
 2. If `buy_average` is null AND `discrepant` = 0 AND `pending` > 0:
@@ -407,14 +409,14 @@ If no route matches, interpret the holdings data using Section A reference data.
 1. If `buy_average` = 0 AND `total_quantity` > 0:
    a. Check `console_eq_holdings_breakdown` for the same stock/ISIN — look for entries where `exchange` field = "BONUS".
    b. If confirmed → respond per **A13-R8**.
-   c. If no BONUS entry found → investigate further (may be a system issue or other CA type). Escalate per **A12** if unexplained.
+   c. If no BONUS entry found → investigate further (may be a system issue or other CA type). **ESCALATE** per **A12** if unexplained.
 
 ---
 
 ### Rule 4 — Buy Average Wrong After Corporate Action
 
 1. Check if CA was within last 2 weeks → respond per **A13-R7**. Timeline per **A4**.
-2. If CA was 3+ weeks ago and avg still appears wrong → escalate per **A12** with client ID, tradingsymbol, and expected vs actual buy average.
+2. If CA was 3+ weeks ago and avg still appears wrong → **ESCALATE** per **A12** with client ID, tradingsymbol, and expected vs actual buy average.
 
 ---
 
@@ -424,13 +426,13 @@ If no route matches, interpret the holdings data using Section A reference data.
 
 1. Check `console_eq_external_trades` for `external_trade_type` = gift.
 2. If entry found → respond per **A13-R33**.
-3. If no entry found → escalate per **A12**. The system should have auto-posted this entry.
+3. If no entry found → **ESCALATE** per **A12**. The system should have auto-posted this entry.
 
 **If client confirms shares were transferred from another broker / ESOP / off-market:**
 
 1. Check `console_eq_external_trades` for an existing entry for this ISIN.
 2. If entry exists AND still processing → respond per **A13-R6**.
-3. If entry exists AND processed but discrepancy not resolved → escalate per **A12** with entry details.
+3. If entry exists AND processed but discrepancy not resolved → **ESCALATE** per **A12** with entry details.
 4. If no entry exists → respond per **A13-R3** + **A13-R4**.
 
 **If client says they don't have purchase details:** → respond per **A13-R5**.
@@ -454,7 +456,7 @@ If no route matches, interpret the holdings data using Section A reference data.
 1. Check `console_eq_external_trades` for a system-posted CA credit entry (external_trade_type = devolved or CA-related entry) for this ISIN.
 2. If CA credit entry found but not yet reflecting in holdings → "Your bonus shares of [tradingsymbol] have been processed and the credit entry is in our system. The holdings will update shortly — this can take up to 1 trading day to reflect."
 3. If no CA credit entry found AND shares yet to be credited → respond per **A13-R9**. Append **A13-R10** (P&L temporary drop).
-4. If more than 5 trading days since record date AND shares still not credited → escalate per **A12**.
+4. If more than 5 trading days since record date AND shares still not credited → **ESCALATE** per **A12**.
 
 ---
 
@@ -464,7 +466,7 @@ If no route matches, interpret the holdings data using Section A reference data.
 2. Check `kite_holdings` to verify whether split shares have already been credited.
 3. If `kite_holdings` shows the full post-split quantity → respond per **A13-R11**.
 4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → respond per **A13-R12**.
-5. If more than 5 trading days since record date AND split shares still not credited → escalate per **A12**.
+5. If more than 5 trading days since record date AND split shares still not credited → **ESCALATE** per **A12**.
 
 ---
 
@@ -472,7 +474,7 @@ If no route matches, interpret the holdings data using Section A reference data.
 
 1. Shares not credited → respond per **A13-R13**. Timeline per **A4**.
 2. Avg not updated → respond per **A13-R14**. Timeline per **A4**.
-3. If COA announced but avg still not updated after 3 weeks → escalate per **A12**.
+3. If COA announced but avg still not updated after 3 weeks → **ESCALATE** per **A12**.
 
 ---
 

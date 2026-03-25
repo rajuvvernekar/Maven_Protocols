@@ -86,6 +86,8 @@ Suppress (no client use, only internal reasoning use): client_id, umrn, merchant
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)

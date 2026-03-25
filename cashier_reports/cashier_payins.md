@@ -170,6 +170,8 @@ Single ledger — balance available for both Equity and Commodity. No separate c
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 On every payin query, execute in order:
@@ -177,7 +179,7 @@ On every payin query, execute in order:
 ```
 1. PREFLIGHT
    ├─ get_all_client_data → check account type, registered banks, IDFC 3-in-1 status
-   ├─ If NRI PIS (client_acc_type IN NRO/NRE/NRI AND pis_bank present) → STOP. Escalate to support agent.
+   ├─ If NRI PIS (client_acc_type IN NRO/NRE/NRI AND pis_bank present) → STOP. **ESCALATE** — agent review needed.
    ├─ UNLINKED ACCOUNT CHECK: If customer asks about transferring from an unlinked or
    │   unregistered bank account, or from a third-party account (spouse, family, others) →
    │   immediately state: "As per SEBI regulations, funds can only be transferred from bank
@@ -274,7 +276,7 @@ Initiated Monday 17 Mar 2026 at 7:50 AM → T+1 = Tuesday 18 Mar 2026 → Credit
 **Step 3 — Customer confirms debit or provides bank statement proof:**
 When the customer explicitly states the amount was debited OR provides a bank statement screenshot showing the debit, state both deadlines:
 "Your payment of ₹[amount] is pending at the bank. The amount will either be credited to your Zerodha account by 2:00 PM on [T+1 day name, date] or refunded to your bank account by 5:00 PM on [T+2 day name, date]."
-If both deadlines have already passed → escalate to funds team with proof.
+If both deadlines have already passed → **ESCALATE** — funds team review needed, include proof.
 
 **Pre-response verification checklist:**
 Before sending the response, verify:
@@ -353,7 +355,7 @@ Some NEFT/IMPS/RTGS transfers do not appear in `cashier_payins` because they wer
    - Cross-check the `bank_account_number` from the re-query result against the customer's `registered_bank_accounts` from `get_all_client_data`.
    - If the account number matches any registered (primary or secondary) bank account:
      - Response: "We have located your transfer of ₹[amount] (reference: [bank_reference]). The transaction was received via direct bank transfer and requires a manual update to reflect in your account. Escalating this to our funds team for processing."
-     - **Escalate to human agent / funds team immediately** with: client ID, UTR/reference number, amount, date, and source bank account number.
+     - **ESCALATE** — funds team review needed, include: client ID, UTR/reference number, amount, date, and source bank account number.
 
    **3b — Transaction found, account number does NOT match any registered bank account:**
    - The transfer was made from an unmapped/unregistered bank account.
@@ -362,7 +364,7 @@ Some NEFT/IMPS/RTGS transfers do not appear in `cashier_payins` because they wer
 
    **3c — Transaction NOT found even after re-query:**
    - The transfer has not reached Zerodha's banking system at all.
-   - If the customer has provided proof (attachment/screenshot): Escalate to funds team immediately per **Rule 7 Sub-case A**.
+   - If the customer has provided proof (attachment/screenshot): **ESCALATE** — funds team review needed immediately per **Rule 7 Sub-case A**.
    - If the customer provided only a reference number in text (no attachment): Request bank statement screenshot per **Rule 7 Sub-case B**.
 
 **Important safeguards:**
@@ -378,16 +380,16 @@ Some NEFT/IMPS/RTGS transfers do not appear in `cashier_payins` because they wer
 1. Extract the UTR or bank reference number from the attachment.
 2. **Perform the UTR-based re-query as described in Rule 6 Step 3** (re-query the `cashier_payins` tool without client ID, using the reference number from the proof).
 3. Follow the outcome:
-   - **Rule 6 Step 3a** (match found, registered account) → Escalate to funds team for manual update.
+   - **Rule 6 Step 3a** (match found, registered account) → **ESCALATE** — funds team review needed for manual update.
    - **Rule 6 Step 3b** (match found, unregistered account) → Inform customer of unmapped transfer reversal.
-   - **Rule 6 Step 3c** (no match even after re-query) → Acknowledge the proof. Response: "Your [UTR / transaction slip / bank receipt] for ₹[amount] shows a transfer that hasn't reached our system yet and requires a manual update. Escalating this to our funds team for investigation." Escalate immediately with all available details.
+   - **Rule 6 Step 3c** (no match even after re-query) → Acknowledge the proof. Response: "Your [UTR / transaction slip / bank receipt] for ₹[amount] shows a transfer that hasn't reached our system yet and requires a manual update. Escalating this to our funds team for investigation." **ESCALATE** immediately with all available details.
 
 **Sub-case A — Proof provided as attachment (UPI / netbanking transfers):**
-Acknowledge the proof. Response: "Your [UTR / transaction slip / bank receipt] for ₹[amount] shows a transfer that hasn't reached our system yet and requires a manual update. Escalating this to our funds team for investigation." Escalate immediately with all available details. Do not request details already provided. (UTR re-query does not apply to UPI/netbanking.)
+Acknowledge the proof. Response: "Your [UTR / transaction slip / bank receipt] for ₹[amount] shows a transfer that hasn't reached our system yet and requires a manual update. Escalating this to our funds team for investigation." **ESCALATE** immediately with all available details. Do not request details already provided. (UTR re-query does not apply to UPI/netbanking.)
 
 **Sub-case B — UTR or reference number in message text only, no attachment:**
 1. If the transfer method is NEFT/IMPS/RTGS: **Perform the UTR-based re-query as described in Rule 6 Step 3** using the reference number provided in the message text.
-   - **Rule 6 Step 3a** (match found, registered account) → Escalate to funds team for manual update.
+   - **Rule 6 Step 3a** (match found, registered account) → **ESCALATE** — funds team review needed for manual update.
    - **Rule 6 Step 3b** (match found, unregistered account) → Inform customer of unmapped transfer reversal.
    - **Rule 6 Step 3c** (no match even after re-query) → Response: "We're unable to locate a transaction matching the reference number you've provided. To help us investigate, please share a screenshot of your bank statement showing the transaction details (amount, date, and reference number)." Do not escalate until proof is received.
 2. If the transfer method is UPI/netbanking or unknown: Response: "We're unable to locate a transaction matching the reference number you've provided. To help us investigate, please share a screenshot of your bank statement showing the transaction details (amount, date, and reference number)." Do not share any other transaction data from the system. Do not escalate until proof is received.
@@ -447,7 +449,7 @@ If payin is successful but available balance (from `kite_margins`) is lower than
 3. Check `ledger_report` for: negative opening balance, AMC charges, NSE/BSE charges, trading debit obligations, delayed payment charges, or prior QS payouts.
 4. State: "Your account had a negative balance of -₹[X] prior to this transaction due to [specific reason from ledger]. This was adjusted against your deposit, resulting in your current balance of ₹[current balance]."
 
-Only explain if ledger data confirms the cause. If ledger doesn't explain the gap → escalate to funds team.
+Only explain if ledger data confirms the cause. If ledger doesn't explain the gap → **ESCALATE** — funds team review needed.
 
 **MTF margin shortfall:** If ledger shows MTF-related debits (look for "MTF" entries in the ledger) → flag urgency: "Your account has an MTF margin shortfall of ₹[X]. If this shortfall is not cleared, open MTF positions may be squared off. Please check the email notification sent regarding this shortage." Reference the Communication Tab for notifications sent to the client.
 
@@ -459,7 +461,7 @@ If customer reports old payin (>30 days) not reflecting and account balance = �
 
 1. Check `crux_qs_payouts` and `ledger_report` for any QS between payin date and today.
 2. QS found → "Your funds were added successfully on [payin date], but a Quarterly Settlement was processed on [QS date], which transferred the idle balance back to your bank account."
-3. No QS found → escalate to funds team.
+3. No QS found → **ESCALATE** — funds team review needed.
 
 ---
 
@@ -491,11 +493,11 @@ Listing all 7 transactions individually with timestamps, amounts, and status for
 
 ### Rule 15: Escalation Triggers
 
-Escalate to funds team with transaction details when:
+**ESCALATE** — funds team review needed, include transaction details when:
 - Unlinked bank transfer (confirmed via Rule 6)
 - Bank success but Zerodha failed
 - U30 error (bank-side issue)
-- Cheque debited but no system entry — escalate immediately without troubleshooting
+- Cheque debited but no system entry — **ESCALATE** immediately without troubleshooting
 - Customer provides UTR/bank receipt with no matching payin (Rule 7 Sub-case A)
 - Direct NEFT/IMPS/RTGS transfer found via UTR re-query from a registered account (Rule 6 Step 3a)
 

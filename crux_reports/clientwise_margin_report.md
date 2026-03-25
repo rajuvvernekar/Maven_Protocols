@@ -156,6 +156,8 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, segment, date, report values, and the specific discrepancy or request.
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -230,7 +232,7 @@ Query relates to margin penalty →
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per Rule 18.
+If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 18.
 
 ---
 

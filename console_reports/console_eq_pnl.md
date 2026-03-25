@@ -165,6 +165,8 @@ The values may differ because Tax P&L separates intraday trades from delivery, a
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -206,7 +208,7 @@ Stock in unrealized P&L despite all shares sold             → Rule 9
 
 ### Fallback
 
-If no route matches, use **A6** to cross-reference other tools for additional context. If no root cause is found, escalate per **A7**.
+If no route matches, use **A6** to cross-reference other tools for additional context. If no root cause is found, **ESCALATE** per **A7**.
 
 ---
 
@@ -232,7 +234,7 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 1. Check `console_eq_holdings` — verify if `discrepant` > 0 for that stock (or was > 0 before selling).
 2. Also check `console_eq_external_trades` for missing buy entries (per **A6**).
 3. Respond per **A8-R3**.
-4. If shares already sold with ₹0 cost → escalate per **A7**. Backend correction needed.
+4. If shares already sold with ₹0 cost → **ESCALATE** per **A7**. Backend correction needed.
 
 ---
 
@@ -266,7 +268,7 @@ If no route matches, use **A6** to cross-reference other tools for additional co
    - Demerger → **A8-R12**. Impact per **A5**.
    - Merger → **A8-R13**. Impact per **A5**.
    - Fractional shares → **A8-R14**. Impact per **A5**.
-2. If CA was 3+ weeks ago and P&L still appears wrong → escalate per **A7**.
+2. If CA was 3+ weeks ago and P&L still appears wrong → **ESCALATE** per **A7**.
 
 ---
 
@@ -280,7 +282,7 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 ### Rule 9 — Unrealized P&L Orphan Entry
 
 1. Check `console_eq_holdings` for that stock.
-2. If no holdings found but P&L still shows unrealized entry → respond per **A8-R15**. Escalate per **A7** as orphan lot.
+2. If no holdings found but P&L still shows unrealized entry → respond per **A8-R15**. **ESCALATE** per **A7** as orphan lot.
 
 ---
 

@@ -119,6 +119,8 @@ Delivery margin is blocked from the Wednesday before expiry for stock F&O positi
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -153,7 +155,7 @@ Margin shortfall / penalty query                            → Rule 7
 
 ### Fallback
 
-If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A5**.
+If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, **ESCALATE** per **A5**.
 
 ---
 
@@ -170,7 +172,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 2 — MTM Obligation Explanation
 
 1. Respond per **A7-R2**. MTM mechanics per **A6**.
-2. If client asks for detailed day-by-day MTM calculation → Escalate to support agent. This tool shows position snapshots, not day-by-day MTM breakdown. 
+2. If client asks for detailed day-by-day MTM calculation → **ESCALATE** — agent review needed. This tool shows position snapshots, not day-by-day MTM breakdown. 
 ---
 
 ### Rule 3 — Console vs Kite Position Value Difference
@@ -178,7 +180,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 1. Respond per **A7-R3**.
 2. If values differ after EOD settlement → verify both show same `open_quantity`.
    a. Quantity matches but value differs → closing price source difference (normal).
-   b. Quantity differs → escalate per **A5**.
+   b. Quantity differs → **ESCALATE** per **A5**.
 
 ---
 
@@ -193,7 +195,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 5 — Physical Delivery on Expiry
 
 1. Respond per **A7-R5**. Delivery mechanics per **A6**.
-2. If client questions delivery margin or charges → Escalate to support agent . Delivery margin and penalty calculations depend on multiple factors not available in this tool.
+2. If client questions delivery margin or charges → **ESCALATE** — agent review needed . Delivery margin and penalty calculations depend on multiple factors not available in this tool.
 
 ---
 
@@ -207,8 +209,8 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 7 — Margin Shortfall Queries
 
 1. This tool does not contain margin requirement or penalty calculations.
-2. Escalate per **A5** with: client ID, tradingsymbol, trade_date, and client's concern about margin shortfall/penalty.
-3. Margin calculations require data outside this tool — escalate to a support agent 
+2. **ESCALATE** per **A5** with: client ID, tradingsymbol, trade_date, and client's concern about margin shortfall/penalty.
+3. Margin calculations require data outside this tool — **ESCALATE** — agent review needed
 ---
 
 ## Section D: General Notes

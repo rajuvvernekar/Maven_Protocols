@@ -321,6 +321,8 @@ Auto square-off charges: ₹50 + 18% GST per order."
 **R23 — Circuit + MIS risk:**
 "When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time — this can lead to short delivery or auction risk."
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -364,7 +366,7 @@ Order book display issues                                   → Rule 10
 
 ### Fallback
 
-If no route matches, investigate using Order History sub-view and Section A reference data. If no root cause is found, escalate per **A17**.
+If no route matches, investigate using Order History sub-view and Section A reference data. If no root cause is found, **ESCALATE** per **A17**.
 
 ---
 
@@ -446,7 +448,7 @@ If no route matches, investigate using Order History sub-view and Section A refe
 
 1. Check `placed_by`:
    a. ADMINSQF or starts with "rms" → apply Rule 7 (RMS square-off).
-   b. Client's own ID → escalate to escalation team immediately.
+   b. Client's own ID → **ESCALATE** — agent review needed, immediate investigation required.
 
 ---
 

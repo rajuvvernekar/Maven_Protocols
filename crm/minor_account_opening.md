@@ -160,6 +160,10 @@ When escalating, always include: **client ID (guardian's), minor's name/details,
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
+---
+
 ## Section B: Decision Flow
 
 ---
@@ -197,7 +201,7 @@ Trading capabilities / restrictions                         → Rule 8
 
 ### Fallback
 
-If no route matches, answer from Section A reference data. If unable to resolve, escalate per **A9**.
+If no route matches, answer from Section A reference data. If unable to resolve, **ESCALATE** per **A9**.
 
 ---
 
@@ -222,7 +226,7 @@ If no route matches, answer from Section A reference data. If unable to resolve,
 ### Rule 3 — Application Overdue
 
 1. `status` = "processing" AND `creation` > 48 working hours AND `reasons` is empty/null.
-2. Respond per **A10-R3**. Escalate per **A9**.
+2. Respond per **A10-R3**. **ESCALATE** per **A9**.
 
 ---
 

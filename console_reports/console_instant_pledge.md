@@ -149,6 +149,8 @@ When escalating, always include: **client ID, tradingsymbol, pledge_type, status
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -183,7 +185,7 @@ Pledged today, cannot unpledge                              → Rule 8
 
 ### Fallback
 
-If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, escalate per **A7**.
+If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, **ESCALATE** per **A7**.
 
 ---
 
@@ -204,7 +206,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 2 — Collateral Not Reflecting After Successful Pledge
 
 1. If pledge was within last 30 minutes → respond per **A8-R4**.
-2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate per **A7**.
+2. If more than 30 minutes since `pledge_creation` and still no collateral → **ESCALATE** per **A7**.
 
 ---
 
@@ -214,7 +216,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
    a. "Something went wrong" error → likely unapproved security. Respond per **A8-R5**.
    b. T1 shares → respond per **A8-R6**.
    c. Insufficient qty → check `console_eq_holdings` (per **A6**) for available qty. Respond per **A8-R7**.
-2. If none of the above explains the failure → escalate per **A7** directly. Do not share a generic response.
+2. If none of the above explains the failure → **ESCALATE** per **A7** directly. Do not share a generic response.
 
 ---
 
@@ -230,7 +232,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 1. Check status and `pledge_creation` timestamp:
    a. Pending/overdue < 30 mins → respond per **A8-R9**.
    b. Pending/overdue > 30 mins but < 24 hours → respond per **A8-R10**.
-   c. Pending/overdue > 24 hours → escalate per **A7**.
+   c. Pending/overdue > 24 hours → **ESCALATE** per **A7**.
 
 ---
 
@@ -238,7 +240,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 1. Respond per **A8-R11**.
 2. Check `console_eq_holdings` (per **A6**) to confirm qty is present.
-3. If qty = 0 in Console as well → escalate per **A7** (may be safekeep or DP issue, not pledge-related).
+3. If qty = 0 in Console as well → **ESCALATE** per **A7** (may be safekeep or DP issue, not pledge-related).
 
 ---
 

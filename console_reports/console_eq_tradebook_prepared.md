@@ -29,7 +29,7 @@ This tool fetches a client's equity tradebook with **no date range limitation** 
 
 Use this tool only when the date range exceeds 100 days or the client needs full history. For recent trades (last 100 days), use `console_eq_tradebook` — it is faster and returns the same data.
 
-For closed accounts, escalate to support agent for historical trade data retrieval.
+For closed accounts, **ESCALATE** — agent review needed for historical trade data retrieval.
 
 All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook` apply here equally.
 
@@ -86,6 +86,8 @@ When escalating, always include: **client ID, date range requested, tradingsymbo
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -119,7 +121,7 @@ Report fails to load / times out                            → Rule 5
 
 ### Fallback
 
-If no route matches, cross-reference with **A3** tools for additional context. If no root cause is found, escalate per **A5**.
+If no route matches, cross-reference with **A3** tools for additional context. If no root cause is found, **ESCALATE** per **A5**.
 
 ---
 
@@ -137,7 +139,7 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 ### Rule 2 — Closed Account Trade Data
 
 1. Client's account is closed and they need historical trade data.
-2. Escalate to support agent.
+2. **ESCALATE** — agent review needed.
 
 ---
 
@@ -145,7 +147,7 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 1. Same rules as `console_eq_tradebook` protocol — verify trade existence, check series for T2T, explain FIFO.
 2. All business rules from `console_eq_tradebook` (Rules 1–9 in that protocol's v2) apply identically here.
-3. If trade not found → check `console_eq_external_trades` (per **A3**). If still not found → escalate per **A5**.
+3. If trade not found → check `console_eq_external_trades` (per **A3**). If still not found → **ESCALATE** per **A5**.
 
 ---
 
@@ -159,7 +161,7 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 1. Large date ranges with high trade volume may cause timeouts.
 2. Try narrowing the date range (e.g., one financial year at a time).
-3. If the issue persists → escalate per **A5**.
+3. If the issue persists → **ESCALATE** per **A5**.
 
 ---
 
@@ -167,5 +169,5 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 - This tool has no date range limitation — use it only when `console_eq_tradebook` (100-day limit) is insufficient.
 - Identical schema and data source as `console_eq_tradebook`. All series, T2T, FIFO, and contract note rules from that protocol apply equally.
-- For active accounts, guide clients to download reports themselves via Console (per **A4** links). For closed accounts, escalate to support agent.
+- For active accounts, guide clients to download reports themselves via Console (per **A4** links). For closed accounts, **ESCALATE** — agent review needed.
 - P&L is calculated from tradebook using FIFO. Tax P&L applies FIFO matching across financial years and may exclude intraday from delivery P&L.

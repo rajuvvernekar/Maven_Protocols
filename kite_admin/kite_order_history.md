@@ -295,6 +295,8 @@ Auto square-off charge: ₹50 + 18% GST per order."
 **R21 — MIS sell instead of CNC (product mismatch):**
 "Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order."
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -344,7 +346,7 @@ No matching orders found                                    → Rule 15
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A14**.
+If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A14**.
 
 ---
 
@@ -416,7 +418,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Check `placed_by`:
    a. ADMINSQF/rms → apply Rule 4.
-   b. Client's own ID → respond per **A15-R14**. Escalate to investigation team.
+   b. Client's own ID → respond per **A15-R14**. **ESCALATE** — agent review needed, investigation required.
 
 ---
 

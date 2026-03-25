@@ -136,6 +136,8 @@ When escalating, always include: **client ID, mandate details (bank, creation/ca
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -167,7 +169,7 @@ Old pending mandate blocking new creation                   → Rule 4
 
 ### Fallback
 
-If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` for related context. If no root cause is found, escalate per **A7**.
+If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` for related context. If no root cause is found, **ESCALATE** per **A7**.
 
 ---
 
@@ -182,14 +184,14 @@ If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` f
    b. Pending:
       - Calculate working days since creation date.
       - ≤5 working days → respond per **A8-R2**.
-      - >5 working days → respond per **A8-R3**. Escalate per **A7**.
+      - >5 working days → respond per **A8-R3**. **ESCALATE** per **A7**.
    c. Failed → respond per **A8-R4**. If `remark` contains useful info, share in customer-friendly language.
    d. Cancelled → respond per **A8-R5**.
    e. Pending Cancellation:
       - Check `cancellation_date`.
       - ≤5 working days → respond per **A8-R6**.
-      - >5 working days → escalate per **A7**.
-   f. Cancellation Failed → respond per **A8-R7**. If client insists mandate is still debiting → escalate per **A7**.
+      - >5 working days → **ESCALATE** per **A7**.
+   f. Cancellation Failed → respond per **A8-R7**. If client insists mandate is still debiting → **ESCALATE** per **A7**.
 
 ---
 
@@ -211,7 +213,7 @@ If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` f
 ### Rule 4 — Old Pending Mandate Blocking New Creation
 
 1. Respond per **A8-R12**. Deletion timeline per **A5**.
-2. If old mandate has been in pending_cancellation for >5 working days → escalate per **A7**.
+2. If old mandate has been in pending_cancellation for >5 working days → **ESCALATE** per **A7**.
 
 ---
 

@@ -77,6 +77,8 @@ Infer slab from `charged_amount` (pre-GST), then cross-check with `client_holdin
 | Debit balance from AMC → DPC interest risk | Delayed Payment Charges protocol |
 | AMC debit entry on ledger | Ledger Report protocol |
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow

@@ -271,6 +271,8 @@ Invoke `ledger_report` (check the last 2 weeks) and search for a `remarks` entry
 
 **Reference:** [What is short delivery and what are its consequences?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -315,7 +317,7 @@ Smallcase vs Kite mismatch                                  → Rule 10
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A10**.
+If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A10**.
 
 ---
 

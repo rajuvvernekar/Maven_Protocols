@@ -261,6 +261,8 @@ When escalating, always include: **client ID, instrument_name, product type, and
 **R24 — Margin shown when exiting:**
 "The margin shown when exiting a position reflects the increase in your utilised portfolio margin, not a charge. Your order will execute regardless."
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -303,7 +305,7 @@ When are profits available                                  → Rule 9
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A12**.
+If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A12**.
 
 ---
 

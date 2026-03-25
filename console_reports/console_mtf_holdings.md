@@ -199,6 +199,8 @@ Note: This does not include MTF interest charges, brokerage, or other transactio
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -236,7 +238,7 @@ Unrealized P&L verification                                 → Rule 11
 
 ### Fallback
 
-If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, escalate per **A8**.
+If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, **ESCALATE** per **A8**.
 
 ---
 
@@ -255,7 +257,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 1. Check `quantity_available` in this tool.
 2. If qty > 0 → display issue. Respond per **A10-R2**.
 3. If qty = 0 but client insists → check `console_eq_holdings` (per **A6**) for the same stock. MTF qty may appear in combined holdings. If found there but not here → possible conversion already processed.
-4. If not found in either tool AND MTF interest still being charged → escalate per **A8**.
+4. If not found in either tool AND MTF interest still being charged → **ESCALATE** per **A8**.
 
 ---
 
@@ -263,14 +265,14 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 1. Respond per **A10-R3**. Charges per **A3**.
 2. If client asks about weekend interest → respond per **A10-R4**.
-3. If client says interest charged after selling all MTF positions → verify MTF ledger closing balance was zero on the claimed dates. If balance was non-zero (e.g., settlement timing) → explain. If balance was zero and interest still charged → escalate per **A8**.
+3. If client says interest charged after selling all MTF positions → verify MTF ledger closing balance was zero on the claimed dates. If balance was non-zero (e.g., settlement timing) → explain. If balance was zero and interest still charged → **ESCALATE** per **A8**.
 
 ---
 
 ### Rule 4 — Auto Square-Off
 
 1. Respond per **A10-R5**. Rules per **A4**.
-2. If client reports discrepancy after square-off → respond per **A10-R6**. If discrepancy persists beyond 2 trading days → escalate per **A8**.
+2. If client reports discrepancy after square-off → respond per **A10-R6**. If discrepancy persists beyond 2 trading days → **ESCALATE** per **A8**.
 
 ---
 
@@ -279,7 +281,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 1. Respond per **A10-R7**. Rules per **A5**.
 2. If conversion shows "Processed" but shares still in MTF → check `console_mtf_conversion` (per **A6**) for actual `converted_quantity`.
    a. If `converted_quantity` = 0 → respond per **A10-R8**.
-   b. If conversion was 2+ trading days ago and status unclear → escalate per **A8**.
+   b. If conversion was 2+ trading days ago and status unclear → **ESCALATE** per **A8**.
 3. If conversion failed on ex-date → respond per **A10-R9**. Per **A5** ex-date restriction.
 
 ---
@@ -299,7 +301,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 8 — Corporate Action Impact on MTF Holdings
 
 1. Respond per **A10-R12**.
-2. If CA credits not reflected after 2+ trading days from credit date → escalate per **A8**.
+2. If CA credits not reflected after 2+ trading days from credit date → **ESCALATE** per **A8**.
 
 ---
 

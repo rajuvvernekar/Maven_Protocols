@@ -115,7 +115,7 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 
 | `status_message` pattern | Cause | Action |
 |---|---|---|
-| INVALID BANK ACCOUNT DETAILS | Bank mismatch (typically after modification) | **Escalate to agent** |
+| INVALID BANK ACCOUNT DETAILS | Bank mismatch (typically after modification) | ****ESCALATE** — agent review needed** |
 | SCHEME CLOSED | Scheme suspended | Use AMC SIP instead |
 | REGISTER WITH AMC | Re-KYC required | **Escalate** |
 | PAN/PEKRN MISMATCH | PAN issue | Verify PAN, submit copy. **Escalate** |
@@ -187,6 +187,8 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 On every MF order query, execute in order:
@@ -235,7 +237,7 @@ If fund is an NFO → check mf_order_history for any NFO order for this fund wit
 - Allotted → "Your units have been allotted. NFO units appear in holdings only after the fund is listed, typically within 5 working days of allotment, then T+2 from listing date." If listing date is known from order data → share it. If not → use the standard 5 working days timeline. MF/FOF NFO → appears in Coin. The depository is not involved in this timeline.
 - **ETF NFO — allotment verification:** ETF NFO units appear in Kite/Console equity holdings, not Coin. The order `status` may remain "Processing" even after allotment is complete. To confirm allotment, check console_eq_external_trades for an "IPO" entry matching the ETF NFO fund. If an IPO entry exists → allotment is complete. Inform: "Your ETF NFO units have been allotted and are available in your Kite holdings under [scrip name]. The order status on Coin may still show as Processing — this is expected for ETF NFOs."
 - Still Processing (non-ETF NFO) → "Your NFO order is being processed. Status updates within T+2 after listing." Rejection remarks for NFO orders update only after the allotment window closes.
-- Cannot determine → escalate to agent.
+- Cannot determine → **ESCALATE** — agent review needed.
 
 **Step 2 — Payment status mismatch check:**
 If `status_message` contains "Payment received" or "order sent to AMC" BUT `payment_confirmed` = false AND `payment_error_code` is present → the order was incorrectly marked. Payment actually failed. "Your order shows a processing status, but the payment was not successfully confirmed. Please place a new order and complete the payment. If your bank account was debited for the previous order, the amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)."
@@ -251,7 +253,7 @@ Use `payment_updated_at` against **A2** cutoffs.
 
 **Step 5 — Within T+2, payment confirmed:**
 Check **fund_allocation_report**. Check `error_remarks` first:
-- "INVALID BANK ACCOUNT DETAIL" → **escalate to agent immediately**.
+- "INVALID BANK ACCOUNT DETAIL" → ****ESCALATE** — agent review needed immediately**.
 
 Then check flags:
 - `settled_flag` = Y, `allotment_flag` = Y, but still Processing → file sync delay. "Your payment has been settled and units allotted. There is a short delay in the update reflecting on Coin. Holdings will update automatically."
@@ -309,11 +311,11 @@ Check order time against the 3:00 PM cutoff per **A6** Step 1. If the order was 
 | Redeemed, no bank credit | Compute expected date per **A6**. If beyond → escalate. |
 | ELSS lock-in | Verify via console_mf_tradebook (FIFO from trade_date). |
 | UI error, no order found | Clear cache, retry with fewer units, retry next day. If persists → escalate with screenshot. |
-| TPV failed on redemption | Escalate to agent. |
+| TPV failed on redemption | **ESCALATE** — agent review needed. |
 | CDSL portal showing all funds | "All MF holdings show during CDSL redemption — only selected units will be redeemed. Recommend using Coin app." Link: **A9**. |
 | Units not visible post-allotment | Check console_mf_pseudo_holdings + console_mf_tradebook. Always use Coin MF tools for MF holdings verification. |
-| NRI account + exit load/TDS dispute | Escalate to agent. "For NRI accounts, TDS is deducted by the AMC per applicable tax rules." |
-| Non-NRI exit load dispute | "Exit load is per the AMC's fund factsheet." → Escalate to agent. |
+| NRI account + exit load/TDS dispute | **ESCALATE** — agent review needed. "For NRI accounts, TDS is deducted by the AMC per applicable tax rules." |
+| Non-NRI exit load dispute | "Exit load is per the AMC's fund factsheet." → **ESCALATE** — agent review needed. |
 
 **CDSL authorization loop (repeated OTP redirect):**
 Occurs when recently allotted units haven't synced with CDSL. Units credited by 8 PM on settlement date; if delayed at RTA/CDSL, available for authorization on T+3 (second business day after settlement).
@@ -397,7 +399,7 @@ If all methods fail → escalate.
 
 ### Rule 9: Escalation Triggers
 
-**Escalate to agent with fund, amount, order_timestamp, and status_message when:**
+****ESCALATE** — agent review needed with fund, amount, order_timestamp, and status_message when:**
 - `status_message` contains: KRA, REGISTER WITH AMC, MODE OF HOLDING, TRANSMISSION, DESIGNATED PERSON, TAX STATUS
 - Client cannot find a scheme on Coin → "The scheme may be suspended or restricted."
 - Client asks about transferring MF to/from another platform → "Demat transfer query requiring manual assistance."

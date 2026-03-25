@@ -135,6 +135,8 @@ Could you confirm how and when you placed the application? If you have a confirm
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -171,7 +173,7 @@ Buyback tax treatment / Tax P&L issue                       → Rule 7
 
 ### Fallback
 
-If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A6**.
+If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, **ESCALATE** per **A6**.
 
 ---
 
@@ -192,7 +194,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 2 — Buyback Order (Processed)
 
 1. Respond per **A8-R4**. Proceeds timeline per **A7**.
-2. If client says shares still showing in holdings despite status = Processed → check `console_eq_holdings` (per **A4**). If shares still there → escalate per **A6**.
+2. If client says shares still showing in holdings despite status = Processed → check `console_eq_holdings` (per **A4**). If shares still there → **ESCALATE** per **A6**.
 
 ---
 
@@ -219,7 +221,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 6 — Order Not Found
 
 1. Respond per **A8-R8**.
-2. If client confirms they applied → escalate per **A6**.
+2. If client confirms they applied → **ESCALATE** per **A6**.
 
 ---
 

@@ -228,6 +228,8 @@ When escalating, always include: **client ID, tradingsymbol, GTT type, status, t
 **R26 — Stoploss prompt (index options):**
 "This prompt encourages setting a stoploss when buying options to manage risk. You can proceed without setting one, but Zerodha recommends a GTT stoploss (5–10% is a reasonable starting point). Remember to cancel open GTT stoploss orders when you directly exit the position to avoid unintended positions."
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -268,7 +270,7 @@ GTT stoploss prompt (index options)                         → Rule 11
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A9**.
+If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A9**.
 
 ---
 

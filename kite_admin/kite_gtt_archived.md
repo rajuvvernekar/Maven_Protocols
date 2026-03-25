@@ -153,6 +153,8 @@ When escalating, always include: **client ID, GTT id, tradingsymbol, status, cre
 - Very old GTTs may not be available in the system. Check your email for GTT trigger/creation notifications.
 - If you need details for a specific GTT from a long time ago, please raise a support ticket with the approximate date and instrument."
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -189,7 +191,7 @@ GTT not found in either tool                                → Rule 7
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A6**.
+If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A6**.
 
 ---
 
@@ -251,7 +253,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 6 — Client Asks for Unavailable Fields
 
 1. Client asks for expiry date, exchange, or LTP at creation → respond per **A7-R15**.
-2. If client needs these details for dispute resolution → escalate per **A6** with GTT `id` and `created_at`.
+2. If client needs these details for dispute resolution → **ESCALATE** per **A6** with GTT `id` and `created_at`.
 
 ---
 

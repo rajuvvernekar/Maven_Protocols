@@ -75,7 +75,7 @@ Run these checks in order — each step may resolve the issue or lead to the nex
 
 | Step | Check | Condition | Action |
 |---|---|---|---|
-| 0 | Account type | `client_acc_type` ≠ Individual AND `account_statuses` = deactivated | Escalate to MF team. Account type conversion may require fresh SIP setup. |
+| 0 | Account type | `client_acc_type` ≠ Individual AND `account_statuses` = deactivated | **ESCALATE** — MF team review needed. Account type conversion may require fresh SIP setup. |
 | 1 | Initial investment (Zerodha SIP only) | Check console_mf_pseudo_holdings for units in the specific fund | See **A6** for full initial investment diagnostic |
 | 2 | SIP status | `sip_status` ≠ Active | That's the answer — SIP is not active |
 | 3 | AMC auto-cancel | `sip_type` = amc_sip AND cancelled | Check `remarks` for consecutive rejection (3-failure rule per **A2**) |
@@ -133,12 +133,14 @@ Perform for each affected Zerodha SIP (`sip_type` = sip):
 ### A10 — Escalation Triggers
 
 Escalate when:
-- Account type conversion detected (Step 0 in **A5**): `client_acc_type` ≠ Individual AND deactivated → escalate to MF team.
-- AMC SIP deletion technically failing (client followed correct steps but deletion not succeeding) → escalate to MF team immediately. Do not ask for screenshots or troubleshoot further.
-- SIP deletion failing for any SIP type → escalate to agent immediately.
+- Account type conversion detected (Step 0 in **A5**): `client_acc_type` ≠ Individual AND deactivated → **ESCALATE** — MF team review needed.
+- AMC SIP deletion technically failing (client followed correct steps but deletion not succeeding) → **ESCALATE** — MF team review needed immediately. Do not ask for screenshots or troubleshoot further.
+- SIP deletion failing for any SIP type → **ESCALATE** — agent review needed immediately.
 - Any unresolvable SIP trigger issue after completing all diagnostic steps in **A5**.
 
 ---
+
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
 
 ## Section B: Decision Flow
 
@@ -184,7 +186,7 @@ Query relates to SIP →
 
 ### Fallback
 
-If no root cause is identified after completing all diagnostic steps → escalate per **A10**.
+If no root cause is identified after completing all diagnostic steps → **ESCALATE** per **A10**.
 
 ---
 
@@ -212,7 +214,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 1. Check `sip_type` and respond using the comparison in **A2**.
 2. For AMC SIP modification/pause requests: "AMC SIPs cannot be modified or paused. They can only be deleted. To change the amount, date, or fund, delete the existing AMC SIP and create a new one with the desired values. Deletion must be done at least 2 days before the next instalment date."
-3. If AMC SIP deletion is technically failing (client followed correct steps) → escalate to MF team immediately per **A10**. "We are unable to process this deletion from our end and are escalating this to our team. You can expect a resolution within 24–48 hours."
+3. If AMC SIP deletion is technically failing (client followed correct steps) → **ESCALATE** — MF team review needed immediately per **A10**. "We are unable to process this deletion from our end and are escalating this to our team. You can expect a resolution within 24–48 hours."
 4. `last_sip_at` is the date of the last SIP order — not the pause/modify date. For pause/modify dates, check sip_modification_log using the SIP's `public_id` (per **A1** and **A9**).
 5. If client wants to switch funds → suggest Systematic Transfer Plan (STP) via stp_report (per **A9**) as an alternative to stopping one SIP and starting another.
 
@@ -243,7 +245,7 @@ Orders for daily SIPs are placed on T-1 day in the system. Before concluding a d
 
 ### Rule 6 — SIP Deletion Failures
 
-1. If client reports they cannot delete a SIP → escalate to agent immediately per **A10**.
+1. If client reports they cannot delete a SIP → **ESCALATE** — agent review needed immediately per **A10**.
 2. Respond: "We are escalating this to our team for resolution. You can expect an update within 24–48 hours."
 
 ---

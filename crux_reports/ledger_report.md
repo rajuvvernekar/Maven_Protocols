@@ -144,6 +144,8 @@ Raw bank reference numbers and internal reference codes are never shared with cl
 
 For detailed MTF interest charges, refer client to the MTF Interest Statement on Console.
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -213,7 +215,7 @@ Query relates to ledger →
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per Rule 18.
+If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 18.
 
 ---
 
@@ -300,7 +302,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 14 — Opening vs Closing Balance Mismatch
 
 1. Respond: "The opening balance for a day equals the previous day's closing balance. If you see a difference, it may be because late entries (such as charges, interest, or settlement adjustments) were posted after the close. Check if any entries were added between the two dates." (Per **A1**.)
-2. If balances still don't match after verification → escalate per Rule 18.
+2. If balances still don't match after verification → **ESCALATE** per Rule 18.
 
 ### Rule 15 — Ledger vs Kite Funds Page Mismatch
 

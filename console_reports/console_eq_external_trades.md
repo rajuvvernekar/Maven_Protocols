@@ -161,6 +161,8 @@ To fix this, you need to add the purchase details via Console → Portfolio → 
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -202,7 +204,7 @@ P&L wrong, suspected missing external entry                   → Rule 10
 
 ### Fallback
 
-If no route matches, use **A4** to cross-reference other tools (`console_eq_holdings`, `console_eq_tradebook`, `console_eq_holdings_breakdown`, `console_eq_pnl`) for additional context. If no root cause is found, escalate per **A8**.
+If no route matches, use **A4** to cross-reference other tools (`console_eq_holdings`, `console_eq_tradebook`, `console_eq_holdings_breakdown`, `console_eq_pnl`) for additional context. If no root cause is found, **ESCALATE** per **A8**.
 
 ---
 
@@ -224,7 +226,7 @@ If no route matches, use **A4** to cross-reference other tools (`console_eq_hold
 2. If `pending_recalc` = true → respond per **A9-R3**. Timeline per **A5**.
 3. If `pending_recalc` = false AND buy average still wrong in `console_eq_holdings`:
    a. Verify the entry details (price, qty, date) are correct.
-   b. If entry looks correct but average is still wrong → escalate per **A8**.
+   b. If entry looks correct but average is still wrong → **ESCALATE** per **A8**.
 
 ---
 
@@ -232,7 +234,7 @@ If no route matches, use **A4** to cross-reference other tools (`console_eq_hold
 
 1. Respond per **A9-R4**.
 2. Entry is locked after processing (per **A6**).
-3. Escalate per **A8** — include current wrong entry details from this tool and the correct values the client wants.
+3. **ESCALATE** per **A8** — include current wrong entry details from this tool and the correct values the client wants.
 
 ---
 
@@ -243,13 +245,13 @@ If no route matches, use **A4** to cross-reference other tools (`console_eq_hold
    a. Check `exchange` field: if `exchange` = "NSE", the entry was added by Zerodha (system-generated).
    b. If the client has also made a separate discrepant entry for the same stock → escalate (possible duplicate entries causing wrong buy average).
    c. Respond per **A9-R5**. Default price per **A7**.
-3. If client wants actual acquisition cost instead → respond per **A9-R6**. Escalate per **A8** with requested price.
+3. If client wants actual acquisition cost instead → respond per **A9-R6**. **ESCALATE** per **A8** with requested price.
 
 ---
 
 ### Rule 5 — ESOP Shares (Cannot Add Entry)
 
-Escalate to a support agent.
+**ESCALATE** — agent review needed.
 
 ---
 
@@ -267,7 +269,7 @@ Escalate to a support agent.
 1. Filter by `external_trade_type` = ipo.
 2. If entry found → respond per **A9-R10**. Recalculation timeline per **A5**.
 3. If no entry found AND IPO was within last 3 days → respond per **A9-R11**. Timeline per **A5**.
-4. If no entry found AND IPO was more than 3 days ago → escalate per **A8**.
+4. If no entry found AND IPO was more than 3 days ago → **ESCALATE** per **A8**.
 
 ---
 
@@ -275,14 +277,14 @@ Escalate to a support agent.
 
 1. Filter by `external_trade_type` = internal_transfer.
 2. If entry found → share details per **A9-R1**.
-3. If no entry found → respond per **A9-R12**. Escalate per **A8**.
+3. If no entry found → respond per **A9-R12**. **ESCALATE** per **A8**.
 
 ---
 
 ### Rule 9 — No External Entries but Shares Show Discrepant
 
 1. Client needs to add the entry manually — direct them to the self-resolution path in **A6**.
-2. If the shares were credited via corporate action (convertible debenture, rearrangement, unclaimed shares) and the source is not obvious to the client → escalate per **A8** for Console team to investigate and post the correct entry.
+2. If the shares were credited via corporate action (convertible debenture, rearrangement, unclaimed shares) and the source is not obvious to the client → **ESCALATE** per **A8** for Console team to investigate and post the correct entry.
 
 ---
 

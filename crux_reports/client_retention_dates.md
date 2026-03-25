@@ -69,6 +69,8 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -114,7 +116,7 @@ Query relates to QS payout / client retention →
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per Rule 7.
+If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 7.
 
 ---
 
@@ -156,7 +158,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Confirm: `funds_released` > 0 for the settlement date.
 2. Respond: "The settlement report shows ₹[funds_released] was released on [settlement_date]. QS payouts are typically credited to your registered bank account within 1–2 working days of the settlement date."
 3. If more than 3 working days have passed: "If it has been more than 3 working days and the amount has not been credited, please check with your bank. If still not received, we'll investigate further."
-4. If still not received after bank check → escalate per Rule 7.
+4. If still not received after bank check → **ESCALATE** per Rule 7.
 
 ### Rule 5 — Multiple Segment Settlements
 

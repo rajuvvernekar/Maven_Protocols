@@ -78,6 +78,8 @@ Escalate when:
 
 Include in escalation: client ID, date range, exchange, segment, and the specific discrepancy.
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -117,7 +119,7 @@ Query relates to contract note charges →
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per Rule 5.
+If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 5.
 
 ---
 

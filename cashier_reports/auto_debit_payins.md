@@ -129,6 +129,8 @@ When escalating, always include: **client ID, amount, transaction date, and spec
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -162,7 +164,7 @@ Double debit complaint                                      → Rule 6
 
 ### Fallback
 
-If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (per **A6**) for additional context. If no root cause is found, escalate per **A8**.
+If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (per **A6**) for additional context. If no root cause is found, **ESCALATE** per **A8**.
 
 ---
 
@@ -214,7 +216,7 @@ If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (p
 ### Rule 6 — Double Debit Complaint
 
 1. Check for multiple records in this tool.
-2. If two successful debits exist for the same period → escalate per **A8**.
+2. If two successful debits exist for the same period → **ESCALATE** per **A8**.
 3. If one success + one failed → explain only the successful one was credited. The failed debit was not processed.
 
 ---

@@ -109,6 +109,8 @@ When escalating, always include: **client ID, tradingsymbol(s), ISIN(s), qty fro
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -146,7 +148,7 @@ Safekeep / frozen shares (CDSL statement mismatch)          → Rule 10
 
 ### Fallback
 
-If no route matches, cross-reference with `console_eq_holdings` and `console_eq_external_trades` for additional context. If no root cause is found, escalate per **A5**.
+If no route matches, cross-reference with `console_eq_holdings` and `console_eq_external_trades` for additional context. If no root cause is found, **ESCALATE** per **A5**.
 
 ---
 
@@ -167,7 +169,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 1. Confirm `available` qty in `console_eq_pseudo_holdings` ≠ `available` qty in `console_eq_holdings` for same ISIN.
 2. Genuine discrepancy detected.
 3. Respond per **A6-R2**. Do not tell the client "there is a system mismatch."
-4. Escalate per **A5** with qty from each tool.
+4. **ESCALATE** per **A5** with qty from each tool.
 
 ---
 
@@ -177,7 +179,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    a. `t1` > 0 → shares bought yesterday, SOT may not reflect until settlement. Respond per **A6-R3**.
    b. Shares yet to be credited from corporate action → CA credit not yet in SOT. Advise client to wait.
    c. Neither a nor b → possible sync issue or tradingsymbol name difference. Check if same ISIN exists under a different tradingsymbol in pseudo_holdings (e.g., company renamed, NSE vs BSE symbol per **A3**).
-   d. If no match on ISIN → escalate per **A5**.
+   d. If no match on ISIN → **ESCALATE** per **A5**.
 
 ---
 
@@ -188,7 +190,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    b. Corporate action credit (rearrangement, unclaimed shares) not yet processed.
    c. Suspended/delisted stock visible in SOT but removed from active Console holdings.
 2. Respond per **A6-R4**.
-3. If no clear cause → escalate per **A5**.
+3. If no clear cause → **ESCALATE** per **A5**.
 
 ---
 
@@ -196,7 +198,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. `console_eq_pseudo_holdings` has no record for client OR all quantities are 0 AND `console_eq_holdings` shows active holdings.
 2. Possible transferred-out shares without reversal entry in Console.
-3. Escalate per **A5** with: client ID, full list of holdings showing in `console_eq_holdings`, note that pseudo_holdings shows zero.
+3. **ESCALATE** per **A5** with: client ID, full list of holdings showing in `console_eq_holdings`, note that pseudo_holdings shows zero.
 
 ---
 
@@ -207,7 +209,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    - Post-corporate action rename (e.g., old name in SOT, new name in Console)
    - Temporary ISIN for bonus/rights shares
 2. If ISIN matches across tools → same stock, name difference only.
-3. If ISIN not found in either tool → escalate per **A5**.
+3. If ISIN not found in either tool → **ESCALATE** per **A5**.
 
 ---
 
@@ -217,7 +219,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 2. Check `kite_holdings` to verify whether split shares have already been credited.
 3. If `kite_holdings` shows the full post-split quantity → respond per **A6-R5**.
 4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → respond per **A6-R6**.
-5. If more than 5 trading days since record date AND split shares still not credited → escalate per **A5**.
+5. If more than 5 trading days since record date AND split shares still not credited → **ESCALATE** per **A5**.
 
 ---
 

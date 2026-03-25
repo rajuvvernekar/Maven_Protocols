@@ -85,7 +85,7 @@ When escalating, always include: **client ID, trade_date, tradingsymbol, order_i
 Share: `trade_date`, `trade_type`, `quantity`, `price`, `exchange`, `order_id`, `trade_id`.
 
 **R3 — Trade not found (after all sources checked):**
-Escalate per **A5**.
+**ESCALATE** per **A5**.
 
 **R4 — Execution price verification:**
 "Your [trade_type] order for [quantity] shares of [tradingsymbol] was executed at ₹[price] per share on [exchange] at [order_execution_time].
@@ -117,6 +117,8 @@ Only buy OR only sell on that date → delivery trade.
 "The tradebook shows gross trade values (price × quantity) for each individual trade. The Tax P&L report may show different values because it applies FIFO matching — the sell value is matched against the corresponding buy entries, and the calculation may span different financial years or exclude intraday trades. Both reports are correct for their respective purposes."
 
 ---
+
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
 
 ## Section B: Decision Flow
 
@@ -154,7 +156,7 @@ Tradebook vs Tax P&L value difference                       → Rule 9
 
 ### Fallback
 
-If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A5**.
+If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, **ESCALATE** per **A5**.
 
 ---
 
@@ -168,7 +170,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 2. If found → respond per **A6-R2** (share trade details).
 3. If not found in tradebook → check `console_eq_external_trades` (per **A4**) — may be an off-platform entry (IPO, transfer, buyback).
 4. If not found in external trades → check if trade date is within last 100 days. If not → use `console_eq_tradebook_prepared` (per **A4**).
-5. If still not found after checking all sources → escalate per **A5**.
+5. If still not found after checking all sources → **ESCALATE** per **A5**.
 
 ---
 
@@ -176,7 +178,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 1. Respond per **A6-R4**.
 2. If client says price differs from contract note → respond per **A6-R5**.
-3. If execution price materially differs from limit order price placed by client → escalate per **A5**.
+3. If execution price materially differs from limit order price placed by client → **ESCALATE** per **A5**.
 
 ---
 
@@ -215,8 +217,8 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 7 — Duplicate Trade Entries
 
 1. Same `order_id` with same trade details appearing twice → known system issue on specific dates.
-2. Escalate per **A5** with: client ID, affected trade_date, order_id(s), tradingsymbol(s).
-3. Escalate to Support agent. The Console team handles duplicate entry corrections. 
+2. **ESCALATE** per **A5** with: client ID, affected trade_date, order_id(s), tradingsymbol(s).
+3. **ESCALATE** — agent review needed. The Console team handles duplicate entry corrections. 
 ---
 
 ### Rule 8 — Tradebook vs Tax P&L Value Difference
@@ -230,5 +232,5 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 - Tradebook covers the last 100 days. For older data, use `console_eq_tradebook_prepared`.
 - Tradebook does not have a product type (CNC/MIS) field. Intraday vs delivery is inferred from offsetting same-day trades (EQ series) or series type (T2T = always delivery).
 - Tradebook shows individual trade fills; contract notes show aggregated weighted averages. Both are correct.
-- Duplicate entries are a known system issue — Escalate to Support agent 
+- Duplicate entries are a known system issue — **ESCALATE** — agent review needed 
 - T2T stocks (series BE/BT/BZ): same-day buy+sell treated as delivery, not speculative. This impacts buy average differently from EQ series.

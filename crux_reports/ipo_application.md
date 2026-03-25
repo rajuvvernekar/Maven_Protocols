@@ -148,6 +148,8 @@ Escalate when:
 
 Collect for escalation: screenshot, IPO name, action attempted, device type.
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -226,7 +228,7 @@ Query relates to IPO →
 │  → Rule 16
 │
 └─ No matching scenario
-   → Collect details, escalate per A10
+   → Collect details, **ESCALATE** per A10
 ```
 
 ### Scope
@@ -236,7 +238,7 @@ Query relates to IPO →
 
 ### Fallback
 
-If no matching scenario is found after checking all rules → collect details and escalate per **A10**.
+If no matching scenario is found after checking all rules → collect details and **ESCALATE** per **A10**.
 
 ---
 
@@ -389,7 +391,7 @@ Add urgency: "The UPI mandate deadline is 5:00 PM today. You must approve the ne
 1. Check: internet connection, cache, alternate device, app update, web version at Kite IPO page (**A8**), market hours (per **A3**), category restrictions (per **A4**).
 2. UPI ID not showing: suggest entering manually, verify bank support at UPI partners page (**A8**), or use ASBA (Rule 9).
 3. If issue persists after troubleshooting: collect screenshot, IPO name, action attempted, device type. Closing day = treat as urgent.
-4. Escalate per **A10**.
+4. **ESCALATE** per **A10**.
 
 ---
 

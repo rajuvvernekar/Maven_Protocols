@@ -63,7 +63,7 @@ Console → Portfolio → Holdings → select fund → Add External Trade.
 
 ### A7 — Escalation Triggers (Consolidated)
 
-Escalate to agent when any of the following occur:
+**ESCALATE** — agent review needed when any of the following occur:
 - External trade entries incorrectly added for a Coin-only fund — need deletion + data rerun (Rule 3).
 - Client needs an external entry deleted (cannot self-serve) — provide fund name, trade_date, quantity, price, trade_type.
 - All external entries correct, `pending_recalc` = false, but buy average still wrong (Rule 2).
@@ -72,6 +72,8 @@ Escalate to agent when any of the following occur:
 Include in escalation: fund name, trade_date, quantity, price, trade_type, and the specific issue.
 
 ---
+
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
 
 ## Section B: Decision Flow
 
@@ -115,7 +117,7 @@ Query relates to MF external trades →
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per **A7**.
+If no root cause is identified after checking all relevant rules → **ESCALATE** per **A7**.
 
 ---
 
@@ -136,21 +138,21 @@ Check `pending_recalc` (per **A3**). If true: "The recalculation is pending. Ple
 ### Rule 2 — Wrong Buy Average (Entries Exist)
 
 1. Verify all purchase lots are entered correctly: dates, quantities, prices.
-2. If all correct and `pending_recalc` = false → escalate per **A7**.
+2. If all correct and `pending_recalc` = false → **ESCALATE** per **A7**.
 
 ### Rule 3 — Wrongly Entered External Trades / Deletion Required
 
 **Coin-only fund with external entries (per A2):**
-The external trades were incorrectly entered. Do not advise adding more entries. Escalate to agent: "External trade entries were incorrectly added for [fund name]. These need to be deleted and a data rerun is required. Client should not add any trade details for purchases made through Coin."
+The external trades were incorrectly entered. Do not advise adding more entries. **ESCALATE** — agent review needed: "External trade entries were incorrectly added for [fund name]. These need to be deleted and a data rerun is required. Client should not add any trade details for purchases made through Coin."
 
 **Client requests deletion of any external entry:**
-"External entries cannot be deleted from Console." Escalate to agent with: fund name, trade_date, quantity, price, trade_type (per **A7**).
+"External entries cannot be deleted from Console." **ESCALATE** — agent review needed with: fund name, trade_date, quantity, price, trade_type (per **A7**).
 
 ### Rule 4 — Duplicate Entry Detection
 
 1. Compare entries here with console_mf_tradebook entries (per **A6**) for the same fund, date, and quantity.
 2. If duplicate found: "We have identified a duplicate entry. We will remove it. Your P&L will be corrected within 24–48 hours."
-3. Escalate to agent with: fund name, trade_date, quantity, price (per **A7**).
+3. **ESCALATE** — agent review needed with: fund name, trade_date, quantity, price (per **A7**).
 
 ### Rule 5 — XIRR Incorrect
 

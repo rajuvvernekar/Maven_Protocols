@@ -93,6 +93,8 @@ For income tax filing, use the Tax P&L report."
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -127,7 +129,7 @@ Charges / brokerage / STT / MTM query                       → Rule 7
 
 ### Fallback
 
-If no route matches, investigate using the tool data and Section A references. If no root cause is found, escalate per **A4**.
+If no route matches, investigate using the tool data and Section A references. If no root cause is found, **ESCALATE** per **A4**.
 
 ---
 
@@ -144,7 +146,7 @@ If no route matches, investigate using the tool data and Section A references. I
 ### Rule 2 — Physical Delivery P&L
 
 1. Respond per **A5-R2**. Client needs to combine F&O P&L with equity delivery P&L in `console_eq_pnl`.
-2. If client reports double quantity in equity P&L after physical settlement → escalate per **A4**.
+2. If client reports double quantity in equity P&L after physical settlement → **ESCALATE** per **A4**.
 
 ---
 
@@ -167,7 +169,7 @@ If no route matches, investigate using the tool data and Section A references. I
 1. Verify internally:
    a. Correct segment selected (per Preflight / **A3**).
    b. Date range covers the expiry date.
-2. If both correct and contract still missing → escalate per **A4** immediately with: client ID, tradingsymbol, expiry date, segment, date range used.
+2. If both correct and contract still missing → **ESCALATE** per **A4** immediately with: client ID, tradingsymbol, expiry date, segment, date range used.
 3. Escalate directly 
 
 ---
@@ -175,7 +177,7 @@ If no route matches, investigate using the tool data and Section A references. I
 ### Rule 6 — Tax P&L vs Console F&O P&L
 
 1. Respond per **A5-R6**.
-2. If client reports significant unexplained difference between F&O tab and tradewise exits tab → escalate per **A4**.
+2. If client reports significant unexplained difference between F&O tab and tradewise exits tab → **ESCALATE** per **A4**.
 
 ---
 

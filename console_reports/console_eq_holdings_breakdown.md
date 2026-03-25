@@ -137,6 +137,8 @@ Your buy average is calculated using FIFO — when you sell, the oldest purchase
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -173,7 +175,7 @@ Verify if a specific CA was posted in breakdown             → Rule 8
 
 ### Fallback
 
-If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A6**.
+If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, **ESCALATE** per **A6**.
 
 ---
 
@@ -209,7 +211,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 1. Check if the trade was executed within the last 1 trading day — breakdown entries may be delayed up to 1 day due to file processing (per **A1**).
 2. If trade was yesterday → respond per **A7-R7**.
-3. If trade was 2+ trading days ago and still not in breakdown → escalate per **A6**.
+3. If trade was 2+ trading days ago and still not in breakdown → **ESCALATE** per **A6**.
 
 ---
 
@@ -219,15 +221,15 @@ If no route matches, cross-reference with **A4** tools for additional context. I
    a. `external_trade_type` populated → respond per **A7-R8**.
    b. `exchange` = DIVIDEND → respond per **A7-R4** (Rule 2).
    c. Corporate action entry (price = 0, system entry) → respond per **A7-R9**.
-   d. None of the above explain it → escalate per **A6** as potential breakdown-tradebook mismatch.
+   d. None of the above explain it → **ESCALATE** per **A6** as potential breakdown-tradebook mismatch.
 
 ---
 
 ### Rule 6 — Breakdown Not Loading / Error
 
 1. Try a different stock to confirm if the issue is stock-specific or account-wide.
-2. Stock-specific → may be a data issue for that ISIN. Escalate per **A6** with client ID and tradingsymbol.
-3. Account-wide → respond per **A7-R10**. If persists beyond 24 hours → escalate per **A6**.
+2. Stock-specific → may be a data issue for that ISIN. **ESCALATE** per **A6** with client ID and tradingsymbol.
+3. Account-wide → respond per **A7-R10**. If persists beyond 24 hours → **ESCALATE** per **A6**.
 
 ---
 
@@ -245,7 +247,7 @@ If the calculation does not match what console_eq_holdings shows → escalate pe
 
 1. Look for entries matching CA patterns in **A3**: price = 0 (bonus), or entries around the CA date with adjusted qty/price (split/merger/demerger).
 2. If CA entry found → confirm with date, qty, price.
-3. If CA entry not found → check expected timeline per **A5**. If beyond expected timeline → escalate per **A6**.
+3. If CA entry not found → check expected timeline per **A5**. If beyond expected timeline → **ESCALATE** per **A6**.
 
 ---
 

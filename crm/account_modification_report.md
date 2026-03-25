@@ -161,7 +161,7 @@ Share this article instead of listing steps: [How to change the registered email
 
 **No access to registered mobile AND email:** Refer to [How do I reset my Zerodha password if I can't access my registered phone number or email?](https://support.zerodha.com/category/console/profile/account/articles/reset-password-new-contact-details)
 
-**Mobile/email already linked to another account:** Escalate to support manager.
+**Mobile/email already linked to another account:** **ESCALATE** — support manager review needed.
 
 #### DOB / Gender / Marital / Occupation / PEP Update
 
@@ -182,7 +182,7 @@ Process: signup.zerodha.com/rekyc. Timeline: **A1** general processing. Acceptab
 
 #### Modification Cancellation
 
-If client requests cancellation of a pending modification (any type) where eSign not yet completed → acknowledge cancellation request → escalate to account modification team.
+If client requests cancellation of a pending modification (any type) where eSign not yet completed → acknowledge cancellation request → **ESCALATE** — account modification team review needed.
 
 ---
 
@@ -238,7 +238,7 @@ Allowed if joint holder. Same process as single-holder. Restriction: if linked t
 
 #### Bank Details Update Failure
 
-Causes: incorrect IFSC (O vs 0 confusion), branch/IFSC not recognised by CDSL, "invalid IFSC" error. Resolution: escalate to support manager. Do not request bank proof or attempt to resolve IFSC errors directly.
+Causes: incorrect IFSC (O vs 0 confusion), branch/IFSC not recognised by CDSL, "invalid IFSC" error. Resolution: **ESCALATE** — support manager review needed. Do not request bank proof or attempt to resolve IFSC errors directly.
 
 #### Primary Bank Penny Drop Failure
 
@@ -258,7 +258,7 @@ Condition: bank_type = "Primary" AND request_type = "update" AND bank validation
 
 **AMC after closure:** Not charged from day closure is processed.
 
-**Post-closure new account error:** If client reports error opening new account after closure → escalate to agent.
+**Post-closure new account error:** If client reports error opening new account after closure → **ESCALATE** — agent review needed.
 
 **Blocked closure causes:** Negative balance, open positions, unlisted securities, pending corporate actions. Cannot reopen same account/user ID after closure.
 
@@ -388,6 +388,10 @@ Reason: SEBI requires valid, current documents.
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
+---
+
 ## Section B: Decision Flow
 
 On every account modification query, execute in order:
@@ -395,7 +399,7 @@ On every account modification query, execute in order:
 ```
 1. PREFLIGHT
    ├─ Call get_all_client_data → extract context per A5
-   ├─ If account_blocks non-empty → STOP. Escalate to support manager.
+   ├─ If account_blocks non-empty → STOP. **ESCALATE** — support manager review needed.
    │   Do not share block reason or raw field values with client.
    ├─ If nse_eq_status OR bse_eq_status = "Dormant" → Rule 6 (Dormancy)
    └─ Check account_modification_report for existing requests
@@ -435,7 +439,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 ### Rule 1: Name / DOB / PAN Updates
 
-If query mentions name change, DOB mismatch, or PAN correction → escalate to support manager.
+If query mentions name change, DOB mismatch, or PAN correction → **ESCALATE** — support manager review needed.
 
 ---
 
@@ -464,7 +468,7 @@ Read the exact value of the status field. Cross-check against submission date �
 
 - **Found → apply Rule 2** status response for that request first.
 - **Rejected with "Invalid IPV"** → ask client to complete ReKYC again at account.zerodha.com/account.
-- **Rejected with any other reason** → inform client of the specific rejection reason and escalate to KYC team.
+- **Rejected with any other reason** → inform client of the specific rejection reason and **ESCALATE** — KYC team review needed.
 - **Not found OR > 3 months** → proceed with standard ReKYC guidance:
 
 Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Requires: Aadhaar-linked mobile (see **A3**).
@@ -475,7 +479,7 @@ Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Require
 
 ### Rule 4: Account Closure
 
-**Escalation triggers:** If query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" → escalate to relevant team.
+**Escalation triggers:** If query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" → **ESCALATE** — relevant team review needed.
 
 | Status | Response |
 |---|---|
@@ -483,9 +487,9 @@ Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Require
 | Pending_eSign | Complete eSign on Console to proceed; invite feedback call |
 | Rejected | State rejection reason; invite feedback call |
 | Approved | Completed within **A1** account closure timeline; invite feedback call |
-| No match | Escalate to support manager |
+| No match | **ESCALATE** — support manager review needed |
 
-**Post-closure new account error:** Escalate to agent.
+**Post-closure new account error:** **ESCALATE** — agent review needed.
 
 ---
 
@@ -519,11 +523,11 @@ Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant":
 
 | Raw Status | Response |
 |---|---|
-| `Reactivation_pending` | Check timestamp against current time. Within 24 working hours → "[segment/account] being processed; active within 24 working hours of submission." 24 working hours elapsed → escalate to support manager. |
+| `Reactivation_pending` | Check timestamp against current time. Within 24 working hours → "[segment/account] being processed; active within 24 working hours of submission." 24 working hours elapsed → **ESCALATE** — support manager review needed. |
 | `Request_pending` | Same as Reactivation_pending. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
 | `Blocked` | Rewrite `remarks` field conversationally. This is the only status where remarks content is rewritten for the client. |
-| `Activated` | Confirm "[segment] is active." If client reports inability to place orders or shows 0 available funds → check activation timestamp. Calculate: activation time + 24 hours. If that time is still in the future → "Your [segment] was activated on [activation date]. You will be able to place orders from [specific date: activation + 24 hours]." If 24 hours have already passed → escalate to support manager. Always give the specific date, not a generic window. |
-| Coin segment = `Generated` | Escalate to support manager. Cannot be self-resolved. |
+| `Activated` | Confirm "[segment] is active." If client reports inability to place orders or shows 0 available funds → check activation timestamp. Calculate: activation time + 24 hours. If that time is still in the future → "Your [segment] was activated on [activation date]. You will be able to place orders from [specific date: activation + 24 hours]." If 24 hours have already passed → **ESCALATE** — support manager review needed. Always give the specific date, not a generic window. |
+| Coin segment = `Generated` | **ESCALATE** — support manager review needed. Cannot be self-resolved. |
 | `Dormant` | Apply Rule 6. |
 | `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 7.1 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
 
@@ -535,7 +539,7 @@ If any segment (per **A4** field pairs) shows as Rejected, Activation_rejected, 
 
 1. Call `pan_status` tool to retrieve the specific rejection reason.
 2. Respond based on the `pan_status` result — follow the pan_status tool's protocol for resolution guidance.
-3. If `pan_status` shows no issues but the segment remains rejected → escalate to support manager for UCC process team investigation.
+3. If `pan_status` shows no issues but the segment remains rejected → **ESCALATE** — support manager review needed for UCC process team investigation.
 4. Do not guess the rejection reason from `get_all_client_data` alone.
 
 ---
@@ -558,7 +562,7 @@ Nominee modifications are handled through the nominee process only — direct to
 If query mentions nominee modification/request AND customer reports rejection:
 
 1. Check `account_modification` form where `form_type` = "nominee_addition".
-2. Status = Rejected → "Your nominee request was rejected: [rejection_reason]. Our team will investigate this and get back to you shortly." Escalate to account modification team with the rejection reason.
+2. Status = Rejected → "Your nominee request was rejected: [rejection_reason]. Our team will investigate this and get back to you shortly." **ESCALATE** — account modification team review needed with the rejection reason.
 3. Status ≠ Rejected → proceed with Rule 2 status response.
 
 ---

@@ -81,6 +81,8 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, trading_symbol, order_time, specific charge values, and the discrepancy.
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -134,7 +136,7 @@ Query relates to trade charges →
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per Rule 10.
+If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 10.
 
 ---
 
@@ -168,7 +170,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
    - Delivery (CNC): brokerage should be ₹0.
    - Intraday/F&O: ₹20 per executed order OR 0.03% of trade value, whichever is lower.
    - If brokerage = null/0: "No brokerage was charged for this trade."
-2. If brokerage > ₹20 for a single F&O/intraday order → check if multiple fills exist (sum by `order_no`). If still > ₹20 per order after summing → escalate per Rule 10.
+2. If brokerage > ₹20 for a single F&O/intraday order → check if multiple fills exist (sum by `order_no`). If still > ₹20 per order after summing → **ESCALATE** per Rule 10.
 3. Respond: "Zerodha charges a flat ₹20 per executed order for intraday and F&O trades, or 0.03% of trade value — whichever is lower. Delivery trades have zero brokerage."
 
 ### Rule 4 — Exchange Transaction Charges Dispute
@@ -176,7 +178,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Respond: "Exchange transaction charges are set by the exchange and vary by segment and instrument type. The rates are updated periodically. For your [segment] trade, the applicable rate was applied on the trade value."
 2. Use `exchange` field internally to identify the segment, but do not share it with the client.
 3. Note: SENSEX options have specific rates different from NIFTY options. BSE equity rates may differ from NSE (per **A2**).
-4. If the rate significantly differs from known published rates → escalate per Rule 10.
+4. If the rate significantly differs from known published rates → **ESCALATE** per Rule 10.
 
 ### Rule 5 — STT Explanation
 
@@ -208,13 +210,13 @@ Rules reference Section A blocks. They do not redefine what is already defined t
    - Multiple fills for a single order being charged separately
 
    The tradewise charges report shows the actual charges applied to your trades."
-2. If the difference is significant (>10% or >₹5 for a single order) → verify charges against **A2** rates and escalate per Rule 10 if discrepancy remains.
+2. If the difference is significant (>10% or >₹5 for a single order) → verify charges against **A2** rates and **ESCALATE** per Rule 10 if discrepancy remains.
 
 ### Rule 8 — Contract Note vs Tradewise Charges Mismatch
 
 1. Respond: "The contract note shows charges as of the trade date. In some cases, exchange transaction charges are updated after the trade date and the difference is posted directly to your ledger. This means the contract note may show the original charges while your ledger reflects the updated amount."
 2. Direct client to check the ledger: "Check your ledger for any adjustment entries posted after the trade date." (Per **A4**, Ledger Report protocol.)
-3. If no adjustment found and mismatch persists → escalate per Rule 10.
+3. If no adjustment found and mismatch persists → **ESCALATE** per Rule 10.
 
 ### Rule 9 — Auction Trade Charges
 

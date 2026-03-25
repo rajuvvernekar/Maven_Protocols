@@ -223,6 +223,8 @@ Share: `payin` (₹), `payout` (₹). Payin = funds added today. Payout = funds 
 **R17 — MTM explanation:**
 "Mark to Market (MTM) is the daily revaluation of open futures positions by the exchange at the closing price. Profits or losses are settled to your account daily. Short options don't undergo daily MTM — instead, margin increases as they move in-the-money."
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -269,7 +271,7 @@ MTM explanation                                             → Rule 18
 
 ### Fallback
 
-If no route matches, explain from **A3** field definitions. If no root cause is found, escalate per **A10**.
+If no route matches, explain from **A3** field definitions. If no root cause is found, **ESCALATE** per **A10**.
 
 ---
 

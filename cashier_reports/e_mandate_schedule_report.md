@@ -120,6 +120,8 @@ When escalating, always include: **client ID, schedule details, and specific iss
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ---
@@ -156,7 +158,7 @@ Cancelled schedule but bank still debited                   → Rule 7
 
 ### Fallback
 
-If no route matches, check `e_mandate_report` and `auto_debit_payins` for additional context. If no root cause is found, escalate per **A6**.
+If no route matches, check `e_mandate_report` and `auto_debit_payins` for additional context. If no root cause is found, **ESCALATE** per **A6**.
 
 ---
 
@@ -203,7 +205,7 @@ If no route matches, check `e_mandate_report` and `auto_debit_payins` for additi
 ### Rule 6 — Error Deleting Schedule
 
 1. Respond per **A7-R7**.
-2. If error persists → escalate per **A6**.
+2. If error persists → **ESCALATE** per **A6**.
 
 ---
 

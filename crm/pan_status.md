@@ -138,6 +138,10 @@ Please note: It may take up to 7 working days after documents are received for t
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
+---
+
 ## Section B: Decision Flow
 
 ---
@@ -151,7 +155,7 @@ Please note: It may take up to 7 working days after documents are received for t
 2. Call pan_status with those fields.
 
 3. Check PAN validity (per A3):
-   └─ Not "E" → respond per A9-R1. Escalate per A8. STOP.
+   └─ Not "E" → respond per A9-R1. **ESCALATE** per **A8**. STOP.
 ```
 
 ### Route
@@ -173,7 +177,7 @@ Single ledger activation error (name/DOB mismatch)          → Rule 4
 
 ### Fallback
 
-If the client still faces issues despite all-clear PAN status, check `get_all_client_data` for other remarks or blocks. If no root cause found, escalate per **A8**.
+If the client still faces issues despite all-clear PAN status, check `get_all_client_data` for other remarks or blocks. If no root cause found, **ESCALATE** per **A8**.
 
 ---
 

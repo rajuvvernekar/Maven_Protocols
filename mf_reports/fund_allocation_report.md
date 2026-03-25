@@ -55,7 +55,7 @@ Always provide the 5–7 working day range for refund timelines. Specific refund
 
 ### A5 — Error Remarks Escalation
 
-If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → escalate to agent immediately. Typically occurs after a bank modification. Do not continue to further checks.
+If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → **ESCALATE** — agent review needed immediately. Typically occurs after a bank modification. Do not continue to further checks.
 
 ### A6 — Field Rules
 
@@ -77,6 +77,8 @@ If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → escalate to agent 
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -96,7 +98,7 @@ Query relates to MF payment / fund allocation →
 │  → Do NOT use this tool. Route to mf_order_history (STOP)
 │
 ├─ Preflight: error_remarks = "INVALID BANK ACCOUNT DETAIL"?
-│  → Escalate immediately (STOP)
+│  → **ESCALATE** immediately (STOP)
 │
 ├─ Payment debited but order not allotted
 │  → Rule 1
@@ -126,7 +128,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 1 — Payment Debited But Not Allotted
 
 1. Find the payment by date/UTR.
-2. Check `error_remarks` first per **A5**. If "INVALID BANK ACCOUNT DETAIL" → escalate immediately. Do not continue.
+2. Check `error_remarks` first per **A5**. If "INVALID BANK ACCOUNT DETAIL" → **ESCALATE** immediately. Do not continue.
 3. Check `settled_flag` and `allotment_flag` and respond using the matching row from **A3**.
 4. If `settled_flag` = N and beyond T+2 → check refund status per **A4**:
    - `refund_utr` populated → share refund details.

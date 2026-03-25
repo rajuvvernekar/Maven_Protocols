@@ -52,7 +52,7 @@ Reference: [Why does Console show a different MF NAV?](https://support.zerodha.c
 
 | Flag | Meaning | Action |
 |---|---|---|
-| `failure_date` populated | P&L calculation failed | Escalate immediately — this tool is the authoritative source for failure_date |
+| `failure_date` populated | P&L calculation failed | **ESCALATE** immediately — this tool is the authoritative source for failure_date |
 | `discrepant` > 0 | Units exist but no matching trade entries in Tradebook | Investigate using Rule 2 diagnostic steps |
 | `margin` > 0 | Units are pledged | Authoritative source for pledged unit checks |
 
@@ -62,11 +62,11 @@ Check in this order — stop at the first match:
 
 | Step | Cause | How to Identify | Action |
 |---|---|---|---|
-| 1 | Delay allotment (most common) | Recent allotment (within 3–4 days) found in console_mf_tradebook or mf_order_history | "Invested value may temporarily show as 'NA'. Automatically corrected within 24–48 hours. You do not need to add any trade details for purchases made through Coin." Share link below. Do NOT suggest app troubleshooting (log out/in, clear cache, refresh) — the issue is settlement-side, not client-side. **If discrepancy persists beyond 48 hours:** escalate to agent. Additionally, if specific funds show no values and no Coin purchase history exists, ask the client whether units were transferred from another platform before proceeding — transferred-in units require external trade entries (see Step 3). |
-| 2 | Wrongly entered external trades | All purchases through Coin + client added external entries manually | Escalate to agent: "External trade entries were incorrectly added for this fund. We will request deletion from our end." |
+| 1 | Delay allotment (most common) | Recent allotment (within 3–4 days) found in console_mf_tradebook or mf_order_history | "Invested value may temporarily show as 'NA'. Automatically corrected within 24–48 hours. You do not need to add any trade details for purchases made through Coin." Share link below. Do NOT suggest app troubleshooting (log out/in, clear cache, refresh) — the issue is settlement-side, not client-side. **If discrepancy persists beyond 48 hours:** **ESCALATE** — agent review needed. Additionally, if specific funds show no values and no Coin purchase history exists, ask the client whether units were transferred from another platform before proceeding — transferred-in units require external trade entries (see Step 3). |
+| 2 | Wrongly entered external trades | All purchases through Coin + client added external entries manually | **ESCALATE** — agent review needed: "External trade entries were incorrectly added for this fund. We will request deletion from our end." |
 | 3 | Transferred from another platform | Units transferred in, no external entries added | "Add external trades: Console → Portfolio → Holdings → fund → Add External Trade." |
 | 4 | NFO recently allotted | New Fund Offer units allotted recently | "May auto-resolve in 3–5 days." |
-| 5 | failure_date populated | `failure_date` has a value | Escalate immediately per Rule 1. |
+| 5 | failure_date populated | `failure_date` has a value | **ESCALATE** immediately per Rule 1. |
 
 Delay allotment link: [Why are the newly allotted units shown as NA on the Coin app?](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/newly-allotted-units-shown-as-na)
 
@@ -124,6 +124,8 @@ For clients who hold non-demat (physical/statement-based) MF units with another 
 
 ---
 
+**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -141,7 +143,7 @@ For clients who hold non-demat (physical/statement-based) MF units with another 
 Query relates to MF holdings →
 │
 ├─ Preflight: failure_date populated?
-│  → Rule 1 (Escalate immediately)
+│  → Rule 1 (**ESCALATE** immediately)
 │
 ├─ Discrepancy detected (discrepant > 0 / "fix discrepancy" / "NA" invested amount)
 │  → Rule 2 (Diagnostic steps per A4)
@@ -191,7 +193,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 1. Triggered when: `discrepant` > 0, client reports "fix discrepancy" message, or invested amount shows as "NA".
 2. Work through the diagnostic steps in **A4** in order — stop at the first match.
-3. For Step 1 (delay allotment): check console_mf_tradebook or mf_order_history (per **A7**) for recent allotment within 3–4 days. If found, respond with the delay allotment explanation from **A4**. Do not suggest app troubleshooting. If the discrepancy has persisted beyond 48 hours → escalate to agent. If no Coin purchase history exists for the fund, ask the client whether units were transferred from another platform before proceeding.
+3. For Step 1 (delay allotment): check console_mf_tradebook or mf_order_history (per **A7**) for recent allotment within 3–4 days. If found, respond with the delay allotment explanation from **A4**. Do not suggest app troubleshooting. If the discrepancy has persisted beyond 48 hours → **ESCALATE** — agent review needed. If no Coin purchase history exists for the fund, ask the client whether units were transferred from another platform before proceeding.
 4. For Step 2 (wrongly entered external trades): verify via console_mf_external_trades (per **A7**). If confirmed → escalate.
 5. For Step 3 (transferred from another platform): guide client to add external trades using the Console path from **A4**.
 6. For Step 4 (NFO): advise to wait 3–5 days.
