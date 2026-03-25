@@ -178,12 +178,6 @@ On every payin query, execute in order:
 1. PREFLIGHT
    ├─ get_all_client_data → check account type, registered banks, IDFC 3-in-1 status
    ├─ If NRI PIS (client_acc_type IN NRO/NRE/NRI AND pis_bank present) → STOP. Escalate to support agent.
-   ├─ CROSS-TOOL CHECK: If the customer's query references mutual fund orders, SIP payments,
-   │   Coin, TPV pending, allotment, ICCL, demat units, or mentions amount deducted for an MF
-   │   purchase → this is not a Kite payin issue. Route to MF Order History / Coin protocol.
-   │   Do not apply Payin rules.
-   │   Trigger keywords: "Coin", "mutual fund", "MF order", "TPV pending", "SIP", "allotment",
-   │   "ICCL", "demat", "pending payment" (in MF context), "NEFT" or "RTGS" (in MF order context).
    ├─ UNLINKED ACCOUNT CHECK: If customer asks about transferring from an unlinked or
    │   unregistered bank account, or from a third-party account (spouse, family, others) →
    │   immediately state: "As per SEBI regulations, funds can only be transferred from bank
