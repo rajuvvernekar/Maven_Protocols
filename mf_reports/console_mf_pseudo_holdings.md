@@ -62,7 +62,7 @@ Check in this order — stop at the first match:
 
 | Step | Cause | How to Identify | Action |
 |---|---|---|---|
-| 1 | Delay allotment (most common) | Recent allotment (within 3–4 days) found in console_mf_tradebook or mf_order_history | "Invested value may temporarily show as 'NA'. Automatically corrected within 24–48 hours. You do not need to add any trade details for purchases made through Coin." Share link below. Do NOT suggest app troubleshooting (log out/in, clear cache, refresh) — the issue is settlement-side, not client-side. |
+| 1 | Delay allotment (most common) | Recent allotment (within 3–4 days) found in console_mf_tradebook or mf_order_history | "Invested value may temporarily show as 'NA'. Automatically corrected within 24–48 hours. You do not need to add any trade details for purchases made through Coin." Share link below. Do NOT suggest app troubleshooting (log out/in, clear cache, refresh) — the issue is settlement-side, not client-side. **If discrepancy persists beyond 48 hours:** escalate to agent. Additionally, if specific funds show no values and no Coin purchase history exists, ask the client whether units were transferred from another platform before proceeding — transferred-in units require external trade entries (see Step 3). |
 | 2 | Wrongly entered external trades | All purchases through Coin + client added external entries manually | Escalate to agent: "External trade entries were incorrectly added for this fund. We will request deletion from our end." |
 | 3 | Transferred from another platform | Units transferred in, no external entries added | "Add external trades: Console → Portfolio → Holdings → fund → Add External Trade." |
 | 4 | NFO recently allotted | New Fund Offer units allotted recently | "May auto-resolve in 3–5 days." |
@@ -108,6 +108,19 @@ The discrepant field and unit count comparisons between internal reports are for
 | Missing trade entries, allotment verification | console_mf_tradebook |
 | External trade entries, transferred-in units, buy average corrections | console_mf_external_trades |
 | Order status, allotment confirmation | mf_order_history |
+| Non-demat MF unit transfer / dematerialization | Rule 7 (**A8**) |
+
+### A8 — Non-Demat MF Unit Transfer (Dematerialization)
+
+For clients who hold non-demat (physical/statement-based) MF units with another platform and want to transfer them to Zerodha:
+
+**Process:** Dematerialization is required before units can be transferred to Zerodha's demat account.
+
+**Charges:**
+- ₹150 + 18% GST per scheme (for ELSS: ₹150 per investment within the scheme).
+- ₹100 courier charges (one-time).
+
+**Support article:** [How to transfer mutual funds from other platforms to Coin?](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/transfer-mutual-funds-to-coin)
 
 ---
 
@@ -145,6 +158,9 @@ Query relates to MF holdings →
 ├─ Console vs Coin value difference
 │  → Rule 6
 │
+├─ Client asks about transferring non-demat MF units to Zerodha / dematerialization
+│  → Rule 7
+│
 └─ General MF holdings query
    → Check data here first, invoke console_mf_holdings only if
      available/holdings_date/total_quantity needed (per A6)
@@ -152,7 +168,7 @@ Query relates to MF holdings →
 
 ### Scope
 
-- Address: MF holdings status, discrepancy diagnosis, buy average verification, pledged units, and NAV differences.
+- Address: MF holdings status, discrepancy diagnosis, buy average verification, pledged units, NAV differences, and non-demat MF unit transfer guidance.
 - Do not volunteer: internal field values (per **A5**), tool/system names, discrepant field values, or unit count comparisons between reports.
 
 ### Fallback
@@ -175,7 +191,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 1. Triggered when: `discrepant` > 0, client reports "fix discrepancy" message, or invested amount shows as "NA".
 2. Work through the diagnostic steps in **A4** in order — stop at the first match.
-3. For Step 1 (delay allotment): check console_mf_tradebook or mf_order_history (per **A7**) for recent allotment within 3–4 days. If found, respond with the delay allotment explanation from **A4**. Do not suggest app troubleshooting.
+3. For Step 1 (delay allotment): check console_mf_tradebook or mf_order_history (per **A7**) for recent allotment within 3–4 days. If found, respond with the delay allotment explanation from **A4**. Do not suggest app troubleshooting. If the discrepancy has persisted beyond 48 hours → escalate to agent. If no Coin purchase history exists for the fund, ask the client whether units were transferred from another platform before proceeding.
 4. For Step 2 (wrongly entered external trades): verify via console_mf_external_trades (per **A7**). If confirmed → escalate.
 5. For Step 3 (transferred from another platform): guide client to add external trades using the Console path from **A4**.
 6. For Step 4 (NFO): advise to wait 3–5 days.
@@ -202,6 +218,12 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Respond using **A2**: "Console displays the NAV as of T-2 days, while Coin displays the NAV as of T-1 day. This difference in NAV dates causes the P&L values to appear different. For the latest valuation, please refer to Coin."
 2. Share link from **A2**.
 
+### Rule 7 — Non-Demat MF Unit Transfer to Zerodha
+
+1. If client holds non-demat (physical/statement-based) MF units with another platform and wants to transfer to Zerodha → dematerialization is required first (per **A8**).
+2. Respond: "To transfer mutual fund units from another platform to Coin, the units need to be converted to demat form (dematerialization). Charges apply: ₹150 + 18% GST per scheme (₹150 per investment for ELSS schemes), plus ₹100 courier charges." Share support article link from **A8**.
+3. Once units are dematerialized and transferred → they will appear in this tool. The client may then need to add external trade entries (Console → Portfolio → Holdings → fund → Add External Trade) for correct buy average and P&L calculation.
+
 ---
 
 ## Section D: General Notes
@@ -210,3 +232,4 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 2. The `failure_date` check in Preflight step 3 is an absolute gate — if populated, escalate before doing anything else. No diagnostic steps, no client communication, just escalate.
 3. Delay allotment (A4 Step 1) is the most common cause of discrepancies. The critical instruction is to never suggest app troubleshooting (log out, clear cache, refresh) for this issue — it's settlement-side, not client-side. Suggesting troubleshooting wastes the client's time and erodes trust.
 4. `price` = NAV per unit and `quantity` = number of units. Swapping these in client communication is a common error — always verify before sharing.
+5. Stamp duty on MF purchases: A stamp duty of 0.005% is deducted from the investment amount before units are allotted. This means the client receives units based on the post-stamp-duty amount, while the investment summary shows the full amount. Example: ₹10,000 investment → stamp duty of ₹0.50 → ₹9,999.50 actually invested → at NAV ₹10, client receives 999.95 units instead of 1,000. Stamp duty is currently not displayed under charges on Console. If a client asks why they received slightly fewer units than expected for their investment amount, stamp duty is the explanation. This is a minor unit/value difference — it is separate from the discrepancy diagnostic in A4 (which covers missing trade entries, transferred units, and settlement delays).

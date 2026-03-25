@@ -126,9 +126,12 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 | INVALID MODE OF HOLDING | Minor account issue | **Escalate** |
 | MINIMUM AMOUNT FAILED | Below scheme minimum | Inform client of minimum |
 | UNITS NOT AUTHORISED | CDSL T-PIN missed | Must be completed same day before 3 PM. Place fresh order. Suggest DDPI. |
+| UNRID | CDSL T-PIN authorization not completed | Same as UNITS NOT AUTHORISED. For SWP/STP orders: T-PIN authorization window is 10:00 AM (when SWP triggers) to 3:00 PM on trigger day. If missed → order cancelled. Suggest DDPI to avoid repeated authorizations. |
 | FREE QTY LESS | Insufficient unlocked units | Check pseudo_holdings for margin/pledged |
+| UNIT NOT RECEIVED IN DEPOSITORY | Units not available in demat | Check console_mf_pseudo_holdings for pledged units (`margin`) and console_mf_tradebook for ELSS lock-in (FIFO from `trade_date`). If pledged → advise unpledging: Console → Portfolio → Holdings → [fund] → Unpledge. If ELSS locked → advise waiting for lock-in expiry per console_mf_tradebook Rule 1. |
 | ER[XX] prefixed | AMC-level restriction | Share status_message verbatim |
 | TPV INVALID | Bank validation failed | See Rule 3 (TPV Pending) |
+| BSE infrastructure/database errors (e.g., "network-related or instance-specific error", "BSEMFDB", "Connection Timeout", "DUPLICATE UNIQUE REF NO", "CLIENT DOES NOT EXISTS", "PASSWORD EXPIRED", "login failed") | BSE STAR MF system-side failure — order failed due to exchange infrastructure issue | "As per the reverse feed received from BSE, there was a technical issue at the exchange level. Your payment will be refunded to your bank account within 7 working days. We apologize for the inconvenience." Apply **A4** refund language if `payment_confirmed` = true. |
 
 ---
 
@@ -165,7 +168,9 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 - Console shows T-2 NAV; Coin shows T-1 NAV (P&L values may differ).
 - NEFT/RTGS/IMPS payments go directly to ICCL and are tracked at the exchange level, not on Coin.
 - Minor account MF purchases must use the minor's linked bank account. The guardian's bank account cannot be used. Kite balance is not used for MF purchases.
+- Minor account MF purchases must use the minor's linked bank account. The guardian's bank account cannot be used. Kite balance is not used for MF purchases.
 - When redeeming via CDSL portal, all MF holdings in demat are displayed. Only the selected fund's units will be redeemed. Recommend Coin app for a cleaner experience.
+- ETF NFO allotment verification: check console_eq_external_trades for an "IPO" entry matching the fund. Order status in mf_order_history may remain "Processing" even after ETF NFO allotment is complete.
 
 ---
 
@@ -227,20 +232,24 @@ If `fund_source` = neft-rtgs OR status_message contains "Pending payment via NEF
 
 **Step 1 — NFO check:**
 If fund is an NFO → check mf_order_history for any NFO order for this fund within last 30 days:
-- Allotted → "Your units have been allotted. NFO units appear in holdings only after the fund is listed, typically within 5 working days of allotment, then T+2 from listing date." If listing date is known from order data → share it. If not → use the standard 5 working days timeline. ETF NFO → appears in Kite/Console equity holdings. MF/FOF NFO → appears in Coin. The depository is not involved in this timeline.
-- Still Processing → "Your NFO order is being processed. Status updates within T+2 after listing." Rejection remarks for NFO orders update only after the allotment window closes.
+- Allotted → "Your units have been allotted. NFO units appear in holdings only after the fund is listed, typically within 5 working days of allotment, then T+2 from listing date." If listing date is known from order data → share it. If not → use the standard 5 working days timeline. MF/FOF NFO → appears in Coin. The depository is not involved in this timeline.
+- **ETF NFO — allotment verification:** ETF NFO units appear in Kite/Console equity holdings, not Coin. The order `status` may remain "Processing" even after allotment is complete. To confirm allotment, check console_eq_external_trades for an "IPO" entry matching the ETF NFO fund. If an IPO entry exists → allotment is complete. Inform: "Your ETF NFO units have been allotted and are available in your Kite holdings under [scrip name]. The order status on Coin may still show as Processing — this is expected for ETF NFOs."
+- Still Processing (non-ETF NFO) → "Your NFO order is being processed. Status updates within T+2 after listing." Rejection remarks for NFO orders update only after the allotment window closes.
 - Cannot determine → escalate to agent.
 
-**Step 2 — Payment check:**
-`payment_confirmed` = false → "Payment not confirmed. Allow 24 hours for gateway update."
+**Step 2 — Payment status mismatch check:**
+If `status_message` contains "Payment received" or "order sent to AMC" BUT `payment_confirmed` = false AND `payment_error_code` is present → the order was incorrectly marked. Payment actually failed. "Your order shows a processing status, but the payment was not successfully confirmed. Please place a new order and complete the payment. If your bank account was debited for the previous order, the amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)."
 
-**Step 3 — Determine T-day:**
+**Step 3 — Payment check:**
+`payment_confirmed` = false (and no status mismatch from Step 2) → "Payment not confirmed. Allow 24 hours for gateway update."
+
+**Step 4 — Determine T-day:**
 Use `payment_updated_at` against **A2** cutoffs.
 - Available + before cutoff → T = that day. "Allotment expected within T+1 business day."
 - Available + after cutoff → T = next working day (shift further if weekend/holiday). "Order placed with exchange on [T-day]. Allotment expected by [T+1]."
 - Not yet available → use `payment_initiated_at` as reference. Share cutoff link from **A9**. State that the applicable NAV depends on exchange confirmation.
 
-**Step 4 — Within T+2, payment confirmed:**
+**Step 5 — Within T+2, payment confirmed:**
 Check **fund_allocation_report**. Check `error_remarks` first:
 - "INVALID BANK ACCOUNT DETAIL" → **escalate to agent immediately**.
 
@@ -252,10 +261,10 @@ Then check flags:
   - Populated → "Payment could not be settled. Refund of ₹[amount] processed — use reference [refund_utr] to track with your bank."
   - Empty → apply **A4** refund language.
 
-**Step 5 — Beyond T+3:**
+**Step 6 — Beyond T+3:**
 Cross-check fund_allocation_report. No entry → escalate.
 
-**Step 5.5 — payment_confirmed = true, settled_flag = N, beyond T+2:**
+**Step 6.5 — payment_confirmed = true, settled_flag = N, beyond T+2:**
 "Your order is likely to fail. Place a lumpsum order for the current cycle." + **A4** refund language.
 
 ---
@@ -287,7 +296,10 @@ Escalate if: INVALID BANK ACCOUNT, PAN/PEKRN MISMATCH, KRA LOCKED, MODE OF HOLDI
 
 ### Rule 4: Redemption Issues
 
-Redemption proceeds go to client's primary bank account per **A2**. Always direct client to check their registered bank account for redemption credits.
+Redemption proceeds are credited directly to the client's primary registered bank account via the AMC. Always direct the client to check their primary bank account for redemption credits. Compute the expected credit date per **A6** using the actual `redemption_time` from order data.
+
+**Step 0 — Cutoff check (run first for every redemption query):**
+Check order time against the 3:00 PM cutoff per **A6** Step 1. If the order was placed after 3:00 PM on a working day, or on a weekend/settlement holiday → T shifts to the next working day. State this explicitly: "Your redemption was placed after the 3:00 PM cutoff, so it will be processed on the next working day [date]." Then compute credit date per **A6** from the adjusted T-day.
 
 | Scenario | Response |
 |---|---|
@@ -312,13 +324,20 @@ Response: "This occurs due to a delay in crediting recently purchased units to y
 
 ### Rule 5: NAV Disputes
 
-Check both:
-1. `payment_updated_at` vs **A2** cutoffs for the fund_source type.
-2. `payment_date` in fund_allocation_report.
+**Step 1 — Identify payment method:**
+Check `fund_source` per **A2** payment source mapping.
+- If `fund_source` = neft-rtgs → NAV depends on ICCL settlement time only. Share NEFT/RTGS link from **A9**. Stop here.
+- If `fund_source` = rp_pg (netbanking) → proceed to Step 2.
+- If UPI (inapp_upi or upi_mandates) → proceed to Step 3.
 
-If `payment_updated_at` is after cutoff → explain the cutoff rule.
-If non-direct settlement bank → next day NAV applies.
-If `fund_source` = neft-rtgs → NAV depends on ICCL settlement time only.
+**Step 2 — Netbanking: determine direct vs non-direct settlement bank:**
+Non-direct settlement banks always receive next day NAV, regardless of when the payment was made or confirmed. If the client's bank is a non-direct settlement bank → "Your bank processes mutual fund payments via a non-direct settlement route. For non-direct settlement banks, the next day's NAV applies regardless of payment time." Share MF cutoff times link from **A9**.
+If direct settlement bank → proceed to Step 3.
+
+**Step 3 — Check payment confirmation time against cutoffs:**
+Use `payment_updated_at` vs **A2** cutoffs for the fund type.
+- If `payment_updated_at` is after cutoff → "Your payment was confirmed after the [cutoff time] cutoff. The next working day's NAV was applied."
+- If before cutoff → NAV should match T-day. Cross-check `payment_date` in fund_allocation_report.
 
 Payment mapping: Match `exchange_order_id` = `settlement_number` in fund_allocation_report. This mapping applies to UPI and netbanking orders only.
 
@@ -357,7 +376,8 @@ If `next_sip_date` within 5 days → check MF Order History for already-placed S
 "Payments via NEFT/RTGS/IMPS are credited directly to ICCL and are tracked at the exchange level, not on Coin. Units will be allotted as per the settlement cycle." Link: **A9**.
 
 - NAV based on ICCL settlement time (up to 24h from transfer).
-- Payments mapped to orders on FIFO basis.
+- Payments mapped to orders on FIFO basis. Each incoming transfer is matched against open orders in order of placement. If a transfer amount meets or exceeds an order amount, that order is fulfilled. Remaining funds from the transfer carry forward to the next order.
+- **Partial/split transfers:** If a client sends multiple smaller transfers intended for a single larger order, each transfer is mapped independently on FIFO. If no single transfer matches or exceeds the order amount, the order will fail. The unmatched amount will be reversed within 5–7 working days (excluding weekends and holidays). Example: a ₹40L order with two ₹20L transfers — ₹20L maps to the ₹40L order but does not fulfil it, so the order fails. However, if there were a ₹20L order and a ₹40L transfer, ₹20L would map to the order and the remaining ₹20L would carry forward.
 - Common issue: transferred without selecting NEFT mode on Coin first → payment not received.
 - Order still Processing beyond T+4 → "Your order is likely to fail. Please place a fresh order if needed."
 

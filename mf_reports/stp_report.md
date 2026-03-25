@@ -63,7 +63,7 @@ Run these checks in order:
 | 3 | SWP leg | Check swp_report (via `view_swp`) for trigger/next instalment | If SWP issue found → diagnose per SWP Report protocol |
 | 4 | SIP leg | Check sip_report (via `view_sips`) for status + mandate linkage | If SIP issue found → diagnose mandate/linkage |
 | 5 | Mandate | Check mandate_report for mandate status | If SIP leg has no mandate → purchase leg won't execute |
-| 6 | T-PIN | SWP order rejected with "units unauthorized" | Guide per **A3**. "Complete T-PIN before 3 PM. Recommend enabling DDPI." |
+| 6 | T-PIN | SWP order rejected with "UNRID" or "UNITS NOT AUTHORISED" | Guide per **A3**. "Complete T-PIN between 10:00 AM and 3:00 PM on trigger day. Recommend enabling DDPI." |
 | 7 | Units | Check console_mf_pseudo_holdings (`margin`) and console_mf_holdings (`available`) for source fund | `margin` > 0 → pledged, unpledge first. `available` = 0 → no free units. |
 
 ### A6 — Partial Execution Diagnosis
@@ -154,7 +154,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 4. Step 3: check SWP leg via swp_report (per **A8**). Diagnose trigger/next instalment.
 5. Step 4: check SIP leg via sip_report (per **A8**). Diagnose status + mandate linkage.
 6. Step 5: check mandate_report (per **A8**). If no mandate → "The purchase leg requires an active mandate for auto-debit."
-7. Step 6: if SWP order rejected with "units unauthorized" → respond per **A3**: "CDSL T-PIN authorization must be completed on the same day the SWP order is placed, before 3:00 PM. Since it was not completed on the order date, the order was rejected. Place a fresh redemption request. To avoid this in future, enable DDPI."
+7. Step 6: if SWP order rejected with "UNRID" or "UNITS NOT AUTHORISED" → respond per **A3**: "CDSL T-PIN authorization must be completed on the same day the SWP leg triggers, between 10:00 AM and 3:00 PM. Since it was not completed on time, the order was rejected. Place a fresh redemption request. To avoid this in future, enable DDPI."
 8. Step 7: check source fund — console_mf_pseudo_holdings for `margin` and console_mf_holdings for `available` (per **A8**). If pledged → "Unpledge first: Console → Portfolio → Holdings → [fund] → Unpledge." If no available units → inform client.
 
 ### Rule 2 — Partially Executing

@@ -35,6 +35,15 @@ All rules reference these blocks as single sources of truth.
 | Success | Bank debited successfully — payment will be mapped to order | "Your bank has been debited successfully." → Route to Rule 3 for order status. |
 | Failed | Bank rejected debit — order will not process this cycle | "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date." |
 
+### A2a — Juspay Mandate Detection
+
+**How to identify:** If `transaction_id` is null/empty in the mandate debit record, the mandate is serviced by Juspay (UPI autopay via Juspay).
+
+**Behavior:** Juspay-based mandates do not auto-debit. Instead, a payment approval request is sent to the client's UPI application on the SIP date. The client must manually approve the payment on the UPI app.
+
+**Applies when status = Created (SIP date passed) or Failed:**
+- "Your SIP mandate is processed via UPI autopay (Juspay). Unlike eNACH, this does not auto-debit your bank account. A payment approval request is sent to your UPI app on the SIP date — you need to manually approve it. If you missed the approval, the debit will not be processed for this cycle. You may also consider creating an eNACH mandate instead of UPI autopay to enable fully automatic debits."
+
 ### A3 — AMC SIP Manual Order Restriction
 
 When debit status = Created (SIP date passed) or Failed, check `sip_type` in sip_report before suggesting any action. Do not suggest placing a manual lumpsum order for AMC SIPs (`sip_type` = amc_sip). AMC SIP orders are placed by the AMC — the client cannot place manual orders for these.
@@ -88,8 +97,8 @@ Query relates to mandate debit →
 │
 ├─ Debit status check
 │  ├─ Created (SIP date not passed) → Rule 2a
-│  ├─ Created (SIP date passed) → Rule 2b (check A3 before suggesting manual order)
-│  ├─ Failed → Rule 2c (check A3 before suggesting manual order)
+│  ├─ Created (SIP date passed) → Rule 2b (check A2a for Juspay first, then A3)
+│  ├─ Failed → Rule 2c (check A2a for Juspay first, then A3)
 │  └─ Success → Rule 3
 │
 ├─ Success but order not processed / not allotted
@@ -131,12 +140,14 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 Respond per **A2**: "The debit instruction has been sent to your bank. Your funds will be debited on your SIP date. Once debited, the order will be processed automatically."
 
 **2b — Created, SIP date has passed:**
-Check `sip_type` per **A3** before responding.
+First check `transaction_id` per **A2a**: if null/empty → Juspay mandate. Respond with Juspay guidance from **A2a** (manual UPI approval required, suggest eNACH alternative).
+Otherwise, check `sip_type` per **A3** before responding.
 - Zerodha SIP: "Your auto-debit was not processed for this SIP cycle. Please place a manual lumpsum order to ensure your investment is not missed."
 - AMC SIP: "Your auto-debit was not processed for this SIP cycle." (Do not suggest manual order.)
 
 **2c — Failed:**
-Check `sip_type` per **A3** before responding.
+First check `transaction_id` per **A2a**: if null/empty → Juspay mandate. Respond with Juspay guidance from **A2a** (manual UPI approval required, suggest eNACH alternative).
+Otherwise, check `sip_type` per **A3** before responding.
 - Zerodha SIP: "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date. To invest for this month, please place a manual lumpsum order."
 - AMC SIP: "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date." (Do not suggest manual order.)
 
@@ -163,3 +174,4 @@ Check `sip_type` per **A3** before responding.
 1. The AMC SIP manual order restriction (**A3**) is the most important guard in this protocol. Always check `sip_type` before suggesting any manual order — AMC SIP clients cannot place manual orders for their SIP funds.
 2. `cashier_reference` is the key for cross-referencing debit success with payment mapping in fund_allocation_report. This is the only way to trace a successful debit to its corresponding order.
 3. Mandate deletion does not cancel SIPs. This is counterintuitive — clients often assume deleting the payment method stops the investment. Always mention that SIPs remain active and will need a new mandate or manual payment.
+4. Juspay-based UPI autopay mandates (identified by `transaction_id` = null in this report) do not auto-debit — the client must manually approve each payment on their UPI app. This is the most common cause of "auto-debit didn't happen" for UPI autopay mandates. Always check `transaction_id` in Rules 2b and 2c before concluding the debit failed due to bank rejection or insufficient funds.

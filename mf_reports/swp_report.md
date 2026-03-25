@@ -33,8 +33,10 @@ All rules reference these blocks as single sources of truth.
 
 | Account Type | Requirement |
 |---|---|
-| Non-DDPI/POA | Must authorize CDSL T-PIN after 10 AM trigger, before 3 PM on trigger day. If missed → order rejected. |
+| Non-DDPI/POA | Must authorize CDSL T-PIN after 10 AM trigger, before 3 PM on trigger day. If missed → order rejected with "UNRID" or "UNITS NOT AUTHORISED". |
 | DDPI enabled | No T-PIN required — automatic debit of units each cycle. Recommend as permanent fix. |
+
+SWP orders trigger at 10:00 AM. The client receives a T-PIN authorization request after the trigger. Authorization must be completed the same day before 3:00 PM. If not completed, the SWP order for that cycle is cancelled. The rejection shows as "UNRID" in mf_order_history.
 
 ### A3 — Field Rules
 
@@ -52,7 +54,7 @@ Run these checks in order — complete all steps before concluding:
 |---|---|---|---|
 | 1 | Creation timing | `created` within 2 working days of instalment | "Your SWP was created too close to the instalment date. It will start from the next cycle." |
 | 2 | Modification | Get `swp_id` → pass as `sip_id` to sip_modification_log. Check for swp_edit within T-2 of trigger. | If modified within T-2 → "Your SWP was modified on [date], within 2 days of the execution date. This cycle was skipped. It will trigger from the next cycle." |
-| 3 | Order status | Check mf_order_history for SELL order on trigger date | Failed → check status_message (T-PIN, free_qty_less, etc.) and apply relevant rule. Redeemed → SWP did trigger, clarify with client. No order → proceed to Step 4. |
+| 3 | Order status | Check mf_order_history for SELL order on trigger date | Failed → check status_message: if "UNRID" or "UNITS NOT AUTHORISED" → T-PIN not completed. Respond per Rule 3 (T-PIN window: 10:00 AM to 3:00 PM on trigger day). If "free_qty_less" or other → apply relevant rule. Redeemed → SWP did trigger, clarify with client. No order → proceed to Step 4. |
 | 4 | Pledged/available units (always complete this step) | Check console_mf_pseudo_holdings (`margin`) and console_mf_holdings (`available`) | `margin` > 0 → "Units are pledged. Unpledge first: Console → Portfolio → Holdings → [fund] → Unpledge." `available` = 0 or insufficient → "Units not available for redemption." |
 | 5 | All checks normal, no order | Backend issue | Suggest manual redemption for this cycle. |
 
@@ -115,7 +117,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 2. Step 1: check `created` timing (per **A1** — within 2 working days → starts next cycle).
 3. Step 2: check sip_modification_log via `swp_id` (per **A5**) for swp_edit near trigger date (per **A4** Step 2).
 4. Step 3: check mf_order_history (per **A5**) for SELL order on trigger date.
-   - Failed with T-PIN issue → route to Rule 3.
+   - Failed with "UNRID" or "UNITS NOT AUTHORISED" → route to Rule 3.
    - Failed with other reason → inform based on `status_message`.
    - Redeemed → SWP did trigger, clarify with client.
    - No order → proceed to Step 4.

@@ -86,7 +86,7 @@ Run these checks in order — each step may resolve the issue or lead to the nex
 | 6.5 | Initial allotment timing (Zerodha SIP) | FRESH order allotted on/after `preferred_date`, or `preferred_date` within 2 days of FRESH order | "Initial investment allotted after SIP date / too close to SIP date — instalment skipped. Pause and resume to reset." |
 | 6.6 | Upcoming SIP check | `next_sip_date` within 5 days | Check mf_order_history for already-placed order (triggers 2 days prior). Report actual status. |
 | 6.7 | Stale next_sip_date | `sip_status` = Active AND `next_sip_date` before today | SIP has stalled. "Pause and resume your SIP on Coin to re-sync the trigger date." Share link: [How to modify, pause or delete a SIP](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/modify-pause-delete-sip-coin) |
-| 7 | Order exists, payment issue | All normal — check mf_order_history for SIP order | If order exists → payment issue → check mandate_debit_report |
+| 7 | Order exists, payment issue | All checks above normal — check mf_order_history for SIP order on trigger date | If order exists: check `fund_source` on this SIP per **A4**. If `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked, check mandate_debit_report for debit status. If debit status = Created (SIP date passed) or Failed → the SIP order has failed for this cycle. Advise the client to place a manual lumpsum order (Zerodha SIP only — per mandate_debit_report A3, AMC SIP clients cannot place manual orders). If `fund_source` = blank or pool → mandate is not linked to this SIP, even if an active mandate exists in mandate_report. Advise linking per Rule 5. |
 | 8 | Recent modification | No order found | Get `public_id` → check sip_modification_log for recent pause/modify. If modification within T-2 of trigger → "Instalment was skipped due to modification within 2 days of execution date." |
 
 ### A6 — Zerodha SIP Initial Investment Diagnostic
@@ -224,16 +224,19 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 ### Rule 5 — SIP Mandate Linkage Check
 
-**Step 1 — Verify mandate linkage before recommending creation:**
-Check `fund_source` per **A4** for the relevant SIP:
+**Step 1 — Verify mandate linkage on each SIP individually:**
+If multiple SIPs exist, check `fund_source` per **A4** on each SIP record separately. Report linkage status per SIP — a mandate linked to one SIP does not mean it is linked to others. An active mandate in mandate_report also does not mean it is linked to any specific SIP. The only authoritative source for linkage is the `fund_source` field on the individual SIP record.
 
-- `digio-mandates` or `upi-mandates` → mandate already linked. Do not tell client to create a mandate. Check mandate_report (per **A9**) for current status:
+For each SIP, check `fund_source`:
+- `digio-mandates` or `upi-mandates` → mandate is linked to this SIP. Check mandate_report (per **A9**) for current status:
   - success/register_success → active. Check mandate_debit_report for debit attempt and mf_order_history for allotment status.
   - created/pending → "Your mandate is currently being verified. eNACH takes up to 3 working days; UPI autopay is typically immediate. Auto-debit will begin once verification is complete."
   - failed/register_failed → "Your mandate registration failed. Please create a new mandate. UPI autopay activates within minutes."
-- blank or pool → no mandate linked to this SIP. Check mandate_report for whether an active mandate exists elsewhere:
-  - Mandate active → "Your mandate is active but not yet linked to your SIP. Please link it." Share link from **A8**.
+- blank or pool → mandate is not linked to this SIP. Check mandate_report for whether an active mandate exists elsewhere:
+  - Mandate active → "Your mandate is active but not yet linked to your [fund name] SIP. Please link it." Share link from **A8**.
   - No active mandate → "No mandate linked. Please create and link a mandate for auto-debit." Share link from **A8**.
+
+**Example:** mandate_report shows status = success for mandate ZERODHA1349031599. Client has three SIPs. sip_report shows: SIP 1 (ICICI Multi Asset Fund) → fund_source = pool. SIP 2 (Axis Bluechip) → fund_source = upi-mandates. SIP 3 (HDFC Flexi Cap) → fund_source = pool. Correct diagnosis: mandate is linked only to SIP 2. SIPs 1 and 3 require mandate linking.
 
 **Step 2 — Daily SIPs specifically:**
 Orders for daily SIPs are placed on T-1 day in the system. Before concluding a daily SIP instalment is missing, check mf_order_history for T-1 day.
