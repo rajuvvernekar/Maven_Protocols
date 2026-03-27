@@ -105,7 +105,7 @@ Include in escalation: client ID (sender/receiver), creation date, status, items
 
 ### Preflight (run on every query)
 
-1. Fetch gift request data using sender or receiver Client ID.
+1. If the tool returned no gift request data, re-invoke the tool with the client ID in `claimed_by` only — leave `gifted_by` blank. Do NOT populate both fields simultaneously (the tool returns no data if both are filled).
 2. Apply field protection per **A6** — identify shareable vs internal-only fields.
 3. Identify the current status and translate using **A4**.
 4. If status is Approved or Processing, check `modified` timestamp internally for timeline guidance (per **A3** approval cutoff).
@@ -164,7 +164,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 ### Rule 1 — Gift Status Check
 
-1. Look up by sender or receiver Client ID. Find the matching request.
+1. Use the gift request data from Preflight (including the fallback `claimed_by` re-query if needed). Find the matching request.
 2. Translate the status using **A4** and respond with the appropriate client-facing communication.
 3. For Approved status: check `modified` timestamp internally. If after 2 PM → add: "Since the gift was approved after 2 PM, the CDSL verification email will be sent on the next trading day." (Per **A3**.)
 
