@@ -83,11 +83,13 @@ When escalating, always include: **client ID, tradingsymbol, trade_date, segment
 
 **Positions auto-squared-off on expiry:** ITM options exercised, OTM expire worthless.
 
-**Physical delivery:** Applicable for stock F&O positions expiring ITM. Shares delivered/received T+1 after expiry. Delivery margin blocked from the Wednesday before expiry for stock F&O positions.
+**Physical delivery (stock F&O):** Applicable for stock F&O positions expiring ITM. Shares delivered/received T+1 after expiry. Delivery margin blocked from the Wednesday before expiry for stock F&O positions.
 
 **Carry-forward positions:** Positions held overnight incur margin requirements; margin recalculated at EOD.
 
 **Contract symbol format:** underlying + expiry date + strike (for options) + CE/PE (e.g., NIFTY2621727100CE).
+
+**MCX commodity physical delivery:** Zerodha does not support physical delivery of MCX commodity contracts (gold, silver, crude oil, etc.). Positions not closed before the delivery period begins are auto-squared-off by Zerodha. A charge of ₹50 + 18% GST applies per auto-squared-off order.
 
 **Position disappeared:** If position shows on a past date but not current date → position was closed or expired between those dates.
 
@@ -109,7 +111,7 @@ Your position in [tradingsymbol] closed at ₹[close_price] on [trade_date]. The
 **R4 — Expired / closed position:**
 "Your [tradingsymbol] position was closed or expired between [earlier date] and [requested date]. If it expired, ITM options were exercised and OTM options expired worthless."
 
-**R5 — Physical delivery on expiry:**
+**R5 — Physical delivery on expiry (stock F&O):**
 "Stock futures and ITM stock options that expire are subject to physical delivery. If you held a long futures/ITM call position, shares will be credited to your demat account. If you held a short futures/ITM put position, shares will be debited. Physical delivery happens T+1 after expiry.
 
 Delivery margin is blocked from the Wednesday before expiry for stock F&O positions."
@@ -117,9 +119,8 @@ Delivery margin is blocked from the Wednesday before expiry for stock F&O positi
 **R6 — Historical snapshot:**
 "Your positions as of [trade_date] were: [list tradingsymbol, open_quantity, open_average, unrealized_profit for each]."
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+**R7 — MCX commodity physical delivery:**
+"Zerodha does not support physical delivery of MCX commodity contracts. If you do not close your position before the start of the delivery period, Zerodha will auto-square it off. A charge of ₹50 + 18% GST applies per auto-squared-off order. Please ensure you close or roll over your commodity futures position before the delivery period begins."
 
 ## Section B: Decision Flow
 
@@ -145,6 +146,7 @@ Expired / closed position not showing                       → Rule 4
 Physical delivery on expiry (stock F&O ITM)                 → Rule 5
 Historical position snapshot for a past date                → Rule 6
 Margin shortfall / penalty query                            → Rule 7
+MCX commodity physical delivery query                       → Rule 8
 ```
 
 ### Scope
@@ -155,7 +157,7 @@ Margin shortfall / penalty query                            → Rule 7
 
 ### Fallback
 
-If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, **ESCALATE** per **A5**.
+If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A5**.
 
 ---
 
@@ -172,7 +174,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 2 — MTM Obligation Explanation
 
 1. Respond per **A7-R2**. MTM mechanics per **A6**.
-2. If client asks for detailed day-by-day MTM calculation → **ESCALATE** — agent review needed. This tool shows position snapshots, not day-by-day MTM breakdown. 
+2. If client asks for detailed day-by-day MTM calculation → Escalate to support agent. This tool shows position snapshots, not day-by-day MTM breakdown.
 ---
 
 ### Rule 3 — Console vs Kite Position Value Difference
@@ -180,7 +182,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 1. Respond per **A7-R3**.
 2. If values differ after EOD settlement → verify both show same `open_quantity`.
    a. Quantity matches but value differs → closing price source difference (normal).
-   b. Quantity differs → **ESCALATE** per **A5**.
+   b. Quantity differs → escalate per **A5**.
 
 ---
 
@@ -192,10 +194,10 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 ---
 
-### Rule 5 — Physical Delivery on Expiry
+### Rule 5 — Physical Delivery on Expiry (Stock F&O)
 
 1. Respond per **A7-R5**. Delivery mechanics per **A6**.
-2. If client questions delivery margin or charges → **ESCALATE** — agent review needed . Delivery margin and penalty calculations depend on multiple factors not available in this tool.
+2. If client questions delivery margin or charges → Escalate to support agent. Delivery margin and penalty calculations depend on multiple factors not available in this tool.
 
 ---
 
@@ -209,16 +211,12 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 7 — Margin Shortfall Queries
 
 1. This tool does not contain margin requirement or penalty calculations.
-2. **ESCALATE** per **A5** with: client ID, tradingsymbol, trade_date, and client's concern about margin shortfall/penalty.
-3. Margin calculations require data outside this tool — **ESCALATE** — agent review needed
+2. Escalate per **A5** with: client ID, tradingsymbol, trade_date, and client's concern about margin shortfall/penalty.
+3. Margin calculations require data outside this tool — escalate to a support agent.
+
 ---
 
-## Section D: General Notes
+### Rule 8 — MCX Commodity Physical Delivery
 
-- This tool shows snapshots, not real-time data. Select a specific trade date to view positions as of that day.
-- Segment selection is critical — FO (equity F&O), CDS (currency), COM (commodities). Wrong segment returns no results.
-- Console uses settlement/closing price; Kite uses LTP. Values will differ during market hours and may differ slightly after close.
-- MTM is settled daily — this tool shows the snapshot, not the daily P&L breakdown.
-- Physical delivery applies to stock F&O positions expiring ITM. Delivery margin blocked from Wednesday before expiry.
-- Positions that disappear from one date to the next were closed or expired in between.
-- Margin shortfall and penalty calculations are not available in this tool.
+1. Respond per **A7-R7**. Policy per **A6** (MCX commodity physical delivery).
+2. If client has already been auto-squared-off and disputes the charge → escalate per **A5**.

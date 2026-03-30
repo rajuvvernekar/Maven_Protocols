@@ -194,6 +194,7 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | Currency position limit | Client limit exceeded | USDINR 85K lots, EURINR/GBPINR 5K, JPYINR 2K. |
 | MTF sell conflict | MTF buy blocked — open CNC sell or MTF sell for same stock | Buy via CNC instead. MTF position restores next day. |
 | Order being processed | Already executed/cancelled | Refresh page for updated status. |
+| Invalid quantity / odd lot | Order quantity does not match the current lot size — residual odd-lot from SEBI lot size revision | Odd-lot positions cannot be traded. Must hold until expiry — will be cash-settled based on moneyness. Redirect to `kite_positions` Rule 10 for full guidance. |
 
 ---
 
@@ -236,6 +237,8 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | Intraday/MIS approved list | https://docs.google.com/spreadsheets/d/1XwWNCASDmrXfx5LtFNna0Kmkt5vHtqkjICvVcUZaQhw/edit#gid=0 |
 | Margin calculator | https://zerodha.com/margin-calculator/ |
 | Bulletin (restrictions) | https://zerodha.com/marketintel/bulletin |
+| NSE trade verification | https://www.nseindia.com/static/invest/first-time-investor-trade-verification |
+| SL execution explained | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger |
 
 ---
 
@@ -257,7 +260,7 @@ When escalating, always include: **client ID, instrument, order type, time, and 
 "Your limit [type] order at ₹[price] executed at ₹[average_price] because the market had [buyers/sellers] at a [better] price. Limit orders guarantee your price as the worst you'll get, not the exact price."
 
 **R4 — SL trigger vs chart:**
-"Stop-loss orders trigger on actual exchange tick data, not chart candles. Charts snapshot every 250ms and may miss brief price movements. The execution was at a valid market price."
+"Charts display snapshots of trading activity and may not reflect every individual trade executed at the exchange. The actual market price at the exchange determines the execution of your order, and brokers have no control over this process. You can verify the execution of your trade using your exchange trade ID through the NSE trade verification module: [NSE Trade Verification](https://www.nseindia.com/static/invest/first-time-investor-trade-verification). For further details: [Why was my SL order executed even though the price did not breach my trigger?](https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger)"
 
 **R5 — Want to buy at breakout price:**
 "For buying only when the price reaches ₹[price], use a Stop-Loss (SL) order with trigger price ₹[price] for intraday, or a GTT order with trigger ₹[price] for a long-standing order valid up to 1 year."
@@ -321,8 +324,6 @@ Auto square-off charges: ₹50 + 18% GST per order."
 **R23 — Circuit + MIS risk:**
 "When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time — this can lead to short delivery or auction risk."
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -366,7 +367,7 @@ Order book display issues                                   → Rule 10
 
 ### Fallback
 
-If no route matches, investigate using Order History sub-view and Section A reference data. If no root cause is found, **ESCALATE** per **A17**.
+If no route matches, investigate using Order History sub-view and Section A reference data. If no root cause is found, escalate per **A17**.
 
 ---
 
@@ -414,7 +415,8 @@ If no route matches, investigate using Order History sub-view and Section A refe
 4. For MIS blocks → match against **A11**, respond with reason + resolution.
 5. For quantity/value limits → refer to **A7**.
 6. For trigger price errors, ban period, OI restrictions, BSE SL-M, exchange restricted, MTF conflicts → use matching row in **A12**.
-7. For any rejection not matching **A12** → share the `rejection_reason` text verbatim and suggest retrying or contacting support.
+7. For invalid quantity / odd lot from lot size revision → use matching row in **A12**. Redirect to `kite_positions` Rule 10 for full guidance on holding until expiry and cash settlement.
+8. For any rejection not matching **A12** → share the `rejection_reason` text verbatim and suggest retrying or contacting support.
 
 ---
 
@@ -448,7 +450,7 @@ If no route matches, investigate using Order History sub-view and Section A refe
 
 1. Check `placed_by`:
    a. ADMINSQF or starts with "rms" → apply Rule 7 (RMS square-off).
-   b. Client's own ID → **ESCALATE** — agent review needed, immediate investigation required.
+   b. Client's own ID → escalate to escalation team immediately.
 
 ---
 
@@ -465,20 +467,3 @@ If no route matches, investigate using Order History sub-view and Section A refe
 2. Downloaded file shows dates instead of quantities → respond per **A18-R18**.
 3. Execution time beyond market hours → respond per **A18-R19**.
 
----
-
-## Section D: General Notes
-
-- This tool returns today's orders only. For historical orders, use `kite_order_history`.
-- Orders follow price-time priority. Market orders may fill at multiple price levels.
-- Limit orders may execute at better price (price improvement by exchange matching engine).
-- SL orders trigger on exchange tick data, not chart data — charts show snapshots at 250ms intervals, not every trade.
-- SL-M is discontinued on BSE for all segments — use SL-L instead.
-- Market orders in pre-open session convert to limit at equilibrium/previous close price.
-- BSE market orders convert to limit with 3% market protection from LTP.
-- CO positions cannot be converted to CNC/NRML.
-- If auto square-off fails (system failure, circuit hit, connectivity), MIS converts to CNC/NRML and carries forward — client must close next day.
-- Order execution time may show beyond market hours due to exchange reconciliation — actual time visible in tradebook.
-- Downloaded order book may show dates instead of quantities due to Excel auto-formatting — open in Notepad.
-- Max 5,000 orders/day, 400/minute, 25 modifications per order.
-- Max order value ₹10 Crore equity; max quantity 1,00,000 equity.

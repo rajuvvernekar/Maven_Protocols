@@ -81,7 +81,7 @@ Always use ₹ formatting for amounts.
 | SPAN | Exchange-calculated risk margin for F&O. Revised throughout day. |
 | Exposure | Margin over SPAN (index: 2% contract value; stock: 3.5% or 1.5 SD). |
 | SPAN + Exposure | = Initial Margin |
-| Delivery Margin | T1 sale proceeds + physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry |
+| Delivery Margin | T1 sale proceeds + physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry. Physical delivery margin increases progressively from E-4 to expiry day — see **A12** for the full schedule. |
 | M2M Realised | Realised MTM P&L from closed F&O positions |
 | M2M Unrealised | Unrealised MTM P&L from open F&O positions (internal use only) |
 
@@ -122,6 +122,7 @@ Always use ₹ formatting for amounts.
 | Cash equivalent | LiquidBees ETF, liquid mutual funds (after haircut) |
 | Non-cash shortfall charge | 0.035%/day (12.775% p.a.) |
 | Usable for | Equity intraday, futures, options buying and writing |
+| Not usable for | Equity delivery (CNC) purchases — cash or cash-equivalent margin is required for delivery buys |
 
 ---
 
@@ -156,6 +157,7 @@ CC takes 4 random margin snapshots/day; peak used for shortfall calculation. Sho
 | Approved securities (pledge haircuts) | zerodha.com/approved-securities |
 | Verify equity collateral | investorhelpline.nseindia.com/ClientCollateral/welcomeCLUser |
 | Verify commodity collateral | clientreports.mcxccl.com |
+| Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
 
 ---
 
@@ -180,7 +182,7 @@ Share: `available_margin` (₹), `available_cash` (₹), `opening_balance` (₹)
 "Your available cash is ₹[available_cash]. A negative cash balance attracts interest at 0.05% per day (18% p.a.). Please add funds to clear the negative balance. If no funds are added, open positions may be squared off."
 
 **R5 — Collateral details:**
-Share: `liquid_collateral` (₹), `equity_collateral` (₹), `total_collateral` (₹). Explain: liquid = cash equivalent (satisfies 50% cash requirement), equity = non-cash (attracts 0.035%/day if used beyond 50% cash limit). Usable for: equity intraday, futures, options buying and writing.
+Share: `liquid_collateral` (₹), `equity_collateral` (₹), `total_collateral` (₹). Explain: liquid = cash equivalent (satisfies 50% cash requirement), equity = non-cash (attracts 0.035%/day if used beyond 50% cash limit). Usable for: equity intraday, futures, options buying and writing. For equity delivery (CNC) purchases, cash or cash-equivalent margin is required — collateral alone is not sufficient.
 
 **R6 — Margin call / shortfall:**
 "Please add funds to your Zerodha account to cover the shortfall.
@@ -197,7 +199,7 @@ Note: The Clearing Corporation takes 4 random margin snapshots during the day. T
 "The option premium field shows: positive (+ve) = premium received from selling/writing options; negative (−ve) = premium paid for buying options. This amount is included in your available cash and shown separately for visibility."
 
 **R9 — SPAN / exposure / delivery margin:**
-Share: `span` (₹), `exposure_margin` (₹), `delivery_margin` (₹). Explain: SPAN + Exposure = Initial Margin required by exchange for F&O. Delivery margin blocked for: T1 sale proceeds, ITM stock options during expiry week, MCX contracts near expiry. SPAN revised by exchanges throughout the day.
+Share: `span` (₹), `exposure_margin` (₹), `delivery_margin` (₹). Explain: SPAN + Exposure = Initial Margin required by exchange for F&O. Delivery margin blocked for: T1 sale proceeds, ITM stock options during expiry week, MCX contracts near expiry. SPAN revised by exchanges throughout the day. For physical delivery margin schedule near expiry, refer to **A12**.
 
 **R10 — Payin / payout:**
 Share: `payin` (₹), `payout` (₹). Payin = funds added today. Payout = funds withdrawn today. Weekend payins appear on Monday.
@@ -223,7 +225,26 @@ Share: `payin` (₹), `payout` (₹). Payin = funds added today. Payout = funds 
 **R17 — MTM explanation:**
 "Mark to Market (MTM) is the daily revaluation of open futures positions by the exchange at the closing price. Profits or losses are settled to your account daily. Short options don't undergo daily MTM — instead, margin increases as they move in-the-money."
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+**R18 — Balance negative due to physical delivery margin:**
+"Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. This margin increases progressively as expiry approaches (schedule per **A12**). To confirm, invoke `ledger_report` and check remarks for 'Physical delivery margin blocked for long options in NSE F&O' with the corresponding debit entry. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)"
+
+---
+
+### A12 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
+
+| Day | Margin Requirement |
+|---|---|
+| E-4 (Wednesday) | 10% of (VaR + ELM + Adhoc) |
+| E-3 (Thursday) | 25% of (VaR + ELM + Adhoc) |
+| E-2 (Friday) | 45% of (VaR + ELM + Adhoc) |
+| E-1 (Monday) | 25% of contract value |
+| Expiry day (Tuesday) | 50% of contract value |
+
+This margin is blocked progressively for ITM stock options and futures positions approaching expiry. It can cause the available cash / fund balance to go negative if insufficient funds are available.
+
+**Ledger verification:** Invoke `ledger_report` and check `remarks` for "Physical delivery margin blocked for long options in NSE F&O" with the corresponding `debit` entry to confirm delivery margin was the cause of a negative balance.
+
+**Reference:** [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)
 
 ---
 
@@ -261,6 +282,7 @@ Unsettled funds query                                       → Rule 15
 Decimal discrepancy on funds page                           → Rule 16
 Negative balance after market order                         → Rule 17
 MTM explanation                                             → Rule 18
+Balance negative due to physical delivery margin near expiry → Rule 19
 ```
 
 ### Scope
@@ -271,7 +293,7 @@ MTM explanation                                             → Rule 18
 
 ### Fallback
 
-If no route matches, explain from **A3** field definitions. If no root cause is found, **ESCALATE** per **A10**.
+If no route matches, explain from **A3** field definitions. If no root cause is found, escalate per **A10**.
 
 ---
 
@@ -304,6 +326,7 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 ### Rule 4 — Negative Available Cash
 
 1. `available_cash` < 0 → respond per **A11-R4**. Interest/consequences per **A5**.
+2. If client has ITM stock option positions approaching expiry → check whether physical delivery margin is the cause. Invoke `ledger_report` and check remarks for "Physical delivery margin blocked for long options in NSE F&O". If found → respond per **A11-R18** with the margin schedule from **A12**. If not found → continue with standard negative cash handling.
 
 ---
 
@@ -344,8 +367,9 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 ### Rule 10 — SPAN / Exposure / Delivery Margin
 
 1. Respond per **A11-R9**. Definitions per **A3**. Margin calculator per **A9**.
-2. If client asks which position is blocking margin → invoke `kite_positions`.
-3. If client asks about a specific order's margin requirement → invoke `kite_orders`.
+2. If delivery margin is blocked and client has ITM stock options near expiry → share margin schedule from **A12**.
+3. If client asks which position is blocking margin → invoke `kite_positions`.
+4. If client asks about a specific order's margin requirement → invoke `kite_orders`.
 
 ---
 
@@ -403,16 +427,11 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 
 ---
 
-## Section D: General Notes
+### Rule 19 — Balance Negative Due to Physical Delivery Margin
 
-- Available Margin = cash + collateral + premium + P&L − used margin.
-- Available Cash: if negative → 0.05%/day interest (18% p.a.) + ₹40/order F&O brokerage.
-- Used Margin can be negative (credit from selling holdings / closing long options).
-- Intraday/F&O profits available after T+1 only. Holdings sale proceeds: 100% same day (from Oct 7, 2024).
-- 50% of F&O margin must be cash/cash-equivalent. Non-cash shortfall: 0.035%/day (12.775% p.a.).
-- Exchange revalues futures daily (MTM). Short options: no daily MTM, margin increases as they move ITM.
-- Positions P&L uses entry price; Funds uses MTM settlement price — may differ intraday.
-- CC takes 4 random snapshots/day; peak used for shortfall. Shortfall can occur after closing positions.
-- Available Cash on Kite rounded to 1 decimal; full amount withdrawable.
-- Only Equity category is relevant; ignore Commodity category.
-- Weekend payins appear on Monday.
+1. If client's fund balance went negative near F&O expiry and client holds ITM stock option positions:
+   a. Invoke `ledger_report` and check `remarks` for "Physical delivery margin blocked for long options in NSE F&O" with the corresponding `debit` entry.
+   b. If found → respond per **A11-R18**. Share the margin schedule from **A12** and the debit amount from the ledger. Link to physical settlement policy per **A9**.
+   c. If not found → route to Rule 4 (standard negative cash handling).
+2. If client asks about the position → invoke `kite_positions`.
+

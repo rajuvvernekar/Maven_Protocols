@@ -127,10 +127,6 @@ When escalating, always include: **client ID, amount, transaction date, and spec
 **R7 — Early debit explanation:**
 "Your bank debits the amount 1 working day before the scheduled credit date. This is because eMandate transfers take one working day to process — the NPCI confirms the transaction at end of day, and the funds appear in your Kite account on the scheduled date."
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -164,7 +160,7 @@ Double debit complaint                                      → Rule 6
 
 ### Fallback
 
-If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (per **A6**) for additional context. If no root cause is found, **ESCALATE** per **A8**.
+If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (per **A6**) for additional context. If no root cause is found, escalate per **A8**.
 
 ---
 
@@ -216,17 +212,6 @@ If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (p
 ### Rule 6 — Double Debit Complaint
 
 1. Check for multiple records in this tool.
-2. If two successful debits exist for the same period → **ESCALATE** per **A8**.
+2. If two successful debits exist for the same period → escalate per **A8**.
 3. If one success + one failed → explain only the successful one was credited. The failed debit was not processed.
 
----
-
-## Section D: General Notes
-
-- Console eMandate auto-debits fund the Kite trading account. Coin/MF mandates are a separate system.
-- Bank debits 1 working day before the scheduled credit date. Bank considers opening balance — same-day deposits may not count.
-- Failed auto-debits are not retried. Client must add funds manually.
-- Max ₹1 lakh per schedule; multiple schedules up to ₹1 crore/day cumulative.
-- No Zerodha charges for eMandate registration or transactions. Bank may charge penalty for failed debits.
-- Stock SIPs deduct from Kite balance, not bank. Schedule eMandate 2–3 days before SIP date.
-- Successful debits appear in ledger as "Funds added using auto debit."

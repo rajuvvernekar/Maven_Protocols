@@ -118,10 +118,6 @@ When escalating, always include: **client ID, schedule details, and specific iss
 **R8 — Cancelled but still debited:**
 "If you cancelled the schedule after an upcoming debit was already confirmed with your bank, that debit will still be processed. However, all future debits are cancelled. The debited funds will be credited to your Kite account and you can withdraw them if needed."
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -158,7 +154,7 @@ Cancelled schedule but bank still debited                   → Rule 7
 
 ### Fallback
 
-If no route matches, check `e_mandate_report` and `auto_debit_payins` for additional context. If no root cause is found, **ESCALATE** per **A6**.
+If no route matches, check `e_mandate_report` and `auto_debit_payins` for additional context. If no root cause is found, escalate per **A6**.
 
 ---
 
@@ -205,7 +201,7 @@ If no route matches, check `e_mandate_report` and `auto_debit_payins` for additi
 ### Rule 6 — Error Deleting Schedule
 
 1. Respond per **A7-R7**.
-2. If error persists → **ESCALATE** per **A6**.
+2. If error persists → escalate per **A6**.
 
 ---
 
@@ -213,14 +209,3 @@ If no route matches, check `e_mandate_report` and `auto_debit_payins` for additi
 
 1. Respond per **A7-R8**. Post-cancel confirmed debit rules per **A4**.
 
----
-
-## Section D: General Notes
-
-- Schedule defines amount, date, and frequency for auto-debit from bank to Kite.
-- Max ₹1 lakh per schedule; cumulative ₹1 crore/day across multiple schedules.
-- Bank debits 1 working day before scheduled credit date. Non-business days shift the debit earlier.
-- Failed debits are not retried — client must add funds manually.
-- Cancel schedules 3+ working days before next credit date (4 for SBI).
-- Already-confirmed debits still execute after schedule cancellation; future ones stop. Funds can be withdrawn.
-- Mandate must be active before creating schedules.

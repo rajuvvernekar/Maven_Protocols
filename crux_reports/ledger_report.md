@@ -144,7 +144,14 @@ Raw bank reference numbers and internal reference codes are never shared with cl
 
 For detailed MTF interest charges, refer client to the MTF Interest Statement on Console.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+### A13 — Common Bank Rejection Reasons
+
+| Reason | Suggestion |
+|---|---|
+| Incorrect or outdated bank account details | Verify and update bank details on Console under Profile → Bank Details |
+| Bank account frozen or inactive | Contact the bank to resolve the account status |
+| Bank-side technical issue or downtime | Wait and retry; if persistent, contact the bank |
+| Name mismatch between Zerodha and bank records | Ensure the registered name matches across both accounts |
 
 ---
 
@@ -175,6 +182,8 @@ Query relates to ledger →
 ├─ Withdrawal issue
 │  ├─ Failed, same-day "Bank Receipts" found
 │  │  → Rule 4
+│  ├─ Customer quotes a bank reference number / UTR for a withdrawal
+│  │  → Rule 4b
 │  ├─ Failed, unsettled "Book Voucher" settlement found
 │  │  → Rule 5
 │  ├─ Partially processed, same-day deposit or unsettled trades
@@ -211,11 +220,11 @@ Query relates to ledger →
 ### Scope
 
 - Address: ledger entries, balances, withdrawal eligibility, QS, and mismatches within ledger context.
-- Do not volunteer: detailed charge breakdowns (refer to **A11** cross-reference protocols), MTF MTM calculations, or information the client hasn't asked about.
+- For detailed charge breakdowns, refer to **A11** cross-reference protocols. For MTF MTM disputes, escalate per Rule 16.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 18.
+If no root cause is identified after checking all relevant rules → escalate per Rule 18.
 
 ---
 
@@ -248,10 +257,20 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Confirm: voucher_type = "Bank Receipts" on the same posting_date as the failed withdrawal.
 2. Respond: "Your withdrawal could not be processed because funds added on the same day cannot be withdrawn due to the T+1 settlement rule (per **A2**). On [date], ₹[credit] was added to your account. These funds will be available for withdrawal from the next trading day."
 
+### Rule 4b — Withdrawal Status Lookup by Reference Number
+
+1. When the customer quotes a bank reference number or UTR for a withdrawal they say was not credited, check the withdrawal/payout report for that specific transaction.
+2. Identify the transaction status: processed, rejected, or pending.
+3. **If rejected:** Explain that rejected withdrawal funds are credited back to the Zerodha trading account. Check the ledger for the corresponding credit entry and confirm it. Then check if a subsequent withdrawal request was placed after the rejection — if so, share its status too.
+4. **If processed:** Share the processing date and suggest the client check with their bank if the credit has not appeared within 24 hours of processing.
+5. **If pending:** Share the current status and expected processing timeline.
+6. Provide a brief chronological summary of the last 3–5 payout entries so the customer has full context on recent withdrawal activity.
+7. If the withdrawal was rejected due to a bank-side issue, share common rejection reasons from **A13** and suggest verifying bank details on Console (Profile → Bank Details).
+
 ### Rule 5 — Withdrawal Failed: Unsettled Trade
 
 1. Locate a "Book Voucher" with settlement remarks near the withdrawal date. Identify trade type from **A3**.
-2. Respond: "Your withdrawal could not be processed because your [trade type] settlement funds haven't cleared yet. On [date], ₹[credit] was credited from [trade type]. These funds settle on T+1 and the withdrawable balance will be updated by the next working day ([T+1 date]) morning. You can place a regular withdrawal request anytime, and it will be processed at the standard cutoff times."
+2. Respond: "Your withdrawal could not be processed because your [trade type] settlement funds haven't cleared yet. On [date], ₹[credit] was credited from [trade type]. These funds settle on T+1 and the withdrawable balance will be updated by the next working day ([T+1 date]) morning (per **A2**)."
 
 ### Rule 6 — Partial Withdrawal
 
@@ -266,7 +285,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
    "Your withdrawable balance is zero because the ₹[credit] added today is subject to the T+1 rule. Available for withdrawal tomorrow."
 
    **7b — Unsettled trades found:**
-   "Your withdrawable balance is low because [trade type] funds from [date] are still settling. The withdrawable balance will be updated by the next working day ([T+1 date]) morning. You can place a regular withdrawal request anytime, and it will be processed at the standard cutoff times."
+   "Your withdrawable balance is low because [trade type] funds from [date] are still settling. The withdrawable balance will be updated by the next working day ([T+1 date]) morning (per **A2**)."
 
    **7c — Collateral involved:**
    Explain using the applicable formula from **A9**.
@@ -274,7 +293,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 8 — Stock Sale Proceeds Not Withdrawable
 
 1. Identify trade type from **A3** and the trade date.
-2. Respond: "Stock sale proceeds settle on T+1 (next working day). Your [trade type] trade from [date] will settle on [T+1 date]. The withdrawable balance will be updated by the next working day morning. You can place a regular withdrawal request anytime, and it will be processed at the standard cutoff times."
+2. Respond: "Stock sale proceeds settle on T+1 (next working day). Your [trade type] trade from [date] will settle on [T+1 date]. The withdrawable balance will be updated by the next working day morning (per **A2**)."
 
 ### Rule 9 — Quarterly Settlement Explanation
 
@@ -302,7 +321,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 14 — Opening vs Closing Balance Mismatch
 
 1. Respond: "The opening balance for a day equals the previous day's closing balance. If you see a difference, it may be because late entries (such as charges, interest, or settlement adjustments) were posted after the close. Check if any entries were added between the two dates." (Per **A1**.)
-2. If balances still don't match after verification → **ESCALATE** per Rule 18.
+2. If balances still don't match after verification → escalate per Rule 18.
 
 ### Rule 15 — Ledger vs Kite Funds Page Mismatch
 
@@ -315,7 +334,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 1. Explain the relevant entries using **A12**.
 2. Direct client to MTF Interest Statement on Console for detailed MTF interest charges (per **A12**).
-3. **CRITICAL — Escalate immediately** if the client raises any calculation dispute related to MTF MTM amounts or claims funds were credited less than expected for MTF trades. Do not attempt to calculate or verify MTF MTM manually. (This is genuinely counterintuitive — the model may attempt to help with the math. Always escalate instead.)
+3. **Escalate immediately** if the client raises any calculation dispute related to MTF MTM amounts or claims funds were credited less than expected for MTF trades. Do not attempt to calculate or verify MTF MTM manually. (This is genuinely counterintuitive — the model may attempt to help with the math. Always escalate instead.)
 
 ### Rule 17 — Multiple Transactions
 
@@ -332,10 +351,3 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, date range, specific mismatched entries, and screenshots if available.
 
----
-
-## Section D: General Notes
-
-1. Settlement credits appear in the ledger same day (5–9 PM) — only withdrawal eligibility follows T+1. Always frame it this way when explaining T+1.
-2. The Kite funds page is real-time; the ledger is a historical record. Comparisons between the two are valid only against "Available Cash," not "Available Margin."
-3. For detailed charge breakdowns, QS retention details, pledge charges, or contract note charges, refer to the cross-reference protocols in **A11** rather than attempting manual reconstruction.

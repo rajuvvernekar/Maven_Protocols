@@ -129,8 +129,6 @@ When escalating, always include: **client ID, trade_date, tradingsymbol, segment
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -163,11 +161,10 @@ Charges / brokerage / STT / MTM query                       → Rule 6
 
 - Address the client's query about F&O trade execution records, prices, contract details, and CA adjustments.
 - Use **A2** field rules in all client communication.
-- Do not volunteer information about unrelated tradebook topics unless directly relevant.
 
 ### Fallback
 
-If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, **ESCALATE** per **A7**.
+If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, escalate per **A7**.
 
 ---
 
@@ -186,7 +183,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 1. Search by date, segment, and tradingsymbol.
 2. If found → respond per **A8-R1**.
 3. If not found → verify correct segment selected (per Preflight / **A3**). Check if date is within 100 days — if not, use `console_fno_tradebook_prepared` (per **A6**).
-4. If still not found after correct segment and date → **ESCALATE** per **A7**.
+4. If still not found after correct segment and date → escalate per **A7**.
 
 ---
 
@@ -201,7 +198,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 1. Explain the CA adjustment per **A5**.
 2. Respond per **A8-R3**.
-3. If client is not satisfied → **ESCALATE** per **A7**.
+3. If client is not satisfied → escalate per **A7**.
 
 ---
 
@@ -215,15 +212,5 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 6 — Contract Note Queries (Manual Handling)
 
 1. This tool provides trade-level execution data only — no charge, MTM, or obligation data.
-2. **ESCALATE** — agent review needed for actual contract note charges, MTM, and settlement details.
+2. Escalate to support agent for actual contract note charges, MTM, and settlement details.
 
----
-
-## Section D: General Notes
-
-- Tradebook covers the last 100 days. For older F&O trades, use `console_fno_tradebook_prepared`.
-- One order may produce multiple fills — check for multiple `trade_id`s under the same `order_id`.
-- Contract symbols may change mid-series due to corporate actions on the underlying. Strike and lot size adjust; position value stays the same.
-- Negative quantity may represent the sell side of a trade.
-- Charges, MTM calculations, and obligation breakdowns are not available in this tool — refer to the actual contract note.
-- Auction trades appear with specific `order_id` patterns.

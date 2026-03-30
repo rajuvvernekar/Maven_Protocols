@@ -121,8 +121,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, tradingsymbol, pledge_date, status, and the specific issue.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -171,11 +169,10 @@ Query relates to pledge/unpledge/collateral →
 ### Scope
 
 - Address: pledge/unpledge request status, collateral margin queries, pledge errors, and collateral reduction investigations.
-- Do not volunteer: full collateral holdings breakup (per **A5**), internal field values, or information the client hasn't asked about.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 9.
+If no root cause is identified after checking all relevant rules → escalate per Rule 9.
 
 ---
 
@@ -189,7 +186,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 2. Find the matching `tradingsymbol` in the report.
 3. Respond: "Your [pledge/unpledge] request for [quantity] shares of [tradingsymbol] on [pledge_date]: Status — [Processed / Pending / Rejected]."
 4. If Processed: "The request was completed successfully."
-5. If Pending and the request is older than 30 days → **ESCALATE** per Rule 9.
+5. If Pending and the request is older than 30 days → escalate per Rule 9.
 6. If Rejected/Failed → investigate cause using **A7** and advise accordingly.
 
 ### Rule 2 — Collateral Reduced: Trace Cause
@@ -225,7 +222,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Check if the security is on the approved pledge list.
 2. Work through the failure reasons in **A7**: security not approved → T1 holdings → insufficient free qty → technical issue.
 3. Respond with the applicable explanation from **A7**.
-4. If the issue persists after basic troubleshooting (re-login, retry) and the security is approved with sufficient free qty → **ESCALATE** per Rule 9.
+4. If the issue persists after basic troubleshooting (re-login, retry) and the security is approved with sufficient free qty → escalate per Rule 9.
 
 ### Rule 7 — Unpledge Rejected: Margin Utilized
 
@@ -234,7 +231,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 8 — External Pledge
 
 1. Respond: "If you pledged your shares with another institution (external pledge), the shares may still appear in Console as holdings. However, they are encumbered and cannot be traded or transferred. For external pledge-related queries, please check with the DP team."
-2. If the client needs external pledge shares removed from Console view → **ESCALATE** per Rule 9.
+2. If the client needs external pledge shares removed from Console view → escalate per Rule 9.
 
 ### Rule 9 — Escalation
 
@@ -242,10 +239,3 @@ Escalate when any trigger in **A9** is met.
 
 Include in escalation: client ID, tradingsymbol, pledge_date, status, and the specific issue.
 
----
-
-## Section D: General Notes
-
-1. For recent pledge activity (last 30 days), Console Instant Pledge is the preferred source over the Pledge Request Report tool — it provides more up-to-date data.
-2. Collateral values are dynamic — they change daily based on market price and haircut updates. A collateral reduction does not necessarily indicate an error; always check **A6** causes before escalating.
-3. The Pledged Holdings Report shows current state only, not history. For "what happened" questions, always use the Pledge Request Report.

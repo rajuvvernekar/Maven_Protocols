@@ -153,8 +153,6 @@ When escalating, always include: **client ID, GTT id, tradingsymbol, status, cre
 - Very old GTTs may not be available in the system. Check your email for GTT trigger/creation notifications.
 - If you need details for a specific GTT from a long time ago, please raise a support ticket with the approximate date and instrument."
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -191,7 +189,7 @@ GTT not found in either tool                                → Rule 7
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A6**.
+If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A6**.
 
 ---
 
@@ -253,7 +251,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 6 — Client Asks for Unavailable Fields
 
 1. Client asks for expiry date, exchange, or LTP at creation → respond per **A7-R15**.
-2. If client needs these details for dispute resolution → **ESCALATE** per **A6** with GTT `id` and `created_at`.
+2. If client needs these details for dispute resolution → escalate per **A6** with GTT `id` and `created_at`.
 
 ---
 
@@ -261,14 +259,3 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Respond per **A7-R16**.
 
----
-
-## Section D: General Notes
-
-- This tool contains historical/archived GTTs only. For current active GTTs, use `kite_gtt`.
-- Same mechanics as active GTTs: single/OCO trigger, 1-year equity validity, F&O until contract expiry, one-time trigger.
-- Triggered GTT becomes CNC limit order with DAY validity — cancelled at EOD if unfilled.
-- Sell GTT requires shares in demat + TPIN authorization. Buy GTT requires funds at trigger time (not creation).
-- F&O GTTs cancelled by corporate actions affecting lot size/price. Not available for Currency segment.
-- Expiry date, exchange, and LTP at creation are not available for archived GTTs.
-- Very old GTTs may not be available in the system — direct client to check email notifications or raise a ticket.

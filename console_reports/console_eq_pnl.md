@@ -165,8 +165,6 @@ The values may differ because Tax P&L separates intraday trades from delivery, a
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -204,11 +202,10 @@ Stock in unrealized P&L despite all shares sold             → Rule 9
 
 - Address the client's query about equity P&L calculations, FIFO impact, CA adjustments, and platform differences.
 - Use **A2** field rules in all client communication.
-- Do not volunteer information about unrelated P&L topics unless directly relevant.
 
 ### Fallback
 
-If no route matches, use **A6** to cross-reference other tools for additional context. If no root cause is found, **ESCALATE** per **A7**.
+If no route matches, use **A6** to cross-reference other tools for additional context. If no root cause is found, escalate per **A7**.
 
 ---
 
@@ -234,7 +231,7 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 1. Check `console_eq_holdings` — verify if `discrepant` > 0 for that stock (or was > 0 before selling).
 2. Also check `console_eq_external_trades` for missing buy entries (per **A6**).
 3. Respond per **A8-R3**.
-4. If shares already sold with ₹0 cost → **ESCALATE** per **A7**. Backend correction needed.
+4. If shares already sold with ₹0 cost → escalate per **A7**. Backend correction needed.
 
 ---
 
@@ -268,7 +265,7 @@ If no route matches, use **A6** to cross-reference other tools for additional co
    - Demerger → **A8-R12**. Impact per **A5**.
    - Merger → **A8-R13**. Impact per **A5**.
    - Fractional shares → **A8-R14**. Impact per **A5**.
-2. If CA was 3+ weeks ago and P&L still appears wrong → **ESCALATE** per **A7**.
+2. If CA was 3+ weeks ago and P&L still appears wrong → escalate per **A7**.
 
 ---
 
@@ -282,17 +279,4 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 ### Rule 9 — Unrealized P&L Orphan Entry
 
 1. Check `console_eq_holdings` for that stock.
-2. If no holdings found but P&L still shows unrealized entry → respond per **A8-R15**. **ESCALATE** per **A7** as orphan lot.
-
----
-
-## Section D: General Notes
-
-- Realized P&L only shows for stocks that have been sold — holdings still held have no realized P&L entry.
-- FIFO applies across all product types combined (CNC + MTF); Console does not separate them.
-- Intraday trades are speculative and separate from delivery P&L, except for T2T stocks (series BE/BT/BZ).
-- Unrealized P&L differs between Console (closing price) and Kite (LTP) — this is expected.
-- Tax P&L is the report to use for ITR filing; it is editable for cost adjustments.
-- Missing external trade entries are a primary cause of incorrect P&L (cost = ₹0 for discrepant shares).
-- Corporate action P&L adjustments take ~2–3 weeks; P&L may appear temporarily incorrect during this period.
-- Verified P&L at console.zerodha.com/verified is the third-party verified report for ITR filing.
+2. If no holdings found but P&L still shows unrealized entry → respond per **A8-R15**. Escalate per **A7** as orphan lot.

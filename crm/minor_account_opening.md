@@ -160,10 +160,6 @@ When escalating, always include: **client ID (guardian's), minor's name/details,
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -201,7 +197,7 @@ Trading capabilities / restrictions                         → Rule 8
 
 ### Fallback
 
-If no route matches, answer from Section A reference data. If unable to resolve, **ESCALATE** per **A9**.
+If no route matches, answer from Section A reference data. If unable to resolve, escalate per **A9**.
 
 ---
 
@@ -226,7 +222,7 @@ If no route matches, answer from Section A reference data. If unable to resolve,
 ### Rule 3 — Application Overdue
 
 1. `status` = "processing" AND `creation` > 48 working hours AND `reasons` is empty/null.
-2. Respond per **A10-R3**. **ESCALATE** per **A9**.
+2. Respond per **A10-R3**. escalate per **A9**.
 
 ---
 
@@ -261,16 +257,3 @@ If no route matches, answer from Section A reference data. If unable to resolve,
 
 1. Respond per **A10-R9**. Full restrictions per **A5**.
 
----
-
-## Section D: General Notes
-
-- Online minor account opening requires guardian's Zerodha account + both Aadhaar linked to mobile. No charges or AMC.
-- PAN is mandatory for minor — apply at onlineservices.nsdl.com if needed.
-- Only the minor's bank account can be linked (not guardian's). Joint bank account OK only if minor is a holder.
-- Guardian signs all forms. Unique mobile + email required per minor account (offline).
-- NRI-minor accounts: offline only.
-- Login credentials sent to registered email after account enabled at exchanges.
-- Pre-Jan 2024 demat-only accounts need trading form + KYC for Kite access (72 working hours).
-- When minor turns 18: convert to individual account (fresh KYC required).
-- Minors cannot buy shares, trade intraday, or use F&O. Can sell holdings, buy MF, apply for IPOs/buybacks/takeovers.

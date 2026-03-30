@@ -95,21 +95,16 @@ When escalating, always include: **client ID, tradingsymbol(s), ISIN(s), qty fro
 **R4 — Stock in pseudo but not in holdings:**
 "We can see your [tradingsymbol] shares in our records. They may be awaiting system processing. We're investigating and will update you."
 
-**R5 — Split shares credited (full post-split qty in Kite):**
-"Your split shares have been successfully credited to your account. You currently have [available] shares of [tradingsymbol] available for trading, totalling [total_quantity] shares after the split. Please note that the buy average may take 2–3 working days to update, but you can sell your shares in the meantime — this will not impact your P&L."
+**R5 — Split/CA shares credited or processing:**
+For split share responses, use the templates from `console_eq_holdings` protocol (**A13-R11** for credited, **A13-R12** for still processing).
 
-**R6 — Split shares still processing:**
-"You currently have [available] shares of [tradingsymbol], with [pending] shares being processed for credit, totalling [total_quantity] shares after the split. These are typically credited within T+2 days from the record date and will become tradeable after 4–5 days once the exchange grants trading approval. CDSL will notify you via SMS once the shares are credited to your demat account."
-
-**R7 — Transfer-in overlapping with T1:**
+**R6 — Transfer-in overlapping with T1:**
 "When shares are transferred on the same date as a purchase, the discrepancy quantity may appear partial until the T1 shares settle. The full transferred quantity will show correctly after settlement (next trading day)."
 
-**R8 — Safekeep / frozen shares:**
+**R7 — Safekeep / frozen shares:**
 "We've noted that your [tradingsymbol] shares appear to be in safekeeping or frozen status in the depository records. We're escalating this to our depository team for investigation. They will review and update you on the status."
 
 ---
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
 
 ## Section B: Decision Flow
 
@@ -148,7 +143,7 @@ Safekeep / frozen shares (CDSL statement mismatch)          → Rule 10
 
 ### Fallback
 
-If no route matches, cross-reference with `console_eq_holdings` and `console_eq_external_trades` for additional context. If no root cause is found, **ESCALATE** per **A5**.
+If no route matches, cross-reference with `console_eq_holdings` and `console_eq_external_trades` for additional context. If no root cause is found, escalate per **A5**.
 
 ---
 
@@ -169,7 +164,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 1. Confirm `available` qty in `console_eq_pseudo_holdings` ≠ `available` qty in `console_eq_holdings` for same ISIN.
 2. Genuine discrepancy detected.
 3. Respond per **A6-R2**. Do not tell the client "there is a system mismatch."
-4. **ESCALATE** per **A5** with qty from each tool.
+4. Escalate per **A5** with qty from each tool.
 
 ---
 
@@ -179,7 +174,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    a. `t1` > 0 → shares bought yesterday, SOT may not reflect until settlement. Respond per **A6-R3**.
    b. Shares yet to be credited from corporate action → CA credit not yet in SOT. Advise client to wait.
    c. Neither a nor b → possible sync issue or tradingsymbol name difference. Check if same ISIN exists under a different tradingsymbol in pseudo_holdings (e.g., company renamed, NSE vs BSE symbol per **A3**).
-   d. If no match on ISIN → **ESCALATE** per **A5**.
+   d. If no match on ISIN → Escalate per **A5**.
 
 ---
 
@@ -190,7 +185,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    b. Corporate action credit (rearrangement, unclaimed shares) not yet processed.
    c. Suspended/delisted stock visible in SOT but removed from active Console holdings.
 2. Respond per **A6-R4**.
-3. If no clear cause → **ESCALATE** per **A5**.
+3. If no clear cause → Escalate per **A5**.
 
 ---
 
@@ -198,7 +193,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. `console_eq_pseudo_holdings` has no record for client OR all quantities are 0 AND `console_eq_holdings` shows active holdings.
 2. Possible transferred-out shares without reversal entry in Console.
-3. **ESCALATE** per **A5** with: client ID, full list of holdings showing in `console_eq_holdings`, note that pseudo_holdings shows zero.
+3. Escalate per **A5** with: client ID, full list of holdings showing in `console_eq_holdings`, note that pseudo_holdings shows zero.
 
 ---
 
@@ -209,7 +204,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    - Post-corporate action rename (e.g., old name in SOT, new name in Console)
    - Temporary ISIN for bonus/rights shares
 2. If ISIN matches across tools → same stock, name difference only.
-3. If ISIN not found in either tool → **ESCALATE** per **A5**.
+3. If ISIN not found in either tool → Escalate per **A5**.
 
 ---
 
@@ -217,9 +212,9 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. Use `total_quantity`, `available`, and `pending` from `console_eq_pseudo_holdings` as the basis for explaining the split — do not derive quantity from recent trade history.
 2. Check `kite_holdings` to verify whether split shares have already been credited.
-3. If `kite_holdings` shows the full post-split quantity → respond per **A6-R5**.
-4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → respond per **A6-R6**.
-5. If more than 5 trading days since record date AND split shares still not credited → **ESCALATE** per **A5**.
+3. If `kite_holdings` shows the full post-split quantity → respond per **A6-R5** (credited template).
+4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → respond per **A6-R5** (processing template).
+5. If more than 5 trading days since record date AND split shares still not credited → Escalate per **A5**.
 
 ---
 
@@ -234,7 +229,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 ### Rule 9 — Transfer-In with Overlapping T1
 
 1. Transfer credit date = T1 purchase date for same stock AND discrepant qty appears partial.
-2. Respond per **A6-R7**.
+2. Respond per **A6-R6**.
 
 ---
 
@@ -242,15 +237,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. Client reports shares visible in their CDSL statement but not in Kite/Console, and mentions "Safekeep Bal" or "Freeze".
 2. Maven cannot download or read the client's SOT/CDSL statement directly.
-3. Respond per **A6-R8**.
+3. Respond per **A6-R7**.
 4. Escalate to **Support team** with: client ID, tradingsymbol, ISIN, and note that client's CDSL statement shows safekeep/frozen balance.
 
----
-
-## Section D: General Notes
-
-- This tool provides SOT-based holdings data independent of the tradebook. It exists for cross-validation purposes.
-- The two systems (pseudo holdings and console_eq_holdings) should always match at the ISIN level. Any mismatch is a genuine data issue.
-- Always compare by ISIN, not tradingsymbol — names can differ between tools due to NSE/BSE naming, corporate action renames, or temporary ISINs.
-- Maven cannot download or read the client's SOT/CDSL statement directly. Safekeep/frozen share issues require DP team escalation.
-- Split share quantities should be sourced from this tool's `total_quantity`/`available`/`pending`, not derived from trade history.

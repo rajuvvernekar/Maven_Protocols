@@ -228,8 +228,6 @@ When escalating, always include: **client ID, tradingsymbol, GTT type, status, t
 **R26 — Stoploss prompt (index options):**
 "This prompt encourages setting a stoploss when buying options to manage risk. You can proceed without setting one, but Zerodha recommends a GTT stoploss (5–10% is a reasonable starting point). Remember to cancel open GTT stoploss orders when you directly exit the position to avoid unintended positions."
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -270,7 +268,7 @@ GTT stoploss prompt (index options)                         → Rule 11
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A9**.
+If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A9**.
 
 ---
 
@@ -369,17 +367,3 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Respond per **A10-R26**.
 
----
-
-## Section D: General Notes
-
-- GTT is free. Max 500 active per account. Notifications via email + Kite push.
-- Equity GTT valid 1 year; F&O GTT until contract expiry.
-- Trigger is one-time only. If triggered order is not executed, client must create a new GTT.
-- Triggered GTT becomes a CNC limit order with DAY validity — cancelled at EOD if unfilled, not visible from next day.
-- GTT triggers on system-captured ticks — brief price touches may not be captured.
-- GTT email may show price different from trigger — this is actual LTP at trigger moment (gap up/down).
-- Sell GTT executes only if shares are in demat and order fills on exchange. TPIN authorization required daily if no POA/DDPI.
-- GTT closing one leg of hedged position → margin increases → Zerodha may square off remaining position.
-- F&O GTTs cancelled when lot size changes or CA affects lot size/price. Not available for Currency segment.
-- Buy OCO available only for F&O. Index F&O OCO uses NRML only.

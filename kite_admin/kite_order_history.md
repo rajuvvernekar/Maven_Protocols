@@ -295,8 +295,6 @@ Auto square-off charge: ₹50 + 18% GST per order."
 **R21 — MIS sell instead of CNC (product mismatch):**
 "Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order."
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -346,7 +344,7 @@ No matching orders found                                    → Rule 15
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A14**.
+If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A14**.
 
 ---
 
@@ -418,7 +416,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Check `placed_by`:
    a. ADMINSQF/rms → apply Rule 4.
-   b. Client's own ID → respond per **A15-R14**. **ESCALATE** — agent review needed, investigation required.
+   b. Client's own ID → respond per **A15-R14**. Escalate to support agent, investigation required.
 
 ---
 
@@ -481,21 +479,3 @@ If no route matches, investigate using Section A reference data. If no root caus
 1. Respond per **A15-R20**.
 2. If client looking for today's orders → invoke `kite_orders`.
 
----
-
-## Section D: General Notes
-
-- This tool returns orders for a date range. For today's live orders, use `kite_orders`.
-- Orders follow price-time priority. Market orders may fill at multiple levels.
-- Limit orders may execute at better price. SL triggers on exchange ticks, not chart data (250ms snapshots).
-- SL-M discontinued on BSE — use SL-L instead.
-- Pre-open market orders convert to limit at equilibrium/previous close. BSE market orders convert to limit with 3% protection.
-- Auto square-off: Equity 3:25 PM, F&O 3:26 PM, MCX 10 min before close. Charge: ₹50 + 18% GST. If fails → MIS converts to CNC/NRML.
-- CO positions cannot be converted.
-- Pre-validated rejections may not appear in order history.
-- F&O buy average uses FIFO across MIS + NRML combined.
-- Equity sell + rebuy same day = speculative (avg unchanged). Exception: T2T.
-- GTT-triggered orders: scope investigation to trigger date only — subsequent orders are independent.
-- Execution time beyond market hours = exchange reconciliation, not actual late execution.
-- AMO sell without DDPI/POA: T-day stocks after 6:30 AM next day; delivered stocks after 5 PM.
-- Selling CNC holdings under MIS product type creates a fresh short intraday position — it does not exit the delivery holdings. Use CNC to sell delivery holdings.

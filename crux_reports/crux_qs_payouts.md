@@ -102,11 +102,9 @@ Raw bank rejection reasons from `remarks` (e.g., "NOCM Not Compliant", error cod
 ### A10 — Escalation Triggers
 
 Escalate when:
-- NRI PIS account (NRE PIS or NRO PIS) — **ESCALATE** — NRI team review needed, do not proceed with QS processing.
+- NRI PIS account (NRE PIS or NRO PIS) — escalate to support agent, do not proceed with QS processing.
 - Bank rejection persists after client verifies bank details match.
 - Client provides bank statement showing no credit after QS completed status.
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
 
 ---
 
@@ -115,7 +113,7 @@ Escalate when:
 ### Preflight (run on every query)
 
 1. Call `get_all_client_data` → check `client_acc_type`.
-2. **NRI PIS gate:** If `client_acc_type` = NRE PIS or NRO PIS → STOP. **ESCALATE** — NRI team review needed. Do not proceed with any QS processing.
+2. **NRI PIS gate:** If `client_acc_type` = NRE PIS or NRO PIS → STOP. Escalate to support agent. Do not proceed with any QS processing.
 3. Fetch relevant QS/ledger data for the settlement period.
 4. Apply field protection per **A6** — identify shareable vs internal-only fields.
 5. Determine settlement type using the detection logic in **A5**.
@@ -127,7 +125,7 @@ Escalate when:
 Query relates to QS payout →
 │
 ├─ NRI PIS account detected in preflight
-│  → **ESCALATE** — NRI team review needed (STOP)
+│  → Escalate to support agent (STOP)
 │
 ├─ Client asks to opt out or change frequency
 │  → Rule 1
@@ -148,17 +146,16 @@ Query relates to QS payout →
 │  → Rule 6
 │
 └─ No matching scenario
-   → **ESCALATE** per A10
+   → escalate per A10
 ```
 
 ### Scope
 
 - Address: QS payout status, settlement type, bank rejections, fund retention, and new account exclusion.
-- Do not volunteer: internal field values (per **A6**), raw bank rejection reasons, or information the client hasn't asked about.
 
 ### Fallback
 
-If no matching scenario is found → **ESCALATE** per **A10**.
+If no matching scenario is found → escalate per **A10**.
 
 ---
 
@@ -204,10 +201,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 2. Respond: "You can confirm this transaction with your bank using the provided reference number."
 3. Add: "If the amount has not been credited, please share your bank statement for the settlement date so we can investigate."
 
----
-
-## Section D: General Notes
-
-1. The NRI PIS gate in Preflight is absolute — all QS queries for NRE PIS or NRO PIS accounts must be escalated to the NRI team without any processing or troubleshooting.
-2. Inactivity detection (**A5**) should be applied before explaining any settlement to ensure the correct type is communicated. The most common confusion is when a client receives a monthly settlement and doesn't understand why — always check trading activity.
-3. Bank reference sharing (**A7**) is a small but important rule — lowercase references are internal identifiers and must not be shared.

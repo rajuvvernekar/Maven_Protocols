@@ -93,8 +93,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, creation date, direction, status, items, and the specific issue.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -132,11 +130,10 @@ Query relates to demat transfer →
 ### Scope
 
 - Address: transfer status, failure diagnosis, stock visibility, buy average updates, and transfer charges.
-- Do not volunteer: internal field values (per **A7**), transfer IDs, account identifiers, or information the client hasn't asked about.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 6.
+If no root cause is identified after checking all relevant rules → escalate per Rule 6.
 
 ---
 
@@ -154,18 +151,18 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 1. Respond: "Your stock transfer request from [creation date] has failed." Present the applicable reasons from **A5**.
 2. Retry guidance: "To retry, place a new transfer request on Kite and ensure OTP verification is completed by 8 PM." (Per **A3**.)
-3. If client confirms they completed OTP and balance was sufficient → **ESCALATE** per Rule 6.
+3. If client confirms they completed OTP and balance was sufficient → escalate per Rule 6.
 
 ### Rule 3 — Transferred Stocks Not Visible
 
 1. Confirm: status = Stocks Transferred (per **A4**).
 2. Respond: "Transferred stocks should be visible within 24 hours of completion. If the transfer was completed today, please check again tomorrow." (Per **A3**.)
-3. If more than 24 hours since completion: "If it's been more than 24 hours and the stocks are still not visible, we'll investigate." → **ESCALATE** per Rule 6.
+3. If more than 24 hours since completion: "If it's been more than 24 hours and the stocks are still not visible, we'll investigate." → escalate per Rule 6.
 
 ### Rule 4 — Buy Average After Transfer
 
 1. Respond using **A6**: "The buy average for stocks transferred between primary and secondary accounts is automatically updated within 3 working days. During this period, the stocks may show a discrepancy mark or incorrect buy average."
-2. If more than 3 working days: "If the buy average is still incorrect after 3 working days, please let us know with the specific stocks and expected buy average." → **ESCALATE** per Rule 6. Reference Console EQ External Trades (per **A8**) for entry correction.
+2. If more than 3 working days: "If the buy average is still incorrect after 3 working days, please let us know with the specific stocks and expected buy average." → escalate per Rule 6. Reference Console EQ External Trades (per **A8**) for entry correction.
 
 ### Rule 5 — Transfer Charges
 
@@ -177,10 +174,3 @@ Escalate when any trigger in **A9** is met.
 
 Include in escalation: client ID, creation date, direction, status, items, and the specific issue.
 
----
-
-## Section D: General Notes
-
-1. This tool covers only transfers between a client's own primary and secondary Zerodha demat accounts. It does not cover inter-depository transfers, off-market transfers to other individuals, or stock gifts (see Stock Gift Requests protocol for gifting).
-2. The CDSL verification window (3–5 PM email, OTP by 8 PM) and the 6 PM same-day cutoff are the two most common sources of failed transfers. Always check timing when diagnosing failures.
-3. Buy average discrepancies after transfer are expected and self-resolving within 3 working days. Only escalate if the 3-day window has passed.

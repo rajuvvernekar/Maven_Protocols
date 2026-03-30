@@ -84,10 +84,6 @@ Suppress (no client use, only internal reasoning use): client_id, umrn, merchant
 | Debit attempts and status | mandate_debit_report |
 | Mandate deletion process (unlink SIPs first) | Mandate Debit Report protocol — A5 |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -158,10 +154,3 @@ Check `time_created`:
    - `fund_source` = blank or pool → mandate is not linked to the SIP. "Your mandate is active but not linked to your SIP. Please link it on Coin."
    - `fund_source` = digio-mandates or upi-mandates → mandate is linked. Check mandate_debit_report (per **A7**) for debit attempt status.
 
----
-
-## Section D: General Notes
-
-1. MF/Coin mandates and Console/equity mandates are completely separate systems. The most common routing error is using Console eMandate for SIP queries or vice versa. Always verify context per **A3** before proceeding.
-2. UPI mandates that are not PIN-confirmed are auto-cancelled by 11 PM the same day. If a client reports their mandate disappeared, this is the most likely cause — advise creating a new one and completing PIN confirmation.
-3. NRI mandate restrictions apply only to NRI PIS (NRE) accounts. NRO Non-PIS clients can set up mandates normally — do not restrict them (per **A5**).

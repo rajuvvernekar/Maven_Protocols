@@ -68,10 +68,6 @@ All rules reference these blocks as single sources of truth.
 |---|---|
 | Triggered order status | mf_order_history (10:05 AM buy / 10:15 AM sell, variety = GTT on trigger date) |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -117,7 +113,6 @@ Query relates to conditional orders →
 ### Scope
 
 - Address: trigger logic, NAV differences, payment timing, T-PIN authorization, expiry, and triggered order routing.
-- Do not volunteer: internal field values (per **A4**), raw remarks, or information the client hasn't asked about.
 
 ### Fallback
 
@@ -162,10 +157,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 1. Respond: "Conditional orders are valid for 365 days. If not triggered within this period, the order is automatically rejected. Since no payment is debited when placing a conditional order, there is no refund." (Per **A1**.)
 
----
-
-## Section D: General Notes
-
-1. The T-1 vs T day NAV distinction is the core concept in this protocol. Trigger check uses yesterday's NAV; actual execution uses today's NAV. This explains both "why didn't it trigger" (Rule 1) and "why is the NAV different" (Rule 2).
-2. Once triggered, conditional orders leave this tool entirely and move to mf_order_history. If a client asks about a conditional order that isn't visible here, check mf_order_history first before assuming it was cancelled or expired.
-3. No money is held for conditional orders — this is fundamentally different from regular MF orders. This means there is never a refund scenario for untriggered or expired conditional orders.

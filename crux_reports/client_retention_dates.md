@@ -69,8 +69,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -112,11 +110,10 @@ Query relates to QS payout / client retention →
 ### Scope
 
 - Address: QS payout breakdowns, retention reasons, bank credit timing, and multi-segment settlements.
-- Do not volunteer: internal field values (per **A3**), segment-level company details, or information the client hasn't asked about.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 7.
+If no root cause is identified after checking all relevant rules → escalate per Rule 7.
 
 ---
 
@@ -158,7 +155,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Confirm: `funds_released` > 0 for the settlement date.
 2. Respond: "The settlement report shows ₹[funds_released] was released on [settlement_date]. QS payouts are typically credited to your registered bank account within 1–2 working days of the settlement date."
 3. If more than 3 working days have passed: "If it has been more than 3 working days and the amount has not been credited, please check with your bank. If still not received, we'll investigate further."
-4. If still not received after bank check → **ESCALATE** per Rule 7.
+4. If still not received after bank check → escalate per Rule 7.
 
 ### Rule 5 — Multiple Segment Settlements
 
@@ -180,10 +177,3 @@ Escalate when any trigger in **A5** is met.
 
 Include in escalation: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
 
----
-
-## Section D: General Notes
-
-1. The client retention dates report is the source of truth for QS payout details. The ledger shows only the net payout entry — this report explains the breakdown behind it.
-2. Retention amounts change with market conditions. Margin retained reflects the margin requirement at the time of settlement, which depends on open positions and their mark-to-market values.
-3. For general QS rules (schedule, opt-out policy, LIQUIDCASE interaction, inactive account frequency), refer to the Ledger Report protocol's A4 (QS Facts) rather than restating them here.

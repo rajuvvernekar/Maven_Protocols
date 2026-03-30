@@ -78,8 +78,6 @@ Escalate when:
 
 Include in escalation: client ID, date range, exchange, segment, and the specific discrepancy.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -115,11 +113,10 @@ Query relates to contract note charges →
 ### Scope
 
 - Address: aggregate charge summaries, charge component explanations, and CN format differences.
-- Do not volunteer: internal field values (per **A3**), exchange/segment identifiers, or per-trade detail (redirect to Tradewise Charges per **A5**).
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 5.
+If no root cause is identified after checking all relevant rules → escalate per Rule 5.
 
 ---
 
@@ -151,10 +148,3 @@ Escalate when any trigger in **A6** is met.
 
 Include in escalation: client ID, date range, exchange, segment, and the specific discrepancy.
 
----
-
-## Section D: General Notes
-
-1. This is a summary-level tool. For any question about charges on a specific trade or order, redirect to the Tradewise Charges Report protocol (**A5**) rather than attempting to break down the aggregates.
-2. The PDF contract note is always the authoritative document when there is a discrepancy between PDF and XML versions.
-3. Clearing charges and IPTF are smaller, less commonly questioned components. If a client asks about them, the definitions in **A2** provide sufficient explanation.

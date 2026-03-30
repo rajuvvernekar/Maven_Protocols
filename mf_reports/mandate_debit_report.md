@@ -75,10 +75,6 @@ For Zerodha SIPs (`sip_type` = sip): "To invest for this month, please place a m
 | SIP type, mandate linkage, SIP status | sip_report |
 | SIP modification near trigger date | sip_modification_log (via public_id from sip_report) |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -169,11 +165,3 @@ Otherwise, check `sip_type` per **A3** before responding.
 2. If client has no SIPs linked → they can delete directly from Coin → Mandates.
 3. Add: "Deleting a mandate does not cancel your SIPs — SIPs remain active but will require a new mandate or manual payment going forward."
 
----
-
-## Section D: General Notes
-
-1. The AMC SIP manual order restriction (**A3**) is the most important guard in this protocol. Always check `sip_type` before suggesting any manual order — AMC SIP clients cannot place manual orders for their SIP funds.
-2. `cashier_reference` is the key for cross-referencing debit success with payment mapping in fund_allocation_report. This is the only way to trace a successful debit to its corresponding order.
-3. Mandate deletion does not cancel SIPs. This is counterintuitive — clients often assume deleting the payment method stops the investment. Always mention that SIPs remain active and will need a new mandate or manual payment.
-4. Juspay-based UPI autopay mandates (identified by `transaction_id` = null in this report) do not auto-debit — the client must manually approve each payment on their UPI app. This is the most common cause of "auto-debit didn't happen" for UPI autopay mandates. Always check `transaction_id` in Rules 2b and 2c before concluding the debit failed due to bank rejection or insufficient funds.

@@ -127,6 +127,22 @@ Funds page uses MTM settlement price for futures/short options — will differ f
 | Margin increase | 4 days before expiry for ITM long options. Expiry day for futures/short options. |
 | Fresh OTM long buy blocked | Last 2 days before expiry for stock options (physical settlement risk). |
 
+**Physical delivery margin schedule (stock F&O expiry week):**
+
+| Day | Margin Requirement |
+|---|---|
+| E-4 (Wednesday) | 10% of (VaR + ELM + Adhoc) |
+| E-3 (Thursday) | 25% of (VaR + ELM + Adhoc) |
+| E-2 (Friday) | 45% of (VaR + ELM + Adhoc) |
+| E-1 (Monday) | 25% of contract value |
+| Expiry day (Tuesday) | 50% of contract value |
+
+This margin is blocked progressively for ITM stock options and futures positions approaching expiry. It can cause the available cash / fund balance to go negative if insufficient funds are available.
+
+**Ledger verification:** If client reports negative balance near expiry, invoke `ledger_report` and check `remarks` for "Physical delivery margin blocked for long options in NSE F&O" with the corresponding `debit` entry to confirm delivery margin was the cause.
+
+**Reference:** [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)
+
 ---
 
 ### A7 — Margin Shortfall & Penalty
@@ -178,6 +194,9 @@ Funds page uses MTM settlement price for futures/short options — will differ f
 | Margin calculator | https://zerodha.com/margin-calculator |
 | Bulletin (restrictions) | https://zerodha.com/marketintel/bulletin |
 | Approved securities | https://zerodha.com/approved-securities#tab-noncash_equity |
+| Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
+| Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/393605/revision-in-lot-size-of-index-derivative-contracts-from-november-20-2024 |
+| Options on expiry day | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day |
 
 ---
 
@@ -253,7 +272,7 @@ When escalating, always include: **client ID, instrument_name, product type, and
 "Fresh long OTM stock option positions are blocked in the last 2 days before expiry due to physical settlement risk."
 
 **R22 — Higher margins near expiry:**
-"Margin requirements increase as contracts approach expiry and physical delivery."
+"Margin requirements increase as contracts approach expiry and physical delivery. The physical delivery margin schedule is: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)"
 
 **R23 — Sold holdings as negative positions:**
 "When you sell shares from holdings during the trading day, they appear as a negative position tagged HOLDING in Positions. This is normal — allows intraday traders to buy back. If you don't intend to rebuy, ignore it. Shares debited from demat by end of day."
@@ -261,7 +280,11 @@ When escalating, always include: **client ID, instrument_name, product type, and
 **R24 — Margin shown when exiting:**
 "The margin shown when exiting a position reflects the increase in your utilised portfolio margin, not a charge. Your order will execute regardless."
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+**R25 — Balance negative due to physical delivery margin:**
+"Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. The margin increases progressively: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)"
+
+**R26 — Odd-lot quantity from lot size revision:**
+"Due to SEBI's revised lot sizes for F&O contracts, your existing position has a residual quantity that does not match the current lot size. This odd-lot quantity cannot be traded on the exchange. You must hold this position until expiry, and it will be cash-settled based on the moneyness of the option at expiry. A 5% extra margin applies on odd lots. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/393605/revision-in-lot-size-of-index-derivative-contracts-from-november-20-2024). For details on options settlement at expiry: [Options on expiry day](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day)"
 
 ---
 
@@ -295,6 +318,7 @@ Margin call / shortfall / penalty                           → Rule 6
 F&O expiry & physical settlement                            → Rule 7
 Sold holdings showing as negative positions                 → Rule 8
 When are profits available                                  → Rule 9
+Odd-lot quantity from lot size revision                     → Rule 10
 ```
 
 ### Scope
@@ -305,7 +329,7 @@ When are profits available                                  → Rule 9
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A12**.
+If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A12**.
 
 ---
 
@@ -368,7 +392,11 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. Stock F&O OTM → respond per **A13-R19**.
 3. Index F&O → respond per **A13-R20**.
 4. OTM buy blocked near expiry → respond per **A13-R21**. Per **A6**.
-5. Higher margins near expiry → respond per **A13-R22**. Invoke `kite_margins` for current delivery_margin.
+5. Higher margins near expiry → respond per **A13-R22**. Margin schedule per **A6**. Invoke `kite_margins` for current delivery_margin.
+6. Balance went negative due to physical delivery margin near expiry:
+   a. Invoke `ledger_report` and check `remarks` for "Physical delivery margin blocked for long options in NSE F&O" with the corresponding `debit` entry.
+   b. If found → respond per **A13-R25**. Share the debit amount from the ledger and the margin schedule from **A6**.
+   c. If not found → invoke `kite_margins` to investigate other causes of negative balance.
 
 ---
 
@@ -388,17 +416,11 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ---
 
-## Section D: General Notes
+### Rule 10 — Odd-Lot Quantity from Lot Size Revision
 
-- Positions = today's open trades. Holdings = settled shares in demat.
-- CNC buys appear in Positions same day → move to Holdings T+1.
-- Net position = overnight + today. Day position = today only.
-- P&L includes both realised + unrealised. Multiple same-day trades: avg across ALL trades.
-- Funds page uses MTM settlement price — will differ from positions P&L.
-- Settlement price = 0 for OTM options — normal.
-- F&O settlement prices update 6:30–7:00 AM when BHAVCOPY arrives.
-- Intraday profits available after T+1 only. Delivery sale proceeds 100% same day (NRI Non-PIS: 75%).
-- Option premium from sell/exit usable only for buying options same segment same day.
-- Margin shown when exiting = increase in utilised portfolio margin, not a charge.
-- Zerodha does not square off for freak trades.
-- Circuit limit can cause MIS → CNC/NRML conversion with short delivery or auction risk.
+1. If client has a residual F&O quantity that does not match the current lot size and cannot be squared off (e.g., "invalid quantity" error, unable to exit remaining quantity after lot size revision):
+   a. Respond per **A13-R26**.
+   b. The odd-lot quantity must be held until contract expiry. It will be cash-settled based on the moneyness of the option at expiry.
+   c. A 5% extra margin applies on odd-lot positions.
+2. If client asks about margin for the odd-lot position → invoke `kite_margins`.
+

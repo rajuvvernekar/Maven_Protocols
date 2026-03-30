@@ -55,7 +55,7 @@ Always provide the 5–7 working day range for refund timelines. Specific refund
 
 ### A5 — Error Remarks Escalation
 
-If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → **ESCALATE** — agent review needed immediately. Typically occurs after a bank modification. Do not continue to further checks.
+If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → escalate to support agent immediately. Typically occurs after a bank modification. Do not continue to further checks.
 
 ### A6 — Field Rules
 
@@ -74,10 +74,6 @@ If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → **ESCALATE** — a
 | Order status / settlement_id matching | mf_order_history (settlement_number = exchange_order_id) |
 | Mandate debit cross-reference | mandate_debit_report (cashier_reference = cfppg_bank_ref_no) |
 | NEFT/RTGS/IMPS payment handling | mf_order_history Rule 7 |
-
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
 
 ## Section B: Decision Flow
 
@@ -98,7 +94,7 @@ Query relates to MF payment / fund allocation →
 │  → Do NOT use this tool. Route to mf_order_history (STOP)
 │
 ├─ Preflight: error_remarks = "INVALID BANK ACCOUNT DETAIL"?
-│  → **ESCALATE** immediately (STOP)
+│  → escalate immediately (STOP)
 │
 ├─ Payment debited but order not allotted
 │  → Rule 1
@@ -113,7 +109,6 @@ Query relates to MF payment / fund allocation →
 ### Scope
 
 - Address: payment-to-order mapping, settlement/allotment status, and refund tracking.
-- Do not volunteer: internal field names or values (per **A6**), flag values, or information the client hasn't asked about.
 
 ### Fallback
 
@@ -128,7 +123,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 1 — Payment Debited But Not Allotted
 
 1. Find the payment by date/UTR.
-2. Check `error_remarks` first per **A5**. If "INVALID BANK ACCOUNT DETAIL" → **ESCALATE** immediately. Do not continue.
+2. Check `error_remarks` first per **A5**. If "INVALID BANK ACCOUNT DETAIL" → escalate immediately. Do not continue.
 3. Check `settled_flag` and `allotment_flag` and respond using the matching row from **A3**.
 4. If `settled_flag` = N and beyond T+2 → check refund status per **A4**:
    - `refund_utr` populated → share refund details.
@@ -143,10 +138,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 4. If `refund_utr` is empty → "Your refund is being processed and will be credited within 5–7 working days (excluding weekends and holidays)."
 5. Always provide the range only — specific refund credit dates are not available (per **A4**).
 
----
-
-## Section D: General Notes
-
-1. The NEFT/RTGS/IMPS exclusion (**A2**) is an absolute gate — these payments bypass BSE StAR MF entirely and go directly to ICCL. Checking this report for NEFT/RTGS/IMPS payments will always return no results and may lead to incorrect refund advice.
-2. Always check `error_remarks` before `settled_flag`/`allotment_flag` (**A5**). The "INVALID BANK ACCOUNT DETAIL" error requires immediate escalation — no amount of waiting will resolve it.
-3. Avoid committing a specific refund date. The 5–7 working day range is the only guidance to provide. If `refund_utr` exists, the refund is already initiated — do not add the timeline disclaimer on top of it.

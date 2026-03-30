@@ -148,8 +148,6 @@ Escalate when:
 
 Collect for escalation: screenshot, IPO name, action attempted, device type.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -227,18 +225,21 @@ Query relates to IPO →
 ├─ Technical errors
 │  → Rule 16
 │
+├─ Customer asks about investing/buying an instrument + no active IPO found
+│  → Rule 17 (Post-listing purchase — direct to Kite)
+│
 └─ No matching scenario
-   → Collect details, **ESCALATE** per A10
+   → Collect details, escalate per A10
 ```
 
 ### Scope
 
 - Address: IPO applications, mandates, status, cancellation/modification, refunds, ASBA, and application errors.
-- Do not volunteer: other category restrictions beyond the customer's category (per **A4** scope rule), internal field values (per **A6**), or information the customer hasn't asked about.
+- Do not volunteer: other category restrictions beyond the customer's category (per **A4** scope rule) or internal field values (per **A6**).
 
 ### Fallback
 
-If no matching scenario is found after checking all rules → collect details and **ESCALATE** per **A10**.
+If no matching scenario is found after checking all rules → collect details and escalate per **A10**.
 
 ---
 
@@ -391,13 +392,11 @@ Add urgency: "The UPI mandate deadline is 5:00 PM today. You must approve the ne
 1. Check: internet connection, cache, alternate device, app update, web version at Kite IPO page (**A8**), market hours (per **A3**), category restrictions (per **A4**).
 2. UPI ID not showing: suggest entering manually, verify bank support at UPI partners page (**A8**), or use ASBA (Rule 9).
 3. If issue persists after troubleshooting: collect screenshot, IPO name, action attempted, device type. Closing day = treat as urgent.
-4. **ESCALATE** per **A10**.
+4. Escalate to support agent per **A10**.
 
----
+### Rule 17 — Post-Listing Purchase Inquiry
 
-## Section D: General Notes
+1. Customer asks about investing in or buying an instrument and no active IPO data is found for it (Preflight Step 1 returns no matching application, Step 2 returns no active IPO schedule).
+2. Respond: "The IPO period for [instrument name] has ended and the instrument is now listed on the exchanges. You can purchase it on Kite like any regular stock or REIT/InvIT unit — search for the instrument name or symbol on Kite and place a delivery order. Ensure sufficient funds are available in your account."
+3. If the customer needs help finding the instrument on Kite, direct them to search by name or symbol on the Kite marketwatch.
 
-1. IPO type must always be determined from tool data (`ipo_details` nested object). Bid amount determines category only for standard IPOs. For REIT/InvIT IPOs (identified by "Investment Trust" in the IPO name), all UPI bids are categorised as NII — use the REIT/InvIT row in **A4** for all cancel/modify/reapply decisions. Dates must always be fetched from tool data, not calculated from SEBI timelines or assumed.
-2. Category restrictions (**A4**) are the most critical reference in this protocol — nearly every rule routes through them. Always check the customer's specific category before advising on cancellation, modification, or reapplication. For REIT/InvIT IPOs, the category is always NII regardless of bid amount.
-3. All fund-related queries (refund, unblocking, blocked amounts) are bank-side. Never reference Zerodha ledger for IPO refunds or blocked funds.
-4. Post-closure queries: Once an IPO's closing date has passed, active-IPO guidance (cancel, modify, reapply, wait for mandate) is no longer actionable. Always check the post-closure flag (Preflight Step 9) before advising on Rules 1–5.

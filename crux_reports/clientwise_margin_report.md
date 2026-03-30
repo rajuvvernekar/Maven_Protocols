@@ -156,8 +156,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, segment, date, report values, and the specific discrepancy or request.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -228,11 +226,10 @@ Query relates to margin penalty →
 ### Scope
 
 - Address: margin penalty calculations, shortfall explanations, penalty slabs, and related ledger entries.
-- Do not volunteer: raw grid data (per **A8**), DPC details beyond the distinction in **A10**, or information the client hasn't asked about.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 18.
+If no root cause is identified after checking all relevant rules → escalate per Rule 18.
 
 ---
 
@@ -363,11 +360,3 @@ Escalate when any trigger in **A12** is met.
 
 Include in escalation: client ID, segment, date, report values, and the specific discrepancy or request.
 
----
-
-## Section D: General Notes
-
-1. The report grid is positional — meaning is determined by row+column, not by headers. Always use **A2** to map grid positions to client-friendly labels before communicating any values.
-2. Two independent penalty types (upfront and non-upfront) can apply on the same date. Always check both when a client asks about a penalty for a specific date.
-3. The most common confusion is "I had funds, why was I penalized?" — the answer is almost always that the clearing corporation's random snapshot captured a momentary shortfall (hedge leg unwound, EOD margin update, or collateral haircut). Lead with the snapshot explanation from **A7** before diving into specifics.
-4. Penalty is exchange-imposed. Zerodha is an intermediary — this framing matters for client communication, especially when clients request waivers.

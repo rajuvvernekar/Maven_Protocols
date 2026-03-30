@@ -67,10 +67,6 @@ Run these checks in order — complete all steps before concluding:
 | Pledged units (`margin`) | console_mf_pseudo_holdings |
 | Available units for redemption (`available`) | console_mf_holdings |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -101,7 +97,6 @@ Query relates to SWP →
 ### Scope
 
 - Address: SWP trigger issues, amount discrepancies, T-PIN authorization, and pledged/available unit checks.
-- Do not volunteer: internal field values (per **A3**), raw rejection codes, or information the client hasn't asked about.
 
 ### Fallback
 
@@ -137,10 +132,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Respond using **A2**: "CDSL T-PIN authorization must be completed on the same day the SWP triggers, between 10:00 AM and 3:00 PM. Since it was not completed on time, the order was rejected. Please place a fresh manual redemption request for this cycle."
 2. Recommend DDPI: "To avoid this every cycle, we recommend enabling DDPI on your account — this allows automatic debit of units without requiring T-PIN authorization each time."
 
----
-
-## Section D: General Notes
-
-1. The SWP diagnostic (**A4**) must be completed in full — especially Step 4 (pledged/available units). Skipping this step misses one of the most common causes: pledged units blocking redemption while the SWP itself appears correctly configured.
-2. T-1 NAV vs T day NAV is the primary cause of amount discrepancies. The estimate uses yesterday's NAV but the actual redemption uses today's — this is expected behavior, not an error.
-3. The sip_modification_log is shared across SIP/SWP/STP. When checking modifications for an SWP, use `swp_id` as the `sip_id` input and look for `swp_edit` or `swp_delete` type entries.

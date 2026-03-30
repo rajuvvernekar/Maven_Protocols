@@ -77,8 +77,6 @@ Infer slab from `charged_amount` (pre-GST), then cross-check with `client_holdin
 | Debit balance from AMC → DPC interest risk | Delayed Payment Charges protocol |
 | AMC debit entry on ledger | Ledger Report protocol |
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -86,8 +84,8 @@ Infer slab from `charged_amount` (pre-GST), then cross-check with `client_holdin
 ### Preflight (run on every query)
 
 1. Fetch the AMC charges report for the client.
-2. Apply field protection per **A5** — identify shareable vs internal-only fields.
-3. Check `bsda_flag` and `client_holdings` internally for slab verification.
+2. Apply field protection per **A5** — shareable fields are used in responses, internal-only fields are used for reasoning only.
+3. Use `bsda_flag` and `client_holdings` internally to determine BSDA status and slab — these feed into Rule 3 logic.
 4. Format all amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
 
 ### Routing Tree
@@ -114,13 +112,13 @@ Query relates to AMC charges →
 │  → Rule 6
 │
 └─ AMC created a debit balance
-   → Rule 7
+   → Rule 7 (also apply as add-on to any route above when a debit balance is detected)
 ```
 
 ### Scope
 
 - Address: AMC charge explanations, billing cycles, BSDA eligibility, slab verification, and debit balance impact.
-- Do not volunteer: internal field values (per **A5**), raw holdings amounts unless explaining a slab, or information the client hasn't asked about.
+- Do not volunteer: internal field values (per **A5**) or raw holdings amounts unless explaining a slab.
 
 ### Fallback
 
@@ -142,9 +140,17 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 ### Rule 3 — BSDA Eligibility & AMC Slab Explanation
 
-1. Infer the slab from `charged_amount` and cross-check with `client_holdings` internally using the logic in **A4**.
+1. Check `bsda_flag` internally (per **A5**):
+   - If `bsda_flag` = NO → client is non-BSDA. Slab 3 applies regardless of holdings. Proceed to Step 3 to explain non-BSDA status.
+   - If `bsda_flag` = YES → client is BSDA-eligible. Infer the applicable slab from `charged_amount` and cross-check with `client_holdings` (highest value recorded during the billing quarter, per **A1**) using **A4**. A BSDA-eligible client may still be charged ₹88.50 if their holdings peaked above ₹10,00,000 during the quarter — current holdings are not the basis for the charge.
+
 2. Respond with the matching response from **A4**.
-3. If the client's slab indicates non-BSDA despite low holdings, explain BSDA eligibility criteria from **A3**: "To qualify for BSDA, you must have only one demat account across all brokers and depositories, and your total holdings value must not have exceeded ₹10,00,000 during the quarter."
+
+3. If `bsda_flag` = NO, explain BSDA eligibility criteria from **A3** using this framing: "To qualify for BSDA, you must have only one demat account across all brokers and depositories, and your total holdings value must not have exceeded ₹10,00,000 during the quarter. The nil-AMC threshold is ₹4,00,000 (Slab 1) — holdings between ₹4,00,001 and ₹10,00,000 attract a reduced AMC of ₹29.50 per quarter (Slab 2 per **A2**). Since your account is not BSDA-eligible, the standard AMC of ₹88.50 applies."
+
+   Always distinguish: ₹4,00,000 = nil-AMC threshold (Slab 1). ₹10,00,000 = outer BSDA eligibility boundary. Lead with ₹4,00,000 as the nil-AMC figure when clients ask about nil-AMC eligibility.
+
+4. If the account has a debit balance, fetch the ledger report (per **A6**) and include a brief breakdown of all debit entries in the response. This ensures the client is not conflating other debits (settlement charges, DP charges, etc.) with the AMC charge. Explain each debit entry separately before summarising the AMC portion.
 
 ### Rule 4 — AMC on Inactive/Zero Holdings Account
 
@@ -161,13 +167,8 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 ### Rule 7 — AMC Creating Debit Balance
 
+This rule applies as a mandatory add-on whenever a debit balance is present in the account, regardless of the primary routing path. Apply it on top of whichever rule handles the main query.
+
 1. Respond: "The AMC charge of ₹[charge_after_gst] has resulted in a debit balance in your account. A debit balance may attract delayed payment charges (interest at 0.05% per day). To avoid further interest, please add funds to clear the debit balance."
 2. For DPC details, refer to the Delayed Payment Charges protocol (per **A6**).
 
----
-
-## Section D: General Notes
-
-1. AMC is based on the highest holdings value during the billing quarter, not the current value. This is the most common source of confusion when a client's current holdings are below a slab threshold but the AMC reflects a higher slab.
-2. BSDA eligibility requires only one demat account across all brokers and depositories — clients with demat accounts at other brokers (even if unused) are not BSDA-eligible and will be charged Slab 3 rates.
-3. AMC charges can create debit balances that attract DPC. When explaining an AMC charge on an account with insufficient funds, always mention the DPC risk proactively.

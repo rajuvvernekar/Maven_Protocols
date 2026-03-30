@@ -125,10 +125,6 @@ You can check the funded amount in the remarks field of your conversion request,
 **R12 — Remarks interpretation:**
 "Your conversion details: [converted_quantity] shares converted from your MTF purchase on [trade_date]. The total conversion cost was ₹[cost from remarks]."
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -164,7 +160,7 @@ Remarks field interpretation                                → Rule 7
 
 ### Fallback
 
-If no route matches, cross-reference with **A5** tools for additional context. If no root cause is found, **ESCALATE** per **A6**.
+If no route matches, cross-reference with **A5** tools for additional context. If no root cause is found, escalate per **A6**.
 
 ---
 
@@ -196,7 +192,7 @@ If no route matches, cross-reference with **A5** tools for additional context. I
    a. Insufficient funds → respond per **A7-R7** (use cost from `remarks`).
    b. T+1 → respond per **A7-R8**.
    c. Ex-date → respond per **A7-R9**.
-2. If none of the above explains → **ESCALATE** per **A6**.
+2. If none of the above explains → escalate per **A6**.
 
 ---
 
@@ -205,7 +201,7 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 1. `converted_quantity` > 0 but client says shares still appear under MTF.
 2. Check `console_mtf_holdings` (per **A5**) for the stock.
 3. If conversion was within last 1 trading day → may take overnight to reflect.
-4. If 2+ trading days since conversion and still in MTF → **ESCALATE** per **A6**.
+4. If 2+ trading days since conversion and still in MTF → escalate per **A6**.
 5. Also check `console_eq_holdings` (per **A5**) — converted shares should now appear there.
 
 ---
@@ -214,7 +210,7 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 
 1. Respond per **A7-R10**.
 2. Verify conversion was successful (`converted_quantity` > 0).
-3. If yes and interest still charged → **ESCALATE** per **A6**.
+3. If yes and interest still charged → escalate per **A6**.
 
 ---
 
@@ -229,15 +225,3 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 1. The `remarks` field contains system-generated text with: quantity converted, trade date, and total cost of conversion.
 2. Parse and respond per **A7-R12**.
 
----
-
-## Section D: General Notes
-
-- Status = "Processed" is a known display issue when conversion fails — always verify using `converted_quantity`.
-- Conversion requires full funded amount as free cash. Partial funds = full failure, not partial conversion.
-- T+1: shares bought today under MTF cannot be converted until next trading day.
-- Ex-date: conversions on ex-date of corporate actions are not processed.
-- After successful conversion: shares move from MTF to regular equity holdings; MTF interest stops on converted qty from the next day.
-- Stock removed from MTF approved list: existing positions are NOT auto-converted — client must convert manually or continue holding.
-- Short-delivered MTF positions auto-converted to CNC should stop accruing interest. If interest continues, escalate for reversal.
-- MTF-to-CNC conversion is a self-service action via Kite or Console. Support cannot process conversions on behalf of the client. Selling MTF holdings and rebuying in CNC is not a valid conversion method — it incurs unnecessary charges and tax events.

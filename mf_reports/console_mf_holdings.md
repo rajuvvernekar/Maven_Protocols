@@ -85,10 +85,6 @@ Reference: [Why does Console show a different MF NAV?](https://support.zerodha.c
 | Buy average correction / external trade entries | console_mf_external_trades |
 | Pure ETF holdings | Kite equity holdings |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -129,7 +125,6 @@ Query relates to MF holdings →
 ### Scope
 
 - Address: redeemable unit verification, demat credit dates, total quantity checks, and cross-check support for console_mf_pseudo_holdings.
-- Do not volunteer: internal field values (per **A4**), tool/system names, discrepant field values, or information the client hasn't asked about.
 
 ### Fallback
 
@@ -179,10 +174,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Respond using **A3**: "Console displays the NAV as of T-2 days, while Coin displays the NAV as of T-1 day. This difference in NAV dates causes the P&L values to appear different. For the latest valuation, please refer to Coin."
 2. Share link from **A3**.
 
----
-
-## Section D: General Notes
-
-1. This tool is a secondary/support tool — it should never be the first tool invoked for MF holdings queries. Always start with console_mf_pseudo_holdings and use this tool only for the three specific fields: `available`, `holdings_date`, `total_quantity`.
-2. The `failure_date` field is a passive indicator in this tool. Escalation authority for failure_date sits with console_mf_pseudo_holdings — never escalate from this tool based on failure_date alone.
-3. The `discrepant` field must never be shared with clients. It is used only for internal cross-checking between this tool and console_mf_pseudo_holdings.

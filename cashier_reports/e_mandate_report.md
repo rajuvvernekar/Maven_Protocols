@@ -134,10 +134,6 @@ When escalating, always include: **client ID, mandate details (bank, creation/ca
 **R12 — Old mandate blocking new creation:**
 "You cannot create a new eMandate while an existing one is still pending or being cancelled. The old mandate must be fully deleted first, which takes up to 5 working days."
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -169,7 +165,7 @@ Old pending mandate blocking new creation                   → Rule 4
 
 ### Fallback
 
-If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` for related context. If no root cause is found, **ESCALATE** per **A7**.
+If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` for related context. If no root cause is found, escalate per **A7**.
 
 ---
 
@@ -184,14 +180,14 @@ If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` f
    b. Pending:
       - Calculate working days since creation date.
       - ≤5 working days → respond per **A8-R2**.
-      - >5 working days → respond per **A8-R3**. **ESCALATE** per **A7**.
+      - >5 working days → respond per **A8-R3**. escalate per **A7**.
    c. Failed → respond per **A8-R4**. If `remark` contains useful info, share in customer-friendly language.
    d. Cancelled → respond per **A8-R5**.
    e. Pending Cancellation:
       - Check `cancellation_date`.
       - ≤5 working days → respond per **A8-R6**.
-      - >5 working days → **ESCALATE** per **A7**.
-   f. Cancellation Failed → respond per **A8-R7**. If client insists mandate is still debiting → **ESCALATE** per **A7**.
+      - >5 working days → escalate per **A7**.
+   f. Cancellation Failed → respond per **A8-R7**. If client insists mandate is still debiting → escalate per **A7**.
 
 ---
 
@@ -213,16 +209,5 @@ If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` f
 ### Rule 4 — Old Pending Mandate Blocking New Creation
 
 1. Respond per **A8-R12**. Deletion timeline per **A5**.
-2. If old mandate has been in pending_cancellation for >5 working days → **ESCALATE** per **A7**.
+2. If old mandate has been in pending_cancellation for >5 working days → escalate per **A7**.
 
----
-
-## Section D: General Notes
-
-- This tool covers Console eMandates only. Coin/MF mandates and UPI autopay mandates are separate systems.
-- eMandate enables up to ₹1 crore/day automatic transfer. No Zerodha charges; bank may charge verification fee + penalty for failed debits.
-- Bank activation takes up to 5 working days. Mandate deletion also takes up to 5 working days.
-- Schedule cancellation requires 3 working days advance notice (4 for SBI).
-- Failed mandate creation means bank authentication was unsuccessful — Zerodha cannot determine specific bank-side failure reason.
-- Current accounts, NRE-PIS accounts cannot create eMandates. Joint accounts may not be supported by some banks. Standing instructions via netbanking are the alternative.
-- iOS pop-up blocker can prevent mandate creation — enable "Always show" in browser settings.

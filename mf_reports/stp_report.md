@@ -95,10 +95,6 @@ To set up an STP on Coin web: Dashboard → Mutual Funds → select the **source
 | Source fund available units (`available`) | console_mf_holdings |
 | Order status for both legs on trigger date | mf_order_history (SWP leg: variety = SWP; SIP leg: variety = SIP) |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -136,7 +132,6 @@ Query relates to STP →
 ### Scope
 
 - Address: STP trigger issues (both legs), partial execution diagnosis, setup guidance, and T-PIN/mandate requirements.
-- Do not volunteer: internal field values (per **A4**), raw status booleans, or information the client hasn't asked about.
 
 ### Fallback
 
@@ -187,10 +182,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
    - `available` = 0 → "The fund you are trying to transfer from has no available units. Please check the source fund selection."
 3. If error persists after correct navigation → escalate with screenshot.
 
----
-
-## Section D: General Notes
-
-1. STP is two independent legs (SWP + SIP) that happen to be linked. When diagnosing any STP issue, always verify both legs independently (**A6**). The SWP leg succeeding does not mean the SIP leg will.
-2. The STP must be initiated from the source fund, not the target fund. This is the most common setup error — clients navigate to the target fund and can't find the Create STP option.
-3. The sip_modification_log is shared across SIP/SWP/STP. For STP modifications, use the `id` from this report as the `sip_id` input and look for `stp_edit` or `stp_delete` type entries.

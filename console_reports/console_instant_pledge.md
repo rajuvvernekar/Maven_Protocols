@@ -149,8 +149,6 @@ When escalating, always include: **client ID, tradingsymbol, pledge_type, status
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -181,11 +179,10 @@ Pledged today, cannot unpledge                              → Rule 8
 
 - Address the client's query about pledge/unpledge requests, collateral margin, and failure diagnosis.
 - Use **A2** field rules and client-facing terminology in all client communication.
-- Do not volunteer information about unrelated pledge topics unless directly relevant.
 
 ### Fallback
 
-If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, **ESCALATE** per **A7**.
+If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, escalate per **A7**.
 
 ---
 
@@ -206,7 +203,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 2 — Collateral Not Reflecting After Successful Pledge
 
 1. If pledge was within last 30 minutes → respond per **A8-R4**.
-2. If more than 30 minutes since `pledge_creation` and still no collateral → **ESCALATE** per **A7**.
+2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate per **A7**.
 
 ---
 
@@ -216,7 +213,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
    a. "Something went wrong" error → likely unapproved security. Respond per **A8-R5**.
    b. T1 shares → respond per **A8-R6**.
    c. Insufficient qty → check `console_eq_holdings` (per **A6**) for available qty. Respond per **A8-R7**.
-2. If none of the above explains the failure → **ESCALATE** per **A7** directly. Do not share a generic response.
+2. If none of the above explains the failure → escalate per **A7** directly. Do not share a generic response.
 
 ---
 
@@ -232,7 +229,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 1. Check status and `pledge_creation` timestamp:
    a. Pending/overdue < 30 mins → respond per **A8-R9**.
    b. Pending/overdue > 30 mins but < 24 hours → respond per **A8-R10**.
-   c. Pending/overdue > 24 hours → **ESCALATE** per **A7**.
+   c. Pending/overdue > 24 hours → escalate per **A7**.
 
 ---
 
@@ -240,7 +237,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 1. Respond per **A8-R11**.
 2. Check `console_eq_holdings` (per **A6**) to confirm qty is present.
-3. If qty = 0 in Console as well → **ESCALATE** per **A7** (may be safekeep or DP issue, not pledge-related).
+3. If qty = 0 in Console as well → escalate per **A7** (may be safekeep or DP issue, not pledge-related).
 
 ---
 
@@ -253,26 +250,6 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 ### Rule 8 — Same-Day Unpledge Restriction
 
-1. If the client pledged securities today and is unable to unpledge → respond per **A8-R13**.
+1. If the client pledged securities today and is unable to unpledge → respond per **A8-R13**. Same-day restriction details per **A5**.
+2. Do not suggest alternative workarounds for same-day unpledging. This is a hard restriction.
 
-2. The pledge is processed on the same day and collateral is available within 15 minutes. The unpledge request can only be placed from the next working day onwards.
-
-3. The client can sell the pledged shares on the same day, provided the collateral is not being utilised against open positions.
-
-4. Do not suggest alternative workarounds for same-day unpledging. This is a hard restriction.
-
-**Example response:**
-"Securities pledged on the same day cannot be unpledged. You will be able to place the unpledge request from the next working day onwards. However, you can sell the pledged shares today if the collateral is not being utilised."
-
----
-
-## Section D: General Notes
-
-- Collateral margin from pledging is reflected after CDSL confirmation — usually instant, can take up to 30 minutes.
-- Only approved securities can be pledged. T1 holdings (bought today, not yet settled) cannot be pledged until T+1.
-- Pledge charges via Zerodha: typically ₹0 for both pledge and unpledge (standard instant pledge).
-- MTF shares are auto-pledged separately from client-initiated pledges in this tool.
-- Unpledge may be rejected if collateral margin is already utilized against open positions.
-- Overdue requests pending beyond 30 minutes are likely to fail — recommend a fresh request on the next trading day.
-- Pledged shares may not appear in Kite's standard holdings view but are visible on Console.
-- Securities pledged today cannot be unpledged on the same day — the unpledge request can only be submitted from the next working day. The client can sell pledged shares on the same day if the collateral is not utilised.

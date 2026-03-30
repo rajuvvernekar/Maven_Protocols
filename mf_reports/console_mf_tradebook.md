@@ -54,10 +54,6 @@ All rules reference these blocks as single sources of truth.
 | Transferred-in units affecting P&L / buy average | console_mf_external_trades |
 | Redeemable units verification | console_mf_holdings (`available` field) |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -88,7 +84,6 @@ Query relates to MF tradebook →
 ### Scope
 
 - Address: ELSS lock-in dates, allotment verification, P&L FIFO calculations, and trade entry verification.
-- Do not volunteer: internal field values (per **A3**), tool/system names, or information the client hasn't asked about.
 
 ### Fallback
 
@@ -124,10 +119,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 2. Always cross-reference console_mf_external_trades (per **A4**) for any transferred-in units — missing external entries will skew P&L regardless of whether tradebook entries look complete.
 3. If calculation still differs after both checks → escalate.
 
----
-
-## Section D: General Notes
-
-1. `trade_date` is the allotment date, not the order placement or payment date. This distinction matters for ELSS lock-in calculations and P&L accuracy — always use `trade_date` from this tool.
-2. P&L disputes almost always require checking both this tool (tradebook entries) and console_mf_external_trades (transferred-in units). Missing external trade entries are a common cause of P&L discrepancies even when tradebook data looks complete.
-3. This tool contains only executed orders. For order status, placement history, or pending orders, use mf_order_history instead.

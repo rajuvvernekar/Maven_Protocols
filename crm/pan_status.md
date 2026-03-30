@@ -77,6 +77,8 @@ All raw values are for internal decision-making only. Communicate the outcome an
 | R or N | Not linked |
 | NA | Exempt (NRI, non-citizen, age > 80, Assam/Meghalaya/J&K resident) |
 
+All routing and action decisions in this protocol are driven by PAN validity (**A3**) and Name/DOB match (**A4**). Aadhaar-PAN seeding status is retained as informational context only.
+
 ---
 
 ### A6 — Name Change Categories & Process
@@ -138,8 +140,6 @@ Please note: It may take up to 7 working days after documents are received for t
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -155,7 +155,7 @@ Please note: It may take up to 7 working days after documents are received for t
 2. Call pan_status with those fields.
 
 3. Check PAN validity (per A3):
-   └─ Not "E" → respond per A9-R1. **ESCALATE** per **A8**. STOP.
+   └─ Not "E" → respond per A9-R1. Escalate to support agent per **A8**. STOP.
 ```
 
 ### Route
@@ -177,7 +177,7 @@ Single ledger activation error (name/DOB mismatch)          → Rule 4
 
 ### Fallback
 
-If the client still faces issues despite all-clear PAN status, check `get_all_client_data` for other remarks or blocks. If no root cause found, **ESCALATE** per **A8**.
+If the client still faces issues despite all-clear PAN status, check `get_all_client_data` for other remarks or blocks. If no root cause found, escalate per **A8**.
 
 ---
 
@@ -212,14 +212,3 @@ If the client still faces issues despite all-clear PAN status, check `get_all_cl
 1. Client reports "name and/or date of birth do not match" error during single ledger activation.
 2. Apply Rule 1 (**A9-R2**). The mismatch must be resolved before single ledger can be enabled.
 
----
-
-## Section D: General Notes
-
-- PAN verification checks validity + name/DOB match across ITD, Exchange, Depository, and KRA. All must match for trading (SEBI requirement).
-- Zerodha's name record is sourced from ITD, not submitted documents — they may differ.
-- Name/DOB mismatch blocks transactions until resolved.
-- Online fix: re-KYC at account.zerodha.com (Aadhaar linked to mobile required).
-- Offline fix: courier to Zerodha, ₹25 + GST, 72 working hours processing, up to 7 working days total.
-- Always cross-reference `get_all_client_data` for client_name, pan, dob before checking pan_status.
-- PAN status codes and raw field values are for internal use only — communicate outcomes, not codes.

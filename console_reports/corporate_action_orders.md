@@ -135,8 +135,6 @@ Could you confirm how and when you placed the application? If you have a confirm
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -173,7 +171,7 @@ Buyback tax treatment / Tax P&L issue                       → Rule 7
 
 ### Fallback
 
-If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, **ESCALATE** per **A6**.
+If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A6**.
 
 ---
 
@@ -194,7 +192,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 2 — Buyback Order (Processed)
 
 1. Respond per **A8-R4**. Proceeds timeline per **A7**.
-2. If client says shares still showing in holdings despite status = Processed → check `console_eq_holdings` (per **A4**). If shares still there → **ESCALATE** per **A6**.
+2. If client says shares still showing in holdings despite status = Processed → check `console_eq_holdings` (per **A4**). If shares still there → escalate per **A6**.
 
 ---
 
@@ -221,7 +219,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 6 — Order Not Found
 
 1. Respond per **A8-R8**.
-2. If client confirms they applied → **ESCALATE** per **A6**.
+2. If client confirms they applied → escalate per **A6**.
 
 ---
 
@@ -229,13 +227,3 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 1. Respond per **A8-R9**. Tax details per **A5**.
 
----
-
-## Section D: General Notes
-
-- This tool tracks buyback and open offer orders only. Rights issue applications go through the client's bank (ASBA) or company registrar.
-- Allotment price defaults to 0.0 if not yet allotted — this does not mean rejection.
-- Buyback proceeds are credited by the company to the client's primary bank account, not by Zerodha. Typically 5–15 working days.
-- Buyback accepted shares are removed from holdings; partial acceptance leaves remaining shares in holdings.
-- Rights issue shares may show as discrepant initially until listing — resolved after listing date.
-- Buyback tax treatment changed from 1 Oct 2024: now capital gains for shareholder. Tax P&L may need manual editing.

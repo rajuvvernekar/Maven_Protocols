@@ -253,6 +253,12 @@ When escalating, always include: **client ID, instrument_name, and specific issu
 **R27 — Short delivery (sell-side — margin blocked):**
 "A short delivery has been recorded against your sale of [instrument_name]. An amount of ₹[debit_amount] (120% of the closing price on the sell trade date) has been blocked from your account for the exchange auction settlement. There are two possible outcomes: (1) If the exchange completes the auction, the blocked amount is used for settlement and any excess is refunded. (2) If the auction does not result in delivery, the settlement is done at close-out price. You will receive an email with the final outcome. For more details: [What is short delivery?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)"
 
+**R28 — Collateral margin for delivery purchases:**
+"Collateral margin from pledged shares can be used for equity intraday trading, futures, and options (buying and writing) per the collateral rules in the Kite Margins protocol (**A6**). For equity delivery (CNC) purchases, you need available cash or cash-equivalent margin. Collateral margin alone is not sufficient for buying shares for delivery."
+
+**R29 — Buy average update in progress (external trade entry):**
+"Your buy average for [instrument_name] is being updated. The external trade entry was added on [date] and typically reflects within 2 working days. Please check back after that. If the average still shows N/A after 2 working days, please raise a support ticket."
+
 ---
 
 ### A12 — Short Delivery Investigation Checklist
@@ -271,7 +277,26 @@ Invoke `ledger_report` (check the last 2 weeks) and search for a `remarks` entry
 
 **Reference:** [What is short delivery and what are its consequences?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
+---
+
+### A13 — Buy Average Discrepancy Investigation Checklist
+
+Use this checklist when `avg_cost` = N/A and the client's holdings quantity may not match their trade history (e.g., client reports N/A average, partial sale left remaining shares with no average, or quantity seems inconsistent with order history).
+
+**Step 1 — Check for discrepant shares:**
+Invoke `console_eq_pseudo_holdings` for the instrument. Check if the `discrepant` entry is greater than 0. If `discrepant` = 0, this checklist does not apply — fall through to standard A7 diagnostics (transferred/CA/ESOP).
+
+**Step 2 — Verify trade history matches holdings quantity:**
+Invoke `console_eq_tradebook_prepared` for the instrument. Count the total traded quantity and check if it matches the `quantity` from `kite_holdings`. If the quantity matches, this checklist does not apply — fall through to standard A7 diagnostics.
+
+**Step 3 — Check for client-added external trade entries:**
+If quantity does not match (from Step 2), invoke `console_eq_external_trades` for the instrument. Check the `discrepant` column to see if the client has added any entry.
+
+- **If no data found for the stock in external trades:** escalate to support agent — the discrepancy cannot be resolved via available tools. Include client ID, instrument, holdings quantity, and tradebook quantity in escalation.
+
+- **If client has added an entry:** Check the date of the entry.
+  - **If the entry date is more than 3 days from the current date:** escalate to support agent — the update should have reflected by now but hasn't. Include client ID, instrument, entry date, and discrepant quantity in escalation.
+  - **If the entry date is less than 3 days from the current date:** Respond per **A11-R29** — inform the client the update is in progress.
 
 ---
 
@@ -289,7 +314,7 @@ Invoke `ledger_report` (check the last 2 weeks) and search for a `remarks` entry
       for MTF-specific queries (charges, interest, conversion).
 3. If NOT found:
    ├─ Check if shares bought today → invoke kite_positions
-   └─ If not in positions either → route to Rule 6 (shares not visible)
+   └─ If not in positions either → route to Rule 5 (shares not visible)
 ```
 
 ### Route
@@ -317,7 +342,7 @@ Smallcase vs Kite mismatch                                  → Rule 10
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, **ESCALATE** per **A10**.
+If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A10**.
 
 ---
 
@@ -336,7 +361,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 2 — Buy Average Issues
 
-1. `avg_cost` = N/A or 0 → diagnose reason:
+1. `avg_cost` = N/A or 0 → investigate per **A13** checklist first (check for discrepant shares via `console_eq_pseudo_holdings`). If `discrepant` > 0 and quantity mismatch confirmed, follow A13 through to resolution or escalation. If A13 does not apply (discrepant = 0 or quantity matches), diagnose reason:
    a. Transferred shares → respond per **A11-R4**.
    b. CA pending adjustment → respond per **A11-R5**.
    c. ESOP/off-market → respond per **A11-R6**.
@@ -366,6 +391,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. Can I sell pledged shares? → respond per **A11-R12**.
 3. Collateral reduced after selling → cross-check `kite_margins` for current equity_collateral and total_collateral.
 4. For pledge/unpledge process or why can't pledge a specific stock → redirect to pledge protocol.
+5. Can collateral margin be used for equity delivery (CNC) purchases? → respond per **A11-R28**. Collateral is usable for equity intraday, futures, and options per Kite Margins **A6** — cash or cash-equivalent margin is required for delivery purchases.
 
 ---
 
@@ -416,18 +442,3 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Respond per **A11-R24**. Contact help@smallcase.com for Smallcase-specific discrepancies.
 
----
-
-## Section D: General Notes
-
-- Holdings = settled shares in demat. Positions = open trades (intraday/derivatives/same-day buys).
-- Shares bought today appear under Positions → move to Holdings on T+1.
-- T1 tag = shares awaiting settlement.
-- Kite shows only actively traded/listed instruments — Console shows all.
-- Holdings LTP and exchange shown from whichever exchange has higher previous closing price.
-- P&L during market hours uses LTP; after 3:30 PM switches to exchange closing price.
-- Buy avg on Kite fetched from Console using FIFO. If not on Console → N/A on Kite.
-- Selling and rebuying same stock same day = intraday, does not change buy avg. Exception: T2T stocks.
-- If LTP is N/A, invested value excluded from total to avoid incorrect P&L.
-- Sold stocks appear as negative positions during trading day (tagged HOLDING) — normal, debited from demat by end of day.
-- Smallcase uses simple average; Kite uses FIFO — prices may differ.

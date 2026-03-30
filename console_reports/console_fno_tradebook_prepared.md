@@ -29,7 +29,7 @@ This tool fetches a client's F&O tradebook with **no date range limitation** —
 
 Use this tool only when the date range exceeds 100 days or the client needs full F&O history. For recent trades (last 100 days), use `console_fno_tradebook` — it is faster and returns the same data.
 
-For closed accounts, **ESCALATE** — agent review needed for historical F&O trade data retrieval.
+For closed accounts, escalate to support agent for historical F&O trade data retrieval.
 
 All business rules from `console_fno_tradebook` apply here equally.
 
@@ -85,8 +85,6 @@ When escalating, always include: **client ID, date range, segment, tradingsymbol
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -116,11 +114,11 @@ Report fails to load / times out                            → Rule 4
 
 - Address the client's query about historical F&O trade data beyond the 100-day window.
 - Use **A2** field rules in all client communication.
-- All business rules from `console_fno_tradebook` protocol (trade verification, multiple fills, CA adjustments, contract identification) apply identically here.
+- All business rules from `console_fno_tradebook` protocol apply identically here.
 
 ### Fallback
 
-If no route matches, cross-reference with **A3** tools for additional context. If no root cause is found, **ESCALATE** per **A5**.
+If no route matches, cross-reference with **A3** tools for additional context. If no root cause is found, escalate per **A5**.
 
 ---
 
@@ -138,7 +136,7 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 ### Rule 2 — Closed Account F&O Trade Data
 
 1. Client's account is closed and they need historical F&O trade data.
-2. **ESCALATE** — agent review needed.
+2. Escalate to support agent.
 
 ---
 
@@ -146,7 +144,7 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 1. Same rules as `console_fno_tradebook` protocol — verify trade existence, check segment, explain CA adjustments, identify contract details.
 2. All business rules from `console_fno_tradebook` (Rules 1–6 in that protocol's v2) apply identically here.
-3. If trade not found → check `console_fno_tradebook` as well (per **A3**). If still not found → **ESCALATE** per **A5**.
+3. If trade not found → check `console_fno_tradebook` as well (per **A3**). If still not found → escalate per **A5**.
 
 ---
 
@@ -154,12 +152,5 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 1. Large date ranges with high trade volume may cause timeouts.
 2. Try narrowing the date range (e.g., one financial year at a time) or filtering by segment.
-3. If the issue persists → **ESCALATE** per **A5**.
+3. If the issue persists → escalate per **A5**.
 
----
-
-## Section D: General Notes
-
-- This tool has no date range limitation — use it only when `console_fno_tradebook` (100-day limit) is insufficient.
-- Identical schema and data source as `console_fno_tradebook`. All trade verification, multiple fills, CA adjustment, and contract identification rules from that protocol apply equally.
-- For active accounts, guide clients to download reports themselves via Console (per **A4** links). For closed accounts, **ESCALATE** — agent review needed.

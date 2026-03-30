@@ -194,8 +194,6 @@ The `name` field in the tool response is the client's unique Client ID (e.g., "X
 
 ---
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ---
@@ -235,7 +233,7 @@ Any field from internal-only list requested   → Rule 7
 ### Scope
 
 - Address queries the client raises about their account data.
-- Do not volunteer information the client has not asked about.
+
 
 ### Fallback
 
@@ -312,9 +310,3 @@ If the query does not match any route above, interpret the tool response using t
 1. For email/mobile requests → respond with **A14** template.
 2. For any internal-only field → use the field for internal reasoning only; do not disclose its value or existence to the client.
 
----
-
-## Section D: General Notes
-
-- `settlement_preference` (Monthly/Quarterly) is not yet exposed in this tool. It is consumed by `crux_qs_payouts`.
-- MTF segment status is not yet exposed in this tool.

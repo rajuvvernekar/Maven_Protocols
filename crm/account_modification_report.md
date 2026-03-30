@@ -33,8 +33,6 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 
 ## Section A: Reference Data
 
-All rules reference these blocks as single sources of truth.
-
 ---
 
 ### A1: Timelines
@@ -159,7 +157,7 @@ Share this article instead of listing steps: [How to change the registered email
 
 **International mobile / NRI:** eSign and attach to ticket, or courier. Include masked Aadhaar if mentioned.
 
-**No access to registered mobile AND email:** Refer to [How do I reset my Zerodha password if I can't access my registered phone number or email?](https://support.zerodha.com/category/console/profile/account/articles/reset-password-new-contact-details)
+**No access to registered mobile AND email:** Refer to [How do I reset my Zerodha password if I can't access my registered phone number or email?](https://support.zerodha.com/category/your-zerodha-account/your-profile/account/articles/reset-password-new-contact-details)
 
 **Mobile/email already linked to another account:** **ESCALATE** — support manager review needed.
 
@@ -337,6 +335,14 @@ If client reports error uploading income proof or documents during segment activ
 
 **Charges:** **A2** standard.
 
+**Demat-mode MF nominee sync (Coin holdings)**
+
+For mutual funds held in Demat mode through Coin, the nominee registered in the Demat account (with CDSL) applies automatically. RTAs such as Kfintech may show "Nominee Not Registered" in the CAS due to a synchronisation delay between CDSL and the RTA — this does not indicate the nominee is absent.
+
+To handle this query: pull nominee_details from get_all_client_data. If any of nominee_1_first_name, nominee_2_first_name, or nominee_3_first_name is populated, the nominee is confirmed. Share the response below and direct the client to verify at Console → Account → Nominees. If none of the nominee name fields are populated, guide the client to add a nominee: How to add a nominee online in Zerodha?
+
+Response: "The nominee details added to your Zerodha Demat account are applicable to all Demat holdings, including mutual funds held through Coin. If you hold mutual funds outside of Zerodha or in non-Demat form, please get in touch with the respective AMC for nomination updates. You can verify your Zerodha nominee details at console.zerodha.com/account/nominee."
+
 **Inactivity alert:** No trading for 24 months → deactivated/dormant. If not reactivated within 30 days → nominee notified.
 
 Support article: [How to update or modify nominee details in Zerodha?](https://support.zerodha.com/category/your-zerodha-account/nomination-process/articles/update-modify-nominee-details)
@@ -433,8 +439,6 @@ On every account modification query, execute in order:
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ---
 
 ### Rule 1: Name / DOB / PAN Updates
@@ -446,6 +450,8 @@ If query mentions name change, DOB mismatch, or PAN correction → **ESCALATE** 
 ### Rule 2: Modification Status
 
 **Check request:** For segment activation → query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. For Coin/MF → query `form_type` = `rekyc`, most recent within 3 months. If no request found OR last request > 3 months → "Your last request from [date] is closed. Submit a new request at account.zerodha.com/account."
+
+**Multi-row processing:** When the query returns multiple rows (e.g., both `rekyc` and `rekyc_fno` from the same submission), evaluate each row's status independently. A single ReKYC submission can result in equity segments approved while F&O segments are rejected. Match the row to the client's query — if the client is asking about F&O/currency/commodity, check the `rekyc_fno` row specifically. Report only the status relevant to what the client asked.
 
 **Silent segment check:** Before responding to any segment activation query, check actual segment status fields in `get_all_client_data` using the field pairs in **A4**. Use this only to detect problems (rejections, PAN failures, dormancy). If segment shows Rejected, Activation_rejected, or Deactivated → check the corresponding remarks field (per **A4**) and apply Rule 7.1 before giving any other response.
 
@@ -496,9 +502,11 @@ Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Require
 ### Rule 5: Segment Activation Queries
 
 1. Check demat prerequisite first (Rule 8).
-2. Check `account_modification_report` for existing requests: query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. ReKYC is a prerequisite for segment activation — if a ReKYC request (`form_type` = `rekyc` or `rekyc_fno`) exists and is rejected, surface that rejection reason first (per Rule 2) before providing any segment activation guidance.
+2. Check `account_modification_report` for existing requests: query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. If a request exists (`rekyc`, `rekyc_fno`, or `segment_addition`):
+   - **In progress or approved:** If `form_type = rekyc_fno`, F&O/currency/commodity activation is already included in the ReKYC request — do not advise a separate activation request. Confirm that the existing request covers F&O and provide the processing timeline per **A1**.
+   - **Rejected:** Surface the rejection reason first (per Rule 2) before providing any new activation guidance.
 3. If no existing request → guide per **A10** based on account type.
-4. All segment activations (F&O, Currency, MCX/Commodity) require both trading AND demat accounts to be active.
+4. Both trading and demat accounts must be active for any segment activation (Rule 8).
 
 ---
 
@@ -538,8 +546,8 @@ Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant":
 If any segment (per **A4** field pairs) shows as Rejected, Activation_rejected, or Deactivated AND the corresponding remarks field contains "PAN Verification Failed":
 
 1. Call `pan_status` tool to retrieve the specific rejection reason.
-2. Respond based on the `pan_status` result — follow the pan_status tool's protocol for resolution guidance.
-3. If `pan_status` shows no issues but the segment remains rejected → **ESCALATE** — support manager review needed for UCC process team investigation.
+2. If `pan_status` returns a specific, actionable mismatch → follow the pan_status tool's resolution guidance for that mismatch.
+3. For all other `pan_status` results (no issues found, ambiguous, or unclear) → **ESCALATE** — support manager review needed for UCC process team investigation. Redoing the process will not resolve the issue when no mismatch exists.
 4. Do not guess the rejection reason from `get_all_client_data` alone.
 
 ---
@@ -585,16 +593,3 @@ If the client is unable to pledge or has a query about pledging holdings for col
 2. If `nse_fo_status` = "Activated" but the client is still unable to pledge → share troubleshooting guidance: [Why am I unable to pledge?](https://support.zerodha.com/category/console/portfolio/pledging/articles/unable-to-pledge)
 3. If `nse_fo_status` ≠ "Activated" → guide client to activate F&O first per Rule 5.
 
----
-
-## Section D: General Notes
-
-- ReKYC reactivates dormant accounts and previously held segments. ReKYC also automatically re-enables Coin/MF. ReKYC form_types: `rekyc` (equity and mutual funds), `rekyc_fno` (F&O, currency, commodity).
-- Active accounts add new segments without ReKYC.
-- DDPI replaced POA (Nov 2022); optional — CDSL TPIN usable instead.
-- Secondary demat: resident individuals only, free.
-- Max 3 bank accounts: 1 primary (payin + withdrawal) + 2 secondary (payin + withdrawal).
-- Account closure blocked if: negative balance, open positions, unlisted securities, pending corporate actions.
-- Cannot reopen same account/user ID after closure.
-- All segment activations require both trading AND demat accounts to be active.
-- Coin segment status "Generated" requires agent intervention.

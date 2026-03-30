@@ -70,10 +70,6 @@ A modification within 1–2 days of the trigger date means the current instalmen
 | SIP-not-triggered sequential diagnostic | sip_report Rule 1 |
 | last_sip_at field (order execution date, not modification) | sip_report |
 
----
-
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -109,7 +105,6 @@ Query relates to SIP/SWP/STP modification history →
 ### Scope
 
 - Address: SIP/SWP/STP modification history, timing impact on instalments, and modification date verification.
-- Do not volunteer: internal field values (per **A5**), raw type values, or information the client hasn't asked about.
 
 ### Fallback
 
@@ -137,10 +132,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 2. If investigating SIP-not-triggered → route back to sip_report Rule 1 sequential diagnostic (per **A6**) to continue diagnosis (mandate, order status, etc.).
 3. Do not infer a modification from any other field (per **A2**).
 
----
-
-## Section D: General Notes
-
-1. The `public_id` gate in Preflight is absolute — this tool is useless without it. Always fetch sip_report first if `public_id` is not already available.
-2. The `last_sip_at` vs `modified_at` distinction (**A2**) is the single most important fact in this protocol. `last_sip_at` from sip_report is the last order execution date, not the modification date. Confusing these leads to incorrect diagnosis of when a SIP was paused or modified.
-3. Date accuracy matters: always double-check `modified_at` before sharing. Month and year confusion is a known error pattern when reading date values.

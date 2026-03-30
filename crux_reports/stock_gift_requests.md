@@ -97,8 +97,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID (sender/receiver), creation date, status, items, and the specific issue.
 
-**Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
-
 ---
 
 ## Section B: Decision Flow
@@ -150,11 +148,10 @@ Query relates to stock gift →
 ### Scope
 
 - Address: gift request status, CDSL verification steps, transfer timelines, charges, buy average updates, and troubleshooting.
-- Do not volunteer: internal field values (per **A6**), sender/receiver personal details, or information the client hasn't asked about.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → **ESCALATE** per Rule 10.
+If no root cause is identified after checking all relevant rules → escalate per Rule 10.
 
 ---
 
@@ -195,7 +192,7 @@ Once the beneficiary is added, you'll receive the OTP verification at 5 PM. Comp
 
 1. Confirm: status = Stocks Transferred (per **A4**).
 2. Respond: "Gifted stocks become visible in the receiver's holdings on the next trading day after the transfer is completed."
-3. If more than 2 trading days since transfer: "If it's been more than 2 trading days since the status changed to 'Stocks Transferred' and the stocks are still not visible, we'll investigate." → **ESCALATE** per Rule 10.
+3. If more than 2 trading days since transfer: "If it's been more than 2 trading days since the status changed to 'Stocks Transferred' and the stocks are still not visible, we'll investigate." → escalate per Rule 10.
 
 ### Rule 6 — Discrepancy Mark on Gifted Stocks
 
@@ -206,7 +203,7 @@ Once the beneficiary is added, you'll receive the OTP verification at 5 PM. Comp
 
 1. Confirm: more than 3 working days since transfer.
 2. Respond: "The buy average for gifted stocks should be updated within 3 working days of the transfer. If it's still showing as N/A or incorrect after 3 working days, we'll look into this." (Per **A5**.)
-3. **ESCALATE** per Rule 10.
+3. escalate per Rule 10.
 
 ### Rule 8 — Gift Charges
 
@@ -223,10 +220,3 @@ Escalate when any trigger in **A9** is met.
 
 Include in escalation: client ID (sender/receiver), creation date, status, items, and the specific issue.
 
----
-
-## Section D: General Notes
-
-1. The gift process involves multiple steps across Zerodha and CDSL. The `modified` timestamp (internal only) is the key field for diagnosing timeline issues — always check it when the status is Approved or Processing.
-2. All CDSL verification steps (beneficiary addition, OTP) operate within strict daily windows: 3–5 PM for beneficiary, 5–8 PM for OTP. Missing either window means the entire process restarts the next trading day.
-3. MF gifting uses a separate flow via console.zerodha.com/gift — do not conflate it with stock gifting through Kite.
