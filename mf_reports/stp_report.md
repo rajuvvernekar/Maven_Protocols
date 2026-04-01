@@ -19,8 +19,6 @@ TRIGGER KEYWORDS: "STP", "systematic transfer", "transfer between funds", "coin"
 
 ## Section A: Reference Data
 
-All rules reference these blocks as single sources of truth.
-
 ### A1 — STP Fundamentals
 
 - STP = SWP (redeem from source fund) + SIP (invest in target fund via mandate).
@@ -141,8 +139,6 @@ If no root cause found after completing all diagnostic steps → escalate with s
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ### Rule 1 — STP Not Working: Sequential Diagnostic
 
 1. Run through all steps in **A5** in order.
@@ -160,9 +156,29 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 2. Check mf_order_history (per **A8**) for SWP leg (variety = SWP) on trigger date → confirm status.
 3. Check mf_order_history for SIP leg (variety = SIP) on same date → confirm status.
 4. Diagnose using the findings matrix in **A6**:
-   - SWP executed, SIP failed → mandate or payment issue. Check sip_report + mandate_debit_report.
+   - SWP executed, SIP failed → mandate or payment issue. Check sip_report + mandate_debit_report. If SIP leg shows repeated rejections, proceed to Step 5.
    - SWP failed, SIP not triggered → fix SWP first (T-PIN, pledged, insufficient units).
    - Both failed → check source fund units and T-PIN status.
+
+**Step 5 — STP Purchase Leg Repeated Rejections (if SIP leg repeatedly fails):**
+
+When the SIP leg (purchase) of an STP repeatedly fails:
+
+1. **Check for recent modifications:** Get `fund_source` value from stp_report. Compare `created` and `modified` timestamps.
+   - If `modified` differs from `created` AND `modified` is within the last 5 days from current date → "Your STP was recently modified. Modifications within 5 days of a trigger date cause the purchase leg to fail for that cycle. The next cycle will execute normally."
+
+2. **If no recent modification** (or modification is older than 5 days), verify funds were debited and order placed at AMC:
+   - Check mandate_debit_report for the latest debit entries matching the STP trigger date.
+   - Get `cashier_reference` from mandate_debit_report.
+   - Match `cashier_reference` with fund_allocation_report → get the respective `order_number`.
+   - Match `order_number` (from fund_allocation_report) with `exchange_order_id` in mf_order_history.
+   - Verify the `fund` field in stp_report matches the `fund` field in mf_order_history.
+   - If all matches confirmed → "The funds were debited from your mandate and the purchase order was placed at the AMC. The order is being processed."
+
+3. **If no entries in mandate_debit_report** (no debit attempt found):
+   - Check sip_report (via `view_sips` from stp_report) for mandate linkage status.
+   - If no mandate linked → "The SIP leg of your STP requires an active mandate for auto-debit. Please ensure a mandate is linked to the target fund."
+   - If mandate linked but no debit → escalate to support agent with STP details, source fund, target fund(s), and "STP purchase leg repeated rejection — mandate linked but no debit attempt found."
 
 ### Rule 3 — Web Only
 

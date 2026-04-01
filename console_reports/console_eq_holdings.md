@@ -41,11 +41,11 @@ This tool looks up a client's equity holdings. Buy average uses FIFO (First In, 
 
 **Shareable fields:**
 
-`tradingsymbol` | `isin` | `buy_average` | `buy_value` | `available` | `t1` | `margin` | `pending` | `discrepant` | `loan` | `total_quantity`
+`tradingsymbol` | `isin` | `buy_average` | `buy_value` | `available` | `t1` | `margin` | `discrepant` | `loan` | `total_quantity`
 
 **Internal-only fields** (use for reasoning; communicate outcomes in plain language):
 
-`name` | `instrument_id` | `holdings_date` | `closing_price` | `failure_date`
+`name` | `instrument_id` | `holdings_date` | `closing_price` | `failure_date` | `pending`
 
 **Client-facing terminology:**
 
@@ -323,6 +323,19 @@ Please note: While filing income tax returns, you may need to manually adjust th
 
 ---
 
+### A14 — Discrepancy Diagnostic Checklist
+
+When a client reports a discrepancy or a specific purchase that doesn't match holdings data:
+
+1. Use `console_eq_tradebook_prepared` to fetch all trades from 1-4-2017 to date for that tradingsymbol.
+2. Calculate total quantity after applying FIFO (subtract sell qty from buy qty chronologically).
+3. Check the `ledger_report` for corresponding credit entries if the client describes a sale or redemption event.
+4. Compare calculated qty with `available` qty in `console_eq_holdings`:
+   - **If calculated qty = available qty:** Stocks were bought on Zerodha, discrepancy is a display/sync issue → ESCALATE to Support agent with client ID, tradingsymbol, calculated qty, and available qty.
+   - **If calculated qty ≠ available qty AND no matching sale proceeds in ledger:** Stocks likely transferred/gifted/IPO/off-market → proceed to self-resolution path (Rule 5).
+
+---
+
 ## Section B: Decision Flow
 
 ---
@@ -391,10 +404,11 @@ If no route matches, interpret the holdings data using Section A reference data.
 ### Rule 2 — Buy Average Showing N/A
 
 1. If `buy_average` is null/N/A AND `discrepant` > 0:
-   a. Check `console_eq_external_trades` for an existing entry for this ISIN.
-   b. If entry exists AND still processing → respond per **A13-R6**.
-   c. If entry exists AND processed but avg still N/A → escalate per **A12** with entry details from `console_eq_external_trades`.
-   d. If no entry exists → respond per **A13-R3** + **A13-R4**.
+   a. **If client reports a specific purchase (mentions date, quantity, or price of a buy that doesn't match current holdings data), ALWAYS run A14 checklist before proceeding with standard diagnostics.**
+   b. Check `console_eq_external_trades` for an existing entry for this ISIN.
+   c. If entry exists AND still processing → respond per **A13-R6**.
+   d. If entry exists AND processed but avg still N/A → escalate per **A12** with entry details from `console_eq_external_trades`.
+   e. If no entry exists AND A14 confirms stocks NOT bought on Zerodha → respond per **A13-R3** + **A13-R4**.
 
 2. If `buy_average` is null AND `discrepant` = 0 AND `pending` > 0:
    → Respond per **A13-R7**. Timeline per **A4**.
@@ -418,6 +432,10 @@ If no route matches, interpret the holdings data using Section A reference data.
 ---
 
 ### Rule 5 — Discrepancy (Transferred / Gift / ESOP Shares)
+
+**Preflight (before executing Rule 5):**
+
+If client reports a discrepancy or a specific purchase (mentions date, quantity, or price) that doesn't match holdings data, run **A14** checklist first. Only proceed with self-resolution guidance if A14 confirms stocks were NOT bought on Zerodha.
 
 **If client confirms shares were received via Zerodha gift transfer:**
 

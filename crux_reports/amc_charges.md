@@ -23,12 +23,11 @@ TRIGGER KEYWORDS: "AMC charges", "annual maintenance charges", "demat charges", 
 
 ## Section A: Reference Data
 
-All rules reference these blocks as single sources of truth.
-
 ### A1 — AMC Fundamentals
 
 - Report provides AMC charge history by account: charge dates, amounts, BSDA flag, demat type.
 - AMC charged quarterly — every 91 days from account opening date.
+- Advance payment option: Clients can prepay AMC for 1-5 years. This does not change the quarterly billing cycle or BSDA eligibility assessment.
 - Standard AMC: ₹300/year + 18% GST = ₹354/year, in quarterly installments.
 - AMC based on highest holdings value during the billing quarter — not current value. `client_holdings` = highest holdings value recorded during the billing quarter.
 - AMC charged regardless of trading activity or holdings — as long as demat account is active.
@@ -111,8 +110,11 @@ Query relates to AMC charges →
 ├─ NRI or non-individual account AMC query
 │  → Rule 6
 │
-└─ AMC created a debit balance
-   → Rule 7 (also apply as add-on to any route above when a debit balance is detected)
+├─ AMC created a debit balance
+│  → Rule 7 (also apply as add-on to any route above when a debit balance is detected)
+│
+└─ Client asks about paying AMC annually or in advance
+   → Rule 8
 ```
 
 ### Scope
@@ -127,8 +129,6 @@ If the AMC amount doesn't match any expected slab or the data seems inconsistent
 ---
 
 ## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — AMC Charge Explanation
 
@@ -171,4 +171,11 @@ This rule applies as a mandatory add-on whenever a debit balance is present in t
 
 1. Respond: "The AMC charge of ₹[charge_after_gst] has resulted in a debit balance in your account. A debit balance may attract delayed payment charges (interest at 0.05% per day). To avoid further interest, please add funds to clear the debit balance."
 2. For DPC details, refer to the Delayed Payment Charges protocol (per **A6**).
+
+### Rule 8 — Advance AMC Payment
+
+1. If the client asks about paying AMC annually or in advance:
+   Respond: "You can prepay your AMC for 1 to 5 years. This prepays future quarterly charges but does not change your billing cycle or BSDA eligibility. Refer to the AMC article for setup details."
+
+2. Always clarify the current AMC rate applicable to their account using Rule 3 before explaining the advance payment option.
 

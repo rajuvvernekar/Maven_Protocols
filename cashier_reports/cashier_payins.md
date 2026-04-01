@@ -23,8 +23,6 @@ TRIGGER KEYWORDS: "add funds", "add money", "transfer", "payin", "payment failed
 
 ## Section A: Reference Data
 
-All rules reference these blocks as single sources of truth.
-
 ---
 
 ### A1: Payment Methods & Specs
@@ -188,6 +186,12 @@ On every payin query, execute in order:
    │   linked to your Zerodha account." Do not proceed to alternatives that suggest unlinked
    │   or third-party transfers are possible. Do not substitute a different transaction as
    │   the answer.
+   │   SUB-CONDITION — Implicit unlinked account detection: If the customer mentions a
+   │   specific bank account number (full or partial, e.g., "ending in 4821") or a specific
+   │   bank name as the source of transfer, cross-reference it against registered_bank_accounts
+   │   from get_all_client_data. If the mentioned account does not match any registered
+   │   account (primary or secondary), treat this as an unlinked transfer scenario — even if
+   │   the customer does not explicitly use the words "unlinked" or "unregistered."
    ├─ FRESH ACCOUNT CHECK: If account_activation_date is within the last 24 hours AND the
    │   payin creation date is the same as the activation date → this applies only to newly
    │   opened accounts (not REKYC or segment activation). See Rule 16.
@@ -222,8 +226,6 @@ On every payin query, execute in order:
 ---
 
 ## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ---
 

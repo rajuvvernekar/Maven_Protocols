@@ -25,8 +25,6 @@ TRIGGER KEYWORDS: "order", "status", "processing", "allotted", "failed", "cancel
 
 ## Section A: Reference Data
 
-All rules reference these blocks as single sources of truth.
-
 ---
 
 ### A1: Order Lifecycle
@@ -44,7 +42,7 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | Redeemed | "Redemption processed." + credit date per **A6**. |
 | Cancel + payment_confirmed = true | "Your order was cancelled. The debited amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)." A cancelled order with confirmed payment means a refund is due — this is a refund scenario only. |
 | Cancel + payment_confirmed = false | "Your order was cancelled. No payment was debited." |
-| Failed | "Your order was not processed. Reason: [status_message in plain language]" |
+| Failed | "Your order was not processed. Reason: [status_message in plain language]". Failed orders are automatically removed from your order history within 3–5 days. |
 | TPV Pending | "Your order is pending third-party bank account validation at the exchange. This auto-revalidates on the next business day." |
 
 ---
@@ -297,8 +295,6 @@ On every MF order query, execute in order:
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ---
 
 ### Rule 1: Processing Orders
@@ -357,14 +353,23 @@ If multiple recent orders failing → check fund_allocation_report `error_remark
 
 Escalate if: INVALID BANK ACCOUNT, PAN/PEKRN MISMATCH, KRA LOCKED, MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC.
 
+**Failed order cleanup:** When responding to failed order queries, include: "Your order for [fund] of ₹[amount] placed on [date] failed due to [reason from status_message in plain language]. Failed orders are automatically removed from your pending orders within 3–5 days. You do not need to take any action. If you wish to proceed with this investment, please place a fresh order."
+
 ---
 
 ### Rule 3: Cancelled Orders & TPV Pending
 
 **Cancelled:**
-- Check `payment_confirmed` per **A4** to determine if refund applies.
-- When multiple orders exist (some successful, some cancelled), check `payment_confirmed` independently for each order. For successful orders, confirm units were allotted. For cancelled orders with `payment_confirmed` = true, apply refund language.
-- Cancellation time is not recorded — communicate only: "Your order was cancelled after it was placed."
+
+**Step 1 — Check payment_confirmed (mandatory):**
+Check `payment_confirmed` in mf_order_history per **A4** (authoritative source for payment debit status).
+- If `payment_confirmed` = true → payment was debited → apply A4 refund language: "Your order was cancelled. The debited amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)."
+- If `payment_confirmed` = false → no payment was debited → respond: "Your order was cancelled. No payment was debited from your bank account."
+
+**Step 2 — Multiple orders:**
+When multiple orders exist (some successful, some cancelled), check `payment_confirmed` independently for each order. For successful orders, confirm units were allotted. For cancelled orders, apply Step 1 to each individually.
+
+**Cancellation time:** Not recorded — communicate only: "Your order was cancelled after it was placed."
 
 **TPV Pending:**
 - Use **A1** language for TPV Pending status.

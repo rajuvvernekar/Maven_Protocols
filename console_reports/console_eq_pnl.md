@@ -163,6 +163,9 @@ The values may differ because Tax P&L separates intraday trades from delivery, a
 **R15 — Orphan unrealized entry:**
 "We've identified that [tradingsymbol] is appearing in your unrealized P&L despite no active holdings. This is a data issue and we'll have it corrected."
 
+**R16 — Gift transfer out (P&L impact):**
+"When shares are gifted, Zerodha posts a reversal entry based on the closing price on the transfer date. This is why the transaction appears as a sale in your Tax P&L. However, since the Gift Tax Act has been abolished, you have no tax liability on the gifted value. For the recipient, capital gains are calculated based on your original purchase price and holding period when they sell the shares. You can declare this as a gift transfer in your ITR to claim tax exemptions. For more details: https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/gifting-securities/articles/tax-implication-on-gifting-of-stocks"
+
 ---
 
 ## Section B: Decision Flow
@@ -196,6 +199,7 @@ Same-day buy+sell classification (intraday vs delivery)     → Rule 6
 P&L after bonus / split / demerger / merger / fractional    → Rule 7
 Tax P&L vs Console P&L values differ                        → Rule 8
 Stock in unrealized P&L despite all shares sold             → Rule 9
+Gift transfer out (P&L impact)                              → Rule 10
 ```
 
 ### Scope
@@ -280,3 +284,10 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 1. Check `console_eq_holdings` for that stock.
 2. If no holdings found but P&L still shows unrealized entry → respond per **A8-R15**. Escalate per **A7** as orphan lot.
+
+---
+
+### Rule 10 — Gift Transfer Out (P&L Impact)
+
+1. When a client questions why a gift transfer shows as a sale in Tax P&L, explain that Zerodha posts a reversal entry based on the closing price on the transfer date.
+2. Respond per **A8-R16**.

@@ -26,8 +26,6 @@ TRIGGER KEYWORDS: "withdraw", "withdrawal", "payout", "transfer to bank", "not r
 
 ## Section A: Reference Data
 
-All rules reference these blocks as single sources of truth. If a definition exists here, rules must not restate it — only cite the block ID.
-
 ---
 
 ### A1: Withdrawal Types
@@ -237,8 +235,6 @@ On every withdrawal query, execute in order:
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ---
 
 ### Rule 1: Status Responses
@@ -261,7 +257,7 @@ Always invoke `ledger_report` (±3 days from creation).
 
 | Ledger Signal | Cause | Response |
 |---|---|---|
-| "Bank Receipts" on creation date | Same-day deposit | Funds in account per **A5**. Place new request next working day. |
+| "Bank Receipts" on creation date | Same-day deposit | Funds in account per **A5**. While you can use funds deposited to your trading account immediately for trading, you can only withdraw them the next day due to end-of-day settlement and reconciliation processes. Place new request next working day. |
 | "Bank Receipts" on Sat/Sun + `Instant_Payout` | Weekend deposit | Use regular now or instant Tuesday. |
 | "Book Voucher" + settlement/obligation remarks | T+1 settlement | Use **A4** template. |
 | "Journal Entry" + "DP Charges for Sale of [STOCK]" on creation date | Stock sold same day | DP charges confirm the sale. Root cause is T+1 per **A4**. |
