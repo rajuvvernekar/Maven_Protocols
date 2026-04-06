@@ -184,6 +184,8 @@ This margin is blocked progressively for ITM stock options and futures positions
 | Intraday profits (equity/F&O) | Not usable on T day. Available after T+1 settlement. |
 | Options sold/exited | Usable only for buying options in same segment same day. Available for all trades from T+1. |
 
+**Reference:** [Why are same-day profits not available for trading?](https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits)
+
 ---
 
 ### A11 — Links
@@ -195,8 +197,9 @@ This margin is blocked progressively for ITM stock options and futures positions
 | Bulletin (restrictions) | https://zerodha.com/marketintel/bulletin |
 | Approved securities | https://zerodha.com/approved-securities#tab-noncash_equity |
 | Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
-| Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/393605/revision-in-lot-size-of-index-derivative-contracts-from-november-20-2024 |
+| Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 | Options on expiry day | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day |
+| Same-day profits | https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits |
 
 ---
 
@@ -284,7 +287,7 @@ When escalating, always include: **client ID, instrument_name, product type, and
 "Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. The margin increases progressively: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)"
 
 **R26 — Odd-lot quantity from lot size revision:**
-"Due to SEBI's revised lot sizes for F&O contracts, your existing position has a residual quantity that does not match the current lot size. This odd-lot quantity cannot be traded on the exchange. You must hold this position until expiry, and it will be cash-settled based on the moneyness of the option at expiry. A 5% extra margin applies on odd lots. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/393605/revision-in-lot-size-of-index-derivative-contracts-from-november-20-2024). For details on options settlement at expiry: [Options on expiry day](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day)"
+"Due to SEBI's revised lot sizes for index derivative contracts effective December 30, 2025, your existing position has a residual quantity that does not match the current lot size. This odd-lot quantity cannot be traded on the exchange. You must hold this position until expiry, and it will be cash-settled based on the moneyness of the option at expiry. A 5% extra margin applies on odd lots. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025). For details on options settlement at expiry: [Options on expiry day](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day)"
 
 ---
 
@@ -301,7 +304,10 @@ When escalating, always include: **client ID, instrument_name, product type, and
       buy_quantity, sell_quantity.
 3. If NOT found + client says "I have a position":
    ├─ Check if already squared off today (quantity = 0 with buy/sell history)
-   └─ Or it's a holdings query → invoke kite_holdings
+   ├─ Or it's a holdings query → invoke kite_holdings
+   └─ If client says positions/P&L are hidden or not visible on screen
+      → Privacy Mode may be enabled. Steps: Click on user ID (top-right
+        on Kite web, or profile icon on the app) → toggle Privacy Mode off.
 ```
 
 ### Route
@@ -409,7 +415,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 9 — Profit Availability
 
-1. Respond with the applicable row from **A10** based on the trade type.
+1. Respond with the applicable row from **A10** based on the trade type. Intraday profits from equity and F&O trades are available only after T+1 settlement — they cannot be used for trading on the same day. Share the same-day profits link from **A11** if the client questions this.
 2. If client asks why balance doesn't reflect profit → invoke `kite_margins` to show available_margin and explain T+1 settlement.
 3. If client asks about order execution details → invoke `kite_orders`.
 4. If client asks about historical trades → invoke `kite_order_history`.
@@ -423,4 +429,3 @@ If no route matches, investigate using Section A reference data. If no root caus
    b. The odd-lot quantity must be held until contract expiry. It will be cash-settled based on the moneyness of the option at expiry.
    c. A 5% extra margin applies on odd-lot positions.
 2. If client asks about margin for the odd-lot position → invoke `kite_margins`.
-

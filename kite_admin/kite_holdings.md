@@ -115,6 +115,8 @@ For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading
 
 | Reason | Explanation |
 |---|---|
+| Privacy Mode enabled | Client has Privacy Mode turned on — hides holdings, positions, P&L, and balances on screen. Data is intact; only display is hidden. |
+| Shares already sold | Client may have sold shares — verify via tradebook before other checks. |
 | Short delivery by seller | Investigate per **A12** checklist. Zerodha notifies via SMS/email. |
 | Pending settlement (T1) | Check `t1_t2_holdings` field. |
 | Corporate action in progress | Wait per **A5** timelines. |
@@ -161,6 +163,8 @@ For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading
 | Pledge approved list | https://zerodha.com/approved-securities/#tab-noncash_equity |
 | Short delivery info | https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences |
 | T1 holdings proceeds | https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds |
+| Privacy Mode (Kite web) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-web |
+| Privacy Mode (Kite app) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-app |
 
 ---
 
@@ -259,6 +263,12 @@ When escalating, always include: **client ID, instrument_name, and specific issu
 **R29 — Buy average update in progress (external trade entry):**
 "Your buy average for [instrument_name] is being updated. The external trade entry was added on [date] and typically reflects within 2 working days. Please check back after that. If the average still shows N/A after 2 working days, please raise a support ticket."
 
+**R30 — Shares already sold:**
+"Our records show that your [instrument_name] shares have been sold. Based on your trade history (FIFO): [summary of buy/sell trades and remaining quantity]. The shares are no longer in your holdings."
+
+**R31 — Privacy Mode enabled:**
+"Your holdings, positions, and P&L are hidden because Privacy Mode is turned on. To disable it: tap on your user ID (top-right on Kite web, or profile icon on the app) → toggle Privacy Mode off. Your data is intact — Privacy Mode only hides the display. For more details: [Privacy Mode on Kite web](https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-web) | [Privacy Mode on Kite app](https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-app)"
+
 ---
 
 ### A12 — Short Delivery Investigation Checklist
@@ -307,6 +317,8 @@ If quantity does not match (from Step 2), invoke `console_eq_external_trades` fo
 ### Preflight (run on every query)
 
 ```
+0. If client reports holdings/positions/P&L not visible or showing as hidden
+   → Privacy Mode may be enabled. Respond per A11-R31.
 1. Search kite_holdings by instrument_name.
 2. If found:
    ├─ Check quantity, t1_t2_holdings, avg_cost, collateral_quantity, pnl, days_pnl
@@ -397,7 +409,13 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 5 — Shares Not Visible
 
-1. Systematically check causes from **A6**:
+**Step 0 — Check Privacy Mode:**
+If client reports holdings/positions/P&L as hidden or not visible on screen → respond per **A11-R31**.
+
+**Step 1 — Verify client still holds the shares:**
+Invoke `console_eq_tradebook` for the instrument within the relevant date range. Compute the net quantity using FIFO: sum all BUY quantities and subtract all SELL quantities in chronological order. If the net remaining quantity is zero or negative → the client has sold all shares. Respond per **A11-R30** — share the buy/sell summary (dates, quantities, prices) so the client can see the FIFO trail. If the net remaining quantity is positive but less than what the client expects → inform the client of the actual remaining quantity with the FIFO breakdown, then proceed to investigate the missing portion using the steps below.
+
+2. Systematically check causes from **A6**:
    a. Recently purchased → respond per **A11-R13**. Invoke `kite_positions`.
    b. CA in progress (bonus/split/demerger) → respond per **A11-R25**. Timelines per **A5**.
    c. Short delivery → investigate per **A12** checklist. Respond per **A11-R26** (buy-side) or **A11-R27** (sell-side) based on findings.
@@ -405,7 +423,7 @@ If no route matches, investigate using Section A reference data. If no root caus
    e. Suspended/delisted → respond per **A11-R16**.
    f. Transfer from another broker → respond per **A11-R17**.
    g. IPO allotment → respond per **A11-R18**.
-2. If client confirms order was placed → invoke `kite_order_history` to verify execution.
+3. If client confirms order was placed → invoke `kite_order_history` to verify execution.
 
 ---
 
@@ -441,4 +459,3 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 10 — Smallcase vs Kite Mismatch
 
 1. Respond per **A11-R24**. Contact help@smallcase.com for Smallcase-specific discrepancies.
-

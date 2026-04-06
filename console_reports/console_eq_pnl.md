@@ -33,7 +33,7 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 
 **FIFO:** When a client sells, the oldest buy is consumed first — this affects which cost price is used. FIFO applies across all product types combined (CNC + MTF); Console P&L does not separate MTF and CNC.
 
-**Intraday trades** (buy + sell same stock same day) are classified as speculative — separate from delivery P&L. **Exception:** T2T stocks (series BE/BT/BZ) — same-day buy + sell treated as delivery, not speculative.
+**Intraday trades** (buy + sell same stock same day) are classified as speculative — separate from delivery P&L. Product type (CNC/MIS) does not determine classification — what matters is whether offsetting trades exist on the same day in EQ series. **Exception:** T2T stocks (series BE/BT/BZ) — same-day buy + sell treated as delivery, not speculative.
 
 **P&L affected by missing/wrong external trade entries:** If discrepant shares are sold without a buy entry, cost = ₹0 → inflated profit.
 
@@ -79,7 +79,7 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 
 | CA Type | P&L Impact |
 |---|---|
-| Bonus | Bonus shares credited at ₹0 cost. Selling bonus shares shows full sell value as profit (correct per FIFO). |
+| Bonus | Bonus shares credited at ₹0 cost. Selling bonus shares shows full sell value as profit (correct per FIFO). When all originally purchased shares are sold via FIFO and only bonus shares remain, buy price in Tax P&L shows ₹0 — this is correct because bonus shares have zero cost of acquisition. The trade date for bonus shares is recorded as the ex-date. |
 | Split | Adjusts qty + price proportionally → P&L unchanged. |
 | Demerger | Cost split per COA ratio announced by company. P&L may appear incorrect temporarily until ratio applied. |
 | Merger | Shares swapped at defined ratio. P&L uses original acquisition cost carried over to new shares. |
@@ -130,7 +130,7 @@ To correct this, the original purchase details need to be added. If the shares h
 Your MTF ledger settlements (net settlement entries) reflect the MTF-specific funding and margin — these are separate from the FIFO-based P&L shown on Console."
 
 **R6 — Intraday (speculative) classification:**
-"Same-day buy and sell of [tradingsymbol] in EQ series is treated as an intraday (speculative) trade. It will appear under the speculative section in Tax P&L, separate from delivery P&L."
+"Same-day buy and sell of [tradingsymbol] in EQ series is treated as an intraday (speculative) trade, regardless of the product type used (CNC, MIS, or any other). The product type label does not determine the classification — what matters is whether offsetting buy and sell trades exist for the same stock on the same day. It will appear under the speculative section in Tax P&L, separate from delivery P&L."
 
 **R7 — T2T delivery classification:**
 "Since [tradingsymbol] is in the Trade-to-Trade category, same-day buy and sell is treated as a delivery trade, not intraday. Both transactions are considered separate delivery trades."
@@ -163,8 +163,10 @@ The values may differ because Tax P&L separates intraday trades from delivery, a
 **R15 — Orphan unrealized entry:**
 "We've identified that [tradingsymbol] is appearing in your unrealized P&L despite no active holdings. This is a data issue and we'll have it corrected."
 
-**R16 — Gift transfer out (P&L impact):**
-"When shares are gifted, Zerodha posts a reversal entry based on the closing price on the transfer date. This is why the transaction appears as a sale in your Tax P&L. However, since the Gift Tax Act has been abolished, you have no tax liability on the gifted value. For the recipient, capital gains are calculated based on your original purchase price and holding period when they sell the shares. You can declare this as a gift transfer in your ITR to claim tax exemptions. For more details: https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/gifting-securities/articles/tax-implication-on-gifting-of-stocks"
+**R16 — Bonus shares buy price ₹0 in Tax P&L:**
+"The buy price of ₹0 for your [tradingsymbol] shares in the Tax P&L is correct. This is because all your originally purchased shares have been sold via FIFO, and only bonus shares remain (or were sold). Bonus shares are credited at zero cost of acquisition, so the system correctly records the buy price as ₹0.
+
+You can verify this by checking the holdings breakdown on Console or Kite — the remaining shares will show as bonus credits with ₹0 entry price. The trade date for bonus shares is recorded as the ex-date of the bonus issue."
 
 ---
 
@@ -199,7 +201,6 @@ Same-day buy+sell classification (intraday vs delivery)     → Rule 6
 P&L after bonus / split / demerger / merger / fractional    → Rule 7
 Tax P&L vs Console P&L values differ                        → Rule 8
 Stock in unrealized P&L despite all shares sold             → Rule 9
-Gift transfer out (P&L impact)                              → Rule 10
 ```
 
 ### Scope
@@ -255,9 +256,15 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 ### Rule 6 — Intraday vs Delivery P&L Classification
 
+Product type (CNC, MIS, Long-term, etc.) does not determine classification. Even if a client used CNC/Long-term product type, same-day buy + sell of the same stock in EQ series is treated as intraday (speculative), as long as the share does not belong to the BE (Trade-to-Trade) category. The product type label is irrelevant for tax classification — what matters is whether offsetting trades exist on the same day.
+
 1. Check series field in tradebook (via `console_eq_tradebook` per **A6**).
-2. Series EQ → respond per **A8-R6**.
-3. Series BE/BT/BZ (T2T) → respond per **A8-R7**.
+2. Series EQ + same-day buy and sell exists → respond per **A8-R6**. This is intraday (speculative), not delivery — regardless of whether the client used CNC product type.
+3. Series BE/BT/BZ (T2T) → respond per **A8-R7**. Same-day buy + sell in T2T is always delivery.
+
+Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shares of CDSL using CNC on 30 March → this is an intraday trade, classified as speculative, not delivery.
+
+For more details: https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/what-does-cnc-mis-and-nrml-mean
 
 ---
 
@@ -265,6 +272,7 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 1. Identify the CA type and respond with the applicable template:
    - Bonus → **A8-R10**. Impact per **A5**.
+   - **Bonus shares — buy price ₹0 in Tax P&L:** If a client reports buy price showing ₹0 in Tax P&L after selling shares of a stock that had a bonus issue, check via `console_eq_holdings_breakdown` whether the remaining shares (or sold shares) are entirely bonus shares. If all originally purchased shares were sold via FIFO and only bonus shares remain (or were sold), the buy price of ₹0 is correct. Respond per **A8-R16**.
    - Split → **A8-R11**. Impact per **A5**.
    - Demerger → **A8-R12**. Impact per **A5**.
    - Merger → **A8-R13**. Impact per **A5**.
@@ -284,10 +292,3 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 1. Check `console_eq_holdings` for that stock.
 2. If no holdings found but P&L still shows unrealized entry → respond per **A8-R15**. Escalate per **A7** as orphan lot.
-
----
-
-### Rule 10 — Gift Transfer Out (P&L Impact)
-
-1. When a client questions why a gift transfer shows as a sale in Tax P&L, explain that Zerodha posts a reversal entry based on the closing price on the transfer date.
-2. Respond per **A8-R16**.

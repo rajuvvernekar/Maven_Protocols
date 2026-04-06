@@ -39,8 +39,6 @@ TRIGGER KEYWORDS: "withdrawal failed", "partial amount", "can't withdraw", "zero
 
 ## Section A: Reference Data
 
-All rules reference these blocks as single sources of truth.
-
 ### A1 — Ledger Fundamentals
 
 - Ledger = complete financial statement of a client's trading account — every debit and credit.
@@ -51,12 +49,13 @@ All rules reference these blocks as single sources of truth.
 
 ### A2 — T+1 Settlement Rule
 
-- Same-day deposits and unsettled trade proceeds block withdrawals until the next trading day.
+- Same-day deposits and unsettled trade proceeds block withdrawals until the next settlement working day.
 - Settlement entries: net obligation credited/debited per settlement cycle — combines buy/sell obligations for that trading day.
-- Each trading day settles under a distinct settlement number, posted the next trading day (T+1). Trades from different trading days always have different settlement numbers.
+- Each trading day settles under a distinct settlement number, posted the next settlement working day (T+1). Trades from different trading days always have different settlement numbers.
+- "Next trading day" and "next settlement working day" are usually the same but differ on settlement holidays. A settlement holiday is a day when exchanges are open for trading but clearing and settlement operations are closed (no payin/payout of stocks and funds). When settlement holidays exist, T+1 refers to the next settlement working day, not the next trading day.
 - Share settlement numbers with clients only when explicitly asked.
 - Ledger entries for trade settlements are posted on the same day between 5–9 PM.
-- Withdrawable balance is updated on the next working day morning after settlement processing.
+- Withdrawable balance is updated on the next settlement working day morning after settlement processing.
 - Clients can place a withdrawal request at any time; withdrawals are processed at standard cutoff times.
 
 ### A3 — Voucher Type Translations
@@ -153,6 +152,14 @@ For detailed MTF interest charges, refer client to the MTF Interest Statement on
 | Bank-side technical issue or downtime | Wait and retry; if persistent, contact the bank |
 | Name mismatch between Zerodha and bank records | Ensure the registered name matches across both accounts |
 
+### A14 — Settlement Holidays
+
+- A settlement holiday is a day when stock exchanges are open for trading but clearing and settlement operations are closed (no payin/payout of stocks and funds).
+- Common examples: Annual Bank closing (typically 1st April), certain bank holidays where exchanges remain open.
+- Impact: Trade proceeds from the trading day immediately before a settlement holiday (and from the settlement holiday itself, if trading occurred) are not settled until the next settlement working day.
+- Detection: If a withdrawal was rejected and the rejection date or the expected T+1 date falls on a settlement holiday, apply Rule 19.
+- The settlement calendar determines settlement working days — do not assume T+1 always equals the next trading day.
+
 ---
 
 ## Section B: Decision Flow
@@ -186,6 +193,8 @@ Query relates to ledger →
 │  │  → Rule 4b
 │  ├─ Failed, unsettled "Book Voucher" settlement found
 │  │  → Rule 5
+│  ├─ Failed or delayed, settlement holiday involved
+│  │  → Rule 19
 │  ├─ Partially processed, same-day deposit or unsettled trades
 │  │  → Rule 6
 │  └─ Zero/low withdrawable balance despite ledger funds
@@ -213,6 +222,11 @@ Query relates to ledger →
 ├─ Multiple transactions in query
 │  → Rule 17
 │
+├─ Client reports multiple independent issues (e.g., payin failure + negative balance)
+│  → Address each issue separately using the applicable rule/protocol.
+│     Negative/debit balance → Rule 2 or Rule 3 (identify cause from ledger).
+│     Payin failure → Payin protocol.
+│
 └─ No matching rule / unexplained entry / data discrepancy
    → Rule 18 (Escalation)
 ```
@@ -229,8 +243,6 @@ If no root cause is identified after checking all relevant rules → escalate pe
 ---
 
 ## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — With Margin vs Without Margin Explanation
 
@@ -255,7 +267,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 4 — Withdrawal Failed: Same-Day Funds
 
 1. Confirm: voucher_type = "Bank Receipts" on the same posting_date as the failed withdrawal.
-2. Respond: "Your withdrawal could not be processed because funds added on the same day cannot be withdrawn due to the T+1 settlement rule (per **A2**). On [date], ₹[credit] was added to your account. These funds will be available for withdrawal from the next trading day."
+2. Respond: "Your withdrawal could not be processed because funds added on the same day cannot be withdrawn due to the T+1 settlement rule (per **A2**). On [date], ₹[credit] was added to your account. These funds will be available for withdrawal from the next settlement working day."
 
 ### Rule 4b — Withdrawal Status Lookup by Reference Number
 
@@ -270,22 +282,22 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 5 — Withdrawal Failed: Unsettled Trade
 
 1. Locate a "Book Voucher" with settlement remarks near the withdrawal date. Identify trade type from **A3**.
-2. Respond: "Your withdrawal could not be processed because your [trade type] settlement funds haven't cleared yet. On [date], ₹[credit] was credited from [trade type]. These funds settle on T+1 and the withdrawable balance will be updated by the next working day ([T+1 date]) morning (per **A2**)."
+2. Respond: "Your withdrawal could not be processed because your [trade type] settlement funds haven't cleared yet. On [date], ₹[credit] was credited from [trade type]. These funds settle on T+1 and the withdrawable balance will be updated by the next settlement working day ([T+1 date]) morning (per **A2**)."
 
 ### Rule 6 — Partial Withdrawal
 
 1. Confirm: withdrawal processed but amount less than requested. Identify same-day deposits or unsettled trades.
-2. Respond: "Your withdrawal was partially processed because [same-day funds / unsettled trade proceeds] cannot be withdrawn on the same day (T+1 rule). The remaining ₹[difference] will be available for withdrawal from the next trading day."
+2. Respond: "Your withdrawal was partially processed because [same-day funds / unsettled trade proceeds] cannot be withdrawn on the same day (T+1 rule). The remaining ₹[difference] will be available for withdrawal from the next settlement working day."
 
 ### Rule 7 — Zero/Low Withdrawable Balance
 
 1. Check for same-day "Bank Receipts" or recent "Book Voucher" settlement entries.
 
    **7a — Same-day deposit found:**
-   "Your withdrawable balance is zero because the ₹[credit] added today is subject to the T+1 rule. Available for withdrawal tomorrow."
+   "Your withdrawable balance is zero because the ₹[credit] added today is subject to the T+1 rule. Available for withdrawal on the next settlement working day."
 
    **7b — Unsettled trades found:**
-   "Your withdrawable balance is low because [trade type] funds from [date] are still settling. The withdrawable balance will be updated by the next working day ([T+1 date]) morning (per **A2**)."
+   "Your withdrawable balance is low because [trade type] funds from [date] are still settling. The withdrawable balance will be updated by the next settlement working day ([T+1 date]) morning (per **A2**)."
 
    **7c — Collateral involved:**
    Explain using the applicable formula from **A9**.
@@ -293,7 +305,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 ### Rule 8 — Stock Sale Proceeds Not Withdrawable
 
 1. Identify trade type from **A3** and the trade date.
-2. Respond: "Stock sale proceeds settle on T+1 (next working day). Your [trade type] trade from [date] will settle on [T+1 date]. The withdrawable balance will be updated by the next working day morning (per **A2**)."
+2. Respond: "Stock sale proceeds settle on T+1 (next settlement working day). Your [trade type] trade from [date] will settle on [T+1 date]. The withdrawable balance will be updated by the next settlement working day morning (per **A2**)."
 
 ### Rule 9 — Quarterly Settlement Explanation
 
@@ -338,7 +350,7 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 ### Rule 17 — Multiple Transactions
 
-1. Apply relevant rules (1–16) to each entry individually.
+1. Apply relevant rules (1–16, 19) to each entry individually.
 2. Group entries logically: deposits together, settlements together, charges together.
 3. Keep response concise — under 150 words unless the client specifically requests a detailed breakdown.
 
@@ -351,3 +363,10 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, date range, specific mismatched entries, and screenshots if available.
 
+### Rule 19 — Settlement Holiday Impact on Withdrawals
+
+1. Confirm: the withdrawal rejection date or the expected T+1 settlement date falls on a settlement holiday per **A14**.
+2. Identify the trade date, the settlement holiday date, and the next settlement working day.
+3. Respond: "Your withdrawal request on [rejection date] was rejected because [settlement holiday date] was a settlement holiday ([reason, e.g., Annual Bank closing]). On a settlement holiday, trading is open but clearing and settlement are closed — funds from trades executed on [trade date] are not available for withdrawal until the next settlement working day. Your funds became available for withdrawal on [next settlement working day]."
+4. If trades were also executed on the settlement holiday itself, include: "Proceeds from trades on [settlement holiday date] also settle on [next settlement working day]."
+5. If the client has already successfully withdrawn after the settlement holiday, confirm the withdrawal details.

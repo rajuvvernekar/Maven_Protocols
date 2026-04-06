@@ -42,7 +42,7 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | Redeemed | "Redemption processed." + credit date per **A6**. |
 | Cancel + payment_confirmed = true | "Your order was cancelled. The debited amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)." A cancelled order with confirmed payment means a refund is due — this is a refund scenario only. |
 | Cancel + payment_confirmed = false | "Your order was cancelled. No payment was debited." |
-| Failed | "Your order was not processed. Reason: [status_message in plain language]". Failed orders are automatically removed from your order history within 3–5 days. |
+| Failed | "Your order was not processed. Reason: [status_message in plain language]" |
 | TPV Pending | "Your order is pending third-party bank account validation at the exchange. This auto-revalidates on the next business day." |
 
 ---
@@ -126,7 +126,11 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 | INVALID MODE OF HOLDING | Minor account issue | Escalate to support agent |
 | MINIMUM AMOUNT FAILED | Below scheme minimum | Inform client of minimum |
 | UNITS NOT AUTHORISED | CDSL T-PIN missed | Must be completed same day before 3 PM. Place fresh order. Suggest DDPI. |
+| UNITS NOT AUTHORISED — settlement holiday | CDSL authorization date did not match order process date due to a settlement holiday | "Your redemption request has been rejected due to a mismatch between the sell date and the order processed date due to the settlement holiday. The sell date for which the units were authorised on CDSL must match the order process date on which the order was processed and placed. Please place a fresh redemption order." |
+| UNITS NOT AUTHORISED — near cutoff (non-holiday) | CDSL authorization date did not match order process date due to order placement near the 3:00 PM cutoff | "Your recent redemption order has been rejected. The order placement was near the cutoff time, and as a result, there was a mismatch between the CDSL authorisation and order process date. The sell date for which the units were authorised on CDSL must match the order process date on which the order was processed and placed. Please place a fresh redemption request." |
 | UNRID | CDSL T-PIN authorization not completed | Same as UNITS NOT AUTHORISED. For SWP/STP orders: T-PIN authorization window is 10:00 AM (when SWP triggers) to 3:00 PM on trigger day. If missed → order cancelled. Suggest DDPI to avoid repeated authorizations. |
+| UNRID — settlement holiday | Same date mismatch as UNITS NOT AUTHORISED — settlement holiday | Use the settlement holiday response above. |
+| UNRID — near cutoff (non-holiday) | Same date mismatch as UNITS NOT AUTHORISED — near cutoff | Use the near-cutoff response above. |
 | FREE QTY LESS | Insufficient unlocked units | Check pseudo_holdings for margin/pledged |
 | UNIT NOT RECEIVED IN DEPOSITORY | Units not available in demat | Check console_mf_pseudo_holdings for pledged units (`margin`) and console_mf_tradebook for ELSS lock-in (FIFO from `trade_date`). If pledged → advise unpledging: Console → Portfolio → Holdings → [fund] → Unpledge. If ELSS locked → advise waiting for lock-in expiry per console_mf_tradebook Rule 1. |
 | BANK ACCOUNT MISMATCH WITH UCC | Bank details not updated on BSE Star MF | escalate — agent review needed. |
@@ -309,17 +313,26 @@ If fund is an NFO → check mf_order_history for any NFO order for this fund wit
 - Still Processing (non-ETF NFO) → "Your NFO order is being processed. Status updates within T+2 after listing." Rejection remarks for NFO orders update only after the allotment window closes.
 - Cannot determine → Escalate to support agent.
 
-**Step 2 — Payment status mismatch check:**
-If `status_message` contains "Payment received" or "order sent to AMC" BUT `payment_confirmed` = false AND `payment_error_code` is present → the order was incorrectly marked. Payment actually failed. "Your order shows a processing status, but the payment was not successfully confirmed. Please place a new order and complete the payment. If your bank account was debited for the previous order, the amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)."
+**Step 2 — Payment error check (run before any other status interpretation):**
+Check `payment_error_code` and `payment_error_description` fields. If either field is present AND `payment_confirmed` = false → payment failed, regardless of what `status_message` shows. The order may display "Payment received" or "order sent to AMC" in status_message, but the error fields are authoritative. Respond: "Your order shows a processing status, but the payment was not successfully confirmed. Please place a new order and complete the payment. If your bank account was debited for the previous order, the amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)."
 
 **Step 3 — Payment check:**
-`payment_confirmed` = false (and no status mismatch from Step 2) → "Payment not confirmed. Allow 24 hours for gateway update."
+`payment_confirmed` = false (and no payment error from Step 2) → "Payment not confirmed. Allow 24 hours for gateway update."
+
+**Step 3a — Fast-track for confirmed payment beyond T+2:**
+If `payment_confirmed` = true AND the order is beyond T+2 from `payment_updated_at` → proceed directly to Step 5 (fund_allocation_report cross-check). This order requires immediate investigation — payment was received but allotment has not completed within the expected window.
 
 **Step 4 — Determine T-day:**
 Use `payment_updated_at` against **A2** cutoffs. If `payment_updated_at` falls on a weekend or trading/settlement holiday → T = next working day per **A2**.
+
+Before computing T-day, check if `fund_source` = rp_pg (netbanking). If yes, identify the client's bank per **A10**. If the bank is a non-direct settlement bank → T-day shifts to the next business day regardless of cutoff. State: "Your payment was made via [bank name], which is a non-direct settlement bank. The payment was reported to the exchange on the next business day [date], so your order was placed on that date. Allotment is expected by [T+1]."
+
+If the bank is a direct settlement bank, or `fund_source` is not rp_pg, proceed with standard cutoff logic:
 - Available + before cutoff → T = that day. "Allotment expected within T+1 business day."
-- Available + after cutoff → T = next working day (shift further if weekend/holiday). "Order placed with exchange on [T-day]. Allotment expected by [T+1]."
+- Available + after cutoff → T = next working day per **A2**. If that day is also a weekend or holiday, shift further until a working day is reached.
 - Not yet available → use `payment_initiated_at` as reference. Share cutoff link from **A9**. State that the applicable NAV depends on exchange confirmation.
+
+After determining T-day (whether from cutoff or holiday shift), cross-check using `exchange_timestamp` in mf_order_history. If `exchange_timestamp` date differs from the computed T-day, use `exchange_timestamp` date as the actual T-day — this confirms when the exchange processed the order. If fund_allocation_report is available, verify against `payment_date` as well.
 
 **Step 5 — Within T+2, payment confirmed:**
 Check **fund_allocation_report**. Map the order using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report).
@@ -353,28 +366,25 @@ If multiple recent orders failing → check fund_allocation_report `error_remark
 
 Escalate if: INVALID BANK ACCOUNT, PAN/PEKRN MISMATCH, KRA LOCKED, MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC.
 
-**Failed order cleanup:** When responding to failed order queries, include: "Your order for [fund] of ₹[amount] placed on [date] failed due to [reason from status_message in plain language]. Failed orders are automatically removed from your pending orders within 3–5 days. You do not need to take any action. If you wish to proceed with this investment, please place a fresh order."
-
 ---
 
 ### Rule 3: Cancelled Orders & TPV Pending
 
 **Cancelled:**
 
-**Step 1 — Check payment_confirmed (mandatory):**
-Check `payment_confirmed` in mf_order_history per **A4** (authoritative source for payment debit status).
-- If `payment_confirmed` = true → payment was debited → apply A4 refund language: "Your order was cancelled. The debited amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)."
-- If `payment_confirmed` = false → no payment was debited → respond: "Your order was cancelled. No payment was debited from your bank account."
+For each cancelled order, check `payment_confirmed` independently per **A4**. When multiple orders exist (some successful, some cancelled), map each order separately: for successful orders, confirm units were allotted; for cancelled orders with `payment_confirmed` = true, apply refund language; for cancelled orders with `payment_confirmed` = false, state no payment was debited. A wrong refund determination directly contradicts the client's bank statement.
 
-**Step 2 — Multiple orders:**
-When multiple orders exist (some successful, some cancelled), check `payment_confirmed` independently for each order. For successful orders, confirm units were allotted. For cancelled orders, apply Step 1 to each individually.
+For SIP orders (variety = SIP) cancelled after placement: if `payment_confirmed` = false, also check mandate_debit_report for a debit entry on the same date. If debit status = Success or Created and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply **A4** refund language. If no debit entry exists in mandate_debit_report → no payment was debited.
 
-**Cancellation time:** Not recorded — communicate only: "Your order was cancelled after it was placed."
+Cancellation time is not recorded — communicate only: "Your order was cancelled after it was placed."
 
 **TPV Pending:**
-- Use **A1** language for TPV Pending status.
-- If rejected → exchange conducts penny drop test. If passed, status updates within 2 business days.
-- Still pending beyond T+3 → ask client to submit bank statement.
+
+1. "Your order is pending third-party bank account validation. The exchange automatically re-validates pending orders on the next business day."
+2. "The exchange conducts a penny drop test on your bank account. If it passes, the order will be updated to allotted within 2 business days."
+3. If status remains unchanged beyond T+3 (3 business days from order date) → ask client to share their bank statement from the order date to present for further investigation.
+
+If rejected after re-validation → check `status_message` for TPV INVALID per **A5**. Escalate to support agent.
 
 ---
 
@@ -506,4 +516,3 @@ If all methods fail → escalate.
 
 **Account conversion queries:**
 - If client asks how to convert their resident account to NRI → share the conversion support article from **A11**: "You can initiate the conversion from your Zerodha account. KYC details are collected as part of the conversion process." Share link.
-

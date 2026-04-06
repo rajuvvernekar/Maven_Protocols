@@ -49,6 +49,7 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 | Secondary demat | 72 working hours |
 | Deactivated account reactivation | 7 working days |
 | POA/DDPI revocation | Up to 5 working days |
+| Segment deactivation | 24–72 working hours |
 
 ---
 
@@ -175,6 +176,7 @@ Process: signup.zerodha.com/rekyc. Timeline: **A1** general processing. Acceptab
 
 **Method:** Kill Switch feature.
 **Effects:** Trading deactivated, demat frozen. No Kite/Console access. AMC continues. Periodic emails continue.
+**Re-enable restriction:** Once disabled via Kill Switch, the segment can only be re-enabled after 12 hours.
 **Deactivation:** Online: eSign deactivation form and attach to ticket. Offline: courier deactivation form to **A3** address.
 **Reactivation:** Documents: reactivation letter, self-attested PAN, address proof (see **A3**). Timeline: **A1** general processing. Courier: **A3** address.
 
@@ -307,6 +309,19 @@ Prerequisite: equity segment must be active. Demat prerequisite: `primary_dp_sta
 
 **Currency F&O:** RBI declaration form eSign required.
 
+#### F&O / Currency / Commodity Deactivation
+
+**Temporary (Kill Switch):** Disables the segment until the client chooses to re-enable. Ensure no open orders or positions before disabling. Once disabled, the segment can only be re-enabled after 12 hours. Process: Kite/Console → User ID → Profile → Segments → Kill Switch.
+
+**Permanent deactivation:** Requires submission of an account modification form. Applicable to F&O, Currency, and Commodity segments.
+Process:
+1. Download and fill the [account modification form](https://zerodha-common.s3.ap-south-1.amazonaws.com/Downloads-and-resources/AccountDetailsModificationDeletionForm.pdf) — specify the segment(s) to be permanently deactivated.
+2. eSign the form via [Digilocker](https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/esign-via-digilocker).
+3. Submit the eSigned form in the same support ticket.
+
+Timeline: **A1** segment deactivation.
+Support article: [How do I deactivate F&O on my account?](https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/how-do-i-deactivate-f-o-on-my-account)
+
 #### Active Segments Check
 
 Kite app: Client ID → Profile. Kite web: Client ID → Name. Click segment → Console redirect for Kill Switch.
@@ -416,6 +431,7 @@ On every account modification query, execute in order:
    ├─ ReKYC query → Rule 3
    ├─ Account closure → Rule 4
    ├─ Segment activation → Rule 5 (check demat prerequisite Rule 8 first)
+   ├─ Segment deactivation (disable / deactivate F&O, Currency, or Commodity) → Rule 12
    ├─ Dormant account → Rule 6
    ├─ Segment status issue → Rule 7
    ├─ Segment rejected (PAN failure) → Rule 7.1
@@ -593,3 +609,13 @@ If the client is unable to pledge or has a query about pledging holdings for col
 2. If `nse_fo_status` = "Activated" but the client is still unable to pledge → share troubleshooting guidance: [Why am I unable to pledge?](https://support.zerodha.com/category/console/portfolio/pledging/articles/unable-to-pledge)
 3. If `nse_fo_status` ≠ "Activated" → guide client to activate F&O first per Rule 5.
 
+---
+
+### Rule 12: Segment Deactivation
+
+If the client wants to disable or deactivate an F&O, Currency, or Commodity segment:
+
+1. **Determine intent — temporary or permanent.** If the client says "disable," "turn off," or "pause" without specifying permanence → present both options per **A10** Segment Deactivation. If the client explicitly says "permanently deactivate" or "remove segment" → guide directly to the permanent deactivation process.
+2. **Temporary (Kill Switch):** Ensure no open orders or positions before disabling. Guide per **A10** Kill Switch process. Mention the 12-hour re-enable restriction.
+3. **Permanent deactivation:** Guide per **A10** permanent deactivation process — download the account modification form, specify the segment(s) to be permanently deactivated, eSign via Digilocker, and submit the eSigned form in the same support ticket. Share the support article: [How do I deactivate F&O on my account?](https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/how-do-i-deactivate-f-o-on-my-account)
+4. **Equity segment deactivation:** Equity segments cannot be individually deactivated. If the client wants to deactivate all trading → refer to **A6** Account Deactivation (Kill Switch for entire account) or **A8** Account Closure.

@@ -35,6 +35,8 @@ TRIGGER KEYWORDS: "STP", "systematic transfer", "transfer between funds", "coin"
 | SIP leg — eNACH mandate | 11:00 AM / 1:00 PM / 6:00 PM |
 | SIP leg — UPI mandate | 11:10 AM / 1:10 PM / 6:10 PM |
 
+**Post-redemption debit timing:** The SIP order triggers on the day the redemption is completed. If the SIP order was not triggered on that day, it may take up to 1 day from the redemption date. After the redemption amount is credited to the client's bank account, the mandate debit timing depends on the mandate type: UPI autopay = T+1 day from redemption credit; eNACH = T+2 days from redemption credit. When the SWP leg has executed but the SIP leg has not yet triggered, inform the client of this timeline.
+
 ### A3 — T-PIN / DDPI Authorization
 
 | Account Type | Requirement |
@@ -70,7 +72,7 @@ Always check both legs independently before concluding:
 
 | Finding | Diagnosis | Action |
 |---|---|---|
-| SWP executed, SIP failed | Mandate or payment issue on purchase leg | Check sip_report mandate linkage + mandate_debit_report |
+| SWP executed, SIP not yet triggered | If within debit timeline per **A2** (UPI: T+1, eNACH: T+2 from redemption credit), this is expected timing — inform client. If beyond timeline, check sip_report mandate linkage + mandate_debit_report | Check mandate type first per **A2** debit timing. If beyond expected timeline, check sip_report mandate linkage + mandate_debit_report |
 | SWP failed, SIP not triggered | Source fund issue — fix SWP first | Check T-PIN status, pledged units, insufficient units |
 | Both failed | Source fund + authorization issue | Check console_mf_pseudo_holdings (margin), console_mf_holdings (available), T-PIN status |
 
@@ -155,8 +157,8 @@ If no root cause found after completing all diagnostic steps → escalate with s
 1. Always check both legs independently before concluding (per **A6**).
 2. Check mf_order_history (per **A8**) for SWP leg (variety = SWP) on trigger date → confirm status.
 3. Check mf_order_history for SIP leg (variety = SIP) on same date → confirm status.
-4. Diagnose using the findings matrix in **A6**:
-   - SWP executed, SIP failed → mandate or payment issue. Check sip_report + mandate_debit_report. If SIP leg shows repeated rejections, proceed to Step 5.
+4. If SWP executed but SIP not yet triggered → first check the mandate type and compare against the post-redemption debit timeline in **A2** (UPI: T+1, eNACH: T+2 from redemption credit). If within the expected timeline, inform the client: "Your redemption has been processed. The purchase leg debit depends on your mandate type — [UPI autopay debits on the next day / eNACH debits within 2 days] after the redemption amount is credited to your bank." If beyond the expected timeline, diagnose using the findings matrix in **A6**.
+5. Diagnose other scenarios using the findings matrix in **A6**:
    - SWP failed, SIP not triggered → fix SWP first (T-PIN, pledged, insufficient units).
    - Both failed → check source fund units and T-PIN status.
 
@@ -197,4 +199,3 @@ When the SIP leg (purchase) of an STP repeatedly fails:
    - `margin` > 0 → "Please unpledge units in [source fund] first before creating an STP: Console → Portfolio → Holdings → [fund] → Unpledge. Once unpledged, try creating the STP again."
    - `available` = 0 → "The fund you are trying to transfer from has no available units. Please check the source fund selection."
 3. If error persists after correct navigation → escalate with screenshot.
-

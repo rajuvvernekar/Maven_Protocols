@@ -169,7 +169,9 @@ Fractional shares from any CA settled in cash by company-appointed trustee → c
 
 **Locking:** Entries editable only while status is "Pending"; locked once buy average updated (within 24 hours per **A4**).
 
-**Cannot resolve:** Trading holidays | Inactive/suspended/unlisted stocks | CA within 10 days | IPO within 3 days.
+**Cannot resolve:** Trading holidays | Inactive/suspended/unlisted stocks (verify current exchange status first — see Rule 6) | CA within 10 days | IPO within 3 days.
+
+**Applies to all instrument types:** Equity, NCDs, bonds, and other securities follow the same discrepancy resolution path. If any instrument was transferred from another broker and shows invested value as NA with `discrepant` > 0, the client must add purchase details via the self-resolution path above.
 
 ---
 
@@ -202,6 +204,7 @@ Fractional shares from any CA settled in cash by company-appointed trustee → c
 | Update buy average (discrepancy) | Console → Portfolio → Holdings → View discrepancy → Add trade |
 | Approved securities list | zerodha.com/approved-securities |
 | Holdings on Console | console.zerodha.com/portfolio/holdings |
+| Redeeming fractional units of LIQUIDBEES | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units |
 
 ---
 
@@ -321,6 +324,25 @@ Please note: While filing income tax returns, you may need to manually adjust th
 **R33 — Gift entry found in system:**
 "Your gift shares of [tradingsymbol] have been recorded in our system at ₹[price] per share (closing price on transfer date). No further action is needed from your side. Your buy average will reflect this once processed."
 
+**R34 — Shares sold (holdings not visible because of recent sell):**
+"Your [quantity] shares of [tradingsymbol] were sold on [trade_date] at ₹[price] per share. The sale proceeds have been credited to your account. This is why the shares no longer appear in your holdings."
+
+**R35 — Fractional LIQUIDBEES redemption:**
+"Fractional units of LIQUIDBEES (such as [quantity] units) cannot be sold on the secondary market. These units can only be redeemed by making an off-market transfer to the AMC's demat account via CDSL Easiest. For the step-by-step process, please refer to: https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units
+
+If your account is currently dormant due to inactivity for over 24 months, you will need to complete Re-KYC online to reactivate your account (24–48 working hours after IPV) before you can initiate the off-market transfer."
+
+**R36 — NCD transferred in — discrepancy resolution:**
+"Your NCDs of [tradingsymbol] were transferred from another broker, so the invested value is showing as NA. This is because the purchase details are not available in our system — it is not expected behavior for debt instruments.
+
+To update the invested value, you need to manually enter the buy average price on Console via the discrepancy resolution flow: Console → Portfolio → Holdings → View discrepancy → select [tradingsymbol] → Add trade → enter the original purchase date, price, and quantity.
+
+Please note that NCDs do not display their current market value on Kite because they are debt instruments that trade infrequently and lack continuous market pricing due to their illiquid nature. However, the invested value will reflect correctly once you update the purchase details.
+
+For guidance on updating discrepancy details, please refer to:
+https://support.zerodha.com/category/console/portfolio/articles/i-see-a-few-holdings-under-the-discrepancy-tab-what-does-it-mean
+https://support.zerodha.com/category/console/portfolio/articles/how-do-i-add-external-trades-on-console"
+
 ---
 
 ### A14 — Discrepancy Diagnostic Checklist
@@ -377,6 +399,7 @@ Dividend query                                            → Rule 14
 Corporate action eligibility                              → Rule 15
 T1 / settlement query                                     → Rule 16
 Gift / off-market transfer (P&L / avg)                    → Rule 17
+Fractional unit redemption (LIQUIDBEES)                   → Rule 18
 ```
 
 ### Scope
@@ -405,10 +428,11 @@ If no route matches, interpret the holdings data using Section A reference data.
 
 1. If `buy_average` is null/N/A AND `discrepant` > 0:
    a. **If client reports a specific purchase (mentions date, quantity, or price of a buy that doesn't match current holdings data), ALWAYS run A14 checklist before proceeding with standard diagnostics.**
-   b. Check `console_eq_external_trades` for an existing entry for this ISIN.
-   c. If entry exists AND still processing → respond per **A13-R6**.
-   d. If entry exists AND processed but avg still N/A → escalate per **A12** with entry details from `console_eq_external_trades`.
-   e. If no entry exists AND A14 confirms stocks NOT bought on Zerodha → respond per **A13-R3** + **A13-R4**.
+   b. Check Kite holdings or instrument search to verify whether the stock is currently listed and tradeable on an exchange. If the stock has since been listed, proceed with standard discrepancy resolution (Rule 5) — do not apply the unlisted exception from Rule 6.
+   c. Check `console_eq_external_trades` for an existing entry for this ISIN.
+   d. If entry exists AND still processing → respond per **A13-R6**.
+   e. If entry exists AND processed but avg still N/A → escalate per **A12** with entry details from `console_eq_external_trades`.
+   f. If no entry exists AND A14 confirms stocks NOT bought on Zerodha → respond per **A13-R3** + **A13-R4**.
 
 2. If `buy_average` is null AND `discrepant` = 0 AND `pending` > 0:
    → Respond per **A13-R7**. Timeline per **A4**.
@@ -450,6 +474,10 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 3. If entry exists AND processed but discrepancy not resolved → escalate per **A12** with entry details.
 4. If no entry exists → respond per **A13-R3** + **A13-R4**.
 
+**If the instrument is an NCD or bond transferred from another broker:**
+
+1. Check `discrepant` field. If > 0, guide the client through the standard discrepancy self-resolution path per **A8**. Respond per **A13-R36**.
+
 **If client says they don't have purchase details:** → respond per **A13-R5**.
 
 ---
@@ -458,9 +486,10 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 
 1. First check `console_eq_external_trades` — the entry may have been posted successfully despite the error.
 2. If entry found → respond per **A13-R6**.
-3. If no entry found → check against **A8** cannot-resolve conditions and respond with the applicable reason:
+3. If no entry found → check against **A8** cannot-resolve conditions. Before applying the unlisted/inactive exception, verify the stock's current exchange status by checking Kite holdings or instrument search. If the stock has since been listed, proceed with standard discrepancy resolution (Rule 5). Respond with the applicable reason:
    - Trading holiday → "Today is a trading holiday — you can add the entry on the next trading day."
-   - Inactive/suspended/unlisted stock → "This stock is currently inactive/suspended/unlisted. Once it becomes active on the exchange, you'll be able to resolve the discrepancy."
+   - Inactive/suspended stock (confirmed still inactive/suspended after verification) → "This stock is currently inactive/suspended. Once it becomes active on the exchange, you'll be able to resolve the discrepancy."
+   - Unlisted stock (confirmed still unlisted after verification) → "This stock is currently unlisted. Once it becomes listed on the exchange, you'll be able to resolve the discrepancy."
    - CA within 10 days → "[tradingsymbol] had a corporate action within the last 10 days. The system will auto-adjust during this period. Please try again after 10 days from the corporate action date."
    - IPO within 3 days → "[tradingsymbol] was listed via IPO within the last 3 days. The system needs up to 3 days to process. Please try again after that."
 
@@ -502,7 +531,8 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 ### Rule 11 — Holdings Not Visible / Qty Mismatch
 
 1. Apply Preflight step 2 first (cross-reference `console_eq_pseudo_holdings`).
-2. Additionally check each quantity field and respond accordingly:
+2. **If the stock was recently purchased (within last 90 days), check `console_eq_tradebook` for a subsequent sell trade for that instrument before concluding the shares are missing.** If a sell trade is found → respond per **A13-R34**. Do not proceed with further missing-holdings diagnostics.
+3. Additionally check each quantity field and respond accordingly:
    - `t1` > 0 → respond per **A13-R17**.
    - `pending` > 0 → "You have [pending] shares yet to be credited from a corporate action. These will be credited once processed." Timeline per **A4** (bonus credit).
    - `margin` > 0 → "[margin] shares are pledged as collateral. They are in your demat account but blocked for margin. They appear under the margin/pledged section."
@@ -516,7 +546,7 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 1. Respond per **A13-R16**.
 2. Common causes:
    - Recent CA → average adjustment in progress (per **A4**).
-   - `discrepant` > 0 → invested value inaccurate until purchase details added.
+   - `discrepant` > 0 → invested value inaccurate until purchase details added. This applies to all instrument types including NCDs and bonds (per **A8**). If the instrument was transferred from another broker, guide the client through the discrepancy self-resolution path. For NCDs specifically, respond per **A13-R36**.
    - "Ensure you're comparing equity holdings only — Console dashboard may include mutual fund values separately."
 
 ---
@@ -559,3 +589,10 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 3. **Gift out** → respond per **A13-R30**. Rules per **A9**.
 4. **Off-market transfer out** → respond per **A13-R31**. Rules per **A9**.
 
+---
+
+### Rule 18 — Fractional Unit Redemption (LIQUIDBEES)
+
+1. Fractional units of LIQUIDBEES cannot be sold on the secondary market. They can only be redeemed via off-market transfer to the AMC's demat account.
+2. Respond per **A13-R35**.
+3. If the client's account is dormant, include the Re-KYC reactivation requirement in the response (covered in **A13-R35**).

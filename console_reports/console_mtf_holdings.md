@@ -102,6 +102,7 @@ Backedated MTM is available on Console MTF holdings — client can select a date
 | `console_eq_holdings` | Regular equity holdings qty, buy avg, discrepancy. MTF qty also appears in console_eq_holdings total_quantity. |
 | `console_mtf_conversion` | Track MTF-to-CNC conversion request status, converted qty, and remarks. |
 | `console_eq_holdings_breakdown` | Transaction-level view of MTF trades impacting holdings. |
+| `console_ledger` (MTF ledger type) | Check MTF ledger closing balance. The closing balance shown as Debit represents the balance provided by Zerodha — i.e., the total value of the client's MTF holdings minus the client's own contribution. Use this to verify total MTF funded amount. |
 
 ---
 
@@ -208,6 +209,11 @@ Note: This does not include MTF interest charges, brokerage, or other transactio
 ```
 1. Identify the stock (tradingsymbol / ISIN) and the MTF concern
    (interest, square-off, conversion, avg mismatch, charges, etc.)
+
+2. Date validation: If the query date falls on a market holiday or
+   weekend, use the most recent trading day instead. Tool data for
+   holidays may return nil/empty — this does not mean holdings
+   don't exist.
 ```
 
 ### Route
@@ -253,7 +259,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 1. Check `quantity_available` in this tool.
 2. If qty > 0 → display issue. Respond per **A10-R2**.
-3. If qty = 0 but client insists → check `console_eq_holdings` (per **A6**) for the same stock. MTF qty may appear in combined holdings. If found there but not here → possible conversion already processed.
+3. If qty = 0 from this tool, also check `console_eq_holdings` (per **A6**) and Kite holdings before concluding no MTF holdings exist. MTF positions are reflected in both sources. Additionally, check `console_ledger` with MTF ledger type (per **A6**) — if the MTF ledger shows a Debit closing balance, the client has an outstanding MTF funded amount, confirming MTF holdings exist.
 4. If not found in either tool AND MTF interest still being charged → escalate per **A8**.
 
 ---
@@ -319,4 +325,3 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 11 — Unrealized P&L Verification
 
 1. Respond per **A10-R16**.
-

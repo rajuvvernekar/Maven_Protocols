@@ -194,7 +194,7 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | Currency position limit | Client limit exceeded | USDINR 85K lots, EURINR/GBPINR 5K, JPYINR 2K. |
 | MTF sell conflict | MTF buy blocked — open CNC sell or MTF sell for same stock | Buy via CNC instead. MTF position restores next day. |
 | Order being processed | Already executed/cancelled | Refresh page for updated status. |
-| Invalid quantity / odd lot | Order quantity does not match the current lot size — residual odd-lot from SEBI lot size revision | Odd-lot positions cannot be traded. Must hold until expiry — will be cash-settled based on moneyness. Redirect to `kite_positions` Rule 10 for full guidance. |
+| Invalid quantity / odd lot | Order quantity does not match the current lot size — residual odd-lot from SEBI lot size revision | Odd-lot positions cannot be traded. Must hold until expiry — will be cash-settled based on moneyness. Redirect to `kite_positions` Rule 10 for full guidance. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025). |
 
 ---
 
@@ -239,6 +239,7 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | Bulletin (restrictions) | https://zerodha.com/marketintel/bulletin |
 | NSE trade verification | https://www.nseindia.com/static/invest/first-time-investor-trade-verification |
 | SL execution explained | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger |
+| Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 
 ---
 
@@ -466,4 +467,3 @@ If no route matches, investigate using Order History sub-view and Section A refe
 1. Rejected order not in order book → respond per **A18-R17**.
 2. Downloaded file shows dates instead of quantities → respond per **A18-R18**.
 3. Execution time beyond market hours → respond per **A18-R19**.
-

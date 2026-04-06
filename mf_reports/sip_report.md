@@ -94,12 +94,12 @@ Run these checks in order — each step may resolve the issue or lead to the nex
 Perform for each affected Zerodha SIP (`sip_type` = sip):
 
 1. Check console_mf_pseudo_holdings for the specific fund.
-2. **Units found** → initial investment confirmed. Continue to Step 2 in **A5**.
+2. **Units found** → initial investment is confirmed. Proceed to Step 2 in **A5**. No further initial investment checks are needed regardless of what mf_order_history shows.
 3. **No units found** → check mf_order_history for a FRESH order (purchase_type = FRESH) for that fund:
-   - No FRESH order → initial investment never placed.
-   - FRESH order Processing/Placed → initial investment still settling.
-   - FRESH order Failed/Cancelled → initial investment was not completed.
-4. Name the fund explicitly in the response. Do not give a generic "place a lumpsum" message.
+   - FRESH Processing/Placed → "Initial investment is still being processed. SIP will trigger once units are allotted and settled."
+   - FRESH Failed/Cancelled → "Initial investment was not completed. Place a fresh lumpsum order. Once allotted, pause and resume the SIP to reset the trigger date."
+   - No FRESH order in mf_order_history → mf_order_history covers only the last 30 days. Check console_mf_tradebook for an allotment entry (trade_type = BUY, purchase_type = FRESH) for this fund. If an allotment entry exists → initial investment was completed but is older than 30 days. Proceed to Step 2 in **A5**. If no entry in console_mf_tradebook either → initial investment was never placed. "Please place a lumpsum order for [fund name]. Once allotted and settled (T+2), the SIP will begin triggering."
+4. Name the fund explicitly in the response.
 5. If multiple SIPs affected: perform this check for each fund separately. List every fund missing initial investment by name: "We checked your SIPs and found that the following funds are missing an initial investment: [fund 1], [fund 2], [fund 3]. Please place a lumpsum order for each of these funds. Once the units are allotted and settled (T+2), the respective SIPs will begin triggering automatically."
 
 ### A7 — Field Rules
@@ -242,4 +242,3 @@ Orders for daily SIPs are placed on T-1 day in the system. Before concluding a d
 
 1. If client reports they cannot delete a SIP → escalate to support agent immediately per **A10**.
 2. Respond: "We are escalating this to our team for resolution. You can expect an update within 24–48 hours."
-

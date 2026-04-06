@@ -216,6 +216,7 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 |---|---|
 | Margin calculator | zerodha.com/margin-calculator |
 | Market intelligence bulletin | zerodha.com/marketintel/bulletin |
+| SEBI retail algo compliance | https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest |
 
 ---
 
@@ -295,6 +296,15 @@ Auto square-off charge: ₹50 + 18% GST per order."
 **R21 — MIS sell instead of CNC (product mismatch):**
 "Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order."
 
+**R22 — API rate limit (429 response):**
+"Orders placed via third-party API applications are subject to a rate limit of 10 orders per second as per SEBI's retail algo regulations. Your order received a 429 response because it exceeded this limit. To place more than 10 orders per second, the trading strategy must be registered with the stock exchange. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest)"
+
+**R23 — API market protection rejection:**
+"Orders placed via third-party API applications require market protection to be enabled. Orders with market protection set to 0 are rejected — this includes SL-M orders. This is mandated by the exchanges for all algo orders. Use a limit order or set an appropriate market protection value. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest)"
+
+**R24 — API MCX IOC rejection:**
+"MCX does not support IOC (Immediate-or-Cancel) orders in the algo segment. Orders placed via third-party API applications on MCX with IOC validity will be rejected. Use DAY validity instead."
+
 ---
 
 ## Section B: Decision Flow
@@ -312,6 +322,11 @@ Auto square-off charge: ₹50 + 18% GST per order."
       Scope investigation to GTT trigger date only — subsequent orders
       are independent client actions.
 4. If customer asks about today's live orders → invoke kite_orders.
+5. Check app_id internally:
+   └─ If app_id is a numerical value (not "Kite Web", "Kite iOS",
+      or other named Kite apps) → order was placed via a third-party
+      API application. If query relates to rejection or rate limiting,
+      route to Rule 16.
 ```
 
 ### Route
@@ -334,6 +349,7 @@ Execution time beyond market hours                          → Rule 12
 F&O buy average / intraday identification                   → Rule 13
 Multiple orders for same instrument                         → Rule 14
 No matching orders found                                    → Rule 15
+API order rejection or rate limiting (app_id = numerical)   → Rule 16
 ```
 
 ### Scope
@@ -358,7 +374,8 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. Share: instrument, type, order_type, order_status, total_quantity, filled_quantity, average_price (if COMPLETE), exchange_timestamp.
 3. Check `placed_by` internally → ADMINSQF/rms → Rule 4.
 4. Check `gtt` internally → GTT ID present → cross-verify via `kite_gtt` / `kite_gtt_archived`. Scope to trigger date only.
-5. Route by status: COMPLETE → Rule 2, REJECTED → Rule 3, OPEN → Rule 5, CANCELLED → Rule 6.
+5. Check `app_id` internally → numerical value → if rejection or rate limit query, route to Rule 16.
+6. Route by status: COMPLETE → Rule 2, REJECTED → Rule 3, OPEN → Rule 5, CANCELLED → Rule 6.
 
 ---
 
@@ -380,7 +397,8 @@ If no route matches, investigate using Section A reference data. If no root caus
 1. Read `rejection_reason`, match against **A9**.
 2. For margin rejections → invoke `kite_margins`.
 3. For ban period → if client asks about current position → invoke `kite_positions`.
-4. For unmatched rejection → share `rejection_reason` verbatim.
+4. If `app_id` is a numerical value and rejection relates to market protection, rate limit, or IOC on MCX → route to Rule 16.
+5. For unmatched rejection → share `rejection_reason` verbatim.
 
 ---
 
@@ -477,5 +495,15 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 15 — No Matching Orders Found
 
 1. Respond per **A15-R20**.
-2. If client looking for today's orders → invoke `kite_orders`.
 
+---
+
+### Rule 16 — API Order Issues (SEBI Retail Algo Rules)
+
+Applies when `app_id` is a numerical value (indicating a third-party Kite Connect API application — not "Kite Web", "Kite iOS", or other named Kite apps).
+
+1. **Rate limit (429 response):** The client's API application exceeded the 10 orders-per-second rate limit. Respond per **A15-R22**. To place more than 10 orders per second, the strategy must be registered with the stock exchange.
+2. **Market protection rejection:** Market orders and SL-M orders placed via API with market protection set to 0 are rejected. Respond per **A15-R23**. The client must set an appropriate market protection value, or use limit orders.
+3. **MCX IOC rejection:** MCX does not support IOC validity in the algo segment. Respond per **A15-R24**. The client must use DAY validity for MCX orders via API.
+4. **Order slicing:** API order slicing should be capped at a maximum of 10 slices to stay within the 10 orders-per-second rate limit.
+5. For details on all SEBI retail algo compliance requirements, share the link from **A13**.

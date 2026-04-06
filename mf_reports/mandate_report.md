@@ -28,6 +28,7 @@ All rules reference these blocks as single sources of truth.
 - This report is for MF/Coin mandates only. Console/equity mandates are a separate report and not interchangeable. If a client asks about a mandate for SIP/Coin, always use this tool — not Console eMandate.
 - `mandate_id` prefix identifies type: `ZERODHA*` = UPI autopay; `ENA*` = Digio eNACH.
 - Mandate must be linked to SIP for auto-debit to work.
+- The e-mandate limit (typically ₹1,00,000) is the maximum permissible debit per transaction — not the actual debit amount. The actual debit equals the sum of linked SIP instalments for that cycle. The maximum daily limit for each mandate is ₹1 crore per day. Clients can create mandates through their bank's netbanking portal or UPI app during the SIP setup process on Coin.
 - To delete a mandate: unlink all active/paused SIPs first (see Mandate Debit Report protocol — A5 for full deletion process).
 
 ### A2 — Mandate Type Comparison
@@ -76,6 +77,7 @@ Prefix identification: `ZERODHA*` or `ENA*` = Coin/MF mandate. Other prefixes = 
 **Internal reasoning only (use for analysis, not client language):** `mandate_id` (type identification: ZERODHA*/ENA*), `time_updated`, `bank_name`.
 
 Suppress (no client use, only internal reasoning use): client_id, umrn, merchant_name, bank_account_number, bank_ifsc_code, verification_date, cancellation_date.
+
 ### A7 — Cross-Reference Protocols
 
 | Topic | Refer to |
@@ -153,4 +155,3 @@ Check `time_created`:
 2. Check sip_report (per **A7**) for `fund_source` on the affected SIP:
    - `fund_source` = blank or pool → mandate is not linked to the SIP. "Your mandate is active but not linked to your SIP. Please link it on Coin."
    - `fund_source` = digio-mandates or upi-mandates → mandate is linked. Check mandate_debit_report (per **A7**) for debit attempt status.
-
