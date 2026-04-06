@@ -156,45 +156,36 @@ Primary bank change online: available for Individual and NRO Non-PIS accounts on
 
 ---
 
-### A10 — Links
-
-| Topic | URL |
-|---|---|
-| BSDA info | https://support.zerodha.com/category/account-opening/resident-individual/ri-online/articles/how-to-open-a-basic-service-demat-account-at-zerodha |
-| Withdrawal timeline | https://support.zerodha.com/category/funds/fund-withdrawal/withdrawal-timeline/articles/how-much-time-does-it-take-to-process-a-withdrawal-request |
-
----
-
-### A11 — Key Account Flags
+### A10 — Key Account Flags
 
 | Field | Meaning |
 |---|---|
 | `zbl_mcx_status` = Active | Single ledger MCX; withdrawal cutoffs: weekdays 11:59 PM, Saturday 4:30 PM |
 | `idfc_3_in_1_status` = Yes | IDFC 3-in-1 account active |
-| `bsda_flag` = YES | Basic Services Demat Account benefits active |
+| `bsda_flag` = YES | Basic Services Demat Account — indicative only. To confirm BSDA status definitively, cross-check with `amc_charges` report (which shows the actual AMC slab applied). The flag may not reflect the latest depository update. |
 | `rekyc_flag` = True | ReKYC completed; `rekyc_date` = date of completion |
 
 ---
 
-### A12 — Client ID Field
+### A11 — Client ID Field
 
 The `name` field in the tool response is the client's unique Client ID (e.g., "XX0000"). Store this value and pass it to any downstream tool that requires a client ID (e.g., `stock_gift_requests` fields like `gifted_by`, `claimed_by`, `client_id`).
 
 ---
 
-### A13 — Dormancy Response Template
+### A12 — Dormancy Response Template
 
 "As you have not traded in your account in 2 years, you must complete your Re-KYC online. Our team will validate the details entered, and the IPV captured and your account status will be marked as Active within 24-48 working hours and we request your patience in this."
 
 ---
 
-### A14 — Email/Mobile Redirect Response
+### A13 — Email/Mobile Redirect Response
 
 "For security, we cannot share contact details. Please check your registered email/mobile in the Kite app under Profile."
 
 ---
 
-### A15 — Zerodha Bank Details (NEFT/IMPS/RTGS Payin)
+### A14 — Zerodha Bank Details (NEFT/IMPS/RTGS Payin)
 
 | Field | Value |
 |---|---|
@@ -232,10 +223,10 @@ Step-by-step instructions: https://support.zerodha.com/category/funds/adding-fun
       by a partner broker (Orbis). ESCALATE per Rule 8. STOP.
 
 4. Check dormancy
-   ├─ `nse_eq_status` OR `bse_eq_status` = "Dormant" → respond per A13
+   ├─ `nse_eq_status` OR `bse_eq_status` = "Dormant" → respond per A12
    └─ Any other segment "Dormant" → same message, name the segment via A6
 
-5. Store Client ID from `name` field (per A12)
+5. Store Client ID from `name` field (per A11)
 ```
 
 ### Route
@@ -314,8 +305,8 @@ If the query does not match any route above, interpret the tool response using t
 
 ### Rule 5 — Withdrawal Timing
 
-1. If `zbl_mcx_status` = Active → single ledger; withdrawal cutoffs per **A11**: weekdays 11:59 PM, Saturday 4:30 PM.
-2. Otherwise → standard timelines apply. See **A10** (withdrawal timeline link) for details.
+1. If `zbl_mcx_status` = Active → single ledger; withdrawal cutoffs per **A10**: weekdays 11:59 PM, Saturday 4:30 PM.
+2. Otherwise → standard timelines apply. Refer to the withdrawal_request protocol for timeline details.
 
 *(This data is also consumed by the `withdrawal_request` downstream tool.)*
 
@@ -331,7 +322,7 @@ If the query does not match any route above, interpret the tool response using t
 
 ### Rule 7 — Protected Information Requests
 
-1. For email/mobile requests → respond with **A14** template.
+1. For email/mobile requests → respond with **A13** template.
 2. For any internal-only field → use the field for internal reasoning only; do not disclose its value or existence to the client.
 
 ---
@@ -345,6 +336,6 @@ If the query does not match any route above, interpret the tool response using t
 
 ### Rule 9 — Fund Transfer to Zerodha (NEFT/IMPS/RTGS)
 
-1. Share Zerodha's bank details per **A15**.
-2. If the client banks with HDFC → include the eCMS workaround per **A15**.
+1. Share Zerodha's bank details per **A14**.
+2. If the client banks with HDFC → include the eCMS workaround per **A14**.
 3. Share the step-by-step instructions link from **A15**.
