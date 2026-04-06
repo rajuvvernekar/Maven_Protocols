@@ -7,7 +7,7 @@ WHEN TO USE:
 When clients:
 - Ask about AMC (Annual Maintenance Charges) debited from their account
 - Question why AMC was charged, the amount, or billing cycle
-- Ask if their account qualifies for BSDA (Basic Services Demat Account) benefits
+- To check if an account is BSDA
 - Report AMC charged twice or incorrect amount
 - Ask about AMC for primary vs secondary demat account
 - Dispute AMC saying they have no holdings or aren't using the account
