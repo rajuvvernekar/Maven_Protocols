@@ -162,8 +162,24 @@ Primary bank change online: available for Individual and NRO Non-PIS accounts on
 |---|---|
 | `zbl_mcx_status` = Active | Single ledger MCX; withdrawal cutoffs: weekdays 11:59 PM, Saturday 4:30 PM |
 | `idfc_3_in_1_status` = Yes | IDFC 3-in-1 account active |
-| `bsda_flag` = YES | Basic Services Demat Account — indicative only. To confirm BSDA status definitively, cross-check with `amc_charges` report (which shows the actual AMC slab applied). The flag may not reflect the latest depository update. |
+| `bsda_flag` | **Do not rely on this flag alone.** It is indicative only and may not reflect the latest depository update. To determine BSDA status definitively, fetch `amc_charges` report and apply the BSDA determination logic in **A10a**. |
 | `rekyc_flag` = True | ReKYC completed; `rekyc_date` = date of completion |
+
+---
+
+### A10a — BSDA Status Determination Logic
+
+**Do not use `bsda_flag` from get_all_client_data to determine BSDA status.** Instead, fetch the `amc_charges` report and use `charge_after_gst` and `client_holdings` (highest holdings value during the billing quarter) to determine status:
+
+| `charge_after_gst` | `client_holdings` | BSDA Status | Reasoning |
+|---|---|---|---|
+| ₹0 | ≤ ₹4,00,000 | **BSDA eligible** | Nil AMC — within Slab 1 threshold |
+| ₹29.50 | ₹4,00,001 – ₹10,00,000 | **BSDA eligible** | Reduced AMC — within Slab 2 threshold |
+| ₹88.50 | ≤ ₹4,00,000 | **Not BSDA** | Standard AMC charged despite low holdings — account not categorised as BSDA |
+| ₹88.50 | ₹4,00,001 – ₹10,00,000 | **Not BSDA** | Standard AMC charged despite holdings within BSDA range — account not categorised as BSDA |
+| ₹88.50 | > ₹10,00,000 | **Not BSDA** | Holdings exceed ₹10,00,000 BSDA eligibility limit |
+
+**When to apply:** Any time a client asks about BSDA status, BSDA eligibility, or why they were charged a specific AMC amount. This logic supersedes `bsda_flag` — the actual charge applied is the definitive indicator of whether the account is receiving BSDA benefits.
 
 ---
 

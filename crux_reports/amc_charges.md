@@ -89,7 +89,9 @@ The account is marked BSDA by the depository. Determine the applicable slab usin
 
 **Conditionally shareable:** `client_holdings` — on the BSDA path, share with the client when explaining which slab applied or when the client questions the charged amount. On the non-BSDA path, use for internal verification only and exclude from client-facing responses.
 
-**Internal reasoning only:** `client_id`, `demat_number`, `demat_only_clientid`, `bsda_flag` (use for eligibility check — YES = eligible for BSDA benefits, NO = not eligible). These fields inform internal logic and are excluded from client-facing responses. In client-facing language, express BSDA status as "eligible for BSDA benefits" or "not categorised as BSDA" rather than referencing the flag or its values.
+**Internal reasoning only:** `client_id`, `demat_number`, `demat_only_clientid`, `bsda_flag`. These fields inform internal logic and are excluded from client-facing responses. In client-facing language, express BSDA status as "eligible for BSDA benefits" or "not categorised as BSDA" rather than referencing the flag or its values.
+
+**BSDA determination:** Do not rely on `bsda_flag` alone — it may not reflect the latest depository update. Instead, determine BSDA status from `charge_after_gst` and `client_holdings` using the logic in get_all_client_data **A10a**. The actual charge applied is the definitive indicator of whether the account is receiving BSDA benefits.
 
 ### A6 — Cross-Reference Protocols
 
