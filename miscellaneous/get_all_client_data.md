@@ -8,7 +8,6 @@ WHEN TO USE:
 - To determine account type: NRI (NRE/NRO), PIS/Non-PIS, joint, minor, non-individual
 - To check bank details, segment status, dormancy, DDPI/POA, nominees, account blocks
 - To detect name/DOB mismatch before calling pan_status tool
-- To check if an account is BSDA
 - To provide client context for: account_modification_report, cashier_payins, withdrawal_request, crux_qs_payouts
 
 ## Protocol
