@@ -91,7 +91,21 @@ The account is marked BSDA by the depository. Determine the applicable slab usin
 
 **Internal reasoning only:** `client_id`, `demat_number`, `demat_only_clientid`, `bsda_flag`. These fields inform internal logic and are excluded from client-facing responses. In client-facing language, express BSDA status as "eligible for BSDA benefits" or "not categorised as BSDA" rather than referencing the flag or its values.
 
-**BSDA determination:** Do not rely on `bsda_flag` alone — it may not reflect the latest depository update. Instead, determine BSDA status from `charge_after_gst` and `client_holdings` using the logic in get_all_client_data **A10a**. The actual charge applied is the definitive indicator of whether the account is receiving BSDA benefits.
+**BSDA determination — do not rely on `bsda_flag` alone.** The flag may not reflect the latest depository update. Instead, determine BSDA status from `charge_after_gst` and `client_holdings` using the logic below. The actual charge applied is the definitive indicator.
+
+**BSDA requires both criteria:**
+1. Only 1 demat account across all brokers and depositories
+2. Holdings value has not exceeded ₹10,00,000
+
+**Inference from AMC charge data:**
+
+| `charge_after_gst` | `client_holdings` | BSDA Status | Inference |
+|---|---|---|---|
+| ₹0 | ≤ ₹4,00,000 | **BSDA** | Both criteria met — nil AMC (Slab 1) |
+| ₹29.50 | ₹4,00,001 – ₹10,00,000 | **BSDA** | Both criteria met — reduced AMC (Slab 2) |
+| ₹88.50 | ≤ ₹4,00,000 | **Not BSDA** | Holdings qualify, but charged standard AMC — client has multiple demat accounts (criterion 1 not met) |
+| ₹88.50 | ₹4,00,001 – ₹10,00,000 | **Not BSDA** | Holdings within range, but charged standard AMC — client has multiple demat accounts (criterion 1 not met) |
+| ₹88.50 | > ₹10,00,000 | **Not BSDA** | Holdings exceed ₹10,00,000 — criterion 2 not met (number of demat accounts is irrelevant) |
 
 ### A6 — Cross-Reference Protocols
 
