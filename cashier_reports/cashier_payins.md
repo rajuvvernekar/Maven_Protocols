@@ -15,7 +15,7 @@ When clients:
 
 TRIGGER KEYWORDS: "add funds", "add money", "transfer", "payin", "payment failed", "not reflected", "not credited", "deducted but not showing", "money not added", "how to add", "fund", "UPI", "netbanking", "bank transfer", "IMPS", "NEFT", "RTGS", "deposit", "unregistered bank", "unmapped account", "bank details"
 
-## Protocol
+## Cashier Payins Protocol
 
 ---
 
