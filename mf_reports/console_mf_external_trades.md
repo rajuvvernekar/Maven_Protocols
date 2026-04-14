@@ -150,7 +150,3 @@ The external trades were incorrectly entered. Do not advise adding more entries.
 1. XIRR requires complete buy/sell history across both console_mf_tradebook and this tool (per **A6**).
 2. Any missing entry skews XIRR results.
 3. Verify all entries in both tools are present and correct. If entries are complete but XIRR still wrong → escalate.
-
-
----
----
