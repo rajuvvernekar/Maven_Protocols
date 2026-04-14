@@ -31,6 +31,8 @@ TRIGGER KEYWORDS: "position", "open position", "intraday", "MIS", "NRML", "carry
 
 ## Protocol
 
+# KITE POSITIONS PROTOCOL
+
 ---
 
 ## Section A: Reference Data

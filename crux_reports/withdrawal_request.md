@@ -20,6 +20,8 @@ TRIGGER KEYWORDS: "withdraw", "withdrawal", "payout", "transfer to bank", "not r
 
 ## Protocol
 
+# WITHDRAWAL PROTOCOL
+
 ---
 
 ## Section A: Reference Data

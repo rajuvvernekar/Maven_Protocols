@@ -14,6 +14,8 @@ TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted fro
 
 ## Protocol
 
+# MANDATE DEBIT REPORT PROTOCOL
+
 ---
 
 ## Section A: Reference Data

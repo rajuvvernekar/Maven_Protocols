@@ -17,6 +17,8 @@ TRIGGER KEYWORDS: "AMC charges", "annual maintenance charges", "demat charges", 
 
 ## Protocol
 
+# AMC CHARGES PROTOCOL
+
 ---
 
 ## Section A: Reference Data

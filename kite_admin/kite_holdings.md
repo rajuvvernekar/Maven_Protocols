@@ -25,6 +25,8 @@ TRIGGER KEYWORDS: "holdings", "portfolio", "shares missing", "shares not visible
 
 ## Protocol
 
+# KITE HOLDINGS PROTOCOL
+
 ---
 
 ## Section A: Reference Data

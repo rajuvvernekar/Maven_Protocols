@@ -17,6 +17,8 @@ TRIGGER KEYWORDS: "SIP", "SIP not triggered", "SIP cancelled", "SIP paused", "SI
 
 ## Protocol
 
+# SIP REPORT PROTOCOL
+
 ---
 
 ## Section A: Reference Data

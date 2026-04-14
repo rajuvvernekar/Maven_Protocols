@@ -27,6 +27,8 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 
 ## Protocol
 
+# ACCOUNT MODIFICATION REPORT PROTOCOL
+
 ---
 
 ## Section A: Reference Data

@@ -14,6 +14,8 @@ TRIGGER KEYWORDS: "transferred from Groww/Kuvera", "wrong buy average", "P&L inc
 
 ## Protocol
 
+# CONSOLE MF EXTERNAL TRADES PROTOCOL
+
 ---
 
 ## Section A: Reference Data

@@ -17,6 +17,8 @@ TRIGGER KEYWORDS: "tradewise charges", "trade charges", "charges breakdown", "br
 
 ## Protocol
 
+# TRADEWISE CHARGES PROTOCOL
+
 ---
 
 ## Section A: Reference Data

@@ -14,6 +14,8 @@ TRIGGER KEYWORDS: "SWP", "systematic withdrawal", "withdrawal plan", "SWP not tr
 
 ## Protocol
 
+# SWP REPORT PROTOCOL
+
 ---
 
 ## Section A: Reference Data

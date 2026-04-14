@@ -17,6 +17,8 @@ TRIGGER KEYWORDS: "external trade", "discrepancy entry", "discrepant entry", "ad
 
 ## Protocol
 
+# CONSOLE EQ EXTERNAL TRADES PROTOCOL
+
 --
 
 ## Section A: Reference Data

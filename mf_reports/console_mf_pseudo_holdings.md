@@ -19,6 +19,8 @@ TRIGGER KEYWORDS: "holdings", "units", "buy average", "portfolio", "pledged", "n
 
 ## Protocol
 
+# CONSOLE MF PSEUDO HOLDINGS PROTOCOL
+
 ---
 
 ## Section A: Reference Data

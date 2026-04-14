@@ -17,6 +17,8 @@ TRIGGER KEYWORDS: "pledge status", "pledge failed", "pledge request", "unpledge 
 
 ## Protocol
 
+# CONSOLE INSTANT PLEDGE PROTOCOL
+
 ---
 
 ## Section A: Reference Data

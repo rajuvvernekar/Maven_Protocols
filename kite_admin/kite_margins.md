@@ -29,6 +29,8 @@ TRIGGER KEYWORDS: "available margin", "available cash", "opening balance", "used
 
 ## Protocol
 
+# KITE MARGINS PROTOCOL
+
 ---
 
 ## Section A: Reference Data

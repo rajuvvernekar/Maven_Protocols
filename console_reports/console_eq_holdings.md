@@ -21,6 +21,8 @@ TRIGGER KEYWORDS: "holdings", "buy average", "average price", "discrepancy", "no
 
 ## Protocol
 
+# CONSOLE EQ HOLDINGS PROTOCOL
+
 ---
 
 ## Section A: Reference Data

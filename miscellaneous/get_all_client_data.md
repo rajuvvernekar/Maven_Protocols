@@ -12,6 +12,8 @@ WHEN TO USE:
 
 ## Protocol
 
+# GET ALL CLIENT DATA PROTOCOL
+
 ---
 
 ## Section A: Reference Data

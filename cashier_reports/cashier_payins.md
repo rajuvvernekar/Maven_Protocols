@@ -17,6 +17,8 @@ TRIGGER KEYWORDS: "add funds", "add money", "transfer", "payin", "payment failed
 
 ## Cashier Payins Protocol
 
+# CASHIER PAYINS PROTOCOL
+
 ---
 
 ## Section A: Reference Data

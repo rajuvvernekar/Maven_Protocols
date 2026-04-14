@@ -19,6 +19,8 @@ PREREQUISITE: Always run get_all_client_data FIRST to obtain client_name, pan, d
 
 ## Protocol
 
+# PAN STATUS PROTOCOL
+
 ---
 
 ## Section A: Reference Data
