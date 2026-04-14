@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "pledge status", "pledge failed", "pledge request", "unpledge 
 
 ## Protocol
 
-# CONSOLE INSTANT PLEDGE PROTOCOL 
-
 ---
 
 ## Section A: Reference Data
@@ -87,6 +85,7 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | Margin utilized (unpledge) | Unpledge rejected because collateral margin already used against open positions |
 | Overdue | CDSL confirmation delayed — request stuck in pending/overdue state |
 | Same-day pledge | Securities pledged today cannot be unpledged on the same day. The pledge is processed on the same day and collateral is credited within 15 minutes. An unpledge request can only be submitted from the next working day onwards. The client can sell the pledged shares on the same day, provided the collateral is not being utilised. |
+| F&O segment not active | Pledging requires the F&O segment to be enabled on the client's account. Error message may show as "Pledge is not allowed for your account" or similar account-level restriction. |
 
 ---
 
@@ -97,6 +96,7 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | `console_eq_holdings` | Verify available qty for pledging. Pledged qty visible in holdings. |
 | `console_eq_pseudo_holdings` | If holdings qty mismatch suspected, cross-check SOT data. |
 | `console_mtf_holdings` | Cross-reference if client is confused about auto-pledge entries from MTF. |
+| Account Modification tool | Check segment activation status when pledge fails with account-level restriction. |
 
 ---
 
@@ -147,6 +147,12 @@ When escalating, always include: **client ID, tradingsymbol, pledge_type, status
 **R13 — Same-day unpledge restriction:**
 "Securities pledged on the same day cannot be unpledged. The pledge is processed on the same day and the collateral is credited within 15 minutes, which can be used for trading immediately. However, an unpledge request can only be submitted from the next working day onwards. Please note that you can sell the pledged shares on the same day, provided the collateral is not being utilised against any open positions."
 
+**R14 — Failure: F&O segment not active:**
+"Pledging requires the F&O segment to be active on your account. To activate F&O, you can upload valid income proof on Console. Once the segment is activated, you will be able to pledge your holdings."
+
+**R15 — LAS query routing:**
+"For queries related to Loan Against Securities (LAS), including pledges not reflecting for loan collateral, you will need to email capitalsupport@zerodha.com, as they are better equipped to assist you with this matter."
+
 ---
 
 ## Section B: Decision Flow
@@ -165,6 +171,10 @@ When escalating, always include: **client ID, tradingsymbol, pledge_type, status
 ```
 Intent / Condition                                          → Rule
 ──────────────────────────────────────────────────────────────────────
+LAS / loan against securities query                         → Respond per A8-R15. Out of scope.
+  (client mentions "loan," "LAS," "loan against
+  securities," or "capital support")
+
 Pledge / unpledge status check                              → Rule 1
 Collateral not reflecting after successful pledge           → Rule 2
 Pledge failed — diagnose reason                             → Rule 3
@@ -178,7 +188,7 @@ Pledged today, cannot unpledge                              → Rule 8
 ### Scope
 
 - Address the client's query about pledge/unpledge requests, collateral margin, and failure diagnosis.
-- Use **A2** field rules and client-facing terminology in all client communication.
+- LAS (Loan Against Securities) queries are outside scope — route to capitalsupport@zerodha.com (per **A8-R15**).
 
 ### Fallback
 
@@ -213,6 +223,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
    a. "Something went wrong" error → likely unapproved security. Respond per **A8-R5**.
    b. T1 shares → respond per **A8-R6**.
    c. Insufficient qty → check `console_eq_holdings` (per **A6**) for available qty. Respond per **A8-R7**.
+   d. "Pledge is not allowed for your account" or similar account-level restriction → check the client's segment activation status using the Account Modification tool (per **A6**). If F&O is not enabled → respond per **A8-R14**.
 2. If none of the above explains the failure → escalate per **A7** directly. Do not share a generic response.
 
 ---
@@ -252,4 +263,3 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 1. If the client pledged securities today and is unable to unpledge → respond per **A8-R13**. Same-day restriction details per **A5**.
 2. Do not suggest alternative workarounds for same-day unpledging. This is a hard restriction.
-

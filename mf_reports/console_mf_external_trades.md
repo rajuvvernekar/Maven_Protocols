@@ -14,13 +14,9 @@ TRIGGER KEYWORDS: "transferred from Groww/Kuvera", "wrong buy average", "P&L inc
 
 ## Protocol
 
-# CONSOLE MF EXTERNAL TRADES PROTOCOL
-
 ---
 
 ## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Tool Purpose & Scope
 
@@ -118,8 +114,6 @@ If no root cause is identified after checking all relevant rules → escalate pe
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ### Rule 1 — Discrepancy After Transfer
 
 1. Confirm: client transferred units from another platform (not Coin-only — verified in Preflight step 3 per **A2**).
@@ -155,3 +149,6 @@ The external trades were incorrectly entered. Do not advise adding more entries.
 2. Any missing entry skews XIRR results.
 3. Verify all entries in both tools are present and correct. If entries are complete but XIRR still wrong → escalate.
 
+
+---
+---

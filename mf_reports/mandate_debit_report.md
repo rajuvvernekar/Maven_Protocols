@@ -14,13 +14,9 @@ TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted fro
 
 ## Protocol
 
-# MANDATE DEBIT REPORT PROTOCOL
-
 ---
 
 ## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Tool Purpose & Scope
 
@@ -75,6 +71,12 @@ For Zerodha SIPs (`sip_type` = sip): "To invest for this month, please place a m
 | SIP type, mandate linkage, SIP status | sip_report |
 | SIP modification near trigger date | sip_modification_log (via public_id from sip_report) |
 
+### A7 — Bank Penalty Charges
+
+Zerodha does not charge for Coin mandate registrations at present. However, the client's bank may charge penalties for failed transactions due to insufficient funds and mandate verification charges. These charges are applied by the bank — not by Zerodha or BSE STAR MF.
+
+Reference: [What are the charges for Coin mandates?](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/charges-for-coin-mandates)
+
 ## Section B: Decision Flow
 
 ### Preflight (run on every query)
@@ -105,14 +107,17 @@ Query relates to mandate debit →
 ├─ Client asks how to delete a mandate
 │  → Rule 4
 │
+├─ Client reports bank-applied charges alongside a failed/cancelled debit
+│  → Rule 5
+│
 └─ No matching scenario
    → Check sip_report for SIP-level diagnosis
 ```
 
 ### Scope
 
-- Address: debit status, payment processing, manual order guidance (with AMC SIP check), and mandate deletion.
--Internal field values: Transaction IDs and internal field values (per **A4**) are not part of client-facing responses.
+- Address: debit status, payment processing, manual order guidance (with AMC SIP check), mandate deletion, and bank-applied penalty charges.
+- Internal field values: Transaction IDs and internal field values (per **A4**) are not part of client-facing responses.
 
 ### Fallback
 
@@ -121,8 +126,6 @@ If no debit record exists and SIP-level checks are inconclusive → advise manua
 ---
 
 ## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Debit Not Initiated
 
@@ -165,3 +168,12 @@ Otherwise, check `sip_type` per **A3** before responding.
 2. If client has no SIPs linked → they can delete directly from Coin → Mandates.
 3. Add: "Deleting a mandate does not cancel your SIPs — SIPs remain active but will require a new mandate or manual payment going forward."
 
+### Rule 5 — Bank-Applied Penalty Charges
+
+1. Triggered when: client reports charges from their bank in the context of a failed or cancelled mandate debit.
+2. Confirm the charges are applied by the client's bank — not by Zerodha or BSE STAR MF (per **A7**).
+3. Respond: "Zerodha does not charge for Coin mandate registrations at present. However, your bank may charge penalties for failed transactions due to insufficient funds and mandate verification charges. For details on the specific charges, please check with your bank." Share link from **A7**.
+
+
+---
+---

@@ -25,8 +25,6 @@ TRIGGER KEYWORDS: "holdings", "portfolio", "shares missing", "shares not visible
 
 ## Protocol
 
-# KITE HOLDINGS PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -89,9 +87,9 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 
 **BTST detection method:**
 
-1. Invoke `kite_order_history` for the sell date and one previous trading day (account for holidays in between).
+1. Check `kite_order_history` for the sell date and one previous trading day (account for holidays in between).
 2. If the stock was bought on the previous trading day and sold today → this is a BTST trade.
-3. As an additional confirmation, invoke `console_eq_holdings` for the sell date and check if the quantity exists under `t1`. Only the quantity under `t1` is considered BTST — remaining quantity is from older settled holdings.
+3. As an additional confirmation, check `console_eq_holdings` for the sell date and check if the quantity exists under `t1`. Only the quantity under `t1` is considered BTST — remaining quantity is from older settled holdings.
 4. Blocked value for BTST = `filled_quantity × average_price` (from the sell order).
 
 **Example:** Client had 50 shares (settled) and bought 100 more yesterday. Today they sell 150 shares. 100 shares are BTST (bought yesterday, showing under t1), 50 are settled holdings. Proceeds for the 100 BTST shares are blocked; proceeds for the 50 settled shares are available immediately.
@@ -276,7 +274,7 @@ When escalating, always include: **client ID, instrument_name, and specific issu
 Use this checklist when a client reports shares missing or unexpected debit related to short delivery.
 
 **Step 1 — Confirm short delivery occurred:**
-Invoke `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details for cross-verification.
+Invoke `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery" or "Upper Circuit". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details for cross-verification.
 
 **Step 2 — Determine buy-side or sell-side:**
 Invoke `ledger_report` (check the last 2 weeks) and search for a `remarks` entry stating "Short delivery margin blocked for sale of till exchange auction settlement".
@@ -335,7 +333,7 @@ If quantity does not match (from Step 2), invoke `console_eq_external_trades` fo
 Intent / Condition                                          → Rule
 ──────────────────────────────────────────────────────────────────────
 P&L questions (day's P&L, net P&L, total, post-3:30)       → Rule 1
-Buy average issues (N/A, incorrect, sell+rebuy)             → Rule 2
+Buy average / portfolio valuation / invested amount issues  → Rule 2
 T1 / settlement / BTST query                               → Rule 3
 Pledge / collateral status                                  → Rule 4
 Shares not visible                                          → Rule 5
@@ -373,6 +371,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 2 — Buy Average Issues
 
+0. If client reports incorrect portfolio value or invested amount: check `console_eq_pseudo_holdings` and `console_eq_holdings` for the instrument(s). Compare breakdown quantities and buy averages with `kite_holdings`. Calculate expected invested value (sum of qty × avg_cost for each holding) and compare with the displayed value. If discrepancies are found in specific holdings, proceed to Step 1 for those holdings.
 1. `avg_cost` = N/A or 0 → investigate per **A13** checklist first (check for discrepant shares via `console_eq_pseudo_holdings`). If `discrepant` > 0 and quantity mismatch confirmed, follow A13 through to resolution or escalation. If A13 does not apply (discrepant = 0 or quantity matches), diagnose reason:
    a. Transferred shares → respond per **A11-R4**.
    b. CA pending adjustment → respond per **A11-R5**.
@@ -386,10 +385,10 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 3 — T1 / Settlement / BTST
 
 1. T1 meaning → check `t1_t2_holdings`. Respond per **A11-R9**. Settlement per **A3**.
-2. BTST proceeds not available → detect and respond:
-   a. Invoke `kite_order_history` for the sell date and one previous trading day (account for any holidays in between).
+2. When a client reports sale proceeds not available or funds not credited after selling shares, check for BTST first:
+   a. Check `kite_order_history` for the sell date and one previous trading day (account for any holidays in between).
    b. If the stock was bought on the previous trading day and sold today, this is a BTST trade.
-   c. Invoke `console_eq_holdings` for the sell date. Check if the quantity exists under `t1` — only the `t1` quantity is BTST.
+   c. Check `console_eq_holdings` for the sell date. Check if the quantity exists under `t1` — only the `t1` quantity is BTST.
    d. Calculate blocked value: `filled_quantity × average_price` (from the sell order for the BTST quantity).
    e. Respond per **A11-R10** with the BTST quantity and blocked value.
    f. Settlement holiday: if a settlement holiday falls between the buy and sell dates, settlement extends — BTST credit may take an additional day.
@@ -418,7 +417,7 @@ Invoke `console_eq_tradebook` for the instrument within the relevant date range.
 2. Systematically check causes from **A6**:
    a. Recently purchased → respond per **A11-R13**. Invoke `kite_positions`.
    b. CA in progress (bonus/split/demerger) → respond per **A11-R25**. Timelines per **A5**.
-   c. Short delivery → investigate per **A12** checklist. Respond per **A11-R26** (buy-side) or **A11-R27** (sell-side) based on findings.
+   c. Short delivery → invoke `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery" or "Upper Circuit" to confirm whether a short delivery occurred. Complete the full **A12** checklist before responding. Respond per **A11-R26** (buy-side) or **A11-R27** (sell-side) based on findings.
    d. ESOP with lock-in → respond per **A11-R15**.
    e. Suspended/delisted → respond per **A11-R16**.
    f. Transfer from another broker → respond per **A11-R17**.

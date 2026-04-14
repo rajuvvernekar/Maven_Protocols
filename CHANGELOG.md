@@ -10,6 +10,145 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-04-13 — Batch update (25 tools)
+
+**cashier_payins**
+- [Added]: A2 NRI PIS preflight early exit guard (do not use A2 row to frame responses)
+- [Added]: A3 alternate bank details (numerical account 57500000302010) for banks rejecting ZERNSE
+- [Added]: Rule 2 status note — netbanking "Unknown" = pending, not failed
+- [Added]: A8 HDFC eCMS transfer link
+
+**withdrawal_request**
+- [Added]: Preflight DETERMINE QUERY DATE step — anchor all analysis to client's query date
+- [Added]: A12/A13 Payout Rejection Reasons tables (Regular: 14 reasons, Instant: 11 reasons)
+- [Modified]: Rule 2 restructured — bank rejection check (A12/A13) before ledger signals
+- [Modified]: Rule 8 — use query date from Preflight, not current date
+- [Added]: A4 Standard T+1 response template
+- [Modified]: Rule 1, 7, 9, 10 — explicit response templates added
+
+**ledger_report**
+- [Added]: A3/A12 MTF interest entry type + identification rule
+- [Added]: A11 SGB interest out-of-scope cross-reference + routing
+- [Added]: Rule 3 Step 4 — trade breakdown for settlement entries (fetch kite_order_history)
+- [Modified]: Rule 8 — complete rewrite with BTST detection (Step 1) + standard response (Step 2)
+- [Added]: Rule 16a — MTF Interest Charges (7-step rule for date/range/total/disputes)
+- [Modified]: Rule 17 references updated to include 16a
+- [Added]: Rule 18 MTF interest dispute escalation trigger
+
+**amc_charges**
+- [Modified]: A4 restructured — unified inference table from charge_after_gst + client_holdings
+- [Modified]: A5 simplified — BSDA determination now references A4
+- [Modified]: Preflight and Rule 3 — use A4 inference table instead of bsda_flag branching
+
+**console_eq_holdings**
+- [Added]: A5 Grandfather clause (Section 112A, pre-2018 holdings)
+- [Added]: A7 Debt Instrument Interest section (G-Secs, NCDs, Bonds)
+- [Added]: A11 NSE/BSE historical price links
+- [Added]: R37 Same-day sell FIFO impact, R38 Grandfather clause, R39 Short delivery, R40 G-Sec interest
+- [Added]: Route — employer-mandated account deactivation → escalate to human agent
+- [Added]: Route — Rule 14 broadened to "Dividend & Debt Instrument Interest"
+- [Modified]: Rule 1 step 3 — same-day sell FIFO check (R37)
+- [Modified]: Rule 2.1.g — grandfather clause path (R38)
+- [Modified]: Rule 6 — Console visibility mention for inactive/unlisted stocks
+- [Modified]: Rule 15 step 5 — short delivery explanation (R39)
+
+**console_eq_external_trades**
+- [Modified]: Rule 2 step 3 — added sub-case c for wrong entry details (client mistake)
+
+**console_instant_pledge**
+- [Added]: A5 F&O segment not active failure reason
+- [Added]: A6 Account Modification tool cross-reference
+- [Added]: R14 F&O segment not active response, R15 LAS query routing
+- [Added]: Route — LAS queries out of scope
+- [Modified]: Rule 3 step d — F&O segment check via Account Modification tool
+
+**console_mtf_holdings**
+- [Modified]: A7 MTF interest statement path corrected (Reports → Funds)
+- [Added]: A7 full-year statement unavailability disclaimer
+- [Added]: R17 Same-day sell and re-buy netoff (EQ category)
+- [Added]: Rule 5 step 4 — same-day sell/re-buy diagnostic
+
+**kite_orders**
+- [Added]: A12 Multiple sell orders margin rejection row + CO on ETF row
+- [Added]: R24 Negative opening balance rejection, R25 Multiple sell orders rejection
+- [Modified]: Rule 4 — structured margin rejection flow (negative opening_balance first)
+- [Modified]: Rule 9 — cross-reference to kite_positions Rule 11 for ban delta rules
+
+**kite_holdings**
+- [Modified]: A12 Short delivery campaign search now includes "Upper Circuit"
+- [Modified]: Route Rule 2 broadened to cover portfolio valuation/invested amount
+- [Added]: Rule 2 Step 0 — portfolio/invested value investigation
+- [Modified]: Rule 5 — explicit short delivery investigation instructions
+
+**kite_positions**
+- [Added]: A14 F&O Ban Period Delta Rules (position-type to allowed/blocked trade matrix)
+- [Added]: R27 F&O ban period delta rules response
+- [Added]: Preflight Step 4 — historical trade queries redirect to kite_order_history
+- [Added]: Rule 7 Step 0 — index vs stock F&O check (prevents physical delivery for index)
+- [Added]: Rule 11 — F&O ban period delta exposure rules
+- [Modified]: Rule 3 — upper circuit short delivery cross-refs Holdings A12
+
+**kite_margins**
+- [Modified]: Rule 2 — negative opening_balance flagged prominently with option_premium context
+
+**get_all_client_data**
+- [Added]: A2 Interactions/Communications tabs off-limits; Documents tab access rules
+- [Added]: Preflight Step 3a — third_party_demat escalation
+- [Removed]: A7 Bank Field Mapping section
+- [Removed]: 4 routing entries (Bank details, Withdrawal, Payin, Fund transfer)
+
+**account_modification_report**
+- [Added]: New trigger keywords for segment activation issues
+- [Modified]: A2 DDPI charge expanded to online + offline
+- [Added]: A4 Commodity segment cross-check (zbl_mcx + nse_com)
+- [Added]: A12 ReKYC Process Details (Aadhaar OTP vs eSign)
+- [Added]: Preflight third_party_demat escalation
+- [Modified]: Rule 4 — pre-check for existing closure request
+- [Modified]: Rule 6 — F&O-only dormancy handling expanded
+
+**tradewise_charges_report**
+- [Modified]: A2 Delivery brokerage corrected — ₹0 for Individual only
+- [Added]: A6 Non-Standard Account Brokerage (Non-Individual, NRI PIS, NRI Non-PIS rates)
+- [Added]: Preflight Step 1A — get_all_client_data for account type
+- [Modified]: Rule 3 — complete rewrite for account-type-aware verification
+
+**console_mf_pseudo_holdings**
+- [Added]: A1 Regular plan holdings rule
+- [Added]: A3 Payout dividend + discrepant → immediate escalation
+- [Modified]: A4 Delay allotment rewrite — T+3 working days, exchange_timestamp reference
+- [Added]: A4 Steps 1a, 1b for allotted-but-not-updated and escalation
+- [Modified]: A8 split into A8a (non-demat) + A8b (demat CDSL Easiest transfer)
+- [Added]: A9 Response templates R1/R2 for delay allotment
+- [Modified]: Rule 5 — Silo K collateral margin timing
+- [Modified]: Rule 7 — expanded for demat + non-demat MF transfers
+- [Added]: Rule 9 — LAS queries out of scope
+
+**mandate_debit_report**
+- [Added]: A7 Bank penalty charges fact
+- [Added]: Rule 5 Bank-applied penalty charges handling
+
+**mf_order_history**
+- [Added]: A2 Working day check, Holiday shift scope, Naming holidays subsections
+- [Modified]: A7 `tag` field moved from Banned to Internal (for NFO detection)
+- [Added]: A8 T+3 allotment timeline fact
+- [Modified]: Rule 1 — NFO detection via `tag` field; SIP mandate check; settled_flag=N order_number null check
+- [Modified]: Rule 3 — expanded with SIP mandate checks
+- [Added]: Rule 11 — Duplicate/extra payment claims
+- [Modified]: Field usage — `payment_method` replaces `fund_source` for bank identification
+
+**sip_report**
+- [Added]: A1 UPI trigger timing clarification (T-1 vs T-2)
+- [Added]: A4 `rp-pg` fund_source value
+- [Modified]: A5 Diagnostic sequence reordered — modification check moved to Step 2
+- [Modified]: A6 FRESH processing — SIP skip logic when next_sip_date before allotment
+
+**pan_status**
+- [Added]: R5 "Name mismatch, client states ITD already updated" template
+- [Modified]: Preflight — use Zerodha's registered name, not client's stated name
+- [Modified]: Rule 1 — conditional branching to R5 when client says ITD updated
+
+**Unchanged tools:** console_mf_external_trades, console_mf_holdings, console_mf_tradebook, swp_report, stp_report
+
 ### 2026-03-09 — account_modification_report
 - [Modified]: Rule 3 — Added second CRITICAL: cross-reference actual segment fields in get_all_client_data before communicating activation status
 - [Modified]: Rule 6 — Added raw segment identifiers (NSE_COM, NSE_FO, BSE_EQ, MCX_FO) to banned fields; added NSE_COM → "NSE Commodity" translation

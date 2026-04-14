@@ -14,13 +14,9 @@ TRIGGER KEYWORDS: "SWP", "systematic withdrawal", "withdrawal plan", "SWP not tr
 
 ## Protocol
 
-# SWP REPORT PROTOCOL
-
 ---
 
 ## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — SWP Fundamentals
 
@@ -106,8 +102,6 @@ If no root cause found after completing all diagnostic steps → suggest manual 
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ### Rule 1 — SWP Not Triggered: Sequential Diagnostic
 
 1. Run through all steps in **A4** sequentially — complete every step before concluding.
@@ -132,3 +126,6 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Respond using **A2**: "CDSL T-PIN authorization must be completed on the same day the SWP triggers, between 10:00 AM and 3:00 PM. Since it was not completed on time, the order was rejected. Please place a fresh manual redemption request for this cycle."
 2. Recommend DDPI: "To avoid this every cycle, we recommend enabling DDPI on your account — this allows automatic debit of units without requiring T-PIN authorization each time."
 
+
+---
+---

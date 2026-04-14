@@ -26,7 +26,6 @@ TRIGGER KEYWORDS: "order rejected", "order pending", "order cancelled", "not exe
 
 ## Protocol
 
-# KITE ORDERS PROTOCOL 
 ---
 
 ## Section A: Reference Data
@@ -175,7 +174,8 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 
 | Rejection | Meaning | Resolution |
 |---|---|---|
-| Insufficient margin | Not enough margin | Cross-check `kite_margins`. Add funds. Can still exit existing positions. |
+| Insufficient margin | Not enough margin | Cross-check `kite_margins`. Add funds. |
+| Multiple sell orders — insufficient margin | Client placed multiple sell orders for the same position. Only one sell order matching the position quantity is needed to exit. Additional sell orders are treated as fresh short positions requiring full margin. | Cancel excess pending sell orders. Place a single sell order matching the open position quantity to exit. |
 | Negative cash | Negative cash from MTM losses | Add cash before new trades. Can still exit existing positions. |
 | Max order value | Exceeds ₹10 Crore | Split orders, use iceberg or basket. |
 | Max quantity | Exceeds 1,00,000 | Reduce qty, use iceberg, sticky window, or basket. |
@@ -194,6 +194,7 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | Currency position limit | Client limit exceeded | USDINR 85K lots, EURINR/GBPINR 5K, JPYINR 2K. |
 | MTF sell conflict | MTF buy blocked — open CNC sell or MTF sell for same stock | Buy via CNC instead. MTF position restores next day. |
 | Order being processed | Already executed/cancelled | Refresh page for updated status. |
+| CO on ETF / restricted instruments | Cover orders are not allowed on ETFs, BSE scrips, stock options, currency options, and index options | Use CNC or MIS instead. |
 | Invalid quantity / odd lot | Order quantity does not match the current lot size — residual odd-lot from SEBI lot size revision | Odd-lot positions cannot be traded. Must hold until expiry — will be cash-settled based on moneyness. Redirect to `kite_positions` Rule 10 for full guidance. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025). |
 
 ---
@@ -255,7 +256,7 @@ When escalating, always include: **client ID, instrument, order type, time, and 
 "Your [type] order for [total_quantity] qty of [instrument] was executed at an average price of ₹[average_price] on [exchange_time]."
 
 **R2 — Market order price explanation:**
-"Market orders fill at the best available prices. If the order quantity is large, it may fill at multiple price levels — this is normal exchange behavior."
+"Market orders fill at the best available prices. If the order quantity is large, it may fill at multiple price levels. This is normal exchange behavior."
 
 **R3 — Limit order better price:**
 "Your limit [type] order at ₹[price] executed at ₹[average_price] because the market had [buyers/sellers] at a [better] price. Limit orders guarantee your price as the worst you'll get, not the exact price."
@@ -282,7 +283,7 @@ When escalating, always include: **client ID, instrument, order type, time, and 
 "The exchange cancelled your order because the price was outside the allowed Limit Price Protection range. Retry with a price closer to the current market price."
 
 **R11 — IOC partial fill:**
-"Your IOC (Immediate or Cancel) order was partially filled ([filled_quantity] of [total_quantity] qty). The unfilled portion was auto-cancelled — this is how IOC orders work."
+"Your IOC (Immediate or Cancel) order was partially filled ([filled_quantity] of [total_quantity] qty). The unfilled portion was auto-cancelled. This is how IOC orders work."
 
 **R12 — User cancelled:**
 "This order was cancelled. No action needed."
@@ -305,25 +306,31 @@ Auto square-off charges: ₹50 + 18% GST per order."
 "Market orders placed in the pre-open session (including AMO) are converted to limit orders at the equilibrium price (or previous day's close if no equilibrium). This is standard exchange behavior."
 
 **R17 — Pre-validated rejection not in order book:**
-"Some orders are rejected by Zerodha's pre-validation before reaching the exchange — these won't appear in the order book but the rejection reason shows in the order status notification on Kite."
+"Some orders are rejected by Zerodha's pre-validation before reaching the exchange. These won't appear in the order book but the rejection reason shows in the order status notification on Kite."
 
 **R18 — Downloaded file date formatting:**
-"This is an Excel formatting issue — it converts values like '1/1' to dates. Open the file in Notepad or Notepad++ to see correct values."
+"This is an Excel formatting issue. It converts values like '1/1' to dates. Open the file in Notepad or Notepad++ to see correct values."
 
 **R19 — Execution time beyond market hours:**
-"This happens when Zerodha reconciles with the exchange after a brief disconnection. The actual execution happened during market hours — check the tradebook for the real execution time."
+"This happens when Zerodha reconciles with the exchange after a brief disconnection. The actual execution happened during market hours. Check the tradebook for the real execution time."
 
 **R20 — BSE market order conversion:**
 "BSE market orders are converted to limit orders with a 3% market protection from LTP. This is standard BSE behavior."
 
 **R21 — Ban period:**
-"[instrument] is in the F&O ban period. Only exit orders are allowed — no new positions or intraday trades."
+"[instrument] is in the F&O ban period. Only exit orders are allowed. No new positions or intraday trades."
 
 **R22 — OI restriction (NRML blocked):**
 "NRML orders for this strike are restricted due to SEBI's broker-level Open Interest cap. You can trade this strike using MIS (intraday). For unrestricted access to all strikes, consider opening an Orbis custodial account."
 
 **R23 — Circuit + MIS risk:**
-"When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time — this can lead to short delivery or auction risk."
+"When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time. This can lead to short delivery or auction risk."
+
+**R24 — Margin rejection due to negative opening balance:**
+"Your order was rejected due to insufficient margin. Your opening balance is ₹[opening_balance] (negative), which means your account started the day with a deficit. A negative opening balance blocks all fresh positions until you add funds to clear it. [If option_premium is negative: Your option premium shows ₹[option_premium]. This reflects premium paid for buying options. Proceeds from exiting long options or entering short options can only be used for new long option trades in the same segment on the same day, and become available for other trades from the next trading day (per Kite Positions A10).] Please add funds to cover the deficit and retry your order."
+
+**R25 — Multiple sell orders margin rejection:**
+"You placed multiple sell orders for [instrument]. Only one sell order matching your position quantity of [quantity] is needed to exit. Additional sell orders are treated as fresh short positions, which require full margin. Cancel any excess pending sell orders and place a single sell order for [quantity] qty to close your position."
 
 ---
 
@@ -411,13 +418,17 @@ If no route matches, investigate using Order History sub-view and Section A refe
 ### Rule 4 — Order Rejected
 
 1. Read `rejection_reason` and match against **A12**.
-2. For margin rejections → invoke `kite_margins` to identify specific shortfall.
+2. For margin rejections:
+   a. Check if the client has multiple pending sell orders for the same instrument. If multiple sell orders exist against a single position, the excess orders are treated as fresh short positions requiring margin — respond per **A18-R25**.
+   b. Invoke `kite_margins`. Check `opening_balance` first. If `opening_balance` is negative, this is the primary cause — respond per **A18-R24**. Include the `opening_balance` amount. If `option_premium` is also negative, include the option premium context per **A18-R24**.
+   c. If `opening_balance` is not negative, identify the specific margin shortfall from the remaining fields (`available_margin`, `used_margin`, `available_cash`).
 3. For market order blocks → match against **A10**, respond with reason + resolution.
 4. For MIS blocks → match against **A11**, respond with reason + resolution.
 5. For quantity/value limits → refer to **A7**.
 6. For trigger price errors, ban period, OI restrictions, BSE SL-M, exchange restricted, MTF conflicts → use matching row in **A12**.
-7. For invalid quantity / odd lot from lot size revision → use matching row in **A12**. Redirect to `kite_positions` Rule 10 for full guidance on holding until expiry and cash settlement.
-8. For any rejection not matching **A12** → share the `rejection_reason` text verbatim and suggest retrying or contacting support.
+7. For CO on ETF or other restricted instruments → use matching row in **A12**.
+8. For invalid quantity / odd lot from lot size revision → use matching row in **A12**. Redirect to `kite_positions` Rule 10 for full guidance on holding until expiry and cash settlement.
+9. For any rejection not matching **A12** → share the `rejection_reason` text verbatim and suggest retrying or contacting support.
 
 ---
 
@@ -458,7 +469,7 @@ If no route matches, investigate using Order History sub-view and Section A refe
 ### Rule 9 — Circuit / Ban Period Impact
 
 1. Can't exit at circuit → respond per **A18-R23**. If client asks about resulting position → invoke `kite_positions`.
-2. Ban period → respond per **A18-R21**. Only exit allowed. Restriction lifts when OI falls below 80% of market-wide limit.
+2. Ban period → respond per **A18-R21**. Only exit allowed. Restriction lifts when OI falls below 80% of market-wide limit. If the client asks what specific trades are permitted during the ban (delta exposure rules) → redirect to `kite_positions` Rule 11.
 
 ---
 

@@ -21,8 +21,6 @@ TRIGGER KEYWORDS: "MTF", "margin trading", "funded", "MTF holdings", "MTF intere
 
 ## Protocol
 
-# CONSOLE MTF HOLDINGS PROTOCOL 
-
 ---
 
 ## Section A: Reference Data
@@ -111,7 +109,9 @@ Backedated MTM is available on Console MTF holdings — client can select a date
 | Topic | URL / Path |
 |---|---|
 | MTF approved stock list | zerodha.com/margin/mtf |
-| MTF interest statement | Console → Reports → MTF Interest Statement |
+| MTF interest statement | Console → Funds → Interest statement → select MTF → select the date for which interest needs to be checked |
+
+A full-year downloadable MTF holdings statement is not available. Zerodha does not create custom reports or statements on request. The MTF Interest Statement and tradebook download are the only available alternatives for MTF-related data.
 
 ---
 
@@ -142,7 +142,7 @@ The buy average shown under the MTF filter on Kite is calculated only from your 
 **R3 — Interest calculation:**
 "MTF interest is charged at 0.04% per day (₹40 per lakh) on the funded amount. Interest is applied from T+1 day until the stocks are sold, and accrues daily including weekends and holidays.
 
-Please note that interest is calculated on the total funded amount across all your MTF positions combined — a per-stock interest breakdown is not available. You can view your interest statement on Console → Reports → MTF Interest Statement."
+Please note that interest is calculated on the total funded amount across all your MTF positions combined — a per-stock interest breakdown is not available. You can view your interest statement on Console → Funds → Interest statement → select MTF → select the date for which interest needs to be checked."
 
 **R4 — Weekend interest:**
 "Interest accrues on all calendar days since the funded amount remains outstanding regardless of whether markets are open."
@@ -197,6 +197,17 @@ If the update hasn't happened after 2 trading days from credit date, we'll escal
 "Your unrealized P&L is calculated as: current market value (₹[closing_value]) minus invested value (₹[holdings_buy_value]) = ₹[unrealized_profit] ([unrealized_profit_percentage]%).
 
 Note: This does not include MTF interest charges, brokerage, or other transaction costs. Your actual profit on exit will be lower after accounting for these charges."
+
+**R17 — Same-day sell and re-buy netoff (MTF/CNC holdings):**
+"When you sell shares from your holdings (MTF or CNC) and buy back the same stock on the same day — regardless of which product type (CNC, MIS, etc.) you use for the re-buy — the trades are netted off as an intraday transaction for stocks in the EQ category. This means:
+
+- Your holdings category remains unchanged (MTF stays MTF, CNC stays CNC)
+- Your buy average of the existing holdings is not affected, since intraday trades are treated as separate speculative transactions
+- The re-buy does not create a new delivery position or change the product type of your existing holdings
+
+This netoff applies to EQ category stocks only — it does not apply to BE (Trade-to-Trade) category stocks, where all trades are treated as delivery.
+
+If you want to convert your MTF position to regular delivery (CNC), please use the conversion flow on Kite or Console instead of selling and re-buying."
 
 ---
 
@@ -286,6 +297,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
    a. If `converted_quantity` = 0 → respond per **A10-R8**.
    b. If conversion was 2+ trading days ago and status unclear → escalate per **A8**.
 3. If conversion failed on ex-date → respond per **A10-R9**. Per **A5** ex-date restriction.
+4. **Same-day sell and re-buy check:** When a client reports selling MTF shares and re-buying in CNC on the same day but holdings still show MTF, check the tradebook (`console_eq_tradebook`) to verify the trades. If the stock is EQ series (not BE/T2T) and both a sell and buy trade exist for the same stock on the same day, the trades were netted off as intraday — the holdings category remains unchanged regardless of the product type used for the re-buy. Respond per **A10-R17**. If the client wants to move shares from MTF to CNC, guide them through the conversion flow per **A10-R7**.
 
 ---
 

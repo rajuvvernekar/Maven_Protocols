@@ -33,8 +33,6 @@ TRIGGER KEYWORDS: "withdrawal failed", "partial amount", "can't withdraw", "zero
 
 ## Protocol
 
-# LEDGER REPORT PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -70,6 +68,7 @@ TRIGGER KEYWORDS: "withdrawal failed", "partial amount", "can't withdraw", "zero
 | "Bank Payments" + "quarterly settlement" | Quarterly settlement payout |
 | "Bank Payments" | Withdrawals processed |
 | "Journal Entry" | Charges (DP, pledge, interest, penalties) |
+| "Journal Entry" + "Interest for MTF funded value on [date]" | MTF interest charge for funded amount on that date |
 | "Delivery Voucher" | Margin blocked/reversed entries |
 | "MTF Delivery Voucher" | MTF margin/settlement entries |
 
@@ -132,16 +131,21 @@ Raw bank reference numbers and internal reference codes are never shared with cl
 | QS details — funds released, retained, obligations | Client Retention Dates protocol |
 | Pledge/unpledge charge entries on ledger | Pledge Request Report protocol |
 | Trade charge breakdowns referenced in ledger | Contract Note Charges protocol |
+| MTF interest rate, per-stock funded amount, interest statement | Console MTF Holdings protocol |
+| SGB interest payment dates and credit details | Not in ledger — SGB interest is credited directly to the client's bank account by RBI. Refer client to the SGB support article for interest payment dates and details. |
 
 ### A12 — MTF Entry Types
 
-| Entry Remark | Meaning |
-|---|---|
-| "MTM obligation blocked/reversed for MTF" | Daily mark-to-market adjustments on MTF positions |
-| "Initial margin charged for MTF" | Margin blocked when shares purchased under MTF |
-| "Net settlement for Equity" | Settlement of MTF buy/sell obligations |
+| Entry Remark Pattern | Voucher Type | Meaning |
+|---|---|---|
+| "MTM obligation blocked/reversed for MTF" | Delivery Voucher / MTF Delivery Voucher | Daily mark-to-market adjustments on MTF positions |
+| "Initial margin charged for MTF" | Delivery Voucher / MTF Delivery Voucher | Margin blocked when shares purchased under MTF |
+| "Net settlement for Equity" | Book Voucher | Settlement of MTF buy/sell obligations |
+| "Interest for MTF funded value on [date]" | Journal Entry | Daily MTF interest charge — debited for the funded amount outstanding on the specified date. Interest rate: 0.04% per day (₹40 per lakh). Accrues on all calendar days including weekends and holidays. |
 
-For detailed MTF interest charges, refer client to the MTF Interest Statement on Console.
+**MTF interest identification rule:** Filter ledger entries where `voucher_type` = "Journal Entry" AND `remarks` contains "Interest for MTF funded value". Each matching entry represents one day's interest charge. The date mentioned in the remark (e.g., "on 2026-01-20") is the date the interest accrued — the `posting_date` may differ by 1–2 days due to processing.
+
+For the detailed MTF interest statement (with per-day breakdown and funded amount details), refer client to Console → Reports → MTF Interest Statement.
 
 ### A13 — Common Bank Rejection Reasons
 
@@ -177,6 +181,9 @@ For detailed MTF interest charges, refer client to the MTF Interest Statement on
 ```
 Query relates to ledger →
 │
+├─ Query is about SGB interest payments or SGB interest credit dates
+│  → Out of scope. SGB interest is not recorded in the ledger (per A11). Refer client to the SGB support article.
+│
 ├─ Client confused about ledger views / which to use
 │  → Rule 1
 │
@@ -202,7 +209,7 @@ Query relates to ledger →
 │     ├─ Unsettled trades → Rule 7b
 │     └─ Collateral involved → Rule 7c
 │
-├─ Stock sale proceeds not withdrawable
+├─ Stock sale proceeds not visible or not withdrawable
 │  → Rule 8
 │
 ├─ Quarterly Settlement (QS)
@@ -217,7 +224,10 @@ Query relates to ledger →
 │  └─ Ledger vs Kite funds page mismatch → Rule 15
 │
 ├─ MTF-related entries
-│  → Rule 16
+│  ├─ MTF interest charges (total, date range, or specific date)
+│  │  → Rule 16a
+│  └─ Other MTF entries (MTM, margin, settlement)
+│     → Rule 16
 │
 ├─ Multiple transactions in query
 │  → Rule 17
@@ -234,6 +244,7 @@ Query relates to ledger →
 ### Scope
 
 - Address: ledger entries, balances, withdrawal eligibility, QS, and mismatches within ledger context.
+- SGB interest payment queries are outside ledger scope — SGB interest is credited directly to the client's bank account by RBI and does not appear in the Zerodha ledger. Refer to the SGB support article (per **A11**).
 - For detailed charge breakdowns, refer to **A11** cross-reference protocols. For MTF MTM disputes, escalate per Rule 16.
 
 ### Fallback
@@ -263,6 +274,17 @@ If no root cause is identified after checking all relevant rules → escalate pe
 1. Sanitize remarks per **A8**. Translate voucher type using **A3**.
 2. If debit > 0: "On [date], ₹[debit] was debited for [sanitized remarks]. Balance after: ₹[net_balance]."
 3. If credit > 0: "On [date], ₹[credit] was credited for [sanitized remarks]. Balance after: ₹[net_balance]."
+
+**Step 4 — Trade breakdown for settlement entries:**
+When the entry is a settlement or net obligation (voucher_type = "Book Voucher" with settlement/obligation remarks per **A3**), identify and name the underlying trades that make up the net obligation:
+
+1. Fetch `kite_order_history` for the trading date associated with the settlement entry. The trading date is one settlement working day before the posting date (T+1 posting means the trades were placed on T).
+2. For each order in the order history:
+   - **Status = "COMPLETE":** The order was fully executed. Trade value = filled quantity × average price. Buy orders contribute a debit; sell orders contribute a credit to the net obligation.
+   - **Status = "CANCELLED":** Check the filled quantity. If filled quantity > 0, the order was partially executed before cancellation. Trade value = filled quantity × average price (debit for buy, credit for sell). If filled quantity = 0, the order was fully cancelled and does not contribute to the settlement.
+   - Other statuses (REJECTED, etc.): Do not contribute to the settlement.
+3. Present the breakdown: "This settlement entry includes the following trades from [trading date]:" followed by each executed/partially executed trade with stock name, transaction type (buy/sell), filled quantity, average price, and trade value.
+4. Confirm that the sum of individual trade values (net of buys and sells) aligns with the settlement debit/credit amount. Minor differences may exist due to charges (brokerage, STT, etc.) included in the net obligation.
 
 ### Rule 4 — Withdrawal Failed: Same-Day Funds
 
@@ -302,10 +324,21 @@ If no root cause is identified after checking all relevant rules → escalate pe
    **7c — Collateral involved:**
    Explain using the applicable formula from **A9**.
 
-### Rule 8 — Stock Sale Proceeds Not Withdrawable
+### Rule 8 — Stock Sale Proceeds Not Visible or Not Withdrawable
 
+**Key distinction:** For normal sales (existing demat holdings), proceeds are visible in `kite_margins` immediately after the sale — clients can see the funds same day but cannot withdraw until T+1. For BTST sales (shares bought on T−1, sold on T), proceeds are **not visible in `kite_margins` at all on the sale date** — they appear only on the next trading day. The withdrawal rule is the same for both (available from T+1 after settlement processing). Most client queries about missing sale proceeds are BTST scenarios because the funds are completely invisible on the sale date.
+
+**Step 1 — BTST check:** Before concluding that sale proceeds are settling normally, verify the purchase date of the sold shares:
+
+1. Fetch `kite_order_history` for the sale date to identify the sell order (stock name, quantity, trade value).
+2. Fetch `kite_order_history` for the previous trading day (T−1) to check if the same stock was purchased.
+3. **If the stock was purchased on T−1 (previous trading day) and sold on T (today or the queried date):** This is a BTST (Buy Today, Sell Tomorrow) trade. The purchased shares were still T1 holdings (not yet delivered to the client's demat account) at the time of sale. Unlike a normal sale where proceeds show in `kite_margins` immediately, BTST sale proceeds do not appear in `kite_margins` on the sale date at all. Respond: "The shares of [stock name] were purchased on [T−1 date] and sold on [T date]. Since the purchased shares had not yet settled into your demat account (T1 holdings), this is a BTST trade. For BTST trades, the sale proceeds do not appear in your Kite balance on the day of the sale — this is expected. The proceeds will be visible in your balance and available for withdrawal from the next trading day ([T+1 of sale date]) after settlement processing. Your funds are safe."
+4. **If the stock was NOT purchased on T−1** (i.e., it was an existing holding from demat): Proceed with the standard settlement response below.
+
+**Step 2 — Standard settlement response (non-BTST):**
 1. Identify trade type from **A3** and the trade date.
-2. Respond: "Stock sale proceeds settle on T+1 (next settlement working day). Your [trade type] trade from [date] will settle on [T+1 date]. The withdrawable balance will be updated by the next settlement working day morning (per **A2**)."
+2. The sale proceeds are already visible in `kite_margins` on the sale date. The client's concern is about withdrawal.
+3. Respond: "Your sale proceeds of ₹[amount] from your [trade type] trade on [date] are reflected in your Kite balance. These funds settle on T+1 (next settlement working day) and will be available for withdrawal from [T+1 date] morning after settlement processing (per **A2**)."
 
 ### Rule 9 — Quarterly Settlement Explanation
 
@@ -342,15 +375,46 @@ If no root cause is identified after checking all relevant rules → escalate pe
 3. Respond: "The Kite funds page shows real-time available margin including collateral, while the ledger shows the historical cash movement record. The ledger closing balance matches the 'Available Cash' on Kite, not the 'Available Margin' (which includes collateral)."
 4. If they still differ: "If the ledger closing balance and Kite 'Available Cash' still differ, it may be due to pending entries not yet reflected. Please check after market hours."
 
-### Rule 16 — MTF Ledger Entries
+### Rule 16 — MTF Ledger Entries (Non-Interest)
 
 1. Explain the relevant entries using **A12**.
 2. Direct client to MTF Interest Statement on Console for detailed MTF interest charges (per **A12**).
 3. **Escalate immediately** if the client raises any calculation dispute related to MTF MTM amounts or claims funds were credited less than expected for MTF trades. Do not attempt to calculate or verify MTF MTM manually. (This is genuinely counterintuitive — the model may attempt to help with the math. Always escalate instead.)
 
+### Rule 16a — MTF Interest Charges
+
+**Trigger:** Client asks about MTF interest charged — for a specific date, a date range, a month, a financial year, or a total.
+
+**Steps:**
+
+1. Determine the date range from the client's query:
+   - Specific date → fetch ledger for that date ± 2 days (interest posting may lag by 1–2 days).
+   - "Last month" → fetch ledger for the previous calendar month.
+   - "This FY" / "FY 2025-26" → fetch ledger from 1 Apr to 31 Mar of the relevant FY.
+   - No date specified → ask the client for the period they want to check.
+
+2. Filter ledger entries where `voucher_type` = "Journal Entry" AND `remarks` contains "Interest for MTF funded value" (per **A12** identification rule).
+
+3. **If client asks for a specific date's interest:**
+   - Locate the entry where the remark contains that date (e.g., "Interest for MTF funded value on 2026-01-20").
+   - Respond: "MTF interest of ₹[debit] was charged for [date from remark]. This was debited on [posting_date]."
+
+4. **If client asks for total interest over a date range:**
+   - Sum all `debit` amounts from the filtered entries within the date range.
+   - Respond: "Your total MTF interest charges from [start date] to [end date] were ₹[total]. This was spread across [count] entries."
+   - If the client asks for a breakdown, list each entry: date from remark, debit amount, and posting date. Keep the list concise — group by month if there are more than 15 entries.
+
+5. **If no MTF interest entries are found** for the requested period:
+   - Respond: "No MTF interest charges were found in your ledger for the period [start date] to [end date]. This means either you did not hold any MTF positions during this period, or the interest entries have not yet been posted."
+
+6. **Additional context (append when relevant):**
+   - "MTF interest is charged at 0.04% per day (₹40 per lakh) on the total funded amount. Interest accrues daily, including weekends and holidays. For a detailed day-wise breakdown with funded amounts, you can also check the MTF Interest Statement on Console (Console → Reports → MTF Interest Statement)."
+
+7. **If the client disputes the interest amount:** Do not attempt to manually verify the per-day calculation. Direct the client to the MTF Interest Statement for the funded amount breakdown. If the client still disputes after reviewing the statement → escalate per Rule 18 with client ID, date range, total interest charged, and the client's expected amount.
+
 ### Rule 17 — Multiple Transactions
 
-1. Apply relevant rules (1–16, 19) to each entry individually.
+1. Apply relevant rules (1–16a, 19) to each entry individually.
 2. Group entries logically: deposits together, settlements together, charges together.
 3. Keep response concise — under 150 words unless the client specifically requests a detailed breakdown.
 
@@ -360,6 +424,7 @@ Escalate when any of the following occur:
 - Ledger closing balance doesn't match Console/Kite after verifying all entries (Rules 14, 15).
 - An entry appears in the ledger that the client never initiated and cannot be explained by any rule.
 - Charges debited without a corresponding trade or event.
+- MTF interest dispute unresolved after client reviews MTF Interest Statement (per Rule 16a).
 
 Include in escalation: client ID, date range, specific mismatched entries, and screenshots if available.
 

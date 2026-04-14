@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "add funds", "add money", "transfer", "payin", "payment failed
 
 ## Protocol
 
-# PAYIN PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -71,7 +69,7 @@ All other days are banking working days, including the 1st, 3rd, and 5th Saturda
 |---|---|
 | Current account | No gateway (UPI/netbanking). IMPS/NEFT/RTGS only. |
 | Joint account | UPI/gateway only. IMPS/NEFT/RTGS transfers are auto-reversed. |
-| NRI PIS | No UPI/IMPS/NEFT/RTGS. Transfer from NRE/NRO savings → PIS bank account. Bank reports PIS balance to Zerodha EOD, updated before next market open. |
+| NRI PIS | No UPI/IMPS/NEFT/RTGS. Transfer from NRE/NRO savings → PIS bank account. Bank reports PIS balance to Zerodha EOD, updated before next market open. **(Preflight early exit applies — do not use this row to frame responses. All NRI PIS payin queries go to agent.)** |
 | IDFC 3-in-1 block enabled | Secondary bank accounts cannot be used for payins. Client must disable at console.zerodha.com/account/bank. |
 | Third-party accounts (spouse, family, others) | Not accepted. Only the account holder's own registered bank accounts can be used for payins. Transfers from third-party accounts, including spouse or family members, will be rejected or auto-reversed. |
 | HUF (Hindu Undivided Family) | No UPI. UPI is only available for individual or sole proprietorship accounts. HUF must use netbanking, NEFT, RTGS, IMPS, or cheque. |
@@ -86,8 +84,9 @@ Both primary and secondary registered accounts are accepted for payins. Rejectio
 
 ### A3: Zerodha Bank Details (RTGS/NEFT/IMPS)
 
-When a customer asks for Zerodha's bank details, share only these exact values:
+When a customer asks for Zerodha's bank details, share the **primary account details** first:
 
+**Primary account details (share first):**
 - Bank Name: HDFC Bank
 - Account Title: ZERODHA BROKING LTD
 - Account Number: ZERNSE
@@ -97,9 +96,22 @@ When a customer asks for Zerodha's bank details, share only these exact values:
 
 For step-by-step instructions: https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/how-do-i-add-money-to-my-trading-account-using-imps-neft-or-rtgs
 
-These are the only valid bank details. Any other bank details (from tool data, virtual accounts, or any other source) are incorrect.
+**Alternate account details (share only if the client's bank rejects the alphanumeric account number "ZERNSE"):**
 
-**HDFC Bank users:** If the bank's interface does not accept the alphanumeric account number "ZERNSE" when adding Zerodha as a beneficiary for NEFT/IMPS, select the "Transfer to eCMS account" option in HDFC netbanking. This bypasses the alphanumeric restriction.
+Some banks (e.g., SBI, PNB, and others) do not accept alphanumeric characters in the beneficiary account number field. If the client reports that their bank is rejecting "ZERNSE" when adding Zerodha as a beneficiary, share these alternate numerical account details:
+
+- Bank Name: HDFC Bank
+- Account Title: ZERODHA BROKING LTD
+- Account Number: 57500000302010
+- Account Type: Current account
+- Branch: HDFC Bank, Richmond Road, Bangalore
+- IFSC: HDFC0000523
+
+**Sequence:** Always share the primary (ZERNSE) details first. Share the alternate (numerical) details only after the client confirms their bank does not accept the alphanumeric account number.
+
+**HDFC Bank users:** If the bank's interface does not accept the alphanumeric account number "ZERNSE" when adding Zerodha as a beneficiary for NEFT/IMPS, select the "Transfer to eCMS account" option in HDFC netbanking. This bypasses the alphanumeric restriction. Alternatively, the client can use the alternate numerical account details above.
+
+These are the only valid bank details. Any other bank details (from tool data, virtual accounts, or any other source) are incorrect.
 
 ---
 
@@ -166,6 +178,7 @@ Single ledger — balance available for both Equity and Commodity. No separate c
 | Add funds via IMPS/NEFT/RTGS | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/how-do-i-add-money-to-my-trading-account-using-imps-neft-or-rtgs |
 | Unmapped bank transfer info | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/can-funds-be-transferred-using-imps-neft-rtgs-or-cheque-from-bank-accounts-not-linked-to-the-zerodha-account |
 | IDFC 3-in-1 facility | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/idfc-3-in-1-with-blocking-facility |
+| HDFC netbanking eCMS transfer | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/how-do-i-add-money-to-my-trading-account-using-imps-neft-or-rtgs |
 
 ---
 
@@ -176,7 +189,9 @@ On every payin query, execute in order:
 ```
 1. PREFLIGHT
    ├─ get_all_client_data → check account type, registered banks, IDFC 3-in-1 status
-   ├─ If NRI PIS (client_acc_type IN NRO/NRE/NRI AND pis_bank present) → STOP. **ESCALATE** — agent review needed.
+   ├─ **NRI PIS EARLY EXIT:** If NRI PIS (client_acc_type IN NRO/NRE/NRI AND pis_bank present)
+   │   → STOP. Escalate to agent. Do not construct a response, do not share bank details,
+   │   do not apply A2 guidance. The agent handles all NRI PIS payin queries.
    ├─ UNLINKED ACCOUNT CHECK: If customer mentions transferring from an unlinked,
    │   unregistered, or unmapped bank account, or from a third-party account (spouse, family,
    │   others) → address this concern directly, even if other successful transactions exist
@@ -239,6 +254,8 @@ On every payin query, execute in order:
 ### Rule 2: Netbanking Pending
 
 If `transfer_mode` = netbanking AND `Status` = Unknown:
+
+**Status note:** For netbanking, "Unknown" status means the transaction is still pending at the bank — it does not mean failed. Apply the credit/refund timeline below. The Rule 1 guidance (Treat Unknown as Failed) applies only to UPI transactions.
 
 **Note on data availability:** Netbanking (payment gateway) transactions are only visible in the Cashier Payin report for 7 days (per **A1**). If the transaction is older than 7 days and not found in the Cashier Payin report, check the `ledger_report` for the payin entry before concluding the transaction doesn't exist.
 
@@ -507,4 +524,3 @@ Response: "Your account was recently activated. It takes up to 24 working hours 
 If customer asks about a ₹1 credit from "ZERODHA BR" via IMPS:
 
 Response: "The ₹1 credited to your account is a standard test deposit. This typically occurs when you create a mandate or recently add a bank account to your Zerodha account. This transaction is normal and does not impact your account."
-

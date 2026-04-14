@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "AMC charges", "annual maintenance charges", "demat charges", 
 
 ## Protocol
 
-# AMC CHARGES PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -56,56 +54,34 @@ Eligible account types: individual resident accounts only. NRI and non-individua
 
 Support article: https://support.zerodha.com/category/account-opening/resident-individual/ri-online/articles/how-to-open-a-basic-service-demat-account-at-zerodha
 
-### A4 — Slab Inference & Response Logic
+### A4 — Charge Inference & Response Logic
 
-**Branch 1: Non-BSDA (`bsda_flag` = NO)**
+Determine the client's BSDA status and applicable slab from `charge_after_gst` and `client_holdings` using the inference table below. Respond based on the matching row.
 
-The account has more than one demat account or otherwise does not meet BSDA criteria per **A3**. AMC is determined by `charged_amount`.
+**Inference Table**
 
-**Internal verification (silent):** Check `charged_amount` and `client_holdings` to verify the charge internally per **A5**. If the client questions the charge amount, respond based on the `charged_amount` row below. The charge for non-BSDA accounts is based on account categorisation, so respond with the account's BSDA status rather than holdings value.
+| `charge_after_gst` | `client_holdings` | BSDA Status | Slab | Response |
+|---|---|---|---|---|
+| ₹0 | ≤ ₹4,00,000 | BSDA | Slab 1 | "No AMC was charged for the quarter as your account is eligible for Basic Services Demat Account (BSDA) benefits and your holdings were within the ₹4,00,000 limit." |
+| ₹29.50 | ₹4,00,001 – ₹10,00,000 | BSDA | Slab 2 | "AMC of ₹29.50 was charged as your account is eligible for BSDA benefits and your holdings reached ₹[client_holdings] during the quarter." |
+| ₹29.50 | ≤ ₹4,00,000 | BSDA | Slab 2 | "AMC of ₹29.50 was charged as your holdings crossed ₹4,00,000 during the billing quarter, even though they may be lower now. AMC is based on the highest holdings value during the quarter." |
+| ₹88.50 | ≤ ₹4,00,000 | Not BSDA | Standard | "AMC of ₹88.50 was charged for the quarter. Your account is not categorised as a Basic Services Demat Account (BSDA), so the standard AMC applies." |
+| ₹88.50 | ₹4,00,001 – ₹10,00,000 | Not BSDA | Standard | "AMC of ₹88.50 was charged for the quarter. Your account is not categorised as a Basic Services Demat Account (BSDA), so the standard AMC applies." |
+| ₹88.50 | > ₹10,00,000 | BSDA | Slab 3 | "AMC of ₹88.50 was charged as your holdings reached ₹[client_holdings] during the quarter, which exceeded ₹10,00,000." |
+| Any | Client disputes charge, says investment was less | — | — | "AMC is based on the highest value your holdings reached during the billing quarter, which was ₹[client_holdings]. Even if your current holdings are lower, the charge is calculated on this peak value." |
+| Any | Client asks why not BSDA / how to get lower AMC | — | — | "BSDA status is determined by the depository (CDSL). To qualify, you must have only one demat account across all brokers and your holdings must not exceed ₹10,00,000." + link from **A3**. |
 
-| `charged_amount` (with GST) | Response |
-|---|---|
-| ₹88.50 | "AMC of ₹88.50 was charged for the quarter. Your account is not categorised as a Basic Services Demat Account (BSDA), so the standard AMC applies." |
-| ₹29.50 | "AMC of ₹29.50 was charged for the quarter as your investment value was within the applicable range." |
-| ₹0 | "No AMC was charged for the quarter as your investment value was within the applicable range." |
-| Client asks why not BSDA / how to get lower AMC | "BSDA status is determined by the depository (CDSL). To qualify, you must have only one demat account across all brokers and your holdings must not exceed ₹10,00,000." + link from **A3**. |
-
-**Branch 2: BSDA (`bsda_flag` = YES)**
-
-The account is marked BSDA by the depository. Determine the applicable slab using `client_holdings` (highest holdings value during the billing quarter per **A1**) and the slab table in **A2**.
-
-| charged_amount (pre-GST) | client_holdings | Response |
-|---|---|---|
-| ₹0 | ≤ ₹4L | "No AMC was charged for the quarter as your account is eligible for Basic Services Demat Account (BSDA) benefits and your holdings were within the ₹4,00,000 limit." |
-| ₹25 (₹29.50 with GST) | ₹4L–₹10L | "AMC of ₹29.50 was charged as your account is eligible for BSDA benefits and your holdings reached ₹[client_holdings] during the quarter." |
-| ₹25 (₹29.50 with GST) | ≤ ₹4L | "AMC of ₹29.50 was charged as your holdings crossed ₹4,00,000 during the billing quarter, even though they may be lower now. AMC is based on the highest holdings value during the quarter." |
-| ₹75 (₹88.50 with GST) | > ₹10L | "AMC of ₹88.50 was charged as your holdings reached ₹[client_holdings] during the quarter, which exceeded ₹10,00,000." |
-| Any | Client disputes charge, says investment was less | "AMC is based on the highest value your holdings reached during the billing quarter, which was ₹[client_holdings]. Even if your current holdings are lower, the charge is calculated on this peak value." |
+**Disambiguation — ₹88.50 with > ₹10L holdings:** Check the inferred BSDA status from the table above. If the status is BSDA (Slab 3), the charge is due to high holdings on a BSDA account. If the status is Not BSDA, the charge is due to standard non-BSDA AMC. When both ₹88.50 and > ₹10L holdings appear, determine which applies by checking whether other indicators (e.g., ₹0 or ₹29.50 charges in adjacent quarters) suggest the account was previously BSDA. If unclear, explain both possibilities to the client: the charge could reflect BSDA Slab 3 or standard non-BSDA AMC, and CDSL determines the categorisation.
 
 ### A5 — Field Rules
 
+Determine BSDA status from `charge_after_gst` and `client_holdings` per **A4**. In client-facing language, express BSDA status as "eligible for BSDA benefits" or "not categorised as BSDA."
+
 **Shareable with client:** `charged_date`, `previous_charge_date` (as billing period), `charged_amount`, `charge_after_gst`, `type_of_demat`.
 
-**Conditionally shareable:** `client_holdings` — on the BSDA path, share with the client when explaining which slab applied or when the client questions the charged amount. On the non-BSDA path, use for internal verification only and exclude from client-facing responses.
+**Conditionally shareable:** `client_holdings` — share with the client when explaining which slab applied or when the client questions the charged amount. For accounts inferred as Not BSDA per **A4**, use for internal verification only.
 
-**Internal reasoning only:** `client_id`, `demat_number`, `demat_only_clientid`, `bsda_flag`. These fields inform internal logic and are excluded from client-facing responses. In client-facing language, express BSDA status as "eligible for BSDA benefits" or "not categorised as BSDA" rather than referencing the flag or its values.
-
-**BSDA determination — do not rely on `bsda_flag` alone.** The flag may not reflect the latest depository update. Instead, determine BSDA status from `charge_after_gst` and `client_holdings` using the logic below. The actual charge applied is the definitive indicator.
-
-**BSDA requires both criteria:**
-1. Only 1 demat account across all brokers and depositories
-2. Holdings value has not exceeded ₹10,00,000
-
-**Inference from AMC charge data:**
-
-| `charge_after_gst` | `client_holdings` | BSDA Status | Inference |
-|---|---|---|---|
-| ₹0 | ≤ ₹4,00,000 | **BSDA** | Both criteria met — nil AMC (Slab 1) |
-| ₹29.50 | ₹4,00,001 – ₹10,00,000 | **BSDA** | Both criteria met — reduced AMC (Slab 2) |
-| ₹88.50 | ≤ ₹4,00,000 | **Not BSDA** | Holdings qualify, but charged standard AMC — client has multiple demat accounts (criterion 1 not met) |
-| ₹88.50 | ₹4,00,001 – ₹10,00,000 | **Not BSDA** | Holdings within range, but charged standard AMC — client has multiple demat accounts (criterion 1 not met) |
-| ₹88.50 | > ₹10,00,000 | **Not BSDA** | Holdings exceed ₹10,00,000 — criterion 2 not met (number of demat accounts is irrelevant) |
+**Internal reasoning only:** `client_id`, `demat_number`, `demat_only_clientid`, `bsda_flag`. These fields are for internal logic and stay out of client-facing responses.
 
 ### A6 — Cross-Reference Protocols
 
@@ -122,7 +98,7 @@ The account is marked BSDA by the depository. Determine the applicable slab usin
 
 1. Fetch the AMC charges report for the client.
 2. Apply field protection per **A5** — shareable fields are used in responses, internal-only fields are used for reasoning only.
-3. Use `bsda_flag` and `client_holdings` internally to determine BSDA status and slab — these feed into Rule 3 logic.
+3. Determine BSDA status and slab from `charge_after_gst` and `client_holdings` per **A4**.
 4. Format all amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
 
 ### Routing Tree
@@ -178,15 +154,13 @@ If the AMC amount doesn't match any expected slab or the data seems inconsistent
 
 ### Rule 3 — BSDA Eligibility & AMC Slab Explanation
 
-1. Check `bsda_flag` internally (per **A5**):
+1. Determine BSDA status and slab from `charge_after_gst` and `client_holdings` per **A4**. Respond using the matching row in the **A4** inference table.
 
-   **If `bsda_flag` = NO → Non-BSDA path.** Silently verify `charged_amount` against `client_holdings` internally, then respond per **A4 Branch 1** based on `charged_amount`. If the client asks how to become BSDA-eligible, share BSDA eligibility criteria from **A3** and the support article link.
+2. If the inferred status is Not BSDA and the client asks how to become BSDA-eligible, share BSDA eligibility criteria from **A3** and the support article link.
 
-   **If `bsda_flag` = YES → BSDA path.** Cross-check `client_holdings` (highest value recorded during the billing quarter, per **A1**) against the slab table in **A2**. Respond per **A4 Branch 2**. A BSDA client may still be charged ₹29.50 or ₹88.50 if their holdings crossed the slab threshold during the quarter, even if current holdings are lower.
+3. If the client asks about nil-AMC eligibility specifically: the nil-AMC threshold is ₹4,00,000 (Slab 1 per **A2**), applicable only to BSDA accounts. Lead with this figure and clarify that BSDA status is required first.
 
-2. If the client asks about nil-AMC eligibility specifically: the nil-AMC threshold is ₹4,00,000 (Slab 1 per **A2**), applicable only to BSDA accounts. Lead with this figure and clarify that BSDA status is required first.
-
-3. If the account has a debit balance, fetch the ledger report (per **A6**) and include a brief breakdown of all debit entries in the response. This ensures the client is not conflating other debits (settlement charges, DP charges, etc.) with the AMC charge. Explain each debit entry separately before summarising the AMC portion.
+4. If the account has a debit balance, fetch the ledger report (per **A6**) and include a brief breakdown of all debit entries in the response. This ensures the client is not conflating other debits (settlement charges, DP charges, etc.) with the AMC charge. Explain each debit entry separately before summarising the AMC portion.
 
 ### Rule 4 — AMC on Inactive/Zero Holdings Account
 

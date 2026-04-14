@@ -12,8 +12,6 @@ WHEN TO USE:
 
 ## Protocol
 
-# GET ALL CLIENT DATA PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -22,7 +20,7 @@ WHEN TO USE:
 
 ### A1 — Tool Purpose
 
-This is an internal data-lookup tool for interpretation only; business logic lives in downstream tools.
+This tool collects and interprets client data, then routes to the appropriate downstream tool for resolution — all client queries are resolved exclusively by downstream tools, not by this tool.
 
 ---
 
@@ -34,11 +32,15 @@ This is an internal data-lookup tool for interpretation only; business logic liv
 
 **Internal-only fields** (use for reasoning; communicate outcomes in plain language):
 
-`owner` | `modified_by` | `broker_code` | `support_code` | `support_code_masked` | `email_masked` | `mobile_masked` | `primary_dp_id` | `primary_dp_account_no` | `secondary_dp_id` | `secondary_dp_account_no` | `tertiary_dp_id` | `tertiary_dp_account_no` | all `*_soft_enable` fields | `bank_N_account_number` (raw) | `bank_N_micr_code` | `bank_N_poa` | `pis_bank_N_account_number` | `pis_bank_N_micr_code` | `docstatus` | `idx` | `doctype` | `creation` | `modified` | `acc_open_flag` | `eq_sign` | `eq_signed_on` | `comm_sign` | `comm_signed_on` | `tags` | `holdings_as_on_date` | `poa_details` | `address_details` | `bank_details` | `dp_details` | `segment_details` | `client_documents` | `uid_meta` | `custodial_participant_code` | `cp_code`
+`owner` | `modified_by` | `broker_code` | `support_code` | `support_code_masked` | `email_masked` | `mobile_masked` | `primary_dp_id` | `primary_dp_account_no` | `secondary_dp_id` | `secondary_dp_account_no` | `tertiary_dp_id` | `tertiary_dp_account_no` | all `*_soft_enable` fields | `bank_N_account_number` (raw) | `bank_N_micr_code` | `bank_N_poa` | `pis_bank_N_account_number` | `pis_bank_N_micr_code` | `docstatus` | `idx` | `doctype` | `creation` | `modified` | `acc_open_flag` | `eq_sign` | `eq_signed_on` | `comm_sign` | `comm_signed_on` | `tags` | `holdings_as_on_date` | `poa_details` | `address_details` | `bank_details` | `dp_details` | `segment_details` | `client_documents` | `uid_meta` | `custodial_participant_code` | `cp_code` | `third_party_demat`
 
 **Masked fields** (share last 4 digits only, format: `****1234`):
 
 `bank_N_account_number` | `pis_bank_N_account_number`
+
+**Interactions/Communications tabs:** These tabs are off-limits. Content from these tabs stays internal and is not surfaced to the client.
+
+**Documents tab:** Access only if the client explicitly requests it AND the agent has the "Client Documents Viewer" role.
 
 ---
 
@@ -111,18 +113,7 @@ This is an internal data-lookup tool for interpretation only; business logic liv
 
 ---
 
-### A7 — Bank Field Mapping
-
-| Slot | Fields |
-|---|---|
-| Primary | `bank_1_*` |
-| Secondary | `bank_2_*` |
-| Tertiary | `bank_3_*` |
-| PIS (NRI only) | `pis_bank_1_*`, `pis_bank_2_*` |
-
----
-
-### A8 — Account Type Flags
+### A7 — Account Type Flags
 
 | Flag | Note |
 |---|---|
@@ -133,7 +124,7 @@ This is an internal data-lookup tool for interpretation only; business logic liv
 
 ---
 
-### A9 — Key Account Flags
+### A8 — Key Account Flags
 
 | Field | Meaning |
 |---|---|
@@ -143,7 +134,7 @@ This is an internal data-lookup tool for interpretation only; business logic liv
 
 ---
 
-### A10 — Client ID Field
+### A9 — Client ID Field
 
 The `name` field in the tool response is the client's unique Client ID (e.g., "XX0000"). Store this value and pass it to any downstream tool that requires a client ID (e.g., `stock_gift_requests` fields like `gifted_by`, `claimed_by`, `client_id`).
 
@@ -161,17 +152,21 @@ The `name` field in the tool response is the client's unique Client ID (e.g., "X
 
 2. Resolve account type (per A3)
    ├─ If `client_acc_type` = "NRI" → resolve NRE/NRO via `bo_sub_status` → PIS via `pis_bank_*`
-   └─ Note applicable flags/restrictions (per A8)
+   └─ Note applicable flags/restrictions (per A7)
 
 3. Check Orbis (partner-managed account)
    └─ If `custodial_participant_code` OR `cp_code` has any value → account is managed
       by a partner broker (Orbis). ESCALATE per Rule 4. STOP.
 
+3a. Check third-party demat
+    └─ If `third_party_demat` = true → ESCALATE TO SM: third-party demat mapped;
+       support manager review needed. STOP.
+
 4. Check dormancy
    └─ `nse_eq_status` OR `bse_eq_status` OR any segment = "Dormant"
       → collect dormancy details and route to `account_modification_report`
 
-5. Store Client ID from `name` field (per A10)
+5. Store Client ID from `name` field (per A9)
 ```
 
 ### Route
@@ -182,10 +177,6 @@ Intent / Condition                            → Action
 Segment status query                          → Rule 1 → route to `account_modification_report`
 PAN / Name / DOB mismatch                     → Rule 2 → route to `pan_status`
 DDPI / POA / TPIN query                       → Rule 3 → route to `account_modification_report`
-Bank details query                            → route to `account_modification_report`
-Withdrawal query                              → route to `withdrawal_request`
-Payin query                                   → route to `cashier_payins`
-Fund transfer to Zerodha via NEFT/IMPS/RTGS   → route to `cashier_payins`
 Nominee query                                 → route to `account_modification_report`
 Request for email / mobile / contact info     → route to `account_modification_report`
 Any field from internal-only list requested   → route to `account_modification_report`

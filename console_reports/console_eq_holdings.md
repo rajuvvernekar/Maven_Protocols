@@ -21,8 +21,6 @@ TRIGGER KEYWORDS: "holdings", "buy average", "average price", "discrepancy", "no
 
 ## Protocol
 
-# CONSOLE EQ HOLDINGS PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -104,6 +102,8 @@ This tool looks up a client's equity holdings. Buy average uses FIFO (First In, 
 **Buy average null reasons:** Discrepant without entry | Transfer without manual update | CA in progress | ESOP/off-market without entry.
 
 **Buy average ₹0 reason:** Only bonus shares remain after FIFO sold all original bought shares (bonus cost = ₹0).
+
+**Grandfather clause (pre-2018 holdings with no purchase records):** If the client purchased shares before 31 Jan 2018 and original purchase records are unavailable, Section 112A of the Income Tax Act provides a grandfathering provision. The cost of acquisition for tax purposes is the higher of: (a) the actual purchase price, or (b) the stock's high price on NSE or BSE on 31 Jan 2018. The client can enter trade date as 31 Jan 2018 and use the high price from that date. Historical prices are available on the NSE and BSE websites.
 
 ---
 
@@ -205,6 +205,8 @@ Fractional shares from any CA settled in cash by company-appointed trustee → c
 | Approved securities list | zerodha.com/approved-securities |
 | Holdings on Console | console.zerodha.com/portfolio/holdings |
 | Redeeming fractional units of LIQUIDBEES | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units |
+| NSE historical prices | nseindia.com (search company → Historical Data) |
+| BSE historical prices | bseindia.com (search company → Historical Prices) |
 
 ---
 
@@ -343,6 +345,12 @@ For guidance on updating discrepancy details, please refer to:
 https://support.zerodha.com/category/console/portfolio/articles/i-see-a-few-holdings-under-the-discrepancy-tab-what-does-it-mean
 https://support.zerodha.com/category/console/portfolio/articles/how-do-i-add-external-trades-on-console"
 
+**R37 — Investment value changed after same-day sell (FIFO impact):**
+"Your sell of [qty] shares of [tradingsymbol] today was processed using FIFO — the earliest purchased shares are considered sold first. If those earliest shares had a buy average higher than the current market price, the reduction in your holdings value will be greater than the sale proceeds received. Conversely, if the buy average of the earlier purchases was lower than the current market price, the reduction in investment value will be less than the sale proceeds received, and your holdings value may appear to increase. The updated invested value and buy average for remaining shares will reflect after end-of-day processing. You can check the detailed FIFO calculation under View breakdown on Kite or Console."
+
+**R38 — Grandfather clause (pre-2018 holdings, no purchase records):**
+"For shares purchased before 31 Jan 2018 where the original purchase records are unavailable, you can use the grandfathering provision under Section 112A of the Income Tax Act. Under this clause, the cost of acquisition for tax purposes is the higher of: (a) the actual purchase price, or (b) the stock's high price on NSE or BSE on 31 Jan 2018. You can enter the trade date as 31 Jan 2018 and use the high price from that date as the buy price on Console (Console → Portfolio → Holdings → View discrepancy → Add trade). Historical prices can be looked up on the NSE or BSE websites."
+
 ---
 
 ### A14 — Discrepancy Diagnostic Checklist
@@ -382,6 +390,10 @@ When a client reports a discrepancy or a specific purchase that doesn't match ho
 ```
 Intent / Condition                                        → Rule
 ────────────────────────────────────────────────────────────────────
+Employer-mandated account deactivation or closure         → Escalate to human agent immediately.
+  (client mentions employer restrictions, compliance
+  requirements, or inability to trade due to employer)
+
 Buy average differs from expected                         → Rule 1
 Buy average showing N/A                                   → Rule 2
 Buy average showing ₹0                                    → Rule 3
@@ -405,7 +417,7 @@ Fractional unit redemption (LIQUIDBEES)                   → Rule 18
 ### Scope
 
 - Address the client's query about their equity holdings, buy averages, corporate actions, discrepancies, dividends, or pledged stock.
-- Use **A2** field rules and client-facing terminology in all client communication.
+- Employer-mandated account deactivation or closure queries (employer compliance, empanelment) are outside protocol scope — escalate to a human agent immediately.
 
 ### Fallback
 
@@ -421,6 +433,7 @@ If no route matches, interpret the holdings data using Section A reference data.
 
 1. Respond per **A13-R1** (FIFO explanation).
 2. If client sold and bought back same day → respond per **A13-R2** (intraday no-impact).
+3. If the client's complaint is about investment value or buy average changing today, check Kite Order History and Kite Positions for same-day executed sell trades. If a sell order was executed today → respond per **A13-R37** (FIFO impact on same-day sell).
 
 ---
 
@@ -433,6 +446,7 @@ If no route matches, interpret the holdings data using Section A reference data.
    d. If entry exists AND still processing → respond per **A13-R6**.
    e. If entry exists AND processed but avg still N/A → escalate per **A12** with entry details from `console_eq_external_trades`.
    f. If no entry exists AND A14 confirms stocks NOT bought on Zerodha → respond per **A13-R3** + **A13-R4**.
+   g. If client confirms shares were purchased before 31 Jan 2018 and original purchase records are unavailable → respond per **A13-R38** (grandfather clause). Guide client to use the FMV from 31 Jan 2018 as the cost of acquisition (per **A5**).
 
 2. If `buy_average` is null AND `discrepant` = 0 AND `pending` > 0:
    → Respond per **A13-R7**. Timeline per **A4**.
@@ -471,8 +485,14 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 
 1. Check `console_eq_external_trades` for an existing entry for this ISIN.
 2. If entry exists AND still processing → respond per **A13-R6**.
-3. If entry exists AND processed but discrepancy not resolved → escalate per **A12** with entry details.
+3. If entry exists AND processed but discrepancy not resolved → route to Console Eq External Trades protocol Rule 2 for post-entry diagnostics.
 4. If no entry exists → respond per **A13-R3** + **A13-R4**.
+
+**If the client states they have already added external trade details:**
+
+1. Check `console_eq_external_trades` for the entry before guiding them to add it again.
+2. If the entry exists → route to Console Eq External Trades protocol Rule 2 for post-entry diagnostics.
+3. If no entry exists → respond per **A13-R3** + **A13-R4**.
 
 **If the instrument is an NCD or bond transferred from another broker:**
 
@@ -488,8 +508,8 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 2. If entry found → respond per **A13-R6**.
 3. If no entry found → check against **A8** cannot-resolve conditions. Before applying the unlisted/inactive exception, verify the stock's current exchange status by checking Kite holdings or instrument search. If the stock has since been listed, proceed with standard discrepancy resolution (Rule 5). Respond with the applicable reason:
    - Trading holiday → "Today is a trading holiday — you can add the entry on the next trading day."
-   - Inactive/suspended stock (confirmed still inactive/suspended after verification) → "This stock is currently inactive/suspended. Once it becomes active on the exchange, you'll be able to resolve the discrepancy."
-   - Unlisted stock (confirmed still unlisted after verification) → "This stock is currently unlisted. Once it becomes listed on the exchange, you'll be able to resolve the discrepancy."
+   - Inactive/suspended stock (confirmed still inactive/suspended after verification) → "This stock is currently inactive/suspended on the exchange. However, it is still visible on Console (console.zerodha.com/portfolio/holdings) as Console shows all securities in your demat, including suspended and inactive ones. Once it becomes active on the exchange, you'll be able to resolve the discrepancy."
+   - Unlisted stock (confirmed still unlisted after verification) → "This stock is currently unlisted on any exchange. However, it is still visible on Console (console.zerodha.com/portfolio/holdings) as Console shows all securities in your demat, including unlisted ones. Once the stock becomes listed on an exchange, you'll be able to resolve the discrepancy."
    - CA within 10 days → "[tradingsymbol] had a corporate action within the last 10 days. The system will auto-adjust during this period. Please try again after 10 days from the corporate action date."
    - IPO within 3 days → "[tradingsymbol] was listed via IPO within the last 3 days. The system needs up to 3 days to process. Please try again after that."
 

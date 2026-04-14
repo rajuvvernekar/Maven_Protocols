@@ -29,8 +29,6 @@ TRIGGER KEYWORDS: "available margin", "available cash", "opening balance", "used
 
 ## Protocol
 
-# KITE MARGINS PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -220,10 +218,10 @@ Share: `payin` (₹), `payout` (₹). Payin = funds added today. Payout = funds 
 "Available cash on Kite is rounded to 1 decimal place for display. For example, ₹1005.53 shows as ₹1005.5. The full amount is withdrawable."
 
 **R16 — Market order caused negative balance:**
-"Market orders are validated at the best available price but execution can occur at a different price — especially at market opening. This price difference can cause a negative balance. A negative cash balance attracts interest at 0.05%/day (18% p.a.), and a brokerage of ₹40 per executed F&O order applies. Please add funds to clear the negative balance."
+"Market orders are validated at the best available price but execution can occur at a different price, especially at market opening. This price difference can cause a negative balance. A negative cash balance attracts interest at 0.05%/day (18% p.a.), and a brokerage of ₹40 per executed F&O order applies. Please add funds to clear the negative balance."
 
 **R17 — MTM explanation:**
-"Mark to Market (MTM) is the daily revaluation of open futures positions by the exchange at the closing price. Profits or losses are settled to your account daily. Short options don't undergo daily MTM — instead, margin increases as they move in-the-money."
+"Mark to Market (MTM) is the daily revaluation of open futures positions by the exchange at the closing price. Profits or losses are settled to your account daily. Short options don't undergo daily MTM. Instead, margin increases as they move in-the-money."
 
 **R18 — Balance negative due to physical delivery margin:**
 "Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. This margin increases progressively as expiry approaches (schedule per **A12**). To confirm, invoke `ledger_report` and check remarks for 'Physical delivery margin blocked for long options in NSE F&O' with the corresponding debit entry. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)"
@@ -311,8 +309,9 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 ### Rule 2 — Balance Inquiry
 
 1. Respond per **A11-R1**.
-2. If `used_margin` is negative → also explain per **A11-R2**.
-3. If client asks why margin is blocked or about a specific order → invoke `kite_orders`.
+2. If `opening_balance` is negative → flag this prominently: a negative opening balance blocks all fresh positions. Respond per **A11-R4** with the opening balance amount and advise the client to add funds. If `option_premium` is also negative, explain per **A11-R8** that this reflects premium paid for buying options, and that proceeds from exiting or writing options are usable only for new long option trades in the same segment on the same day (per Kite Positions **A10**).
+3. If `used_margin` is negative → also explain per **A11-R2**.
+4. If client asks why margin is blocked or about a specific order → invoke `kite_orders`.
 
 ---
 
@@ -434,4 +433,3 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
    b. If found → respond per **A11-R18**. Share the margin schedule from **A12** and the debit amount from the ledger. Link to physical settlement policy per **A9**.
    c. If not found → route to Rule 4 (standard negative cash handling).
 2. If client asks about the position → invoke `kite_positions`.
-

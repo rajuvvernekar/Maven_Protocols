@@ -19,8 +19,6 @@ PREREQUISITE: Always run get_all_client_data FIRST to obtain client_name, pan, d
 
 ## Protocol
 
-# PAN STATUS PROTOCOL 
-
 ---
 
 ## Section A: Reference Data
@@ -33,9 +31,7 @@ This tool checks **PAN verification status** — validity + name/DOB match acros
 
 Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
 
-**Prerequisite:** Always retrieve `client_name`, `pan`, `dob` from `get_all_client_data` before checking pan_status. These are needed to interpret the results.
-
-**Input:** Client's PAN, name, and DOB (from `get_all_client_data`).
+**Input:** Client's PAN, name, and DOB (from `get_all_client_data` — see Preflight Step 1 for why).
 
 ---
 
@@ -138,6 +134,17 @@ Please note: It may take up to 7 working days after documents are received for t
 **R4 — Minor PAN verification failed:**
 "The minor's PAN verification has failed. This means the PAN number or date of birth entered does not match the Income Tax Department records. Please verify the minor's PAN details and date of birth on the ITD portal at incometax.gov.in, and retry. If the PAN was recently issued, it may take a few days to reflect in the ITD database."
 
+**R5 — Name mismatch, client states ITD already updated:**
+"Your Zerodha records still reflect the earlier name. To update your name with Zerodha:
+
+**Online:** Visit account.zerodha.com and complete the re-KYC process (Aadhaar must be linked to your mobile number). This is available for: spelling corrections, interchange of names, middle name or initial changes, and father's/mother's name changes.
+
+**Offline:** For marriage/divorce name changes, personal preference changes, or removing a middle/last name — courier the required documents to Zerodha. Charges: ₹25 + GST. Processing time: up to 7 working days after documents are received.
+
+Courier address: Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
+
+For details on the process and documents required, visit: How to change the name in my Zerodha account?"
+
 ---
 
 ---
@@ -149,13 +156,17 @@ Please note: It may take up to 7 working days after documents are received for t
 ### Preflight (run on every query)
 
 ```
-1. Retrieve client_name, pan, dob from get_all_client_data first.
-   These are required to interpret pan_status results.
+1. Retrieve client_name, pan, dob from get_all_client_data.
+   These represent Zerodha's current registered records.
+   Use these values as PAN status input — not the name the client
+   provides in their query, which may be a different (updated) name.
+   The purpose of PAN status is to check Zerodha's registered name
+   against ITD for mismatch detection.
 
 2. Call pan_status with those fields.
 
 3. Check PAN validity (per A3):
-   └─ Not "E" → respond per A9-R1. Escalate to support agent per **A8**. STOP.
+   └─ Not "E" → respond per A9-R1. Escalate to support agent per A8. STOP.
 ```
 
 ### Route
@@ -188,7 +199,8 @@ If the client still faces issues despite all-clear PAN status, check `get_all_cl
 ### Rule 1 — Name and/or DOB Mismatch
 
 1. Name match = "N" OR DOB match = "N".
-2. Respond per **A9-R2**. Name change options per **A6**. Links per **A7**.
+2. If the client has explicitly stated that their name has already been updated at ITD, respond per **A9-R5**. Name change categories per **A6**, links per **A7**.
+3. Otherwise, respond per **A9-R2**. Name change options per **A6**. Links per **A7**.
 
 ---
 
@@ -210,5 +222,4 @@ If the client still faces issues despite all-clear PAN status, check `get_all_cl
 ### Rule 4 — Single Ledger Activation Error
 
 1. Client reports "name and/or date of birth do not match" error during single ledger activation.
-2. Apply Rule 1 (**A9-R2**). The mismatch must be resolved before single ledger can be enabled.
-
+2. Apply Rule 1 (**A9-R2** or **A9-R5** depending on client context). The mismatch must be resolved before single ledger can be enabled.

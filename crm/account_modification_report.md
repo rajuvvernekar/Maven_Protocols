@@ -27,8 +27,6 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 
 ## Protocol
 
-# ACCOUNT MODIFICATION PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -58,7 +56,7 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 | Action | Charge |
 |---|---|
 | Standard modification | ₹25 + 18% GST |
-| DDPI offline activation | ₹100 + 18% GST |
+| DDPI activation (online and offline) | ₹100 + 18% GST |
 | Secondary demat transfer | ₹13 + 18% GST per transaction |
 | Secondary demat AMC | ₹300 + 18% GST per account |
 
@@ -83,7 +81,7 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 ### A4: Field Rules
 
 **Internal reasoning only (use for analysis, communicate in plain language):**
-`form_type`, `description`, `client_id`, `bank_name`, `account_number`, `request_type`, `income_proof`, `new_email`, `new_mobile`, `signer_name`, `notary_id`, `bank_order`, `kyc_field_type`, `STARMF`, `primary_ddpi_flag`, `primary_ddpi_agreement_date`, `poa_consent`, `primary_poa_for_securities`, `primary_dp_status`, raw segment identifiers (e.g. `NSE_COM`, `NSE_FO`, `BSE_EQ`, `MCX_FO`), raw status values
+`form_type`, `description`, `client_id`, `bank_name`, `account_number`, `request_type`, `income_proof`, `new_email`, `new_mobile`, `signer_name`, `notary_id`, `bank_order`, `kyc_field_type`, `STARMF`, `primary_ddpi_flag`, `primary_ddpi_agreement_date`, `poa_consent`, `primary_poa_for_securities`, `primary_dp_status`, `third_party_demat`, raw segment identifiers (e.g. `NSE_COM`, `NSE_FO`, `BSE_EQ`, `MCX_FO`), raw status values
 
 **Client-friendly translations:**
 - `form_type` values → "segment activation" / "bank modification" / "ReKYC" / "primary bank" / "secondary bank"
@@ -119,6 +117,8 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 
 When checking segment status for a client query, use the relevant status field from this table. When status = Rejected or Activation_rejected, check the corresponding remarks field for the rejection reason.
 
+**Commodity segment cross-check:** When a client queries about commodity trading (MCX, CRUDEOILM, commodity options, or any commodity product), check both `zbl_mcx_status` and `nse_com_status`. Report the status of each segment that is not fully active. Both segments may need to be active depending on the product the client wants to trade.
+
 ---
 
 ### A5: Account Context Extraction
@@ -137,6 +137,7 @@ On every query, call `get_all_client_data` and extract:
 | DDPI/POA | `primary_ddpi_flag`, `poa_consent`, `primary_poa_for_securities` |
 | PAN/Name/DOB | `pan`, `client_name`, `dob` |
 | Demat status | `primary_dp_status` |
+| Third-party demat | `third_party_demat` |
 
 ---
 
@@ -244,6 +245,17 @@ Causes: incorrect IFSC (O vs 0 confusion), branch/IFSC not recognised by CDSL, "
 
 Condition: bank_type = "Primary" AND request_type = "update" AND bank validation failed. Resolution: direct to ReKYC flow at account.zerodha.com. Client uploads bank statement, cheque, or passbook within the ReKYC flow. Do not direct to offline courier process.
 
+#### RTA / Unpaid Dividend — Bank Details Query
+
+When a client asks about unpaid dividends held by an RTA (e.g., KFin Technologies, CAMS) or requests that Zerodha share an updated CML with an RTA:
+
+1. Check `bank_details` in `get_all_client_data` — confirm the bank account is active and the dividend field = YES.
+2. **Bank details correct and dividend-enabled:** Respond per A7-RTA-R1.
+3. **Bank details missing, incorrect, or dividend ≠ YES:** Guide the client to update bank details per A7 Primary Bank Change process. Confirm that the updated CML will be shared with CDSL after the change is processed.
+
+**A7-RTA-R1 (Response Template):**
+"Dividend-related issues typically arise when the bank details registered with the depository do not match what the RTA has on file. We have verified your bank details — they are correctly updated on your account. Zerodha shares updated CML data with CDSL, and CDSL forwards it to RTAs as part of their regular update cycle. The RTA typically receives the update within a few business days. If the dividend is not credited within 10 business days, please follow up with the RTA directly. If your bank details need to be updated, you can do so by following the steps here: [How to change my primary bank account?](https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/change-primary-bank-account). A charge of ₹25 + GST applies for changing the primary bank account. If your bank details are already correct and the issue persists, please let us know so we can assist further."
+
 ---
 
 ### A8: Account Closure
@@ -255,6 +267,8 @@ Condition: bank_type = "Primary" AND request_type = "update" AND bank validation
 **Closure cum transfer:** Transfer holdings to another demat while closing. No additional charges. Refer to [SOP](https://s3.ap-south-1.amazonaws.com/staticassets.zerodha.net/support-portal/2025/06/24/Article/FZUJ7VWF_E6T6ngib3xeSu0JR1750748598.pdf).
 
 **Online process:** Console → Account → Segments → Account closure. Options: sell holdings (Kite redirect) OR transfer holdings (demat in your name only). Accept terms → eSign with Aadhaar.
+
+**Demat closure:** When a trading account is closed, the linked CDSL demat account is also closed as part of the same process. The client does not need to submit a separate demat closure request to CDSL.
 
 **AMC after closure:** Not charged from day closure is processed.
 
@@ -270,9 +284,9 @@ Condition: bank_type = "Primary" AND request_type = "update" AND bank validation
 
 Definition: Document allowing broker to debit securities. Benefit: no CDSL TPIN/OTP required for selling. SEBI restriction: debits only for client-placed sell trades. Optional — can use CDSL TPIN instead. Replaced POA (Nov 2022).
 
-**Online activation:** Console → Account → Demat → Enable DDPI → Accept → E-sign with Aadhaar. Minor accounts: guardian's Aadhaar required.
+**Online activation:** Console → Account → Demat → Enable DDPI → Accept → E-sign with Aadhaar. Minor accounts: guardian's Aadhaar required. Charges: **A2** DDPI activation.
 
-**Offline activation:** Applies to: NRI using Orbis, joint accounts, non-individual. Documents: DDPI form (signature must match account opening). Courier: **A3** address. Charges: **A2** DDPI offline. Requirement: sufficient balance for charge deduction. Timeline: **A1** DDPI offline.
+**Offline activation:** Applies to: NRI using Orbis, joint accounts, non-individual. Documents: DDPI form (signature must match account opening). Courier: **A3** address. Charges: **A2** DDPI activation. Requirement: sufficient balance for charge deduction. Timeline: **A1** DDPI offline.
 
 **Status check:** Kite app: User ID → Profile. Kite web: Client ID → My Profile. Alternative: CDSL TPIN if no POA/DDPI.
 
@@ -366,6 +380,12 @@ Support article: [How to update or modify nominee details in Zerodha?](https://s
 
 ### A12: KYC & Reactivation
 
+#### ReKYC Process Details
+
+**Aadhaar OTP requirement:** Aadhaar OTP is required during ReKYC only when the client selects "Update as per Aadhaar" (i.e., updating their address). If the client is completing ReKYC without an address change, only eSign is required — no Aadhaar OTP is needed.
+
+**Support article:** [How to re-activate a dormant/inactive Zerodha account?](https://support.zerodha.com/category/your-zerodha-account/your-profile/kyc-re-activation/articles/re-activate-my-account)
+
 #### Deactivated Account Reactivation
 
 Applies to voluntarily deactivated accounts only. Dormant accounts: complete Re-KYC instead.
@@ -411,7 +431,7 @@ Reason: SEBI requires valid, current documents.
 
 **Escalation behavior:** When any rule in this protocol says **ESCALATE**, do not draft a customer-facing response. Instead, output only: **HUMAN AGENT ACTION REQUIRED** — followed by the reason from the rule. The human agent will handle the query manually.
 
----
+--
 
 ## Section B: Decision Flow
 
@@ -422,6 +442,8 @@ On every account modification query, execute in order:
    ├─ Call get_all_client_data → extract context per A5
    ├─ If account_blocks non-empty → STOP. **ESCALATE** — support manager review needed.
    │   Do not share block reason or raw field values with client.
+   ├─ If third_party_demat = true → STOP. **ESCALATE** — third-party demat mapped;
+   │   support manager review needed. Do not proceed with any standard guidance.
    ├─ If nse_eq_status OR bse_eq_status = "Dormant" → Rule 6 (Dormancy)
    └─ Check account_modification_report for existing requests
 
@@ -493,7 +515,7 @@ Read the exact value of the status field. Cross-check against submission date �
 - **Rejected with any other reason** → inform client of the specific rejection reason and **ESCALATE** — KYC team review needed.
 - **Not found OR > 3 months** → proceed with standard ReKYC guidance:
 
-Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Requires: Aadhaar-linked mobile (see **A3**).
+Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Requires: Aadhaar-linked mobile (see **A3**). For detailed steps, refer to: [How to re-activate a dormant/inactive Zerodha account?](https://support.zerodha.com/category/your-zerodha-account/your-profile/kyc-re-activation/articles/re-activate-my-account). Aadhaar OTP is required only if updating address (per **A12**).
 
 **Charges:** **A2** standard — applicable only if client selects "Update as per Aadhaar" during ReKYC. Mention charges only if this option is selected.
 
@@ -501,7 +523,9 @@ Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Require
 
 ### Rule 4: Account Closure
 
-**Escalation triggers:** If query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" → **ESCALATE** — relevant team review needed.
+**Escalation triggers:** If query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" → **ESCALATE** — relevant team review needed. Note: accounts with a third-party demat are caught earlier at preflight (`third_party_demat = true`) and escalated before reaching this rule.
+
+**Before responding:** Check `account_modification_report` for an existing account closure request. If a closure request is already in progress → confirm its status to the client using the status table below. Do not offer retention or Kill Switch if a closure request has already been submitted.
 
 | Status | Response |
 |---|---|
@@ -518,7 +542,7 @@ Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Require
 ### Rule 5: Segment Activation Queries
 
 1. Check demat prerequisite first (Rule 8).
-2. Check `account_modification_report` for existing requests: query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. If a request exists (`rekyc`, `rekyc_fno`, or `segment_addition`):
+2. Check `account_modification_report` for existing requests: query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. If multiple rows exist, match each row to the segment the client is asking about — evaluate independently per Rule 2 multi-row processing. If a request exists (`rekyc`, `rekyc_fno`, or `segment_addition`):
    - **In progress or approved:** If `form_type = rekyc_fno`, F&O/currency/commodity activation is already included in the ReKYC request — do not advise a separate activation request. Confirm that the existing request covers F&O and provide the processing timeline per **A1**.
    - **Rejected:** Surface the rejection reason first (per Rule 2) before providing any new activation guidance.
 3. If no existing request → guide per **A10** based on account type.
@@ -532,11 +556,11 @@ Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant":
 
 1. **Identify which segments are dormant.** Check equity segment status (`nse_eq_status`, `bse_eq_status`) and F&O/commodity segment status (per **A4** field pairs) separately.
    - If equity segments are dormant → proceed to step 2 (ReKYC path).
-   - If equity segments are already active and only F&O/commodity segments are dormant → skip ReKYC guidance entirely. Guide directly to segment activation: Console → Account → Segment Activation, with income proof per **A3**. Apply Rule 5 for the activation flow.
+   - If equity segments are already active and only F&O/commodity segments are dormant → check `account_modification_report` for `form_type` IN (`rekyc_fno`, `segment_addition`) first. If not found, also check `form_type` = `rekyc`. Evaluate each row independently and match to the segment the client is asking about (per Rule 2 multi-row processing). If a rejected request exists for the relevant segment, surface the rejection reason per Rule 2 before providing new activation guidance. If no existing request → guide to segment activation per Rule 5.
 2. **For dormant equity:** "Your account is inactive due to inactivity; trading requires ReKYC." Check `account_modification_report` for existing ReKYC request (`form_type` IN (`rekyc`, `rekyc_fno`)):
    - Found + in progress (Request_pending / Processing / Reactivation_pending) → "ReKYC received and being processed; account reactivated within 24–48 working hours."
    - Found + Rejected → surface the rejection reason first (per Rule 2). Inform the client of the specific reason before advising resubmission.
-   - Not found OR > 3 months → "Complete ReKYC at account.zerodha.com/account."
+   - Not found OR > 3 months → "Complete ReKYC at account.zerodha.com/account." Share the support article: [How to re-activate a dormant/inactive Zerodha account?](https://support.zerodha.com/category/your-zerodha-account/your-profile/kyc-re-activation/articles/re-activate-my-account). Aadhaar OTP is required only if updating address (per **A12**).
 3. After equity reactivation, dormant F&O/commodity segments → guide to Console → Account → Segment Activation. **Coin/MF:** ReKYC automatically re-enables Coin — no separate Coin activation request needed. Cross-check `get_all_client_data` for Coin segment status to confirm.
 4. Mention dormancy date/year only if asked.
 5. Use "dormant" once in the response — do not repeat.

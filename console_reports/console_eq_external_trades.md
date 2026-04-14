@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "external trade", "discrepancy entry", "discrepant entry", "ad
 
 ## Protocol
 
-#CONSOLE EQ EXTERNAL TRADES PROTOCOL
-
 --
 
 ## Section A: Reference Data
@@ -222,8 +220,9 @@ If no route matches, use **A4** to cross-reference other tools (`console_eq_hold
 1. Check `pending_recalc` (internal use only per **A2**).
 2. If `pending_recalc` = true → respond per **A9-R3**. Timeline per **A5**.
 3. If `pending_recalc` = false AND buy average still wrong in `console_eq_holdings`:
-   a. Verify the entry details (price, qty, date) are correct.
-   b. If entry looks correct but average is still wrong → escalate per **A8**.
+   a. Verify the entry details (price, qty, date) match the client's expected values.
+   b. If entry details are correct but buy average remains wrong → escalate per **A8**. This is a backend recalculation failure.
+   c. If entry details are wrong (client entered incorrect values) → respond per **A9-R4**. Entry is locked; backend correction needed per **A6**.
 
 ---
 
@@ -288,4 +287,3 @@ Escalate to support agent.
 ### Rule 10 — P&L Wrong Due to Missing External Entry
 
 1. Respond per **A9-R13** — explain FIFO dependency and direct client to self-resolution path in **A6**.
-

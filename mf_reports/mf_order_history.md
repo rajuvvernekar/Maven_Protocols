@@ -19,8 +19,6 @@ TRIGGER KEYWORDS: "order", "status", "processing", "allotted", "failed", "cancel
 
 ## Protocol
 
-# MF ORDER HISTORY PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -43,7 +41,7 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | Cancel + payment_confirmed = true | "Your order was cancelled. The debited amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)." A cancelled order with confirmed payment means a refund is due — this is a refund scenario only. |
 | Cancel + payment_confirmed = false | "Your order was cancelled. No payment was debited." |
 | Failed | "Your order was not processed. Reason: [status_message in plain language]" |
-| TPV Pending | "Your order is pending third-party bank account validation at the exchange. This auto-revalidates on the next business day." |
+| TPV Pending | "Your order is pending third-party bank account validation at the exchange. The exchange automatically re-validates pending orders on the next business day." |
 
 ---
 
@@ -53,7 +51,11 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 
 **T-day determination:** Governed by `payment_updated_at` (when payment was confirmed at ICCL). If not yet available, use `payment_initiated_at` as reference only and state that the applicable NAV depends on exchange confirmation.
 
-**If `payment_updated_at` falls on a weekend or trading/settlement holiday → T = next working day.** State: "Your order was placed on [date], which was a non-working day. The order will be processed on the next business day [date], and units will be allotted as per the settlement cycle."
+**Working day check (apply first, before cutoff logic):** Before applying any cutoff logic, check whether `payment_updated_at` falls on a working day. If `payment_updated_at` falls on a weekend or trading/settlement holiday → T = next working day. If that next day is also a non-working day, shift further until a working day is reached. State: "Your payment was confirmed on [date], which was a [weekend/holiday — name it and state reason]. The order was processed on the next working day [date]." Only apply cutoff logic after confirming the payment date is a working day.
+
+**Holiday shift scope:** The holiday shift rule applies only to the `payment_updated_at` date itself. If `payment_updated_at` falls on a working day and is before cutoff, T = that day regardless of whether the next day is a holiday. Holidays after T-day affect the settlement/allotment timeline (when units are allotted and appear in holdings), not the T-day or NAV date.
+
+**Naming holidays:** When a weekend or holiday shifts the T-day or extends the settlement timeline, state each non-working day and whether it was a weekend or a trading/settlement holiday.
 
 **NAV cutoffs (apply after T-day is established):**
 
@@ -103,6 +105,7 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 - Always use only the standard language above.
 - Refund status and real-time settlement details are internal processes managed by BSE STAR MF. Communicate only the standard timeline.
 - Specific refund dates depend on BSE STAR MF processing — use the standard timeline range only.
+- When trading/settlement holidays fall within the 5–7 working day refund window, mention them in the response so the client understands the extended calendar duration: "Due to [holiday name(s)] falling within the refund processing period, the working day count excludes these days, which may extend the calendar duration. Your refund is expected within the standard 5–7 working day window."
 
 **Determining if payment was debited:**
 - Always check `payment_confirmed` in mf_order_history first — this is the authoritative source. The trading ledger reflects trading account transactions, not MF payment confirmations.
@@ -143,7 +146,7 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 ### A6: Redemption Settlement Computation
 
 1. **Determine T:** Order before 3:00 PM on a working day → T = that day. After 3:00 PM, or on weekend/settlement holiday → T = next working day. If that day is also a holiday, shift further. Refer to unconfirmed dates as "a holiday" — only name a holiday if explicitly confirmed in the data.
-2. **Credit date:** Add `redemption_time` working days (Mon–Fri, excluding trading/settlement holidays) to T.
+2. **Credit date:** Add `redemption_time` working days (Mon–Fri, excluding trading/settlement holidays) to T. `redemption_time` applies only to redemption (SELL) orders — it is the settlement period for redemption proceeds. If `redemption_time` is blank or null in the order data, do not assume a default settlement period. State: "The settlement timeline for this fund is being updated and will be available shortly."
 3. **Response:** "Your redemption was processed on [T]. Based on [redemption_time] working days settlement, funds should be credited to your primary bank account by [date]."
 
 ---
@@ -152,9 +155,9 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 
 **Shareable with client:** fund, amount, average_price (if asked), quantity (if asked), order_timestamp, exchange_timestamp, status_message, folio (if asked), redemption_time, transaction_type
 
-**Internal reasoning only (use for analysis, communicate findings in plain language):** status, payment_confirmed, fund_source, variety, payment_initiated_at, payment_updated_at, payment_method, payment_remarks, purchase_type, exchange_order_id, unique_payment_id, payment_error_description, payment_error_code
+**Internal reasoning only (use for analysis, communicate findings in plain language):** status, payment_confirmed, fund_source, variety, payment_initiated_at, payment_updated_at, payment_method, payment_remarks, purchase_type, exchange_order_id, unique_payment_id, payment_error_description, payment_error_code, tag (use for NFO detection: if `tag` contains `"product": "nfo"`, the order is an NFO order)
 
-**Banned (internal infrastructure fields with no client relevance):** tradingsymbol, settlement_id, sip_id, tag, payment_details, last_price, last_price_date
+**Banned (internal infrastructure fields with no client relevance):** tradingsymbol, settlement_id, sip_id, payment_details, last_price, last_price_date
 
 **Communication style:**
 - Use customer-friendly language: "Your order was placed on [date]" rather than referencing system fields or tool names.
@@ -178,6 +181,7 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 - ETF NFO allotment verification: check console_eq_external_trades for an "IPO" entry matching the fund. Order status in mf_order_history may remain "Processing" even after ETF NFO allotment is complete.
 - MF units not in CDSL statement: "Units are held in demat with CDSL. Delays may be due to reporting cycles or PAN/email mismatches. Check monthly CAS email or view on Coin/Console."
 - Client cannot view fund on Coin: Check console_mf_pseudo_holdings first. If holdings exist → escalate. If no holdings → ask for screenshot.
+- Allotment timeline: Units are typically allotted within T+3 working days (excluding weekends and trading/settlement holidays) from `exchange_timestamp`. When explaining allotment timelines, compute T+3 from `exchange_timestamp` accounting for holidays.
 
 ---
 
@@ -193,6 +197,7 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 | Reactivate account | https://support.zerodha.com/category/your-zerodha-account/your-profile/kyc-re-activation/articles/re-activate-my-account |
 | MF units settlement timeline | https://support.zerodha.com/category/mutual-funds/features-on-coin/others-coin/articles/how-long-will-it-take-for-the-mutual-fund-units-to-show-up-in-my-demat-account |
 | Convert resident account to NRI | https://support.zerodha.com/category/account-opening/nri-account-opening/process-nri/articles/convert-resident-account-to-nri-account |
+| Delay allotment / NA units | https://support.zerodha.com/category/mutual-funds/payments-and-orders/orders-on-coin/articles/coin-app-na-new-units |
 
 ---
 
@@ -201,10 +206,11 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 Non-direct settlement banks report payments to the exchange on the next business day. This means the client receives T+1 NAV regardless of when the payment was made or confirmed before cutoff.
 
 **Identifying the client's bank for a specific order:**
-1. Check `payment_details` in the order → extract `acc_number`.
-2. Match `acc_number` against `bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number` from get_all_client_data.
-3. Use the matching `bank_1_name` / `bank_2_name` / `bank_3_name` to identify the bank.
-4. Check the bank against the classification below.
+1. Check `payment_method` in the order. If `payment_method` = netbanking → proceed to identify the bank.
+2. Extract `acc_number` from `payment_details`.
+3. Match `acc_number` against `bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number` from get_all_client_data.
+4. Use the matching `bank_1_name` / `bank_2_name` / `bank_3_name` to identify the bank.
+5. Check the bank against the classification below.
 
 | Direct Settlement Banks | Non-Direct Settlement Banks |
 |---|---|
@@ -268,12 +274,15 @@ On every MF order query, execute in order:
    │   └─ If dormant → answer query normally, then append reactivation note (A9 link)
    ├─ Check transaction_type to determine BUY vs SELL
    ├─ If client mentions "withdrawal" + "Coin" or "mutual fund" → treat as redemption, check SELL orders
-   ├─ If multiple orders exist for same fund in date range → address each separately.
+   ├─ MULTI-ORDER CHECK (run before any individual order diagnosis):
+   │   Before diagnosing any individual order, list all orders for the queried fund
+   │   within the relevant date range. If more than one order exists, diagnose each
+   │   order independently — report the status of every order to the client. One order
+   │   succeeding does not mean all orders succeeded.
    │   Map each order to its fund_allocation_report entry using exchange_order_id
    │   (mf_order_history) = order_number (fund_allocation_report). This is the only
    │   reliable way to match payment and settlement data to each individual order.
-   │   Check payment_confirmed and status for EACH order individually — one may have
-   │   succeeded while another failed.
+   │   Check payment_confirmed and status for EACH order individually.
    └─ Check if client is NRI → if query is about MF investment eligibility, route to Rule 10
 
 2. ROUTE by status / intent
@@ -286,6 +295,7 @@ On every MF order query, execute in order:
    ├─ NEFT/RTGS/IMPS payment → Rule 7
    ├─ Payment gateway failures → Rule 8
    ├─ NRI MF investment eligibility / account conversion → Rule 10
+   ├─ Duplicate/extra payment claims → Rule 11
    ├─ Order older than 30 days → "Check console_mf_tradebook for older records."
    └─ Escalation trigger → Rule 9
 
@@ -304,10 +314,10 @@ On every MF order query, execute in order:
 ### Rule 1: Processing Orders
 
 **Step 0 — NEFT/RTGS check:**
-If `fund_source` = neft-rtgs OR status_message contains "Pending payment via NEFT/RTGS" → **stop**, go to Rule 7.
+If `status_message` contains "Pending payment via NEFT/RTGS" → **stop**, go to Rule 7.
 
 **Step 1 — NFO check:**
-If fund is an NFO → check mf_order_history for any NFO order for this fund within last 30 days:
+Check the `tag` field for `"product": "nfo"` to identify NFO orders. If the order is an NFO → check mf_order_history for any NFO order for this fund within last 30 days:
 - Allotted → "Your units have been allotted. NFO units appear in holdings only after the fund is listed, typically within 5 working days of allotment, then T+2 from listing date." If listing date is known from order data → share it. If not → use the standard 5 working days timeline. MF/FOF NFO → appears in Coin. The depository is not involved in this timeline.
 - **ETF NFO — allotment verification:** ETF NFO units appear in Kite/Console equity holdings, not Coin. The order `status` may remain "Processing" even after allotment is complete. To confirm allotment, check console_eq_external_trades for an "IPO" entry matching the ETF NFO fund. If an IPO entry exists → allotment is complete. Inform: "Your ETF NFO units have been allotted and are available in your Kite holdings under [scrip name]. The order status on Coin may still show as Processing — this is expected for ETF NFOs."
 - Still Processing (non-ETF NFO) → "Your NFO order is being processed. Status updates within T+2 after listing." Rejection remarks for NFO orders update only after the allotment window closes.
@@ -319,20 +329,25 @@ Check `payment_error_code` and `payment_error_description` fields. If either fie
 **Step 3 — Payment check:**
 `payment_confirmed` = false (and no payment error from Step 2) → "Payment not confirmed. Allow 24 hours for gateway update."
 
+For SIP orders (`variety` = sip): also check sip_report for the SIP's `fund_source`. If `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked, check mandate_debit_report for a debit entry on the order date. If a debit entry exists, apply the debit status per Mandate Debit Report **A2** translations to determine whether the debit succeeded, is pending, or failed. If `fund_source` = `rp-pg`, `pool`, or blank → no mandate-based debit occurred.
+
 **Step 3a — Fast-track for confirmed payment beyond T+2:**
 If `payment_confirmed` = true AND the order is beyond T+2 from `payment_updated_at` → proceed directly to Step 5 (fund_allocation_report cross-check). This order requires immediate investigation — payment was received but allotment has not completed within the expected window.
 
 **Step 4 — Determine T-day:**
-Use `payment_updated_at` against **A2** cutoffs. If `payment_updated_at` falls on a weekend or trading/settlement holiday → T = next working day per **A2**.
 
-Before computing T-day, check if `fund_source` = rp_pg (netbanking). If yes, identify the client's bank per **A10**. If the bank is a non-direct settlement bank → T-day shifts to the next business day regardless of cutoff. State: "Your payment was made via [bank name], which is a non-direct settlement bank. The payment was reported to the exchange on the next business day [date], so your order was placed on that date. Allotment is expected by [T+1]."
+First check whether `payment_updated_at` falls on a working day per **A2**. If it falls on a weekend or trading/settlement holiday → set T = next working day and state which day(s) were non-working and why. If the next day is also a non-working day, shift further.
 
-If the bank is a direct settlement bank, or `fund_source` is not rp_pg, proceed with standard cutoff logic:
+Then check `payment_method`. If `payment_method` = netbanking → identify the client's bank per **A10**. If the bank is a non-direct settlement bank → T-day shifts to the next business day regardless of cutoff. State: "Your payment was made via [bank name], which is a non-direct settlement bank. The payment was reported to the exchange on the next business day [date], so your order was placed on that date. Allotment is expected by [T+1]."
+
+If `payment_method` is not netbanking, or the bank is a direct settlement bank, proceed with standard cutoff logic:
 - Available + before cutoff → T = that day. "Allotment expected within T+1 business day."
 - Available + after cutoff → T = next working day per **A2**. If that day is also a weekend or holiday, shift further until a working day is reached.
 - Not yet available → use `payment_initiated_at` as reference. Share cutoff link from **A9**. State that the applicable NAV depends on exchange confirmation.
 
-After determining T-day (whether from cutoff or holiday shift), cross-check using `exchange_timestamp` in mf_order_history. If `exchange_timestamp` date differs from the computed T-day, use `exchange_timestamp` date as the actual T-day — this confirms when the exchange processed the order. If fund_allocation_report is available, verify against `payment_date` as well.
+After determining T-day (whether from cutoff or holiday shift), cross-check using `exchange_timestamp` in mf_order_history. If `exchange_timestamp` date differs from the computed T-day, use `exchange_timestamp` date as the actual T-day — this confirms when the exchange processed the order. State the exact time and date from `payment_updated_at` in the response when explaining cutoff determination. If fund_allocation_report is available, verify against `payment_date` as well.
+
+Allotment is expected within T+3 working days from `exchange_timestamp` (excluding weekends and trading/settlement holidays per **A8**). When explaining the timeline, name any holidays that fall within the T+3 window per **A2**.
 
 **Step 5 — Within T+2, payment confirmed:**
 Check **fund_allocation_report**. Map the order using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report).
@@ -341,12 +356,13 @@ Check `error_remarks` first:
 - "INVALID BANK ACCOUNT DETAIL" → Escalate to support agent immediately.
 
 Then check flags:
-- `settled_flag` = Y, `allotment_flag` = Y, but still Processing → file sync delay. "Your payment has been settled and units allotted. Your holdings will update automatically." Share MF units settlement timeline link from **A9**.
+- `settled_flag` = Y, `allotment_flag` = Y, but still Processing → check whether `exchange_timestamp` is within T+3 working days (excluding weekends and trading/settlement holidays). If within T+3 → file sync delay is expected. "Your payment has been settled and units have been allotted by the AMC. Holdings typically update within T+3 working days from the exchange timestamp. Your holdings will update automatically." Share MF units settlement timeline link from **A9**. If beyond T+3 → escalate to support agent: "Order settled and allotted but holdings not updated beyond T+3."
 - `settled_flag` = Y, `allotment_flag` = N → "Payment settled. Allotment expected by [date]."
-- `settled_flag` = N, within T+1 → "Payment pending settlement. Allow one business day."
-- `settled_flag` = N, beyond T+2 → order has failed. Check `refund_utr`:
-  - Populated → "Payment could not be settled. Refund of ₹[amount] processed — use reference [refund_utr] to track with your bank."
-  - Empty → apply **A4** refund language.
+- `settled_flag` = N → first check `order_number`: if `order_number` is null or empty in fund_allocation_report, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply **A4** refund language. If `order_number` is present, count working days from `payment_date` in fund_allocation_report (not from `order_timestamp` in mf_order_history):
+  - Within T+1 → "Payment pending settlement. Allow one business day."
+  - Beyond T+2 → order has failed. Check `refund_utr`:
+    - Populated → "Payment could not be settled. Refund of ₹[amount] processed — use reference [refund_utr] to track with your bank."
+    - Empty → apply **A4** refund language.
 
 **Step 6 — Beyond T+3:**
 Cross-check fund_allocation_report. No entry → escalate.
@@ -372,17 +388,18 @@ Escalate if: INVALID BANK ACCOUNT, PAN/PEKRN MISMATCH, KRA LOCKED, MODE OF HOLDI
 
 **Cancelled:**
 
-For each cancelled order, check `payment_confirmed` independently per **A4**. When multiple orders exist (some successful, some cancelled), map each order separately: for successful orders, confirm units were allotted; for cancelled orders with `payment_confirmed` = true, apply refund language; for cancelled orders with `payment_confirmed` = false, state no payment was debited. A wrong refund determination directly contradicts the client's bank statement.
+When multiple orders exist for the same fund (some successful, some cancelled), address every order the client asks about individually. For successful orders, confirm units were allotted. For cancelled orders, check `payment_confirmed` independently per **A4**. For cancelled orders with `payment_confirmed` = true, apply refund language. For cancelled orders with `payment_confirmed` = false, check further per the SIP mandate check below before concluding no payment was debited. A wrong refund determination directly contradicts the client's bank statement.
 
-For SIP orders (variety = SIP) cancelled after placement: if `payment_confirmed` = false, also check mandate_debit_report for a debit entry on the same date. If debit status = Success or Created and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply **A4** refund language. If no debit entry exists in mandate_debit_report → no payment was debited.
+For SIP orders (`variety` = sip) cancelled after placement: if `payment_confirmed` = false, check sip_report for the SIP's `fund_source`. If `fund_source` = `digio-mandates` or `upi-mandates` → check mandate_debit_report for a debit entry on the same date. If debit status = Success or Created and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply **A4** refund language. If `fund_source` = `rp-pg`, `pool`, or blank → no mandate-based debit occurred, no payment was debited.
 
 Cancellation time is not recorded — communicate only: "Your order was cancelled after it was placed."
 
 **TPV Pending:**
 
-1. "Your order is pending third-party bank account validation. The exchange automatically re-validates pending orders on the next business day."
-2. "The exchange conducts a penny drop test on your bank account. If it passes, the order will be updated to allotted within 2 business days."
-3. If status remains unchanged beyond T+3 (3 business days from order date) → ask client to share their bank statement from the order date to present for further investigation.
+1. Check `order_timestamp` to determine how many business days have elapsed.
+2. "Your order is pending third-party bank account validation. The exchange automatically re-validates pending orders on the next business day."
+3. "If the order is rejected due to the TPV pending status, the exchange performs a penny drop test on the bank account used for payment. If the bank account passes this test, the order status will be updated to allotted within 2 business days."
+4. If the order status remains unchanged beyond T+3 (3 business days from `order_timestamp`) → ask the client to share their bank statement from the order date to present for further investigation.
 
 If rejected after re-validation → check `status_message` for TPV INVALID per **A5**. Escalate to support agent.
 
@@ -390,7 +407,7 @@ If rejected after re-validation → check `status_message` for TPV INVALID per *
 
 ### Rule 4: Redemption Issues
 
-Redemption proceeds are credited directly to the client's primary registered bank account via the AMC. Always direct the client to check their primary bank account for redemption credits. Compute the expected credit date per **A6** using the actual `redemption_time` from order data.
+Redemption proceeds are credited directly to the client's primary registered bank account via the AMC. Always direct the client to check their primary bank account for redemption credits. Compute the expected credit date per **A6** using the actual `redemption_time` from order data. If `redemption_time` is blank or null, follow the fallback in **A6**.
 
 **Step 0 — Cutoff check (run first for every redemption query):**
 Check order time against the 3:00 PM cutoff per **A6** Step 1. If the order was placed after 3:00 PM on a working day, or on a weekend/settlement holiday → T shifts to the next working day. State this explicitly: "Your redemption was placed after the 3:00 PM cutoff, so it will be processed on the next working day [date]." Then compute credit date per **A6** from the adjusted T-day.
@@ -408,6 +425,7 @@ Check order time against the 3:00 PM cutoff per **A6** Step 1. If the order was 
 | Units not visible post-allotment | Check console_mf_pseudo_holdings + console_mf_tradebook. Always use Coin MF tools for MF holdings verification. |
 | NRI account + exit load/TDS dispute | Escalate to support agent. "For NRI accounts, TDS is deducted by the AMC per applicable tax rules." |
 | Non-NRI exit load dispute | "Exit load is per the AMC's fund factsheet." → Escalate to support agent. |
+| Client disputes redemption NAV (lower than published NAV for that date) | Escalate to support agent. "We are escalating this to our team for a detailed review of the redemption NAV applied to your order." |
 
 **CDSL authorization loop (repeated OTP redirect):**
 Occurs when recently allotted units haven't synced with CDSL. Units credited by 8 PM on settlement date; if delayed at RTA/CDSL, available for authorization on T+3 (second business day after settlement).
@@ -419,10 +437,10 @@ Response: "This occurs due to a delay in crediting recently purchased units to y
 ### Rule 5: NAV Disputes
 
 **Step 1 — Identify payment method:**
-Check `fund_source` per **A2** payment source mapping.
-- If `fund_source` = neft-rtgs → NAV depends on ICCL settlement time only. Share NEFT/RTGS link from **A9**. Stop here.
-- If `fund_source` = rp_pg (netbanking) → proceed to Step 2.
-- If UPI (inapp_upi or upi_mandates) → proceed to Step 3.
+Check `payment_method` in the order.
+- If `status_message` contains "Pending payment via NEFT/RTGS" → NAV depends on ICCL settlement time only. Share NEFT/RTGS link from **A9**. Stop here.
+- If `payment_method` = netbanking → proceed to Step 2.
+- If UPI → proceed to Step 3.
 
 **Step 2 — Netbanking: determine direct vs non-direct settlement bank:**
 Identify the client's bank using the process in **A10** (extract `acc_number` from `payment_details` → match against bank account numbers in get_all_client_data → get bank name → check classification in **A10**).
@@ -431,8 +449,8 @@ If the client's bank is a non-direct settlement bank → "Your payment was made 
 If direct settlement bank → proceed to Step 3.
 
 **Step 3 — Check payment confirmation time against cutoffs:**
-Use `payment_updated_at` vs **A2** cutoffs for the fund type. To verify, map the order using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) and cross-check with `payment_date` from fund_allocation_report.
-- If `payment_updated_at` is after cutoff → "Your payment was confirmed after the [cutoff time] cutoff. The next working day's NAV was applied."
+Use `payment_updated_at` vs **A2** cutoffs for the fund type. State the exact time and date from `payment_updated_at` in the response. To verify, map the order using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) and cross-check with `payment_date` from fund_allocation_report.
+- If `payment_updated_at` is after cutoff → "Your payment was confirmed at [time] on [date], which was after the [cutoff time] cutoff. The next working day's NAV was applied."
 - If before cutoff → NAV should match T-day. Cross-check `payment_date` in fund_allocation_report.
 
 Payment mapping: Match `exchange_order_id` = `settlement_number` in fund_allocation_report. This mapping applies to UPI and netbanking orders only.
@@ -515,4 +533,246 @@ If all methods fail → escalate.
 - If client is based in the US or Canada → "US/Canada-based NRIs currently cannot invest in MF schemes on Coin due to technical restrictions." (Per **A11**.)
 
 **Account conversion queries:**
-- If client asks how to convert their resident account to NRI → share the conversion support article from **A11**: "You can initiate the conversion from your Zerodha account. KYC details are collected as part of the conversion process." Share link.
+- If client asks how to convert their resident account to NRI → share the conversion support article from **A11**: "You can initiate the conversion from your Zerodha account. KYC details are collected as part of the conversion process."
+
+---
+
+### Rule 11: Duplicate/Extra Payment Claims
+
+1. When a client claims extra or duplicate debits for MF orders: check fund_allocation_report for all entries on the order date. Look for entries without a matching `exchange_order_id` from mf_order_history (unmapped payments).
+2. If an unmapped payment is found → apply **A4** refund language: "The debited amount will be refunded by BSE STAR MF to your source bank account within 5–7 working days (excluding weekends and holidays)."
+3. If no unmapped payment is found → ask the client to share a bank statement showing the debit(s) with UTR numbers for further investigation.
+
+
+
+
+
+# SIP REPORT PROTOCOL
+
+---
+
+## Section A: Reference Data
+
+### A1 — SIP Fundamentals
+
+- This report contains all SIPs: active, paused, cancelled, completed, and failed.
+- SIP types: `sip` (Zerodha — modifiable), `amc_sip` (BSE — delete-only), `stp`.
+- Zerodha SIP triggers at 1:30 AM; AMC SIP triggers at 3:15 AM.
+- SIPs trigger 2 days prior to the `preferred_date`. This is the standard trigger timeline. For UPI mandate-based SIPs (`fund_source` = `upi-mandates`), the actual trigger date may be T-1 rather than T-2. Always verify against `order_timestamp` and `last_sip_at` in sip_report — use the actual data over the general rule when explaining trigger timing to the client.
+- Scheme name field is `name` (not `fund`).
+- `last_sip_at` is the date of the last SIP order execution — not the pause/modify date. Always use sip_modification_log for pause/modify dates.
+- `public_id` is needed as input for sip_modification_log (mapped to `sip_id` there).
+
+### A2 — SIP Type Comparison
+
+| Feature | Zerodha SIP (`sip`) | AMC SIP (`amc_sip`) |
+|---|---|---|
+| Modify | Yes (amount, date, step-up, frequency) | Cannot modify |
+| Pause | Yes | Cannot pause |
+| Delete | Yes | Yes (only option for changes) |
+| To change amount/date/fund | Modify directly | Delete existing, create new |
+| Deletion timing | Any time | Must be ≥2 days before next instalment date |
+| Auto-cancel | — | After 3 consecutive payment failures (SEBI circular Apr 2024) |
+| Initial investment | Required — lumpsum must be allotted (T+1) and updated (T+2) before SIP triggers | — |
+| Setup timing | — | Must be ≥2 days before preferred_date to trigger in current month |
+| Trigger time | 1:30 AM | 3:15 AM |
+
+### A3 — SIP Status Values
+
+| Status | Meaning |
+|---|---|
+| Active | Currently active, will trigger on next_sip_date |
+| Paused | Stopped by client or AMC (scheme suspended lumpsum) |
+| Cancelled | Deleted by client |
+| Completed | All instalments completed |
+| Failed | SIP creation failed, never activated |
+
+### A4 — Mandate / Fund Source Rules
+
+| `fund_source` Value | Meaning |
+|---|---|
+| `digio-mandates` | eNACH mandate linked |
+| `upi-mandates` | UPI autopay mandate linked |
+| `rp-pg` | Payment gateway (no mandate linked) |
+| `pool` or blank | No mandate linked to this SIP |
+
+Auto-debit is confirmed only when `fund_source` = `digio-mandates` or `upi-mandates` on the specific SIP record. A mandate existing in mandate_report does not mean it is linked to this SIP — the `fund_source` field on the individual SIP record is the only authoritative source for linkage.
+
+### A5 — SIP Not Triggered: Diagnostic Sequence
+
+Run these checks in order — each step may resolve the issue or lead to the next:
+
+| Step | Check | Condition | Action |
+|---|---|---|---|
+| 0 | Account type | `client_acc_type` ≠ Individual AND `account_statuses` = deactivated | Escalate to support agent. Account type conversion may require fresh SIP setup. |
+| 1 | Initial investment (Zerodha SIP only) | Check console_mf_pseudo_holdings for units in the specific fund | See **A6** for full initial investment diagnostic |
+| 1.5 | Initial allotment timing (Zerodha SIP) | FRESH order allotted on/after `preferred_date`, or `preferred_date` within 2 days of FRESH order allotment | "Your initial investment was allotted too close to the SIP date. The current instalment was skipped. Please pause and resume the SIP to reset the trigger date." |
+| 2 | Recent modification | Get `public_id` → check sip_modification_log for recent pause/modify/delete. Check for any modification within T-2 of the expected trigger date. | If modification found within T-2 of trigger → "Your SIP was [modified/paused] on [date], within 2 days of the execution date. The current instalment was skipped. It will trigger from the next SIP date." |
+| 3 | SIP status | `sip_status` ≠ Active | That's the answer — SIP is not active |
+| 4 | AMC auto-cancel | `sip_type` = amc_sip AND cancelled | Check `remarks` for consecutive rejection (3-failure rule per **A2**) |
+| 5 | Future trigger date | `next_sip_date` is in the future | Hasn't reached trigger date yet |
+| 6 | Mandate linkage | `fund_source` = blank, pool, or rp-pg | No mandate linked — see **A4** and Rule 5 for full mandate check |
+| 6.5 | AMC SIP pending mandate | Mandate-linked AMC SIP showing "Pending mandate verification" | Check mandate_debit_report for debit status AND fund_allocation_report for payment mapping |
+| 7 | AMC SIP setup timing | `sip_type` = amc_sip AND `created_at` < 2 days before `preferred_date` | "AMC SIP must be set up ≥2 days before execution date." |
+| 7.5 | Upcoming SIP check | `next_sip_date` within 5 days | Check mf_order_history for already-placed order (triggers 2 days prior). Report actual status. |
+| 7.6 | Stale next_sip_date | `sip_status` = Active AND `next_sip_date` before today | SIP has stalled. "Pause and resume your SIP on Coin to re-sync the trigger date." Share link: [How to modify, pause or delete a SIP](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/modify-pause-delete-sip-coin) |
+| 8 | Order exists, payment issue | All checks above normal — check mf_order_history for SIP order on trigger date | If order exists: check `fund_source` on this SIP per **A4**. If `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked, check mandate_debit_report for debit status. If debit status = Created (SIP date passed) or Failed → the SIP order has failed for this cycle. Advise the client to place a manual lumpsum order (Zerodha SIP only — per mandate_debit_report A3, AMC SIP clients cannot place manual orders). If `fund_source` = blank, pool, or rp-pg → mandate is not linked to this SIP, even if an active mandate exists in mandate_report. Advise linking per Rule 5. |
+
+### A6 — Zerodha SIP Initial Investment Diagnostic
+
+Perform for each affected Zerodha SIP (`sip_type` = sip):
+
+1. Check console_mf_pseudo_holdings for the specific fund.
+2. **Units found** → initial investment is confirmed. Proceed to Step 1.5 in **A5** (check if allotment was too close to SIP date). If allotment timing is fine, proceed to Step 2 in **A5**. No further initial investment checks are needed regardless of what mf_order_history shows.
+3. **No units found** → check mf_order_history for a FRESH order (purchase_type = FRESH) for that fund:
+   - FRESH Processing/Placed → "Initial investment is still being processed. SIP will trigger once units are allotted and settled." If the next SIP date (`next_sip_date` from sip_report) falls before the expected allotment and settlement date (T+2 from `exchange_timestamp` or `payment_updated_at`), the upcoming instalment will be skipped. State: "Your initial investment is still being processed and will not be settled before your next SIP date. The upcoming SIP instalment will be skipped. Once the initial investment is allotted and settled, please pause and resume the SIP on Coin to reset the trigger date for the next cycle."
+   - FRESH Failed/Cancelled → "Initial investment was not completed. Place a fresh lumpsum order. Once allotted, pause and resume the SIP to reset the trigger date."
+   - No FRESH order in mf_order_history → mf_order_history covers only the last 30 days. Check console_mf_tradebook for an allotment entry (trade_type = BUY, purchase_type = FRESH) for this fund. If an allotment entry exists → initial investment was completed but is older than 30 days. Proceed to Step 1.5 in **A5**. If no entry in console_mf_tradebook either → initial investment was never placed. "Please place a lumpsum order for [fund name]. Once allotted and settled (T+2), the SIP will begin triggering."
+4. Name the fund explicitly in the response.
+5. If multiple SIPs affected: perform this check for each fund separately. List every fund missing initial investment by name: "We checked your SIPs and found that the following funds are missing an initial investment: [fund 1], [fund 2], [fund 3]. Please place a lumpsum order for each of these funds. Once the units are allotted and settled (T+2), the respective SIPs will begin triggering automatically."
+
+### A7 — Field Rules
+
+**Shareable with client:** `name` (fund name), `amount`, `sip_status`, `frequency`, `preferred_date`, `next_sip_date`, `last_sip_at`, `created_at`.
+
+**Internal reasoning only (use for analysis, never share):** `sip_type`, `fund_source` (mandate check per **A4**), `public_id` (input for sip_modification_log), `remarks`.
+
+**Suppress (no client use and only reasoning purpose): id, client_id, transaction_mode, nav, intervals, pending_intervals, status (deprecated), tag, sip_reg_num, mandate_details.
+
+### A8 — Links
+
+| Topic | URL |
+|---|---|
+| Mandate creation and SIP linkage | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin#:~:text=Linking%20a%20mandate%20to%20an%20existing%20SIP |
+| Modify, pause, or delete SIP | https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/modify-pause-delete-sip-coin |
+| NRI PIS NEFT/RTGS payments on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/neft-rtgs-coin |
+
+### A9 — Cross-Reference Protocols
+
+| Topic | Refer to |
+|---|---|
+| SIP order status, allotment confirmation | mf_order_history |
+| SIP pause/modify/delete history | sip_modification_log (use `public_id` as input) |
+| Mandate status and details | mandate_report |
+| Mandate debit attempts | mandate_debit_report |
+| Payment mapping for AMC SIP | fund_allocation_report |
+| Holdings verification (initial investment) | console_mf_pseudo_holdings |
+| STP as alternative to stopping/starting SIPs | stp_report |
+
+### A10 — Escalation Triggers
+
+Escalate when:
+- Account type conversion detected (Step 0 in **A5**): `client_acc_type` ≠ Individual AND deactivated → escalate to support agent.
+- AMC SIP deletion technically failing (client followed correct steps but deletion not succeeding) → escalate to support agent immediately. Do not ask for screenshots or troubleshoot further.
+- SIP deletion failing for any SIP type → escalate to support agent immediately.
+- Any unresolvable SIP trigger issue after completing all diagnostic steps in **A5**.
+
+## Section B: Decision Flow
+
+### Preflight (run on every query)
+
+1. Fetch the SIP report for the client.
+2. Apply field protection per **A7** — identify shareable, internal, and banned fields.
+3. Identify `sip_type` for the relevant SIP(s) — this determines available actions per **A2**.
+4. Check `fund_source` for mandate linkage status per **A4**.
+5. Format amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
+
+### Routing Tree
+
+```
+Query relates to SIP →
+│
+├─ SIP didn't trigger / missed instalment
+│  → Rule 1 (Sequential diagnostic per A5)
+│
+├─ AMC SIP auto-cancelled (client didn't cancel)
+│  → Rule 2
+│
+├─ Client confused about SIP type / asks to modify AMC SIP
+│  → Rule 3
+│
+├─ NRI PIS account — mandate not available
+│  → Rule 4
+│
+├─ Mandate linkage / auto-debit / "pending mandate verification"
+│  → Rule 5
+│
+├─ SIP deletion failing
+│  → Rule 6 (Escalate)
+│
+└─ General SIP status query
+   → Check data, translate status per A3, respond
+```
+
+### Scope
+
+- Address: SIP trigger issues, mandate linkage, AMC vs Zerodha SIP differences, initial investment verification, and SIP modification/deletion guidance.
+
+### Fallback
+
+If no root cause is identified after completing all diagnostic steps → escalate per **A10**.
+
+---
+
+## Section C: Rules
+
+### Rule 1 — SIP Not Triggered: Sequential Diagnostic
+
+1. Run through the diagnostic sequence in **A5** in order.
+2. For Step 1 (Zerodha SIP initial investment): follow the full diagnostic in **A6** for each affected fund. Name every fund explicitly.
+3. For Step 1.5 (initial allotment timing): if FRESH order allotted on/after `preferred_date` or within 2 days → advise to pause and resume.
+4. For Step 2 (recent modification): get `public_id` from sip_report → check sip_modification_log. If any modification is found within T-2 of the expected trigger date → "Your SIP was [modified/paused] on [date], within 2 days of the execution date. The current instalment was skipped. It will trigger from the next SIP date."
+5. For Step 6 (mandate linkage): follow the full mandate verification in Rule 5.
+6. For Step 7.6 (stale next_sip_date): if Active and `next_sip_date` is past → advise pause and resume to re-sync. Share link from **A8**.
+7. For Step 8 (order exists, payment issue): check `fund_source` per **A4** to determine mandate linkage before diagnosing payment. If `fund_source` = `digio-mandates` or `upi-mandates` → check mandate_debit_report. If `fund_source` = blank, pool, or rp-pg → mandate is not linked, advise linking per Rule 5.
+
+### Rule 2 — AMC SIP Auto-Cancelled
+
+1. Confirm: `sip_type` = amc_sip AND `sip_status` = Cancelled AND customer didn't cancel.
+2. Cross-check mf_order_history (per **A9**) for 3 consecutive failed/rejected orders for this SIP.
+3. If confirmed: "Your AMC SIP was cancelled due to 3 consecutive payment rejections. The status will update within 24–48 hours. Please create a new AMC SIP."
+4. Do not suggest creating a Zerodha SIP for AMC SIP funds.
+
+### Rule 3 — AMC vs Zerodha SIP
+
+1. Check `sip_type` and respond using the comparison in **A2**.
+2. For AMC SIP modification/pause requests: "AMC SIPs cannot be modified or paused. They can only be deleted. To change the amount, date, or fund, delete the existing AMC SIP and create a new one with the desired values. Deletion must be done at least 2 days before the next instalment date."
+3. If AMC SIP deletion is technically failing (client followed correct steps) → escalate to support agent immediately per **A10**. "We are unable to process this deletion from our end and are escalating this to our team. You can expect a resolution within 24–48 hours."
+4. `last_sip_at` is the date of the last SIP order — not the pause/modify date. For pause/modify dates, check sip_modification_log using the SIP's `public_id` (per **A1** and **A9**).
+5. If client wants to switch funds → suggest Systematic Transfer Plan (STP) via stp_report (per **A9**) as an alternative to stopping one SIP and starting another.
+
+### Rule 4 — NRI PIS Account: Mandate Not Available
+
+1. Confirm: account type is NRI PIS (NRE account) and client reports they cannot create a mandate.
+2. Respond: "Mandates for SIPs cannot be created for NRI PIS accounts. For SIP payments, each instalment will need to be paid manually using NEFT or RTGS. The payment must be made to the ICCL account unique to your Zerodha account."
+3. Share link from **A8**: NRI PIS NEFT/RTGS payments.
+
+### Rule 5 — SIP Mandate Linkage Check
+
+**Step 1 — Verify mandate linkage on each SIP individually:**
+Check `fund_source` per **A4** on each SIP record first. This is the only authoritative source for linkage — check this before consulting mandate_report or mandate_debit_report. Report linkage status per SIP — a mandate linked to one SIP does not mean it is linked to others.
+
+For each SIP, check `fund_source`:
+- `digio-mandates` or `upi-mandates` → mandate is linked to this SIP. Check mandate_report (per **A9**) for current status:
+  - success/register_success → active. Check mandate_debit_report for debit attempt and mf_order_history for allotment status.
+  - created/pending → "Your mandate is currently being verified. eNACH takes up to 3 working days; UPI autopay is typically immediate. Auto-debit will begin once verification is complete."
+  - failed/register_failed → "Your mandate registration failed. Please create a new mandate. UPI autopay activates within minutes."
+- `rp-pg`, blank, or pool → mandate is not linked to this SIP. Check mandate_report for whether an active mandate exists elsewhere:
+  - Mandate active → "Your mandate is active but not yet linked to your [fund name] SIP. Please link it." Share link from **A8**.
+  - No active mandate → "No mandate linked. Please create and link a mandate for auto-debit." Share link from **A8**.
+
+**Example:** mandate_report shows status = success for mandate ZERODHA1349031599. Client has three SIPs. sip_report shows: SIP 1 (ICICI Multi Asset Fund) → fund_source = pool. SIP 2 (Axis Bluechip) → fund_source = upi-mandates. SIP 3 (HDFC Flexi Cap) → fund_source = pool. Correct diagnosis: mandate is linked only to SIP 2. SIPs 1 and 3 require mandate linking.
+
+**Step 2 — Daily SIPs specifically:**
+Orders for daily SIPs are placed on T-1 day in the system. Before concluding a daily SIP instalment is missing, check mf_order_history for T-1 day.
+
+### Rule 6 — SIP Deletion Failures
+
+1. If client reports they cannot delete a SIP → escalate to support agent immediately per **A10**.
+2. Respond: "We are escalating this to our team for resolution. You can expect an update within 24–48 hours."
+
+
+
+
+---
+---

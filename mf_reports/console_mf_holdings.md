@@ -16,13 +16,9 @@ TRIGGER KEYWORDS: "available units", "demat holdings", "units for redemption", "
 
 ## Protocol
 
-# CONSOLE MF HOLDINGS PROTOCOL
-
 ---
 
 ## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Tool Purpose & Scope
 
@@ -134,8 +130,6 @@ If query doesn't match any rule and doesn't require this tool's specific fields 
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ### Rule 1 — Units Available for Redemption/SWP
 
 1. Check the `available` field — this is the authoritative source for redeemable units.
@@ -174,3 +168,6 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Respond using **A3**: "Console displays the NAV as of T-2 days, while Coin displays the NAV as of T-1 day. This difference in NAV dates causes the P&L values to appear different. For the latest valuation, please refer to Coin."
 2. Share link from **A3**.
 
+
+---
+---
