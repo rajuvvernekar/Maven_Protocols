@@ -24,7 +24,7 @@ TRIGGER KEYWORDS: "F&O position", "FnO position", "futures position", "options p
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows a **snapshot of open F&O positions** as of a selected trade date. It supports historical lookups (select any past date to see positions on that day) but does not show real-time intraday data.
 
@@ -36,7 +36,6 @@ Closing price used is the **settlement price** for that date — may differ from
 
 Console positions use settlement/closing price; Kite positions use LTP — values will differ during market hours.
 
-**Input:** Client ID + segment + trade date.
 
 ---
 
@@ -95,33 +94,6 @@ When escalating, always include: **client ID, tradingsymbol, trade_date, segment
 
 ---
 
-### A7 — Response Templates
-
-**R1 — Position verification:**
-"Your open position in [tradingsymbol] as of [trade_date]: [long/short] [abs(open_quantity)] lots at an average price of ₹[open_average]. The closing price on that date was ₹[close_price], giving an unrealized P&L of ₹[unrealized_profit] ([unrealized_profit_percentage]%)."
-
-**R2 — MTM explanation:**
-"Mark-to-Market (MTM) is settled daily for F&O positions. Each day, the difference between today's closing price and the previous day's closing price is credited (if favorable) or debited (if unfavorable) from your account. This is the daily settlement mechanism for futures and ITM options.
-
-Your position in [tradingsymbol] closed at ₹[close_price] on [trade_date]. The MTM for that day is calculated as: (today's closing price − previous day's closing price) × quantity."
-
-**R3 — Console vs Kite value difference:**
-"Console positions show values based on the settlement/closing price for the selected date, while Kite shows values based on the live last traded price (LTP). These will differ during market hours and may also differ slightly after market close if the settlement price differs from the last traded price."
-
-**R4 — Expired / closed position:**
-"Your [tradingsymbol] position was closed or expired between [earlier date] and [requested date]. If it expired, ITM options were exercised and OTM options expired worthless."
-
-**R5 — Physical delivery on expiry (stock F&O):**
-"Stock futures and ITM stock options that expire are subject to physical delivery. If you held a long futures/ITM call position, shares will be credited to your demat account. If you held a short futures/ITM put position, shares will be debited. Physical delivery happens T+1 after expiry.
-
-Delivery margin is blocked from the Wednesday before expiry for stock F&O positions."
-
-**R6 — Historical snapshot:**
-"Your positions as of [trade_date] were: [list tradingsymbol, open_quantity, open_average, unrealized_profit for each]."
-
-**R7 — MCX commodity physical delivery:**
-"Zerodha does not support physical delivery of MCX commodity contracts. If you do not close your position before the start of the delivery period, Zerodha will auto-square it off. A charge of ₹50 + 18% GST applies per auto-squared-off order. Please ensure you close or roll over your commodity futures position before the delivery period begins."
-
 ## Section B: Decision Flow
 
 ---
@@ -167,19 +139,21 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 ### Rule 1 — Position Verification
 
-1. Respond per **A7-R1**. Frame as long (positive qty) or short (negative qty).
+1. Your open position in [tradingsymbol] as of [trade_date]: [long/short] [abs(open_quantity)] lots at an average price of ₹[open_average]. The closing price on that date was ₹[close_price], giving an unrealized P&L of ₹[unrealized_profit] ([unrealized_profit_percentage]%).. Frame as long (positive qty) or short (negative qty).
 
 ---
 
 ### Rule 2 — MTM Obligation Explanation
 
-1. Respond per **A7-R2**. MTM mechanics per **A6**.
+1. Mark-to-Market (MTM) is settled daily for F&O positions. Each day, the difference between today's closing price and the previous day's closing price is credited (if favorable) or debited (if unfavorable) from your account. This is the daily settlement mechanism for futures and ITM options.
+
+Your position in [tradingsymbol] closed at ₹[close_price] on [trade_date]. The MTM for that day is calculated as: (today's closing price − previous day's closing price) × quantity.. MTM mechanics per **A6**.
 2. If client asks for detailed day-by-day MTM calculation → Escalate to support agent. This tool shows position snapshots, not day-by-day MTM breakdown.
 ---
 
 ### Rule 3 — Console vs Kite Position Value Difference
 
-1. Respond per **A7-R3**.
+1. Console positions show values based on the settlement/closing price for the selected date, while Kite shows values based on the live last traded price (LTP). These will differ during market hours and may also differ slightly after market close if the settlement price differs from the last traded price..
 2. If values differ after EOD settlement → verify both show same `open_quantity`.
    a. Quantity matches but value differs → closing price source difference (normal).
    b. Quantity differs → escalate per **A5**.
@@ -189,14 +163,16 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 4 — Expired / Closed Position Not Showing
 
 1. Check the position for the previous trade date.
-2. If found on earlier date but not on requested date → respond per **A7-R4**.
+2. If found on earlier date but not on requested date → Your [tradingsymbol] position was closed or expired between [earlier date] and [requested date]. If it expired, ITM options were exercised and OTM options expired worthless..
 3. For realized P&L on closed positions → use `console_fno_pnl` (per **A4**).
 
 ---
 
 ### Rule 5 — Physical Delivery on Expiry (Stock F&O)
 
-1. Respond per **A7-R5**. Delivery mechanics per **A6**.
+1. Stock futures and ITM stock options that expire are subject to physical delivery. If you held a long futures/ITM call position, shares will be credited to your demat account. If you held a short futures/ITM put position, shares will be debited. Physical delivery happens T+1 after expiry.
+
+Delivery margin is blocked from the Wednesday before expiry for stock F&O positions.. Delivery mechanics per **A6**.
 2. If client questions delivery margin or charges → Escalate to support agent. Delivery margin and penalty calculations depend on multiple factors not available in this tool.
 
 ---
@@ -204,7 +180,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 6 — Historical Position Snapshot
 
 1. Enter the specific trade_date to retrieve positions open on that day.
-2. Respond per **A7-R6** — list each position's tradingsymbol, open_quantity, open_average, and unrealized_profit.
+2. Your positions as of [trade_date] were: [list tradingsymbol, open_quantity, open_average, unrealized_profit for each]. — list each position's tradingsymbol, open_quantity, open_average, and unrealized_profit.
 
 ---
 
@@ -218,5 +194,5 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 ### Rule 8 — MCX Commodity Physical Delivery
 
-1. Respond per **A7-R7**. Policy per **A6** (MCX commodity physical delivery).
+1. Zerodha does not support physical delivery of MCX commodity contracts. If you do not close your position before the start of the delivery period, Zerodha will auto-square it off. A charge of ₹50 + 18% GST applies per auto-squared-off order. Please ensure you close or roll over your commodity futures position before the delivery period begins.. Policy per **A6** (MCX commodity physical delivery).
 2. If client has already been auto-squared-off and disputes the charge → escalate per **A5**.

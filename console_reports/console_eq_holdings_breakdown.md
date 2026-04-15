@@ -25,7 +25,7 @@ TRIGGER KEYWORDS: "breakdown", "view breakdown", "holdings breakdown", "FIFO cal
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows **all entries** impacting holdings for a stock: regular trades + external trades + corporate action credits/debits. Each entry shows how the holding qty was built or adjusted over time — the complete audit trail.
 
@@ -33,7 +33,6 @@ Buy average is calculated from these entries using FIFO —  use this to walk th
 
 Breakdown entries may be delayed by up to 1 day after trade execution due to file processing.
 
-**Input:** Client ID + tradingsymbol/ISIN.
 
 ---
 
@@ -99,44 +98,6 @@ When escalating, always include: **client ID, tradingsymbol, ISIN, specific miss
 
 ---
 
-### A7 — Response Templates
-
-**R1 — FIFO walkthrough (intro):**
-"Here is the breakdown of your [tradingsymbol] holdings:
-[Date] — [Buy/Sell] [qty] shares at ₹[price] ([exchange/source])
-[...continue for all entries...]
-
-Your buy average is calculated using FIFO — when you sell, the oldest purchased shares are consumed first, changing the average of remaining shares."
-
-**R2 — FIFO sell consumption explanation (append to R1 when sells exist):**
-"When you sold [qty] on [date], the oldest [qty] shares bought at ₹[price] on [buy date] were consumed."
-
-**R3 — FIFO verification conclusion:**
-"Based on the FIFO calculation from your transaction history, your current buy average of ₹[buy_average] for [remaining qty] shares is correct."
-
-**R4 — Dividend reinvestment:**
-"The entries showing ₹0 price with small/fractional quantities for [tradingsymbol] are dividend reinvestment credits. When ETFs like LIQUIDBEES distribute dividends, the dividend amount is reinvested as additional units at zero acquisition cost. These are normal entries and directly impact your buy average calculation."
-
-**R5 — Bonus entry:**
-"The entry showing [quantity] shares at ₹0 on [date] is your bonus share credit. Bonus shares are credited at zero cost, which reduces your overall buy average."
-
-**R6 — Split entry:**
-"The split adjustment on [date] changed your holding from [old qty] shares to [new qty] shares. The price per share was proportionally adjusted. Your total investment value remains unchanged."
-
-**R7 — Entry delayed (within 1 day):**
-"Breakdown entries can take up to 1 trading day to reflect. The trade is recorded in the tradebook and will appear in the breakdown shortly. This delay does not affect your buy average or P&L."
-
-**R8 — Extra entry is external trade:**
-"This entry is a [client-facing label per A3] entry — it was recorded for shares received via [transfer/gift/IPO/ESOP/buyback]. You can verify the details in the external trades section."
-
-**R9 — Extra entry is CA:**
-"This is a corporate action entry for [bonus/split/merger/demerger] of [tradingsymbol]."
-
-**R10 — Breakdown loading error (intermittent):**
-"The breakdown view is experiencing a temporary issue. Please try again after some time or use a different browser. If the issue persists, we'll investigate further."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -185,7 +146,11 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 1. List all entries for the tradingsymbol chronologically.
 2. For each entry show: date, trade_type (buy/sell), quantity, price, and source (identify via **A3**: exchange trade / corporate action / external entry / dividend reinvestment).
-3. Respond per **A7-R1**.
+3. Here is the breakdown of your [tradingsymbol] holdings:
+[Date] — [Buy/Sell] [qty] shares at ₹[price] ([exchange/source])
+[...continue for all entries...]
+
+Your buy average is calculated using FIFO — when you sell, the oldest purchased shares are consumed first, changing the average of remaining shares..
 4. If sell entries exist, explain FIFO consumption per **A7-R2** — show which buy entries each sell consumed.
 
 ---
@@ -193,22 +158,22 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 2 — Dividend Reinvestment Entries
 
 1. Identify entries via **A3** (exchange = DIVIDEND, price = 0, fractional qty, pseudo_trade = true).
-2. Respond per **A7-R4**.
+2. The entries showing ₹0 price with small/fractional quantities for [tradingsymbol] are dividend reinvestment credits. When ETFs like LIQUIDBEES distribute dividends, the dividend amount is reinvested as additional units at zero acquisition cost. These are normal entries and directly impact your buy average calculation..
 
 ---
 
 ### Rule 3 — Bonus / Split Entries in Breakdown
 
 1. Identify entry type via **A3**.
-2. Bonus (price = 0, CA entry) → respond per **A7-R5**.
-3. Split (qty/price adjusted, CA entry) → respond per **A7-R6**.
+2. Bonus (price = 0, CA entry) → The entry showing [quantity] shares at ₹0 on [date] is your bonus share credit. Bonus shares are credited at zero cost, which reduces your overall buy average..
+3. Split (qty/price adjusted, CA entry) → The split adjustment on [date] changed your holding from [old qty] shares to [new qty] shares. The price per share was proportionally adjusted. Your total investment value remains unchanged..
 
 ---
 
 ### Rule 4 — Entry Missing from Breakdown
 
 1. Check if the trade was executed within the last 1 trading day — breakdown entries may be delayed up to 1 day due to file processing (per **A1**).
-2. If trade was yesterday → respond per **A7-R7**.
+2. If trade was yesterday → Breakdown entries can take up to 1 trading day to reflect. The trade is recorded in the tradebook and will appear in the breakdown shortly. This delay does not affect your buy average or P&L..
 3. If trade was 2+ trading days ago and still not in breakdown → escalate per **A6**.
 
 ---
@@ -216,9 +181,9 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 5 — Unrecognized Entries in Breakdown
 
 1. Check the entry type via **A3**:
-   a. `external_trade_type` populated → respond per **A7-R8**.
-   b. `exchange` = DIVIDEND → respond per **A7-R4** (Rule 2).
-   c. Corporate action entry (price = 0, system entry) → respond per **A7-R9**.
+   a. `external_trade_type` populated → This entry is a [client-facing label per A3] entry — it was recorded for shares received via [transfer/gift/IPO/ESOP/buyback]. You can verify the details in the external trades section..
+   b. `exchange` = DIVIDEND → The entries showing ₹0 price with small/fractional quantities for [tradingsymbol] are dividend reinvestment credits. When ETFs like LIQUIDBEES distribute dividends, the dividend amount is reinvested as additional units at zero acquisition cost. These are normal entries and directly impact your buy average calculation. (Rule 2).
+   c. Corporate action entry (price = 0, system entry) → This is a corporate action entry for [bonus/split/merger/demerger] of [tradingsymbol]..
    d. None of the above explain it → escalate per **A6** as potential breakdown-tradebook mismatch.
 
 ---
@@ -227,7 +192,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 1. Try a different stock to confirm if the issue is stock-specific or account-wide.
 2. Stock-specific → may be a data issue for that ISIN. escalate per **A6** with client ID and tradingsymbol.
-3. Account-wide → respond per **A7-R10**. If persists beyond 24 hours → escalate per **A6**.
+3. Account-wide → The breakdown view is experiencing a temporary issue. Please try again after some time or use a different browser. If the issue persists, we'll investigate further.. If persists beyond 24 hours → escalate per **A6**.
 
 ---
 

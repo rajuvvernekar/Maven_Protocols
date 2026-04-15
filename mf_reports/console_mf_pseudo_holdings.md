@@ -170,15 +170,7 @@ For clients who want to transfer mutual fund units out of Coin to another platfo
 
 **Support article:** https://support.zerodha.com/category/mutual-funds/coin-general/transferring-mf/articles/transfer-mutual-funds-out-of-coin
 
-### A9 — Response Templates
-
-**R1 — Delay allotment (units not yet allotted):**
-"Your order for [fund] of ₹[amount] was placed on [date]. The payment has been confirmed and the order is being processed. Units are typically allotted within T+3 working days. You do not need to add any trade details for purchases made through Coin. The invested value may temporarily show as 'NA' and will update automatically once the allotment is complete."
-
-**R2 — Units allotted, invested value not updated:**
-"Your order for [fund] of ₹[amount] was placed on [date]. The payment was settled, and units were allotted on [allotment date]. You received [X] units at a NAV of ₹[NAV]. The invested value display may take up to 24–48 hours to update due to settlement file processing. You can check the correct values in a day or two."
-
-### A10 — Holdings Verification Alternatives
+### A9 — Holdings Verification Alternatives
 
 Clients can verify their mutual fund holdings through:
 - Coin app or Console (primary).
@@ -188,7 +180,7 @@ Clients can verify their mutual fund holdings through:
 
 Reference: https://support.zerodha.com/category/console/portfolio/console-holdings/articles/transaction-cum-holding-statement
 
-### A11 — XIRR Display Behavior
+### A9 — XIRR Display Behavior
 
 Portfolio XIRR will not display if the majority of investments are less than one year old. The system shows '–' instead to avoid displaying disproportionately high or misleading XIRR values. This is expected behavior.
 
@@ -339,10 +331,10 @@ If no root cause is identified after the diagnostic steps → escalate with fund
 
 ### Rule 10 — XIRR Not Displaying
 
-1. Respond using **A11**: "Portfolio XIRR will not display if the majority of investments are less than one year old. The system shows '–' instead to avoid displaying disproportionately high or misleading XIRR values. This is expected behavior."
-2. Share reference link from **A11**.
+1. Respond using **A10**: "Portfolio XIRR will not display if the majority of investments are less than one year old. The system shows '–' instead to avoid displaying disproportionately high or misleading XIRR values. This is expected behavior."
+2. Share reference link from **A10**.
 
 ### Rule 11 — Holdings Verification Alternatives
 
-1. Respond using **A10**: "You can verify your mutual fund holdings through the monthly CAS email, the Statement of Holdings (SOH) sent to your registered email monthly, or by downloading the transaction cum holding statement from the CDSL Easi portal."
-2. Share reference link from **A10**.
+1. Respond using **A9**: "You can verify your mutual fund holdings through the monthly CAS email, the Statement of Holdings (SOH) sent to your registered email monthly, or by downloading the transaction cum holding statement from the CDSL Easi portal."
+2. Share reference link from **A9**.

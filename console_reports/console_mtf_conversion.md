@@ -24,7 +24,7 @@ TRIGGER KEYWORDS: "MTF conversion", "MTF to CNC", "MTF to delivery", "convert MT
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool tracks **MTF-to-CNC conversion requests** — requested qty, converted qty, status, and remarks. It is the source of truth for whether a conversion actually succeeded.
 
@@ -32,7 +32,6 @@ This tool tracks **MTF-to-CNC conversion requests** — requested qty, converted
 
 Conversion requires full funded amount available as free cash in the account — partial funds = full failure.
 
-**Input:** Client ID — returns all conversion requests.
 
 ---
 
@@ -85,46 +84,6 @@ When escalating, always include: **client ID, tradingsymbol/ISIN, conversion dat
 
 ---
 
-### A7 — Response Templates
-
-**R1 — Conversion successful (full):**
-"Your conversion of [request_quantity] shares has been successfully processed. These shares have moved from MTF to regular delivery holdings."
-
-**R2 — Conversion failed (displayed as Processed, converted_quantity = 0):**
-"Your conversion request was not processed due to insufficient funds in your account. The status shows 'Processed' but the actual conversion did not go through — this is a display issue. Please add the required funds (the funded amount for these shares) and place a new conversion request."
-
-**R3 — Partial conversion:**
-"Only [converted_quantity] of your requested [request_quantity] shares were converted. The remaining shares are still under MTF. This may be due to insufficient funds for the full conversion."
-
-**R4 — Pending:**
-"Your conversion request is pending processing. It will typically be processed by the next trading day."
-
-**R5 — Conversion cost:**
-"To convert your MTF position to regular delivery, you need to have the funded amount available as free cash in your account. The funded amount is the portion that Zerodha contributed when you purchased the shares under MTF.
-
-You can check the funded amount in the remarks field of your conversion request, or calculate it as: total purchase value minus the initial margin you paid."
-
-**R6 — MTM vs conversion cost:**
-"The MTM (Mark-to-Market) margin you've paid covers daily price fluctuations. The conversion cost is the original funded amount, not the MTM."
-
-**R7 — Insufficient funds:**
-"Your account did not have sufficient free cash to cover the funded amount of ₹[from remarks]. Please add the required funds and retry."
-
-**R8 — T+1 restriction:**
-"Shares purchased today under MTF can only be converted from the next trading day."
-
-**R9 — Ex-date restriction:**
-"Conversions on the ex-date of a corporate action are not processed. Please retry after the ex-date."
-
-**R10 — Interest after conversion:**
-"After a successful conversion, MTF interest should stop accruing on the converted quantity from the next day. If interest is still being charged on the converted shares, we'll investigate and reverse any incorrect charges."
-
-**R11 — Stock removed from MTF list:**
-"If a stock is removed from the MTF approved list, your existing MTF position is NOT automatically converted or squared off. You can continue to hold the position under MTF. However, if you wish to convert to regular delivery to avoid ongoing MTF interest, you can place a conversion request provided you have sufficient funds."
-
-**R12 — Remarks interpretation:**
-"Your conversion details: [converted_quantity] shares converted from your MTF purchase on [trade_date]. The total conversion cost was ₹[cost from remarks]."
-
 ## Section B: Decision Flow
 
 ---
@@ -172,26 +131,28 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 
 1. Find matching ISIN/tradingsymbol in conversion records.
 2. Check `converted_quantity` vs `request_quantity`:
-   a. `converted_quantity` = `request_quantity` → respond per **A7-R1**.
-   b. `converted_quantity` = 0 AND status = Processed → respond per **A7-R2**.
-   c. `converted_quantity` < `request_quantity` → respond per **A7-R3**.
-   d. Status = Pending → respond per **A7-R4**.
+   a. `converted_quantity` = `request_quantity` → Your conversion of [request_quantity] shares has been successfully processed. These shares have moved from MTF to regular delivery holdings..
+   b. `converted_quantity` = 0 AND status = Processed → Your conversion request was not processed due to insufficient funds in your account. The status shows 'Processed' but the actual conversion did not go through — this is a display issue. Please add the required funds (the funded amount for these shares) and place a new conversion request..
+   c. `converted_quantity` < `request_quantity` → Only [converted_quantity] of your requested [request_quantity] shares were converted. The remaining shares are still under MTF. This may be due to insufficient funds for the full conversion..
+   d. Status = Pending → Your conversion request is pending processing. It will typically be processed by the next trading day..
 
 ---
 
 ### Rule 2 — Conversion Cost Inquiry
 
-1. Respond per **A7-R5**.
-2. If client asks about MTM already paid → respond per **A7-R6**.
+1. To convert your MTF position to regular delivery, you need to have the funded amount available as free cash in your account. The funded amount is the portion that Zerodha contributed when you purchased the shares under MTF.
+
+You can check the funded amount in the remarks field of your conversion request, or calculate it as: total purchase value minus the initial margin you paid..
+2. If client asks about MTM already paid → The MTM (Mark-to-Market) margin you've paid covers daily price fluctuations. The conversion cost is the original funded amount, not the MTM..
 
 ---
 
 ### Rule 3 — Conversion Failed (Diagnose Reason)
 
 1. `converted_quantity` = 0. Diagnose against **A4**:
-   a. Insufficient funds → respond per **A7-R7** (use cost from `remarks`).
-   b. T+1 → respond per **A7-R8**.
-   c. Ex-date → respond per **A7-R9**.
+   a. Insufficient funds → Your account did not have sufficient free cash to cover the funded amount of ₹[from remarks]. Please add the required funds and retry. (use cost from `remarks`).
+   b. T+1 → Shares purchased today under MTF can only be converted from the next trading day..
+   c. Ex-date → Conversions on the ex-date of a corporate action are not processed. Please retry after the ex-date..
 2. If none of the above explains → escalate per **A6**.
 
 ---
@@ -208,7 +169,7 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 
 ### Rule 5 — Interest After Conversion
 
-1. Respond per **A7-R10**.
+1. After a successful conversion, MTF interest should stop accruing on the converted quantity from the next day. If interest is still being charged on the converted shares, we'll investigate and reverse any incorrect charges..
 2. Verify conversion was successful (`converted_quantity` > 0).
 3. If yes and interest still charged → escalate per **A6**.
 
@@ -216,12 +177,12 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 
 ### Rule 6 — Stock Removed from MTF List
 
-1. Respond per **A7-R11**.
+1. If a stock is removed from the MTF approved list, your existing MTF position is NOT automatically converted or squared off. You can continue to hold the position under MTF. However, if you wish to convert to regular delivery to avoid ongoing MTF interest, you can place a conversion request provided you have sufficient funds..
 
 ---
 
 ### Rule 7 — Remarks Field Interpretation
 
 1. The `remarks` field contains system-generated text with: quantity converted, trade date, and total cost of conversion.
-2. Parse and respond per **A7-R12**.
+2. Parse and Your conversion details: [converted_quantity] shares converted from your MTF purchase on [trade_date]. The total conversion cost was ₹[cost from remarks]..
 

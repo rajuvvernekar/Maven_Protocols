@@ -34,7 +34,7 @@ TRIGGER KEYWORDS: "order rejected", "order pending", "order cancelled", "not exe
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool returns **today's orders only**. For historical orders, use `kite_order_history`.
 
@@ -44,7 +44,6 @@ Orders follow **price-time priority**: first come, first served at same price.
 
 Zerodha pre-validates orders — some rejections won't appear in the order book (shown in status notification only).
 
-**Input:** Client ID — returns today's orders.
 
 ---
 
@@ -252,90 +251,6 @@ When escalating, always include: **client ID, instrument, order type, time, and 
 
 ---
 
-### A18 — Response Templates
-
-**R1 — Complete (basic):**
-"Your [type] order for [total_quantity] qty of [instrument] was executed at an average price of ₹[average_price] on [exchange_time]."
-
-**R2 — Market order price explanation:**
-"Market orders fill at the best available prices. If the order quantity is large, it may fill at multiple price levels. This is normal exchange behavior."
-
-**R3 — Limit order better price:**
-"Your limit [type] order at ₹[price] executed at ₹[average_price] because the market had [buyers/sellers] at a [better] price. Limit orders guarantee your price as the worst you'll get, not the exact price."
-
-**R4 — SL trigger vs chart:**
-"Charts display snapshots of trading activity and may not reflect every individual trade executed at the exchange. The actual market price at the exchange determines the execution of your order, and brokers have no control over this process. You can verify the execution of your trade using your exchange trade ID through the NSE trade verification module: [NSE Trade Verification](https://www.nseindia.com/static/invest/first-time-investor-trade-verification). For further details: [Why was my SL order executed even though the price did not breach my trigger?](https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger)"
-
-**R5 — Want to buy at breakout price:**
-"For buying only when the price reaches ₹[price], use a Stop-Loss (SL) order with trigger price ₹[price] for intraday, or a GTT order with trigger ₹[price] for a long-standing order valid up to 1 year."
-
-**R6 — Limit pending:**
-"Your limit [type] order for [instrument] at ₹[price] is pending. The market hasn't reached your price yet, or earlier orders at the same price are ahead in the queue (price-time priority)."
-
-**R7 — Circuit hit:**
-"The instrument has hit its circuit limit. Your order will remain open but cannot fill until there are counterparties. If it doesn't fill, the exchange will cancel it at [segment close time]."
-
-**R8 — SL pending:**
-"Your stop-loss order will activate when the price reaches your trigger price of ₹[trigger_price]. It is currently pending."
-
-**R9 — Cancelled at session end:**
-"Unmatched pending orders are auto-cancelled by the exchange at session end. Place again next session, or use a GTT order for orders valid up to 1 year."
-
-**R10 — LPP cancellation:**
-"The exchange cancelled your order because the price was outside the allowed Limit Price Protection range. Retry with a price closer to the current market price."
-
-**R11 — IOC partial fill:**
-"Your IOC (Immediate or Cancel) order was partially filled ([filled_quantity] of [total_quantity] qty). The unfilled portion was auto-cancelled. This is how IOC orders work."
-
-**R12 — User cancelled:**
-"This order was cancelled. No action needed."
-
-**R13 — RMS square-off:**
-"This [type] order for [instrument] was executed by Zerodha's risk management system [at exchange_time]. This typically happens when:
-- Your account had insufficient margin to maintain the position
-- It was an intraday (MIS) position auto squared off at the scheduled time
-- Your account had a negative cash balance requiring position closure
-
-Auto square-off charges: ₹50 + 18% GST per order."
-
-**R14 — AMO educational:**
-"AMO lets you place orders outside market hours (4:00 PM to 8:58 AM for NSE/BSE). Orders execute at next market open. You cannot place AMO during market hours."
-
-**R15 — AMO index option blocked:**
-"Market orders via AMO are blocked for index options. Use a limit order instead."
-
-**R16 — AMO became limit:**
-"Market orders placed in the pre-open session (including AMO) are converted to limit orders at the equilibrium price (or previous day's close if no equilibrium). This is standard exchange behavior."
-
-**R17 — Pre-validated rejection not in order book:**
-"Some orders are rejected by Zerodha's pre-validation before reaching the exchange. These won't appear in the order book but the rejection reason shows in the order status notification on Kite."
-
-**R18 — Downloaded file date formatting:**
-"This is an Excel formatting issue. It converts values like '1/1' to dates. Open the file in Notepad or Notepad++ to see correct values."
-
-**R19 — Execution time beyond market hours:**
-"This happens when Zerodha reconciles with the exchange after a brief disconnection. The actual execution happened during market hours. Check the tradebook for the real execution time."
-
-**R20 — BSE market order conversion:**
-"BSE market orders are converted to limit orders with a 3% market protection from LTP. This is standard BSE behavior."
-
-**R21 — Ban period:**
-"[instrument] is in the F&O ban period. Only exit orders are allowed. No new positions or intraday trades."
-
-**R22 — OI restriction (NRML blocked):**
-"NRML orders for this strike are restricted due to SEBI's broker-level Open Interest cap. You can trade this strike using MIS (intraday). For unrestricted access to all strikes, consider opening an Orbis custodial account."
-
-**R23 — Circuit + MIS risk:**
-"When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time. This can lead to short delivery or auction risk."
-
-**R24 — Margin rejection due to negative opening balance:**
-"Your order was rejected due to insufficient margin. Your opening balance is ₹[opening_balance] (negative), which means your account started the day with a deficit. A negative opening balance blocks all fresh positions until you add funds to clear it. [If option_premium is negative: Your option premium shows ₹[option_premium]. This reflects premium paid for buying options. Proceeds from exiting long options or entering short options can only be used for new long option trades in the same segment on the same day, and become available for other trades from the next trading day (per Kite Positions A10).] Please add funds to cover the deficit and retry your order."
-
-**R25 — Multiple sell orders margin rejection:**
-"You placed multiple sell orders for [instrument]. Only one sell order matching your position quantity of [quantity] is needed to exit. Additional sell orders are treated as fresh short positions, which require full margin. Cancel any excess pending sell orders and place a single sell order for [quantity] qty to close your position."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -387,12 +302,12 @@ If no route matches, investigate using Order History sub-view and Section A refe
 
 ### Rule 1 — Order Complete
 
-1. Respond per **A18-R1**.
+1. Your [type] order for [total_quantity] qty of [instrument] was executed at an average price of ₹[average_price] on [exchange_time]..
 2. If client questions execution price:
-   a. Market order → respond per **A18-R2**.
-   b. Limit order executed at better price → respond per **A18-R3**.
-   c. Client wanted to buy at breakout price (not immediately) → respond per **A18-R5**. Invoke `kite_gtt` if client wants to set up GTT.
-   d. SL trigger seems "wrong" → respond per **A18-R4**.
+   a. Market order → Market orders fill at the best available prices. If the order quantity is large, it may fill at multiple price levels. This is normal exchange behavior..
+   b. Limit order executed at better price → Your limit [type] order at ₹[price] executed at ₹[average_price] because the market had [buyers/sellers] at a [better] price. Limit orders guarantee your price as the worst you'll get, not the exact price..
+   c. Client wanted to buy at breakout price (not immediately) → For buying only when the price reaches ₹[price], use a Stop-Loss (SL) order with trigger price ₹[price] for intraday, or a GTT order with trigger ₹[price] for a long-standing order valid up to 1 year.. Invoke `kite_gtt` if client wants to set up GTT.
+   d. SL trigger seems "wrong" → Charts display snapshots of trading activity and may not reflect every individual trade executed at the exchange. The actual market price at the exchange determines the execution of your order, and brokers have no control over this process. You can verify the execution of your trade using your exchange trade ID through the NSE trade verification module: [NSE Trade Verification](https://www.nseindia.com/static/invest/first-time-investor-trade-verification). For further details: [Why was my SL order executed even though the price did not breach my trigger?](https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger).
 3. If `filled_quantity` < `total_quantity` → partial fill. Check `cancelled_quantity`. IOC orders: unfilled portion auto-cancelled.
 4. If client asks where bought shares are → invoke `kite_holdings` (settled) or `kite_positions` (today's buy).
 
@@ -400,9 +315,9 @@ If no route matches, investigate using Order History sub-view and Section A refe
 
 ### Rule 2 — Order Open / Pending
 
-1. Limit order → respond per **A18-R6**.
-2. Circuit hit → respond per **A18-R7**. Auto-cancel times per **A8**.
-3. SL/SL-M trigger not yet hit → respond per **A18-R8**.
+1. Limit order → Your limit [type] order for [instrument] at ₹[price] is pending. The market hasn't reached your price yet, or earlier orders at the same price are ahead in the queue (price-time priority)..
+2. Circuit hit → The instrument has hit its circuit limit. Your order will remain open but cannot fill until there are counterparties. If it doesn't fill, the exchange will cancel it at [segment close time].. Auto-cancel times per **A8**.
+3. SL/SL-M trigger not yet hit → Your stop-loss order will activate when the price reaches your trigger price of ₹[trigger_price]. It is currently pending..
 4. SL-M orders with trigger outside circuit limits stay open without rejection — normal exchange behavior.
 
 ---
@@ -410,10 +325,10 @@ If no route matches, investigate using Order History sub-view and Section A refe
 ### Rule 3 — Order Cancelled
 
 1. Check Order History sub-view for cancellation timing and context:
-   a. Cancelled near market close → respond per **A18-R9**. Times per **A8**. Invoke `kite_gtt` if client wants persistent order.
-   b. LPP range cancellation → respond per **A18-R10**.
-   c. IOC partial fill + cancel → respond per **A18-R11**.
-   d. Cancelled by user → respond per **A18-R12**.
+   a. Cancelled near market close → Unmatched pending orders are auto-cancelled by the exchange at session end. Place again next session, or use a GTT order for orders valid up to 1 year.. Times per **A8**. Invoke `kite_gtt` if client wants persistent order.
+   b. LPP range cancellation → The exchange cancelled your order because the price was outside the allowed Limit Price Protection range. Retry with a price closer to the current market price..
+   c. IOC partial fill + cancel → Your IOC (Immediate or Cancel) order was partially filled ([filled_quantity] of [total_quantity] qty). The unfilled portion was auto-cancelled. This is how IOC orders work..
+   d. Cancelled by user → This order was cancelled. No action needed..
 
 ---
 
@@ -421,8 +336,8 @@ If no route matches, investigate using Order History sub-view and Section A refe
 
 1. Read `rejection_reason` and match against **A12**.
 2. For margin rejections:
-   a. Check if the client has multiple pending sell orders for the same instrument. If multiple sell orders exist against a single position, the excess orders are treated as fresh short positions requiring margin — respond per **A18-R25**.
-   b. Invoke `kite_margins`. Check `opening_balance` first. If `opening_balance` is negative, this is the primary cause — respond per **A18-R24**. Include the `opening_balance` amount. If `option_premium` is also negative, include the option premium context per **A18-R24**.
+   a. Check if the client has multiple pending sell orders for the same instrument. If multiple sell orders exist against a single position, the excess orders are treated as fresh short positions requiring margin — You placed multiple sell orders for [instrument]. Only one sell order matching your position quantity of [quantity] is needed to exit. Additional sell orders are treated as fresh short positions, which require full margin. Cancel any excess pending sell orders and place a single sell order for [quantity] qty to close your position..
+   b. Invoke `kite_margins`. Check `opening_balance` first. If `opening_balance` is negative, this is the primary cause — Your order was rejected due to insufficient margin. Your opening balance is ₹[opening_balance] (negative), which means your account started the day with a deficit. A negative opening balance blocks all fresh positions until you add funds to clear it. [If option_premium is negative: Your option premium shows ₹[option_premium]. This reflects premium paid for buying options. Proceeds from exiting long options or entering short options can only be used for new long option trades in the same segment on the same day, and become available for other trades from the next trading day (per Kite Positions A10).] Please add funds to cover the deficit and retry your order.. Include the `opening_balance` amount. If `option_premium` is also negative, include the option premium context per **A18-R24**.
    c. If `opening_balance` is not negative, identify the specific margin shortfall from the remaining fields (`available_margin`, `used_margin`, `available_cash`).
 3. For market order blocks → match against **A10**, respond with reason + resolution.
 4. For MIS blocks → match against **A11**, respond with reason + resolution.
@@ -436,9 +351,9 @@ If no route matches, investigate using Order History sub-view and Section A refe
 
 ### Rule 5 — AMO (After Market Orders)
 
-1. General AMO query → respond per **A18-R14**. Details per **A14**.
-2. AMO market order for index options rejected → respond per **A18-R15**.
-3. AMO became limit order → respond per **A18-R16**.
+1. General AMO query → AMO lets you place orders outside market hours (4:00 PM to 8:58 AM for NSE/BSE). Orders execute at next market open. You cannot place AMO during market hours.. Details per **A14**.
+2. AMO market order for index options rejected → Market orders via AMO are blocked for index options. Use a limit order instead..
+3. AMO became limit order → Market orders placed in the pre-open session (including AMO) are converted to limit orders at the equilibrium price (or previous day's close if no equilibrium). This is standard exchange behavior..
 
 ---
 
@@ -455,7 +370,12 @@ If no route matches, investigate using Order History sub-view and Section A refe
 2. Invoke `kite_margins` to check for margin shortfall.
 3. Check if product was MIS and time was near auto square-off window (per **A9**).
 4. Check if account had negative cash balance.
-5. Respond per **A18-R13**. Include margin data from `kite_margins` if available.
+5. This [type] order for [instrument] was executed by Zerodha's risk management system [at exchange_time]. This typically happens when:
+- Your account had insufficient margin to maintain the position
+- It was an intraday (MIS) position auto squared off at the scheduled time
+- Your account had a negative cash balance requiring position closure
+
+Auto square-off charges: ₹50 + 18% GST per order.. Include margin data from `kite_margins` if available.
 6. If client asks about the squared-off position → invoke `kite_positions`.
 
 ---
@@ -470,13 +390,13 @@ If no route matches, investigate using Order History sub-view and Section A refe
 
 ### Rule 9 — Circuit / Ban Period Impact
 
-1. Can't exit at circuit → respond per **A18-R23**. If client asks about resulting position → invoke `kite_positions`.
-2. Ban period → respond per **A18-R21**. Only exit allowed. Restriction lifts when OI falls below 80% of market-wide limit. If the client asks what specific trades are permitted during the ban (delta exposure rules) → redirect to `kite_positions` Rule 11.
+1. Can't exit at circuit → When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time. This can lead to short delivery or auction risk.. If client asks about resulting position → invoke `kite_positions`.
+2. Ban period → [instrument] is in the F&O ban period. Only exit orders are allowed. No new positions or intraday trades.. Only exit allowed. Restriction lifts when OI falls below 80% of market-wide limit. If the client asks what specific trades are permitted during the ban (delta exposure rules) → redirect to `kite_positions` Rule 11.
 
 ---
 
 ### Rule 10 — Order Book Display Issues
 
-1. Rejected order not in order book → respond per **A18-R17**.
-2. Downloaded file shows dates instead of quantities → respond per **A18-R18**.
-3. Execution time beyond market hours → respond per **A18-R19**.
+1. Rejected order not in order book → Some orders are rejected by Zerodha's pre-validation before reaching the exchange. These won't appear in the order book but the rejection reason shows in the order status notification on Kite..
+2. Downloaded file shows dates instead of quantities → This is an Excel formatting issue. It converts values like '1/1' to dates. Open the file in Notepad or Notepad++ to see correct values..
+3. Execution time beyond market hours → This happens when Zerodha reconciles with the exchange after a brief disconnection. The actual execution happened during market hours. Check the tradebook for the real execution time..

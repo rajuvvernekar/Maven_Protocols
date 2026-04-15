@@ -25,7 +25,7 @@ TRIGGER KEYWORDS: "tradebook", "trade history", "trade details", "execution pric
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool looks up a client's equity tradebook — individual trade execution records. It covers the **last 100 days** of trades. For older trade history, use `console_eq_tradebook_prepared` which supports any date range.
 
@@ -33,7 +33,6 @@ Tradebook provides trade-level execution data only (price, qty, date, exchange).
 
 Tradebook does not have a product type (CNC/MIS) field. For EQ series, intraday vs delivery must be inferred from whether offsetting trades exist on the same day. For T2T series, all trades are always delivery.
 
-**Input:** Client ID + date range (last 100 days max).
 
 ---
 
@@ -71,48 +70,6 @@ Tradebook does not have a product type (CNC/MIS) field. For EQ series, intraday 
 ### A5 — Escalation Data Template
 
 When escalating, always include: **client ID, trade_date, tradingsymbol, order_id, and specific discrepancy details.**
-
----
-
-### A6 — Response Templates
-
-**R1 — Date range exceeded:**
-"This tool covers the last 100 days of trades. For older trade history, I'll need to use `console_eq_tradebook_prepared` which supports any date range."
-
-**R2 — Trade found (share details):**
-Share: `trade_date`, `trade_type`, `quantity`, `price`, `exchange`, `order_id`, `trade_id`.
-
-**R3 — Trade not found (after all sources checked):**
-Escalate per **A5**.
-
-**R4 — Execution price verification:**
-"Your [trade_type] order for [quantity] shares of [tradingsymbol] was executed at ₹[price] per share on [exchange] at [order_execution_time].
-
-If you placed a market order, the execution price is the best available price at the time of execution, which may differ from the last traded price you saw. If you placed a limit order, the execution price will be at or better than your limit price."
-
-**R5 — Price differs from contract note:**
-"The tradebook shows the execution price per trade. The contract note may show a weighted average if your order was executed in multiple parts. Both are correct — the tradebook shows individual fills while the CN shows the aggregated obligation."
-
-**R6 — T2T stock explanation:**
-"This stock ([tradingsymbol]) is in the Trade-to-Trade (T2T) category. T2T stocks require compulsory delivery — intraday trading is not allowed. If you bought and sold on the same day, both are treated as separate delivery trades, not intraday. Pure FIFO applies to T2T stocks — the key difference from regular EQ stocks is that same-day buy+sell is treated as delivery (not speculative), so it impacts your buy average."
-
-**R7 — Buy average verification redirect:**
-"Buy average is calculated using FIFO (First In, First Out). You can check the detailed breakdown of your [tradingsymbol] holdings on Console → Portfolio → Holdings → select the stock → View breakdown. This shows every entry that contributes to your current buy average."
-
-**R8 — Intraday (same-day buy+sell, EQ series):**
-"You had both a buy and sell trade for [tradingsymbol] on [trade_date]. If the net position at end of day was zero, these were intraday trades. If you still hold shares, the buy was delivery."
-
-**R9 — T2T same-day — always delivery:**
-"This stock is in the T2T category — all trades are treated as delivery, even if you bought and sold on the same day."
-
-**R10 — Delivery (single-direction trade):**
-Only buy OR only sell on that date → delivery trade.
-
-**R11 — NSE vs BSE price difference:**
-"Your trade was executed on [exchange]. Prices on NSE and BSE can differ slightly for the same stock at the same time. The execution price of ₹[price] is correct as per the [exchange] order book at the time of execution."
-
-**R12 — Tradebook vs Tax P&L value difference:**
-"The tradebook shows gross trade values (price × quantity) for each individual trade. The Tax P&L report may show different values because it applies FIFO matching — the sell value is matched against the corresponding buy entries, and the calculation may span different financial years or exclude intraday trades. Both reports are correct for their respective purposes."
 
 ---
 
@@ -166,7 +123,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 1. If the client describes a past trade event (e.g., "I sold recently", "I sold prematurely", "I redeemed last month"), search the tradebook for the last 90 days for any matching sell/buy entry for that instrument. Anchor the search to the client's described timeframe — do not default to only recent dates. Also check the `ledger_report` for corresponding sale proceeds or credit entries.
 2. Search by tradingsymbol and date range.
-3. If found → respond per **A6-R2** (share trade details). If sale proceeds were already credited per ledger, inform the client.
+3. If found → Share: `trade_date`, `trade_type`, `quantity`, `price`, `exchange`, `order_id`, `trade_id`. (share trade details). If sale proceeds were already credited per ledger, inform the client.
 4. If not found in tradebook → check `console_eq_external_trades` (per **A4**) — may be an off-platform entry (IPO, transfer, buyback).
 5. If not found in external trades → call `console_eq_tradebook_prepared` (per **A4**) to search the full trade history beyond 100 days.
 6. If still not found after checking all sources → escalate per **A5**.
@@ -175,8 +132,10 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 ### Rule 2 — Execution Price Verification
 
-1. Respond per **A6-R4**.
-2. If client says price differs from contract note → respond per **A6-R5**.
+1. Your [trade_type] order for [quantity] shares of [tradingsymbol] was executed at ₹[price] per share on [exchange] at [order_execution_time].
+
+If you placed a market order, the execution price is the best available price at the time of execution, which may differ from the last traded price you saw. If you placed a limit order, the execution price will be at or better than your limit price..
+2. If client says price differs from contract note → The tradebook shows the execution price per trade. The contract note may show a weighted average if your order was executed in multiple parts. Both are correct — the tradebook shows individual fills while the CN shows the aggregated obligation..
 3. If execution price materially differs from limit order price placed by client → escalate per **A5**.
 
 ---
@@ -184,14 +143,14 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 3 — Trade Series and T2T
 
 1. Check the `series` field. Identify per **A3**.
-2. Series BE/BT/BZ (T2T) → respond per **A6-R6**.
+2. Series BE/BT/BZ (T2T) → This stock ([tradingsymbol]) is in the Trade-to-Trade (T2T) category. T2T stocks require compulsory delivery — intraday trading is not allowed. If you bought and sold on the same day, both are treated as separate delivery trades, not intraday. Pure FIFO applies to T2T stocks — the key difference from regular EQ stocks is that same-day buy+sell is treated as delivery (not speculative), so it impacts your buy average..
 3. Series EQ → standard FIFO rules apply.
 
 ---
 
 ### Rule 4 — Buy Average Verification via Tradebook
 
-1. Respond per **A6-R7** — direct client to Console breakdown view.
+1. Buy average is calculated using FIFO (First In, First Out). You can check the detailed breakdown of your [tradingsymbol] holdings on Console → Portfolio → Holdings → select the stock → View breakdown. This shows every entry that contributes to your current buy average. — direct client to Console breakdown view.
 2. Do not list all individual trade entries in the response — there may be many.
 3. If needs to verify internally → use `console_eq_holdings_breakdown` (per **A4**) to walk through FIFO.
 
@@ -200,16 +159,16 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 ### Rule 5 — Intraday vs Delivery Identification
 
 1. Check `series` field first (per **A3**):
-   a. Series BE/BT/BZ (T2T) → respond per **A6-R9**. All trades are compulsory delivery.
+   a. Series BE/BT/BZ (T2T) → This stock is in the T2T category — all trades are treated as delivery, even if you bought and sold on the same day.. All trades are compulsory delivery.
    b. Series EQ → check tradebook for same-day buy AND sell entries for the same tradingsymbol:
-      - Both buy and sell on same date → respond per **A6-R8**.
+      - Both buy and sell on same date → You had both a buy and sell trade for [tradingsymbol] on [trade_date]. If the net position at end of day was zero, these were intraday trades. If you still hold shares, the buy was delivery..
       - Only buy OR only sell on that date → delivery trade (per **A6-R10**).
 
 ---
 
 ### Rule 6 — NSE vs BSE Price Difference
 
-1. Respond per **A6-R11**.
+1. Your trade was executed on [exchange]. Prices on NSE and BSE can differ slightly for the same stock at the same time. The execution price of ₹[price] is correct as per the [exchange] order book at the time of execution..
 
 ---
 
@@ -223,4 +182,4 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 
 ### Rule 8 — Tradebook vs Tax P&L Value Difference
 
-1. Respond per **A6-R12**.
+1. The tradebook shows gross trade values (price × quantity) for each individual trade. The Tax P&L report may show different values because it applies FIFO matching — the sell value is matched against the corresponding buy entries, and the calculation may span different financial years or exclude intraday trades. Both reports are correct for their respective purposes..

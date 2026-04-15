@@ -27,13 +27,12 @@ PREREQUISITE: Always run get_all_client_data FIRST to obtain client_name, pan, d
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool checks **PAN verification status** — validity + name/DOB match across ITD, Exchange, Depository, and KRA. All intermediary records must match for trading — this is a SEBI requirement.
 
 Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
 
-**Input:** Client's PAN, name, and DOB (from `get_all_client_data` — see Preflight Step 1 for why).
 
 ---
 
@@ -113,44 +112,6 @@ When escalating, always include: **client ID, PAN, and specific issue (invalid P
 
 ---
 
-### A9 — Response Templates
-
-**R1 — PAN invalid (not "E"):**
-"There appears to be a regulatory issue with your PAN. Our team will investigate and get back to you."
-
-**R2 — Name and/or DOB mismatch:**
-"As per regulations, the name and date of birth on the Income Tax Department (ITD), Exchange, and Depository records must match to carry out transactions. Your records currently show a mismatch.
-
-To resolve this:
-1. Check your name and DOB as per ITD by logging into the Income Tax Department portal at incometax.gov.in
-2. Check your name as per Zerodha records by downloading the CMR copy from Console
-3. If your name needs to be updated, first update it with the ITD, then follow the name change process — visit: How to change the name in my Zerodha account?
-
-For an online fix, visit account.zerodha.com and complete the re-KYC process (Aadhaar must be linked to your mobile number).
-
-Please note: It may take up to 7 working days after documents are received for the update to take effect. Transactions will be enabled once records are updated."
-
-**R3 — All clear:**
-"Your PAN verification is successful — your name and date of birth match the Income Tax Department records."
-
-**R4 — Minor PAN verification failed:**
-"The minor's PAN verification has failed. This means the PAN number or date of birth entered does not match the Income Tax Department records. Please verify the minor's PAN details and date of birth on the ITD portal at incometax.gov.in, and retry. If the PAN was recently issued, it may take a few days to reflect in the ITD database."
-
-**R5 — Name mismatch, client states ITD already updated:**
-"Your Zerodha records still reflect the earlier name. To update your name with Zerodha:
-
-**Online:** Visit account.zerodha.com and complete the re-KYC process (Aadhaar must be linked to your mobile number). This is available for: spelling corrections, interchange of names, middle name or initial changes, and father's/mother's name changes.
-
-**Offline:** For marriage/divorce name changes, personal preference changes, or removing a middle/last name — courier the required documents to Zerodha. Charges: ₹25 + GST. Processing time: up to 7 working days after documents are received.
-
-Courier address: Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
-
-For details on the process and documents required, visit: How to change the name in my Zerodha account?"
-
----
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -201,15 +162,32 @@ If the client still faces issues despite all-clear PAN status, check `get_all_cl
 ### Rule 1 — Name and/or DOB Mismatch
 
 1. Name match = "N" OR DOB match = "N".
-2. If the client has explicitly stated that their name has already been updated at ITD, respond per **A9-R5**. Name change categories per **A6**, links per **A7**.
-3. Otherwise, respond per **A9-R2**. Name change options per **A6**. Links per **A7**.
+2. If the client has explicitly stated that their name has already been updated at ITD, Your Zerodha records still reflect the earlier name. To update your name with Zerodha:
+
+**Online:** Visit account.zerodha.com and complete the re-KYC process (Aadhaar must be linked to your mobile number). This is available for: spelling corrections, interchange of names, middle name or initial changes, and father's/mother's name changes.
+
+**Offline:** For marriage/divorce name changes, personal preference changes, or removing a middle/last name — courier the required documents to Zerodha. Charges: ₹25 + GST. Processing time: up to 7 working days after documents are received.
+
+Courier address: Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
+
+For details on the process and documents required, visit: How to change the name in my Zerodha account?. Name change categories per **A6**, links per **A7**.
+3. Otherwise, As per regulations, the name and date of birth on the Income Tax Department (ITD), Exchange, and Depository records must match to carry out transactions. Your records currently show a mismatch.
+
+To resolve this:
+1. Check your name and DOB as per ITD by logging into the Income Tax Department portal at incometax.gov.in
+2. Check your name as per Zerodha records by downloading the CMR copy from Console
+3. If your name needs to be updated, first update it with the ITD, then follow the name change process — visit: How to change the name in my Zerodha account?
+
+For an online fix, visit account.zerodha.com and complete the re-KYC process (Aadhaar must be linked to your mobile number).
+
+Please note: It may take up to 7 working days after documents are received for the update to take effect. Transactions will be enabled once records are updated.. Name change options per **A6**. Links per **A7**.
 
 ---
 
 ### Rule 2 — Name and DOB Both Match
 
 1. Name match = "Y" AND DOB match = "Y" AND PAN valid = "E".
-2. Respond per **A9-R3**.
+2. Your PAN verification is successful — your name and date of birth match the Income Tax Department records..
 3. If client still faces issues (segment rejection, block) → check `get_all_client_data` for other remarks or blocks.
 
 ---
@@ -217,7 +195,7 @@ If the client still faces issues despite all-clear PAN status, check `get_all_cl
 ### Rule 3 — Minor Account PAN Verification Failed
 
 1. Query is about minor account opening + PAN verification failed.
-2. Respond per **A9-R4**.
+2. The minor's PAN verification has failed. This means the PAN number or date of birth entered does not match the Income Tax Department records. Please verify the minor's PAN details and date of birth on the ITD portal at incometax.gov.in, and retry. If the PAN was recently issued, it may take a few days to reflect in the ITD database..
 
 ---
 

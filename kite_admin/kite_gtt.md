@@ -33,7 +33,7 @@ TRIGGER KEYWORDS: "GTT", "good till triggered", "trigger order", "GTT triggered"
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows a client's **GTT (Good Till Triggered) orders** — orders that stay active until the trigger condition is met or validity expires. GTT is free — no additional charges.
 
@@ -49,7 +49,6 @@ GTT triggers based on ticks recorded by the system — if a tick is not captured
 
 Max 500 active GTTs per account. Notifications: email + Kite push notification on trigger and order placement.
 
-**Input:** Client ID.
 
 ---
 
@@ -148,88 +147,6 @@ When escalating, always include: **client ID, tradingsymbol, GTT type, status, t
 
 ---
 
-### A10 — Response Templates
-
-**R1 — Active (single):**
-"Your [transaction_type] GTT for [tradingsymbol] is active. Trigger price: ₹[trigger_values], limit price: ₹[price], quantity: [quantity]. Equity GTTs are valid for 1 year from creation; F&O GTTs until contract expiry."
-
-**R2 — Active (when will it trigger):**
-"Your GTT will trigger when the LTP of [tradingsymbol] hits or breaches ₹[trigger_values]. Once triggered, a [order_type] order at ₹[price] will be placed on the exchange."
-
-**R3 — Active (OCO):**
-"Your OCO GTT has two triggers — stoploss at ₹[lower_trigger] and target at ₹[upper_trigger]. When one triggers, the other is automatically cancelled."
-
-**R4 — Triggered + executed:**
-"Your GTT for [tradingsymbol] was triggered and the order was executed."
-
-**R5 — Triggered + rejected (insufficient margin):**
-"Your GTT triggered but was rejected due to insufficient funds. GTTs can be created without funds, but funds must be available when the trigger fires."
-
-**R6 — Triggered + rejected (TPIN not authorised):**
-"Your sell GTT was rejected because holdings were not authorised via CDSL TPIN. Without POA/DDPI, you must authorise daily after 7 AM. Consider activating DDPI to avoid this."
-
-**R7 — Triggered + rejected (insufficient holdings):**
-"Your sell GTT was rejected because you didn't have enough shares in your demat account when the trigger fired."
-
-**R8 — Triggered + rejected (price band/circuit):**
-"Your GTT triggered but the limit price was outside the exchange's circuit limit for the day. The order was rejected."
-
-**R9 — Triggered + rejected (series change/suspension):**
-"Your GTT was rejected because the instrument underwent a series change or was suspended."
-
-**R10 — Triggered + rejected (segment killed):**
-"Your GTT was rejected because you had disabled this segment using Kill Switch."
-
-**R11 — Triggered + cancelled by user:**
-"Your GTT for [tradingsymbol] was triggered on [trigger date] and a [order_type] order was placed on the exchange. However, this order was cancelled from your end during the trading session. The GTT trigger is a one-time event — you'll need to create a new GTT if you still want this order."
-
-**R12 — Triggered + unfilled (EOD cancellation):**
-"Your GTT for [tradingsymbol] triggered on [trigger date] and an order was placed, but it wasn't filled by end of day. Triggered GTT orders become limit orders with DAY validity — if unfilled, the exchange cancels them at session end. You'll need to create a new GTT."
-
-**R13 — Triggered GTT not visible in order book:**
-"Once triggered, the GTT order is a regular limit order with DAY validity. If it wasn't filled, the exchange cancelled it at end of day. From the next day, it won't appear in the order book. Check your email for the trigger and order details."
-
-**R14 — Price reached but not triggered:**
-"GTT triggers based on ticks recorded by the system. Hundreds of transactions occur per second on the exchange, and each is represented by a tick. If the system didn't capture the tick at your trigger price of ₹[trigger_values], the GTT may not trigger. It will remain active until the price reaches the trigger again."
-
-**R15 — Cancelled (CA/series change):**
-"Your GTT was cancelled because [instrument] was [delisted/suspended/underwent a series change/category change]. You'll need to create a new GTT."
-
-**R16 — Cancelled (F&O CA/lot change):**
-"Your GTT for the F&O contract was cancelled due to a [corporate action affecting lot size/price / lot size change for index contracts]. You'll need to create a new GTT."
-
-**R17 — Cancelled (extraordinary CA):**
-"Extraordinary corporate actions (dividends above 2%, rights issue, consolidation, capital reduction) also cause GTT cancellation. You'll need to create a new GTT."
-
-**R18 — Expired (equity):**
-"Your GTT expired because it wasn't triggered within 1 year of creation (created on [created_at]). Create a new GTT if needed."
-
-**R19 — Expired (F&O):**
-"Your GTT expired because the F&O contract expired. GTTs for derivatives are valid only until contract expiry."
-
-**R20 — Disabled:**
-"Your GTT was disabled because the trigger price was set too close to LTP (less than 0.25% for stocks above ₹50, or less than 9 paise for stocks below ₹50) after validation, or the instrument underwent a corporate action like a bonus issue or stock split. You'll need to create a new GTT with a valid trigger price."
-
-**R21 — Deleted:**
-"This GTT was deleted from your account [on updated_at]."
-
-**R22 — Email price mismatch:**
-"The price in the email is the actual LTP at the moment the GTT triggered — not your trigger price. Due to market volatility or gaps (opening gap up/down), the LTP at trigger time may be higher or lower than your set trigger price. Example: if you set a sell trigger at ₹95 but the stock opened at ₹90 (gap down), the trigger fires at ₹90 and the email shows ₹90."
-
-**R23 — Trigger too close (creation error):**
-"For stocks above ₹50, the trigger must be at least 0.25% away from the current market price. For stocks below ₹50, the trigger must be at least 9 paise away."
-
-**R24 — No LTP (creation error):**
-"GTTs require an LTP to validate the trigger. If the instrument has no LTP due to illiquidity, GTT creation is not possible."
-
-**R25 — Max GTTs reached:**
-"You can have a maximum of 500 active GTTs. Delete existing GTTs to create new ones."
-
-**R26 — Stoploss prompt (index options):**
-"This prompt encourages setting a stoploss when buying options to manage risk. You can proceed without setting one, but Zerodha recommends a GTT stoploss (5–10% is a reasonable starting point). Remember to cancel open GTT stoploss orders when you directly exit the position to avoid unintended positions."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -279,34 +196,34 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 1 — GTT Status Check
 
 1. Locate by `tradingsymbol`. Share: tradingsymbol, transaction_type, type (single/OCO), status, trigger_values, price, quantity, product, created_at.
-2. Route by status: active → Rule 2, triggered → Rule 3, cancelled → Rule 5, expired → Rule 6, disabled → Rule 7, deleted → respond per **A10-R21**.
+2. Route by status: active → Rule 2, triggered → Rule 3, cancelled → Rule 5, expired → Rule 6, disabled → Rule 7, deleted → This GTT was deleted from your account [on updated_at]..
 3. If GTT not found → invoke `kite_gtt_archived`.
 
 ---
 
 ### Rule 2 — Status: Active
 
-1. Respond per **A10-R1**.
-2. If client asks when it will trigger → respond per **A10-R2**.
-3. If OCO → respond per **A10-R3**.
+1. Your [transaction_type] GTT for [tradingsymbol] is active. Trigger price: ₹[trigger_values], limit price: ₹[price], quantity: [quantity]. Equity GTTs are valid for 1 year from creation; F&O GTTs until contract expiry..
+2. If client asks when it will trigger → Your GTT will trigger when the LTP of [tradingsymbol] hits or breaches ₹[trigger_values]. Once triggered, a [order_type] order at ₹[price] will be placed on the exchange..
+3. If OCO → Your OCO GTT has two triggers — stoploss at ₹[lower_trigger] and target at ₹[upper_trigger]. When one triggers, the other is automatically cancelled..
 
 ---
 
 ### Rule 3 — Status: Triggered
 
 1. Check `order_result_status`:
-   a. COMPLETE → respond per **A10-R4**. Invoke `kite_orders` (today) or `kite_order_history` (past) for execution details.
+   a. COMPLETE → Your GTT for [tradingsymbol] was triggered and the order was executed.. Invoke `kite_orders` (today) or `kite_order_history` (past) for execution details.
    b. REJECTED → match `order_result_rejection_reason` against **A5** (buy) or **A6** (sell) and respond with the matching template (**A10-R5** through **A10-R10**). Cross-reference `kite_margins` (margin) or `kite_holdings` (holdings) as needed.
    c. CANCELLED → invoke `kite_order_history` filtered to the GTT trigger date only. Use the `gtt` field internally to confirm the order is linked to this GTT. Do not look at orders on subsequent dates.
-      - Cancelled during market hours → respond per **A10-R11** (user cancelled).
-      - Cancelled after market hours → respond per **A10-R12** (EOD unfilled).
-2. If triggered GTT not visible in order book → respond per **A10-R13**.
+      - Cancelled during market hours → Your GTT for [tradingsymbol] was triggered on [trigger date] and a [order_type] order was placed on the exchange. However, this order was cancelled from your end during the trading session. The GTT trigger is a one-time event — you'll need to create a new GTT if you still want this order. (user cancelled).
+      - Cancelled after market hours → Your GTT for [tradingsymbol] triggered on [trigger date] and an order was placed, but it wasn't filled by end of day. Triggered GTT orders become limit orders with DAY validity — if unfilled, the exchange cancels them at session end. You'll need to create a new GTT. (EOD unfilled).
+2. If triggered GTT not visible in order book → Once triggered, the GTT order is a regular limit order with DAY validity. If it wasn't filled, the exchange cancelled it at end of day. From the next day, it won't appear in the order book. Check your email for the trigger and order details..
 
 ---
 
 ### Rule 4 — Price Reached but GTT Didn't Fire
 
-1. Respond per **A10-R14**.
+1. GTT triggers based on ticks recorded by the system. Hundreds of transactions occur per second on the exchange, and each is represented by a tick. If the system didn't capture the tick at your trigger price of ₹[trigger_values], the GTT may not trigger. It will remain active until the price reaches the trigger again..
 2. Additional checks:
    - Price briefly touched and bounced — tick may not have been recorded.
    - GTT was modified — check `updated_at` to confirm latest trigger value.
@@ -326,20 +243,20 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 6 — Status: Expired
 
-1. Equity → respond per **A10-R18**.
-2. F&O → respond per **A10-R19**.
+1. Equity → Your GTT expired because it wasn't triggered within 1 year of creation (created on [created_at]). Create a new GTT if needed..
+2. F&O → Your GTT expired because the F&O contract expired. GTTs for derivatives are valid only until contract expiry..
 
 ---
 
 ### Rule 7 — Status: Disabled
 
-1. Respond per **A10-R20**. Trigger distance rules per **A4**.
+1. Your GTT was disabled because the trigger price was set too close to LTP (less than 0.25% for stocks above ₹50, or less than 9 paise for stocks below ₹50) after validation, or the instrument underwent a corporate action like a bonus issue or stock split. You'll need to create a new GTT with a valid trigger price.. Trigger distance rules per **A4**.
 
 ---
 
 ### Rule 8 — GTT Email Price Mismatch
 
-1. Respond per **A10-R22**.
+1. The price in the email is the actual LTP at the moment the GTT triggered — not your trigger price. Due to market volatility or gaps (opening gap up/down), the LTP at trigger time may be higher or lower than your set trigger price. Example: if you set a sell trigger at ₹95 but the stock opened at ₹90 (gap down), the trigger fires at ₹90 and the email shows ₹90..
 
 ---
 
@@ -357,13 +274,13 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 10 — GTT Creation Errors
 
-1. Trigger too close → respond per **A10-R23**. Distance rules per **A4**.
-2. No LTP (illiquid) → respond per **A10-R24**.
-3. Max 500 active GTTs reached → respond per **A10-R25**.
+1. Trigger too close → For stocks above ₹50, the trigger must be at least 0.25% away from the current market price. For stocks below ₹50, the trigger must be at least 9 paise away.. Distance rules per **A4**.
+2. No LTP (illiquid) → GTTs require an LTP to validate the trigger. If the instrument has no LTP due to illiquidity, GTT creation is not possible..
+3. Max 500 active GTTs reached → You can have a maximum of 500 active GTTs. Delete existing GTTs to create new ones..
 
 ---
 
 ### Rule 11 — GTT Stoploss Prompt (Index Options)
 
-1. Respond per **A10-R26**.
+1. This prompt encourages setting a stoploss when buying options to manage risk. You can proceed without setting one, but Zerodha recommends a GTT stoploss (5–10% is a reasonable starting point). Remember to cancel open GTT stoploss orders when you directly exit the position to avoid unintended positions..
 

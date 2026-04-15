@@ -24,7 +24,7 @@ TRIGGER KEYWORDS: "auto debit", "mandate debit", "schedule debit", "funds not cr
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows **Console eMandate auto-debit transactions** that fund the Kite trading account. This is not for Coin/MF mandates — those are a separate system.
 
@@ -32,7 +32,6 @@ Bank debits 1 working day before the scheduled credit date (NPCI settles end-of-
 
 Failed auto-debits are **not retried** — the client must transfer funds manually.
 
-**Input:** Client ID — returns auto-debit transaction records.
 
 ---
 
@@ -104,29 +103,6 @@ When escalating, always include: **client ID, amount, transaction date, and spec
 
 ---
 
-### A9 — Response Templates
-
-**R1 — Success (ledger entry found):**
-"Your auto-debit of ₹[amount] has been successfully credited to your Kite account."
-
-**R2 — Success (ledger entry not found yet):**
-"Your auto-debit of ₹[amount] has been processed successfully. The funds should reflect in your Kite balance by end of day."
-
-**R3 — Failed:**
-"Your scheduled auto-debit of ₹[amount] could not be completed. This usually happens when the bank account did not have sufficient opening balance at the time of debit. The bank considers the opening balance on the debit date — funds added to your bank on the same day may not be considered. Failed auto-debits are not retried. You can add funds manually via Kite's 'Add Funds' option."
-
-**R4 — Created (pending):**
-"The debit request for ₹[amount] has been sent to your bank. Your bank will debit the amount during banking hours, and the funds will be credited to your Kite account by the next working day."
-
-**R5 — No matching record:**
-"I don't see a matching auto-debit record for this amount. Please confirm the debit is from the Console eMandate (not a Coin MF mandate or manual transfer). You can verify your active mandates at console.zerodha.com/funds/mandates."
-
-**R6 — SIP failed due to mandate timing:**
-"Stock SIPs deduct funds from your Kite account balance, not directly from your bank. The eMandate transfers funds from your bank to Kite in advance. If the eMandate debit was delayed or failed, your SIP may fail due to insufficient balance. To avoid this, schedule your eMandate credit date 2–3 days before your SIP date."
-
-**R7 — Early debit explanation:**
-"Your bank debits the amount 1 working day before the scheduled credit date. This is because eMandate transfers take one working day to process — the NPCI confirms the transaction at end of day, and the funds appear in your Kite account on the scheduled date."
-
 ## Section B: Decision Flow
 
 ---
@@ -172,31 +148,31 @@ If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (p
 
 1. Determine status (per **A3**):
    a. Success → check `ledger_report` for entry "Funds added using auto debit" matching the amount.
-      - Ledger entry found → respond per **A9-R1**.
-      - Ledger entry not found → respond per **A9-R2**.
-   b. Failed → respond per **A9-R3**.
-   c. Created → respond per **A9-R4**.
+      - Ledger entry found → Your auto-debit of ₹[amount] has been successfully credited to your Kite account..
+      - Ledger entry not found → Your auto-debit of ₹[amount] has been processed successfully. The funds should reflect in your Kite balance by end of day..
+   b. Failed → Your scheduled auto-debit of ₹[amount] could not be completed. This usually happens when the bank account did not have sufficient opening balance at the time of debit. The bank considers the opening balance on the debit date — funds added to your bank on the same day may not be considered. Failed auto-debits are not retried. You can add funds manually via Kite's 'Add Funds' option..
+   c. Created → The debit request for ₹[amount] has been sent to your bank. Your bank will debit the amount during banking hours, and the funds will be credited to your Kite account by the next working day..
 
 ---
 
 ### Rule 2 — Money Debited but Not in Kite
 
 1. If status = Success → apply Rule 1 step 1a (check ledger). If missing, funds reflect by end of day.
-2. If status = Created → respond per **A9-R4**. Timeline per **A4**.
-3. If no matching record found → respond per **A9-R5**.
+2. If status = Created → The debit request for ₹[amount] has been sent to your bank. Your bank will debit the amount during banking hours, and the funds will be credited to your Kite account by the next working day.. Timeline per **A4**.
+3. If no matching record found → I don't see a matching auto-debit record for this amount. Please confirm the debit is from the Console eMandate (not a Coin MF mandate or manual transfer). You can verify your active mandates at console.zerodha.com/funds/mandates..
 
 ---
 
 ### Rule 3 — SIP Failed Due to Insufficient Funds
 
-1. Respond per **A9-R6**. Timing recommendation per **A4**.
+1. Stock SIPs deduct funds from your Kite account balance, not directly from your bank. The eMandate transfers funds from your bank to Kite in advance. If the eMandate debit was delayed or failed, your SIP may fail due to insufficient balance. To avoid this, schedule your eMandate credit date 2–3 days before your SIP date.. Timing recommendation per **A4**.
 2. Check latest auto-debit status and apply Rule 1 to inform client of the debit outcome.
 
 ---
 
 ### Rule 4 — Early Debit Complaint
 
-1. Respond per **A9-R7**. Timeline per **A4**.
+1. Your bank debits the amount 1 working day before the scheduled credit date. This is because eMandate transfers take one working day to process — the NPCI confirms the transaction at end of day, and the funds appear in your Kite account on the scheduled date.. Timeline per **A4**.
 
 ---
 

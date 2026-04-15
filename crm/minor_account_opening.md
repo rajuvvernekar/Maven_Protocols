@@ -23,13 +23,12 @@ TRIGGER KEYWORDS: "minor account status", "minor account opening", "minor demat"
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows **minor account opening application status**. It tracks the application through processing to completion.
 
 For questions about trading restrictions, fund transfers, MF investment, guardian changes, converting to individual account, or Kite login for pre-2024 accounts — answer from the reference data in this protocol, not from tool output.
 
-**Input:** Client ID (guardian's).
 
 ---
 
@@ -129,37 +128,6 @@ When escalating, always include: **client ID (guardian's), minor's name/details,
 
 ---
 
-### A10 — Response Templates
-
-**R1 — Processing (within timeline, no reasons):**
-"Your minor account application is being reviewed. It typically takes up to 48 working hours for the account to be processed after document verification."
-
-**R2 — Processing (reasons present):**
-"Your minor account application requires corrections. [Share reasons per A7 translations]. Please make the necessary changes and resubmit."
-
-**R3 — Processing (overdue):**
-"Your application has been under review for longer than expected. I'm escalating this to our team for priority processing."
-
-**R4 — Completed:**
-"Your minor account application has been approved. The account will be enabled within 24–48 hours, and login credentials will be sent to the registered email ID."
-
-**R5 — Credentials not received:**
-"Please check your registered email (including spam/junk folder). If credentials haven't arrived within 48 hours of approval, please let us know."
-
-**R6 — eSign not completed:**
-"It appears the guardian's eSign has not been completed yet. Please complete the eSign process to proceed with the application. You can do this during the account opening flow at signup.zerodha.com/minor."
-
-**R7 — PAN verification failed:**
-"The minor's PAN could not be verified. This means either the PAN number or date of birth entered does not match the Income Tax Department (ITD) records. Please verify the details at incometax.gov.in. If the PAN was recently issued, it may take a few days to reflect in the ITD database."
-
-**R8 — NRI-minor account:**
-"NRI-minor accounts can only be opened offline. Please email the required documents to forms@zerodha.com for review, then courier them to our Bengaluru office. The account will be opened within 72 working hours after document verification."
-
-**R9 — Trading capabilities:**
-"Minor accounts have specific restrictions as per SEBI regulations. Minors cannot buy shares or place intraday/F&O orders. However, minors can sell existing holdings, invest in mutual funds through Coin, and apply for IPOs, buybacks, and takeovers. The guardian can transfer securities to the minor's account using CDSL Easiest or Zerodha's gifting feature."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -208,52 +176,52 @@ If no route matches, answer from Section A reference data. If unable to resolve,
 ### Rule 1 — Application Processing (Within Timeline)
 
 1. `status` = "processing" AND `creation` ≤ 48 working hours AND `reasons` is empty/null.
-2. Respond per **A10-R1**. Timeline per **A4**.
+2. Your minor account application is being reviewed. It typically takes up to 48 working hours for the account to be processed after document verification.. Timeline per **A4**.
 
 ---
 
 ### Rule 2 — Application Rejected / Reasons Present
 
 1. `status` = "processing" AND `reasons` is not empty.
-2. Translate reasons per **A7** and respond per **A10-R2**.
+2. Translate reasons per **A7** and Your minor account application requires corrections. [Share reasons per A7 translations]. Please make the necessary changes and resubmit..
 
 ---
 
 ### Rule 3 — Application Overdue
 
 1. `status` = "processing" AND `creation` > 48 working hours AND `reasons` is empty/null.
-2. Respond per **A10-R3**. escalate per **A9**.
+2. Your application has been under review for longer than expected. I'm escalating this to our team for priority processing.. escalate per **A9**.
 
 ---
 
 ### Rule 4 — Application Completed
 
 1. `status` = "completed".
-2. Respond per **A10-R4**. Timeline per **A4**.
-3. If client says credentials not received → respond per **A10-R5**.
+2. Your minor account application has been approved. The account will be enabled within 24–48 hours, and login credentials will be sent to the registered email ID.. Timeline per **A4**.
+3. If client says credentials not received → Please check your registered email (including spam/junk folder). If credentials haven't arrived within 48 hours of approval, please let us know..
 
 ---
 
 ### Rule 5 — eSign Not Completed
 
 1. `status` = "processing" AND `eq_signed_on` is empty/null.
-2. Respond per **A10-R6**.
+2. It appears the guardian's eSign has not been completed yet. Please complete the eSign process to proceed with the application. You can do this during the account opening flow at signup.zerodha.com/minor..
 
 ---
 
 ### Rule 6 — PAN Verification Failed
 
-1. Respond per **A10-R7**.
+1. The minor's PAN could not be verified. This means either the PAN number or date of birth entered does not match the Income Tax Department (ITD) records. Please verify the details at incometax.gov.in. If the PAN was recently issued, it may take a few days to reflect in the ITD database..
 
 ---
 
 ### Rule 7 — NRI-Minor Account
 
-1. Respond per **A10-R8**. Courier address per **A8**.
+1. NRI-minor accounts can only be opened offline. Please email the required documents to forms@zerodha.com for review, then courier them to our Bengaluru office. The account will be opened within 72 working hours after document verification.. Courier address per **A8**.
 
 ---
 
 ### Rule 8 — Trading Capabilities / Restrictions
 
-1. Respond per **A10-R9**. Full restrictions per **A5**.
+1. Minor accounts have specific restrictions as per SEBI regulations. Minors cannot buy shares or place intraday/F&O orders. However, minors can sell existing holdings, invest in mutual funds through Coin, and apply for IPOs, buybacks, and takeovers. The guardian can transfer securities to the minor's account using CDSL Easiest or Zerodha's gifting feature.. Full restrictions per **A5**.
 

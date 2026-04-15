@@ -26,11 +26,10 @@ TRIGGER KEYWORDS: "quantity mismatch", "Kite shows different", "Console shows di
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool looks up a client's SOT-based (Statement of Transaction) equity holdings — an independent source of truth separate from the tradebook-backed `console_eq_holdings`. It is primarily used for **cross-validation** of holdings quantities. The two systems should match; discrepancies indicate data issues requiring investigation.
 
-**Input:** Client ID.
 
 ---
 
@@ -78,31 +77,6 @@ Shares with `discrepant` > 0 follow the same resolution as `console_eq_holdings`
 ### A5 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol(s), ISIN(s), qty from each tool (pseudo_holdings and console_eq_holdings), and screenshots if available.**
-
----
-
-### A6 — Response Templates
-
-**R1 — Qty confirmed correct (display issue):**
-"Your holdings quantity of [available] shares of [tradingsymbol] is confirmed correct in our records. Please try logging out and back in, clearing your browser cache, or using a different browser/device."
-
-**R2 — Genuine discrepancy found:**
-"We've identified a discrepancy in your [tradingsymbol] holdings and have raised this for investigation. Our team will review and update your holdings. You'll be notified once resolved."
-
-**R3 — T1 settlement (stock not in pseudo yet):**
-"Your shares are in T+1 settlement and will appear once settled."
-
-**R4 — Stock in pseudo but not in holdings:**
-"We can see your [tradingsymbol] shares in our records. They may be awaiting system processing. We're investigating and will update you."
-
-**R5 — Split/CA shares credited or processing:**
-For split share responses, use the templates from `console_eq_holdings` protocol (**A13-R11** for credited, **A13-R12** for still processing).
-
-**R6 — Transfer-in overlapping with T1:**
-"When shares are transferred on the same date as a purchase, the discrepancy quantity may appear partial until the T1 shares settle. The full transferred quantity will show correctly after settlement (next trading day)."
-
-**R7 — Safekeep / frozen shares:**
-"We've noted that your [tradingsymbol] shares appear to be in safekeeping or frozen status in the depository records. We're escalating this to our depository team for investigation. They will review and update you on the status."
 
 ---
 
@@ -155,7 +129,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. Confirm `available` qty in `console_eq_pseudo_holdings` = `available` qty in `console_eq_holdings` for same ISIN.
 2. Quantity is correct across both systems.
-3. If client still reports a display issue → respond per **A6-R1**.
+3. If client still reports a display issue → Your holdings quantity of [available] shares of [tradingsymbol] is confirmed correct in our records. Please try logging out and back in, clearing your browser cache, or using a different browser/device..
 
 ---
 
@@ -163,7 +137,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. Confirm `available` qty in `console_eq_pseudo_holdings` ≠ `available` qty in `console_eq_holdings` for same ISIN.
 2. Genuine discrepancy detected.
-3. Respond per **A6-R2**. Do not tell the client "there is a system mismatch."
+3. We've identified a discrepancy in your [tradingsymbol] holdings and have raised this for investigation. Our team will review and update your holdings. You'll be notified once resolved.. Do not tell the client "there is a system mismatch."
 4. Escalate per **A5** with qty from each tool.
 
 ---
@@ -171,7 +145,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 ### Rule 3 — Stock in Holdings but Not in Pseudo
 
 1. Check `console_eq_holdings` for the stock:
-   a. `t1` > 0 → shares bought yesterday, SOT may not reflect until settlement. Respond per **A6-R3**.
+   a. `t1` > 0 → shares bought yesterday, SOT may not reflect until settlement. Your shares are in T+1 settlement and will appear once settled..
    b. Shares yet to be credited from corporate action → CA credit not yet in SOT. Advise client to wait.
    c. Neither a nor b → possible sync issue or tradingsymbol name difference. Check if same ISIN exists under a different tradingsymbol in pseudo_holdings (e.g., company renamed, NSE vs BSE symbol per **A3**).
    d. If no match on ISIN → Escalate per **A5**.
@@ -184,7 +158,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    a. Shares transferred in but not yet reflected in Console → check `console_eq_external_trades` for transfer entry awaiting processing.
    b. Corporate action credit (rearrangement, unclaimed shares) not yet processed.
    c. Suspended/delisted stock visible in SOT but removed from active Console holdings.
-2. Respond per **A6-R4**.
+2. We can see your [tradingsymbol] shares in our records. They may be awaiting system processing. We're investigating and will update you..
 3. If no clear cause → Escalate per **A5**.
 
 ---
@@ -212,8 +186,8 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. Use `total_quantity`, `available`, and `pending` from `console_eq_pseudo_holdings` as the basis for explaining the split — do not derive quantity from recent trade history.
 2. Check `kite_holdings` to verify whether split shares have already been credited.
-3. If `kite_holdings` shows the full post-split quantity → respond per **A6-R5** (credited template).
-4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → respond per **A6-R5** (processing template).
+3. If `kite_holdings` shows the full post-split quantity → For split share responses, use the templates from `console_eq_holdings` protocol (**A13-R11** for credited, **A13-R12** for still processing). (credited template).
+4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → For split share responses, use the templates from `console_eq_holdings` protocol (**A13-R11** for credited, **A13-R12** for still processing). (processing template).
 5. If more than 5 trading days since record date AND split shares still not credited → Escalate per **A5**.
 
 ---
@@ -229,7 +203,7 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 ### Rule 9 — Transfer-In with Overlapping T1
 
 1. Transfer credit date = T1 purchase date for same stock AND discrepant qty appears partial.
-2. Respond per **A6-R6**.
+2. When shares are transferred on the same date as a purchase, the discrepancy quantity may appear partial until the T1 shares settle. The full transferred quantity will show correctly after settlement (next trading day)..
 
 ---
 
@@ -237,6 +211,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 
 1. Client reports shares visible in their CDSL statement but not in Kite/Console, and mentions "Safekeep Bal" or "Freeze".
 2. Maven cannot download or read the client's SOT/CDSL statement directly.
-3. Respond per **A6-R7**.
+3. We've noted that your [tradingsymbol] shares appear to be in safekeeping or frozen status in the depository records. We're escalating this to our depository team for investigation. They will review and update you on the status..
 4. Escalate to **Support team** with: client ID, tradingsymbol, ISIN, and note that client's CDSL statement shows safekeep/frozen balance.
 

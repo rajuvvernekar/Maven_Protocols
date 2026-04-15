@@ -39,7 +39,7 @@ TRIGGER KEYWORDS: "position", "open position", "intraday", "MIS", "NRML", "carry
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows **open trades for the current day**: intraday (MIS/CO), F&O (NRML), and same-day delivery (CNC). Holdings = settled shares in demat (separate tool).
 
@@ -51,7 +51,6 @@ P&L in positions includes both realised (closed trades) and unrealised (open tra
 
 Zerodha does not square off for freak trades — unrealised loss lasts only a fraction of a second.
 
-**Input:** Client ID.
 
 ---
 
@@ -209,92 +208,7 @@ When escalating, always include: **client ID, instrument_name, product type, and
 
 ---
 
-### A13 — Response Templates
-
-**R1 — Profit when buy avg > LTP:**
-"When you make multiple trades in the same stock during the day, Kite calculates buy average across ALL trades, not just your current position. Your realised profit from earlier trades is included, which can show overall profit even if the current position's entry price is above the market price."
-
-**R2 — P&L changed after 3:30 PM / before market:**
-"After 3:30 PM, equity P&L switches to the exchange closing price. For F&O, settlement prices update between 6:30–7:00 AM next day when the exchange sends the BHAVCOPY. This commonly causes P&L to shift."
-
-**R3 — Positions P&L ≠ funds page:**
-"The Positions page calculates P&L from your original entry price. The Funds page uses the MTM (Mark-to-Market) settlement price for futures and short options. These are different calculations. The funds page reflects what's actually settled in your account."
-
-**R4 — Settlement price = 0:**
-"A settlement price of 0 means your option expired OTM (Out of The Money). This is normal regardless of what the LTP was. The settlement price is based on the underlying's weighted average in the last 30 minutes."
-
-**R5 — Net vs day positions:**
-"Net position shows your actual current portfolio after combining overnight carry-forward and today's trades. Day position shows only today's trading activity. Example: if you carried forward 75 NIFTY FUT and squared off today, net shows 0 (current state), day shows -75 (today's sell action)."
-
-**R6 — Auto square-off explanation:**
-"Intraday positions are auto-squared off at [time per A4]. Auto square-off charge: ₹50 + GST per order. To avoid this, close intraday positions before the square-off time."
-
-**R7 — Auto square-off failed (carried forward):**
-"Auto square-off can fail due to: circuit limits hit, system issues, or connectivity problems. Your MIS position has been converted to [CNC for equity / NRML for F&O] and carried forward. You must close it yourself. Ensure sufficient margin is available. Zerodha may square off at its discretion."
-
-**R8 — Circuit + MIS sell (upper circuit):**
-"If your MIS sell position hits upper circuit, you can't buy back, so it converts to delivery. If you don't have shares in your demat, this results in short delivery and auction penalties."
-
-**R9 — Circuit + MIS buy (lower circuit):**
-"If your MIS buy position hits lower circuit, it converts to CNC and you must maintain delivery margin."
-
-**R10 — Conversion guidance:**
-"You can convert via Kite: Positions → tap/click on position → Convert Position. Requires sufficient margin for the target product type."
-
-**R11 — CO cannot convert:**
-"Cover Order positions cannot be converted to any other product type."
-
-**R12 — Agricultural commodity restriction:**
-"Agricultural commodity contracts (cardamom, mentha oil) cannot be converted to MIS one day before the tender period starts."
-
-**R13 — Can't close hedge leg:**
-"You need sufficient margin to cover the remaining unhedged position. Closing the hedge leg increases your margin requirement. Options: add funds first, or exit both legs simultaneously."
-
-**R14 — Peak margin penalty from closing one leg:**
-"Even if you close both legs, the exchange takes random intraday snapshots (4 for equity F&O, 8 for commodity). If a snapshot catches one leg open, you may face a penalty."
-
-**R15 — Margin call received:**
-"Add funds by 11:59 PM same day (if received after hours) or immediately (if before hours). If not resolved, Zerodha may square off positions at its discretion."
-
-**R16 — Margin penalty charged:**
-"Exchange imposes margin penalty when insufficient margin is detected during intraday snapshots or at end of day. Penalty: 0.5% for shortfall under ₹1 lakh, 1% for ₹1 lakh+, up to 5% for 3+ instances in a month."
-
-**R17 — Shortfall despite positions closed:**
-"Shortfall can occur from intraday snapshots taken while your position was still open. Even if you closed it later, the snapshot captured the shortfall at that moment."
-
-**R18 — Stock F&O ITM expiry:**
-"ITM stock options and futures result in compulsory physical delivery. You need full cash or shares. Stocks credited T+1 after expiry. Margins increase 4 days before expiry for ITM long options and on expiry day for futures/short options."
-
-**R19 — Stock F&O OTM expiry:**
-"OTM stock options expire worthless. There is no delivery obligation, and no action is needed."
-
-**R20 — Index F&O expiry:**
-"Index options and futures are cash-settled. ITM index options are auto-exercised; P&L settled in cash. OTM/ATM expire worthless."
-
-**R21 — OTM buy blocked near expiry:**
-"Fresh long OTM stock option positions are blocked in the last 2 days before expiry due to physical settlement risk."
-
-**R22 — Higher margins near expiry:**
-"Margin requirements increase as contracts approach expiry and physical delivery. The physical delivery margin schedule is: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)"
-
-**R23 — Sold holdings as negative positions:**
-"When you sell shares from holdings during the trading day, they appear as a negative position tagged HOLDING in Positions. This is normal. It allows intraday traders to buy back. If you don't intend to rebuy, ignore it. Shares debited from demat by end of day."
-
-**R24 — Margin shown when exiting:**
-"The margin shown when exiting a position reflects the increase in your utilised portfolio margin, not a charge. Your order will execute regardless."
-
-**R25 — Balance negative due to physical delivery margin:**
-"Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. The margin increases progressively: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)"
-
-**R26 — Odd-lot quantity from lot size revision:**
-"Due to SEBI's revised lot sizes for index derivative contracts effective December 30, 2025, your existing position has a residual quantity that does not match the current lot size. This odd-lot quantity cannot be traded on the exchange. You must hold this position until expiry, and it will be cash-settled based on the moneyness of the option at expiry. A 5% extra margin applies on odd lots. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025). For details on options settlement at expiry: [Options on expiry day](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day)"
-
-**R27 — F&O ban period delta rules:**
-"Your [instrument_name] is in the F&O ban period. You can exit your existing positions at any time. Additionally, you can place trades that reduce your net delta exposure. For example, if you hold long calls, you can sell calls or buy puts. However, trades that increase your net delta exposure are blocked. For example, if you hold long calls, you cannot buy more calls or sell puts. Once the stock exits the ban period (when OI falls below 80% of the market-wide limit), all trades will be allowed again."
-
----
-
-### A14 — F&O Ban Period Delta Rules
+### A13 — F&O Ban Period Delta Rules
 
 When a stock enters the F&O ban period, fresh positions that increase net delta exposure are blocked. Positions that reduce or offset delta exposure are permitted. Exit of existing positions is always allowed.
 
@@ -368,71 +282,71 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 1 — P&L Questions
 
-1. Profit when buy avg > LTP → respond per **A13-R1**.
-2. P&L changed after 3:30 PM / before market → respond per **A13-R2**. Timing per **A3**.
-3. Positions P&L ≠ funds page → respond per **A13-R3**. If client wants funds breakdown → invoke `kite_margins`.
-4. Settlement price = 0 for options → respond per **A13-R4**.
+1. Profit when buy avg > LTP → When you make multiple trades in the same stock during the day, Kite calculates buy average across ALL trades, not just your current position. Your realised profit from earlier trades is included, which can show overall profit even if the current position's entry price is above the market price..
+2. P&L changed after 3:30 PM / before market → after 3:30 PM, equity P&L switches to the exchange closing price. For F&O, settlement prices update between 6:30–7:00 AM next day when the exchange sends the BHAVCOPY. This commonly causes P&L to shift (per **A3**).
+3. Positions P&L ≠ funds page → The Positions page calculates P&L from your original entry price. The Funds page uses the MTM (Mark-to-Market) settlement price for futures and short options. These are different calculations. The funds page reflects what's actually settled in your account.. If client wants funds breakdown → invoke `kite_margins`.
+4. Settlement price = 0 for options → A settlement price of 0 means your option expired OTM (Out of The Money). This is normal regardless of what the LTP was. The settlement price is based on the underlying's weighted average in the last 30 minutes..
 
 ---
 
 ### Rule 2 — Net vs Day Positions
 
-1. Respond per **A13-R5**.
+1. Net position shows your actual current portfolio after combining overnight carry-forward and today's trades. Day position shows only today's trading activity. Example: if you carried forward 75 NIFTY FUT and squared off today, net shows 0 (current state), day shows -75 (today's sell action)..
 
 ---
 
 ### Rule 3 — Auto Square-Off
 
-1. Position squared off → check `product` = MIS or CO. Respond per **A13-R6**. Times per **A4**. If client asks about the order → invoke `kite_orders`.
-2. Position NOT squared off (carried forward) → respond per **A13-R7**. Invoke `kite_margins` to check margin sufficiency.
+1. Position squared off → check `product` = MIS or CO. Intraday positions are auto-squared off at [time per A4]. Auto square-off charge: ₹50 + GST per order. To avoid this, close intraday positions before the square-off time.. Times per **A4**. If client asks about the order → invoke `kite_orders`.
+2. Position NOT squared off (carried forward) → Auto square-off can fail due to: circuit limits hit, system issues, or connectivity problems. Your MIS position has been converted to [CNC for equity / NRML for F&O] and carried forward. You must close it yourself. Ensure sufficient margin is available. Zerodha may square off at its discretion.. Invoke `kite_margins` to check margin sufficiency.
 3. Circuit limit impact on MIS:
-   a. Sell + upper circuit → respond per **A13-R8**. Short delivery risk per **A9**. If this results in short delivery, investigate per Kite Holdings **A12** checklist to confirm the short delivery and communicate the auction settlement timeline.
-   b. Buy + lower circuit → respond per **A13-R9**. Per **A9**.
+   a. Sell + upper circuit → If your MIS sell position hits upper circuit, you can't buy back, so it converts to delivery. If you don't have shares in your demat, this results in short delivery and auction penalties.. Short delivery risk per **A9**. If this results in short delivery, investigate per Kite Holdings **A12** checklist to confirm the short delivery and communicate the auction settlement timeline.
+   b. Buy + lower circuit → If your MIS buy position hits lower circuit, it converts to CNC and you must maintain delivery margin.. Per **A9**.
    c. If client asks about holdings for delivery → invoke `kite_holdings`.
 
 ---
 
 ### Rule 4 — Product Conversion
 
-1. MIS ↔ CNC or MIS ↔ NRML → respond per **A13-R10**. Rules per **A5**. If margin insufficient → invoke `kite_margins`.
-2. CO conversion → respond per **A13-R11**.
-3. Agricultural commodity restriction → respond per **A13-R12**.
+1. MIS ↔ CNC or MIS ↔ NRML → You can convert via Kite: Positions → tap/click on position → Convert Position. Requires sufficient margin for the target product type.. Rules per **A5**. If margin insufficient → invoke `kite_margins`.
+2. CO conversion → Cover Order positions cannot be converted to any other product type..
+3. Agricultural commodity restriction → Agricultural commodity contracts (cardamom, mentha oil) cannot be converted to MIS one day before the tender period starts..
 
 ---
 
 ### Rule 5 — Hedged Positions & Margin
 
-1. Can't close hedge leg → respond per **A13-R13**. Rules per **A8**. Invoke `kite_margins` to check available_margin and used_margin.
-2. Peak margin penalty from exiting one leg → respond per **A13-R14**. Snapshot rules per **A7**.
+1. Can't close hedge leg → You need sufficient margin to cover the remaining unhedged position. Closing the hedge leg increases your margin requirement. Options: add funds first, or exit both legs simultaneously.. Rules per **A8**. Invoke `kite_margins` to check available_margin and used_margin.
+2. Peak margin penalty from exiting one leg → Even if you close both legs, the exchange takes random intraday snapshots (4 for equity F&O, 8 for commodity). If a snapshot catches one leg open, you may face a penalty.. Snapshot rules per **A7**.
 
 ---
 
 ### Rule 6 — Margin Call / Shortfall / Penalty
 
-1. Margin call received → respond per **A13-R15**. Invoke `kite_margins` for current shortfall.
-2. Margin penalty charged → respond per **A13-R16**. Rates per **A7**.
-3. Shortfall despite positions closed → respond per **A13-R17**. Snapshot explanation per **A7**.
+1. Margin call received → Add funds by 11:59 PM same day (if received after hours) or immediately (if before hours). If not resolved, Zerodha may square off positions at its discretion.. Invoke `kite_margins` for current shortfall.
+2. Margin penalty charged → Exchange imposes margin penalty when insufficient margin is detected during intraday snapshots or at end of day. Penalty: 0.5% for shortfall under ₹1 lakh, 1% for ₹1 lakh+, up to 5% for 3+ instances in a month.. Rates per **A7**.
+3. Shortfall despite positions closed → Shortfall can occur from intraday snapshots taken while your position was still open. Even if you closed it later, the snapshot captured the shortfall at that moment.. Snapshot explanation per **A7**.
 
 ---
 
 ### Rule 7 — F&O Expiry & Physical Settlement
 
-0. Check whether the instrument is index or stock F&O. If the instrument is NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, or any other index product → respond per **A13-R20** (cash-settled, no physical delivery). Physical delivery rules (Steps 1, 2, 4, 5, 6) apply only to stock F&O.
-1. Stock F&O ITM → respond per **A13-R18**. Details per **A6**. If client asks about delivery shares → invoke `kite_holdings`.
-2. Stock F&O OTM → respond per **A13-R19**.
-3. Index F&O → respond per **A13-R20**.
-4. OTM buy blocked near expiry → respond per **A13-R21**. Per **A6**.
-5. Higher margins near expiry → respond per **A13-R22**. Margin schedule per **A6**. Invoke `kite_margins` for current delivery_margin.
+0. Check whether the instrument is index or stock F&O. If the instrument is NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, or any other index product → Index options and futures are cash-settled. ITM index options are auto-exercised; P&L settled in cash. OTM/ATM expire worthless. (cash-settled, no physical delivery). Physical delivery rules (Steps 1, 2, 4, 5, 6) apply only to stock F&O.
+1. Stock F&O ITM → ITM stock options and futures result in compulsory physical delivery. You need full cash or shares. Stocks credited T+1 after expiry. Margins increase 4 days before expiry for ITM long options and on expiry day for futures/short options.. Details per **A6**. If client asks about delivery shares → invoke `kite_holdings`.
+2. Stock F&O OTM → OTM stock options expire worthless. There is no delivery obligation, and no action is needed..
+3. Index F&O → Index options and futures are cash-settled. ITM index options are auto-exercised; P&L settled in cash. OTM/ATM expire worthless..
+4. OTM buy blocked near expiry → Fresh long OTM stock option positions are blocked in the last 2 days before expiry due to physical settlement risk.. Per **A6**.
+5. Higher margins near expiry → Margin requirements increase as contracts approach expiry and physical delivery. The physical delivery margin schedule is: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement). Margin schedule per **A6**. Invoke `kite_margins` for current delivery_margin.
 6. Balance went negative due to physical delivery margin near expiry:
    a. Invoke `ledger_report` and check `remarks` for "Physical delivery margin blocked for long options in NSE F&O" with the corresponding `debit` entry.
-   b. If found → respond per **A13-R25**. Share the debit amount from the ledger and the margin schedule from **A6**.
+   b. If found → Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. The margin increases progressively: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement). Share the debit amount from the ledger and the margin schedule from **A6**.
    c. If not found → invoke `kite_margins` to investigate other causes of negative balance.
 
 ---
 
 ### Rule 8 — Sold Holdings as Negative Positions
 
-1. Respond per **A13-R23**.
+1. When you sell shares from holdings during the trading day, they appear as a negative position tagged HOLDING in Positions. This is normal. It allows intraday traders to buy back. If you don't intend to rebuy, ignore it. Shares debited from demat by end of day..
 2. If client asks about holdings status → invoke `kite_holdings`.
 
 ---
@@ -449,7 +363,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 10 — Odd-Lot Quantity from Lot Size Revision
 
 1. If client has a residual F&O quantity that does not match the current lot size and cannot be squared off (e.g., "invalid quantity" error, unable to exit remaining quantity after lot size revision):
-   a. Respond per **A13-R26**.
+   a. Due to SEBI's revised lot sizes for index derivative contracts effective December 30, 2025, your existing position has a residual quantity that does not match the current lot size. This odd-lot quantity cannot be traded on the exchange. You must hold this position until expiry, and it will be cash-settled based on the moneyness of the option at expiry. A 5% extra margin applies on odd lots. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025). For details on options settlement at expiry: [Options on expiry day](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day).
    b. The odd-lot quantity must be held until contract expiry. It will be cash-settled based on the moneyness of the option at expiry.
    c. A 5% extra margin applies on odd-lot positions.
 2. If client asks about margin for the odd-lot position → invoke `kite_margins`.
@@ -460,6 +374,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. If client holds F&O positions in a stock that is in the ban period and asks what trades are permitted:
    a. Identify the client's current position type (long/short calls/puts/futures) from `kite_positions`.
-   b. Respond per **A13-R27**, tailoring the examples to the client's actual position using the delta rules from **A14**.
-2. If the client's order was rejected due to ban period → invoke `kite_orders` to confirm the rejection reason. Respond per **A13-R27** with the relevant delta context.
+   b. Your [instrument_name] is in the F&O ban period. You can exit your existing positions at any time. Additionally, you can place trades that reduce your net delta exposure. For example, if you hold long calls, you can sell calls or buy puts. However, trades that increase your net delta exposure are blocked. For example, if you hold long calls, you cannot buy more calls or sell puts. Once the stock exits the ban period (when OI falls below 80% of the market-wide limit), all trades will be allowed again., tailoring the examples to the client's actual position using the delta rules from **A13**.
+2. If the client's order was rejected due to ban period → invoke `kite_orders` to confirm the rejection reason. Your [instrument_name] is in the F&O ban period. You can exit your existing positions at any time. Additionally, you can place trades that reduce your net delta exposure. For example, if you hold long calls, you can sell calls or buy puts. However, trades that increase your net delta exposure are blocked. For example, if you hold long calls, you cannot buy more calls or sell puts. Once the stock exits the ban period (when OI falls below 80% of the market-wide limit), all trades will be allowed again. with the relevant delta context.
 3. If the client asks when the ban will lift → OI must fall below 80% of the market-wide position limit. Check the bulletin per **A11** for current ban list.

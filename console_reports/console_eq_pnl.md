@@ -27,7 +27,7 @@ TRIGGER KEYWORDS: "P&L", "profit and loss", "realized profit", "realized loss", 
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool looks up a client's realized equity P&L. Realized P&L = sell_value − buy_value (per FIFO matching of sell qty against oldest buys). Only shows P&L for stocks that have been **sold** — no P&L for holdings still held.
 
@@ -104,72 +104,6 @@ When escalating, always include: **client ID, tradingsymbol, ISIN, expected vs a
 
 ---
 
-### A8 — Response Templates
-
-**R1 — Realized P&L verification:**
-"Your realized P&L for [tradingsymbol]: you sold [quantity] shares with a total buy value (cost of acquisition) of ₹[buy_value] and total sell value (sale proceeds) of ₹[sell_value], resulting in a [profit > 0 ? 'profit' : 'loss'] of ₹[profit].
-
-This is calculated using the FIFO method — when you sold, the cost of the oldest purchased shares was used as the buy value."
-
-**R2 — FIFO causing unexpected P&L:**
-"Your P&L is calculated using FIFO (First In, First Out). The buy value used is not necessarily your most recent purchase price — it's the cost of the oldest shares you held at the time of selling.
-
-If you had older shares bought at a different price, FIFO consumes those first. You can verify the exact FIFO matching in the holdings breakdown on Console or Kite (View breakdown)."
-
-**R3 — Discrepant shares causing inflated profit:**
-"The P&L for [tradingsymbol] may appear inflated because the shares were recorded without a purchase entry (discrepant). When discrepant shares are sold, the system uses ₹0 as the buy value since no cost of acquisition is available, which makes the entire sell value appear as profit.
-
-To correct this, the original purchase details need to be added. If the shares have already been sold, the buy average cannot be updated from your end — we'll need to investigate this further."
-
-**R4 — Console vs Kite unrealized P&L difference:**
-"Console uses the previous day's closing price to calculate unrealized P&L, while Kite uses the live last traded price (LTP). This is why the values differ during and after market hours."
-
-**R5 — MTF P&L not separate:**
-"Console does not calculate P&L separately for MTF and CNC positions. FIFO is applied across all your holdings of [tradingsymbol] regardless of whether shares were bought under MTF or regular delivery. This means the buy value used in P&L may include both MTF and CNC purchase prices.
-
-Your MTF ledger settlements (net settlement entries) reflect the MTF-specific funding and margin — these are separate from the FIFO-based P&L shown on Console."
-
-**R6 — Intraday (speculative) classification:**
-"Same-day buy and sell of [tradingsymbol] in EQ series is treated as an intraday (speculative) trade, regardless of the product type used (CNC, MIS, or any other). The product type label does not determine the classification — what matters is whether offsetting buy and sell trades exist for the same stock on the same day. It will appear under the speculative section in Tax P&L, separate from delivery P&L."
-
-**R7 — T2T delivery classification:**
-"Since [tradingsymbol] is in the Trade-to-Trade category, same-day buy and sell is treated as a delivery trade, not intraday. Both transactions are considered separate delivery trades."
-
-**R8 — Tax P&L vs Console P&L explanation:**
-"The Tax P&L report and Console P&L serve different purposes:
-- Console P&L shows aggregate realized P&L per stock for the selected date range
-- Tax P&L classifies trades into delivery STCG, delivery LTCG, and speculative (intraday) with applicable charges
-
-The values may differ because Tax P&L separates intraday trades from delivery, applies holding period classification, and includes charges. For income tax filing, please use the Tax P&L report."
-
-**R9 — Tax P&L editable:**
-"You can edit the Tax P&L report on Console (Reports → Tax P&L → Edit) to adjust cost of acquisition for gifted shares, transferred shares, or other special cases."
-
-**R10 — Bonus P&L:**
-"After a bonus issue, the bonus shares are credited at ₹0 cost. If you sell bonus shares, FIFO may consume these zero-cost entries, showing the entire sell value as profit. This is correct per FIFO accounting."
-
-**R11 — Split P&L:**
-"A stock split adjusts quantity and price proportionally — your total investment value and P&L remain unchanged."
-
-**R12 — Demerger P&L:**
-"After a demerger, the cost of acquisition is split between the original and new entity per the COA ratio announced by the company. P&L is calculated based on this split cost. If the ratio has not been applied yet, P&L may appear incorrect temporarily."
-
-**R13 — Merger P&L:**
-"After a merger, shares are swapped at the defined ratio. P&L is calculated using the original acquisition cost carried over to the new shares."
-
-**R14 — Fractional share P&L:**
-"Fractional shares from the corporate action were settled in cash. This appears as a realized P&L entry for the fractional quantity."
-
-**R15 — Orphan unrealized entry:**
-"We've identified that [tradingsymbol] is appearing in your unrealized P&L despite no active holdings. This is a data issue and we'll have it corrected."
-
-**R16 — Bonus shares buy price ₹0 in Tax P&L:**
-"The buy price of ₹0 for your [tradingsymbol] shares in the Tax P&L is correct. This is because all your originally purchased shares have been sold via FIFO, and only bonus shares remain (or were sold). Bonus shares are credited at zero cost of acquisition, so the system correctly records the buy price as ₹0.
-
-You can verify this by checking the holdings breakdown on Console or Kite — the remaining shares will show as bonus credits with ₹0 entry price. The trade date for bonus shares is recorded as the ex-date of the bonus issue."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -220,13 +154,17 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 ### Rule 1 — P&L Verification
 
-1. Respond per **A8-R1** — share realized P&L details with FIFO context.
+1. Your realized P&L for [tradingsymbol]: you sold [quantity] shares with a total buy value (cost of acquisition) of ₹[buy_value] and total sell value (sale proceeds) of ₹[sell_value], resulting in a [profit > 0 ? 'profit' : 'loss'] of ₹[profit].
+
+This is calculated using the FIFO method — when you sold, the cost of the oldest purchased shares was used as the buy value. — share realized P&L details with FIFO context.
 
 ---
 
 ### Rule 2 — FIFO Causing Unexpected P&L
 
-1. Respond per **A8-R2**.
+1. Your P&L is calculated using FIFO (First In, First Out). The buy value used is not necessarily your most recent purchase price — it's the cost of the oldest shares you held at the time of selling.
+
+If you had older shares bought at a different price, FIFO consumes those first. You can verify the exact FIFO matching in the holdings breakdown on Console or Kite (View breakdown)..
 2. If agent needs to prove the calculation → use `console_eq_holdings_breakdown` (per **A6**) to walk through entries.
 
 ---
@@ -235,7 +173,9 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 1. Check `console_eq_holdings` — verify if `discrepant` > 0 for that stock (or was > 0 before selling).
 2. Also check `console_eq_external_trades` for missing buy entries (per **A6**).
-3. Respond per **A8-R3**.
+3. The P&L for [tradingsymbol] may appear inflated because the shares were recorded without a purchase entry (discrepant). When discrepant shares are sold, the system uses ₹0 as the buy value since no cost of acquisition is available, which makes the entire sell value appear as profit.
+
+To correct this, the original purchase details need to be added. If the shares have already been sold, the buy average cannot be updated from your end — we'll need to investigate this further..
 4. If shares already sold with ₹0 cost → escalate per **A7**. Backend correction needed.
 
 ---
@@ -244,13 +184,15 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 1. Determine if client is comparing realized or unrealized P&L.
 2. **Realized:** Should match. If different → check date range used. Console P&L requires specific date range; Kite shows current FY by default.
-3. **Unrealized:** Respond per **A8-R4**. Calculation details per **A3**.
+3. **Unrealized:** Console uses the previous day's closing price to calculate unrealized P&L, while Kite uses the live last traded price (LTP). This is why the values differ during and after market hours.. Calculation details per **A3**.
 
 ---
 
 ### Rule 5 — MTF P&L (No Separate Calculation)
 
-1. Respond per **A8-R5**.
+1. Console does not calculate P&L separately for MTF and CNC positions. FIFO is applied across all your holdings of [tradingsymbol] regardless of whether shares were bought under MTF or regular delivery. This means the buy value used in P&L may include both MTF and CNC purchase prices.
+
+Your MTF ledger settlements (net settlement entries) reflect the MTF-specific funding and margin — these are separate from the FIFO-based P&L shown on Console..
 
 ---
 
@@ -259,8 +201,8 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 Product type (CNC, MIS, Long-term, etc.) does not determine classification. Even if a client used CNC/Long-term product type, same-day buy + sell of the same stock in EQ series is treated as intraday (speculative), as long as the share does not belong to the BE (Trade-to-Trade) category. The product type label is irrelevant for tax classification — what matters is whether offsetting trades exist on the same day.
 
 1. Check series field in tradebook (via `console_eq_tradebook` per **A6**).
-2. Series EQ + same-day buy and sell exists → respond per **A8-R6**. This is intraday (speculative), not delivery — regardless of whether the client used CNC product type.
-3. Series BE/BT/BZ (T2T) → respond per **A8-R7**. Same-day buy + sell in T2T is always delivery.
+2. Series EQ + same-day buy and sell exists → Same-day buy and sell of [tradingsymbol] in EQ series is treated as an intraday (speculative) trade, regardless of the product type used (CNC, MIS, or any other). The product type label does not determine the classification — what matters is whether offsetting buy and sell trades exist for the same stock on the same day. It will appear under the speculative section in Tax P&L, separate from delivery P&L.. This is intraday (speculative), not delivery — regardless of whether the client used CNC product type.
+3. Series BE/BT/BZ (T2T) → Since [tradingsymbol] is in the Trade-to-Trade category, same-day buy and sell is treated as a delivery trade, not intraday. Both transactions are considered separate delivery trades.. Same-day buy + sell in T2T is always delivery.
 
 Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shares of CDSL using CNC on 30 March → this is an intraday trade, classified as speculative, not delivery.
 
@@ -272,7 +214,9 @@ For more details: https://support.zerodha.com/category/trading-and-markets/chart
 
 1. Identify the CA type and respond with the applicable template:
    - Bonus → **A8-R10**. Impact per **A5**.
-   - **Bonus shares — buy price ₹0 in Tax P&L:** If a client reports buy price showing ₹0 in Tax P&L after selling shares of a stock that had a bonus issue, check via `console_eq_holdings_breakdown` whether the remaining shares (or sold shares) are entirely bonus shares. If all originally purchased shares were sold via FIFO and only bonus shares remain (or were sold), the buy price of ₹0 is correct. Respond per **A8-R16**.
+   - **Bonus shares — buy price ₹0 in Tax P&L:** If a client reports buy price showing ₹0 in Tax P&L after selling shares of a stock that had a bonus issue, check via `console_eq_holdings_breakdown` whether the remaining shares (or sold shares) are entirely bonus shares. If all originally purchased shares were sold via FIFO and only bonus shares remain (or were sold), the buy price of ₹0 is correct. The buy price of ₹0 for your [tradingsymbol] shares in the Tax P&L is correct. This is because all your originally purchased shares have been sold via FIFO, and only bonus shares remain (or were sold). Bonus shares are credited at zero cost of acquisition, so the system correctly records the buy price as ₹0.
+
+You can verify this by checking the holdings breakdown on Console or Kite — the remaining shares will show as bonus credits with ₹0 entry price. The trade date for bonus shares is recorded as the ex-date of the bonus issue..
    - Split → **A8-R11**. Impact per **A5**.
    - Demerger → **A8-R12**. Impact per **A5**.
    - Merger → **A8-R13**. Impact per **A5**.
@@ -283,12 +227,16 @@ For more details: https://support.zerodha.com/category/trading-and-markets/chart
 
 ### Rule 8 — Tax P&L vs Console P&L
 
-1. Respond per **A8-R8**. Differences per **A4**.
-2. If client wants to edit Tax P&L → respond per **A8-R9**. Edit path per **A4**.
+1. The Tax P&L report and Console P&L serve different purposes:
+- Console P&L shows aggregate realized P&L per stock for the selected date range
+- Tax P&L classifies trades into delivery STCG, delivery LTCG, and speculative (intraday) with applicable charges
+
+The values may differ because Tax P&L separates intraday trades from delivery, applies holding period classification, and includes charges. For income tax filing, please use the Tax P&L report.. Differences per **A4**.
+2. If client wants to edit Tax P&L → You can edit the Tax P&L report on Console (Reports → Tax P&L → Edit) to adjust cost of acquisition for gifted shares, transferred shares, or other special cases.. Edit path per **A4**.
 
 ---
 
 ### Rule 9 — Unrealized P&L Orphan Entry
 
 1. Check `console_eq_holdings` for that stock.
-2. If no holdings found but P&L still shows unrealized entry → respond per **A8-R15**. Escalate per **A7** as orphan lot.
+2. If no holdings found but P&L still shows unrealized entry → We've identified that [tradingsymbol] is appearing in your unrealized P&L despite no active holdings. This is a data issue and we'll have it corrected.. Escalate per **A7** as orphan lot.

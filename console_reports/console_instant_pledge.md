@@ -25,7 +25,7 @@ TRIGGER KEYWORDS: "pledge status", "pledge failed", "pledge request", "unpledge 
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows instant pledge/unpledge request history — status, qty, date, and security details. Pledging creates collateral margin; unpledging releases it. Collateral is reflected after CDSL confirmation (usually instant, can take up to 30 minutes).
 
@@ -33,7 +33,6 @@ This tool shows instant pledge/unpledge request history — status, qty, date, a
 
 MTF shares are auto-pledged — those are separate from client-initiated pledges in this tool.
 
-**Input:** Client ID only — returns all pledge requests.
 
 ---
 
@@ -108,55 +107,6 @@ When escalating, always include: **client ID, tradingsymbol, pledge_type, status
 
 ---
 
-### A8 — Response Templates
-
-**R1 — Status verification (generic):**
-"Your [pledge_type] request for [quantity] shares of [tradingsymbol] placed on [pledge_date]: Status — [status]."
-
-**R2 — Status: Success:**
-"Your request has been processed successfully. Collateral margin should be reflected in your account."
-
-**R3 — Status: Pending:**
-"Your request is awaiting confirmation from the depository. This usually completes within 30 minutes. If it remains pending beyond that, we'll investigate."
-
-**R4 — Collateral not yet reflected (within 30 mins):**
-"Collateral margin can take up to 30 minutes to reflect after a successful pledge. Please check again shortly."
-
-**R5 — Failure: unapproved security:**
-"The security [tradingsymbol] may not be in the approved pledge list. Only securities approved for margin are eligible for pledging."
-
-**R6 — Failure: T1 shares:**
-"If you purchased [tradingsymbol] today, the shares are not yet settled (T+1). You can pledge them from tomorrow."
-
-**R7 — Failure: insufficient qty:**
-"You have [available qty] free shares of [tradingsymbol]. If you're trying to pledge more than this, the request will fail."
-
-**R8 — Unpledge rejected (margin utilized):**
-"Your unpledge request for [tradingsymbol] was rejected because the collateral margin from these pledged shares is currently being used against your open positions. To unpledge, you would need to either close the positions using this margin or add equivalent funds/margin from another source first."
-
-**R9 — Overdue < 30 mins:**
-"Your request is being processed. Please wait up to 30 minutes for confirmation."
-
-**R10 — Overdue > 30 mins but < 24 hours:**
-"Your pledge request is most likely going to fail as it has been pending for too long. We recommend placing a fresh pledge request on the next trading day, or you can try pledging a different approved security in the meantime."
-
-**R11 — Holdings showing zero after pledge:**
-"Pledged shares may not appear in the standard holdings view on Kite. Your shares are safe — they are pledged as collateral. You can verify them on Console where pledged quantities are displayed."
-
-**R12 — MTF auto-pledge explanation:**
-"If you purchased shares under MTF (Margin Trading Facility), those shares are automatically pledged as collateral for the funded amount. These auto-pledge entries are separate from pledges you initiate manually. MTF auto-pledge details are covered under your MTF holdings."
-
-**R13 — Same-day unpledge restriction:**
-"Securities pledged on the same day cannot be unpledged. The pledge is processed on the same day and the collateral is credited within 15 minutes, which can be used for trading immediately. However, an unpledge request can only be submitted from the next working day onwards. Please note that you can sell the pledged shares on the same day, provided the collateral is not being utilised against any open positions."
-
-**R14 — Failure: F&O segment not active:**
-"Pledging requires the F&O segment to be active on your account. To activate F&O, you can upload valid income proof on Console. Once the segment is activated, you will be able to pledge your holdings."
-
-**R15 — LAS query routing:**
-"For queries related to Loan Against Securities (LAS), including pledges not reflecting for loan collateral, you will need to email capitalsupport@zerodha.com, as they are better equipped to assist you with this matter."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -205,7 +155,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 1 — Pledge / Unpledge Status Verification
 
 1. Find matching tradingsymbol and pledge_type.
-2. Respond per **A8-R1** + the applicable status template:
+2. Your [pledge_type] request for [quantity] shares of [tradingsymbol] placed on [pledge_date]: Status — [status]. + the applicable status template:
    a. Success → append **A8-R2**.
    b. Failure → route to **Rule 3** for diagnosis.
    c. Pending → append **A8-R3**.
@@ -214,7 +164,7 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 ### Rule 2 — Collateral Not Reflecting After Successful Pledge
 
-1. If pledge was within last 30 minutes → respond per **A8-R4**.
+1. If pledge was within last 30 minutes → Collateral margin can take up to 30 minutes to reflect after a successful pledge. Please check again shortly..
 2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate per **A7**.
 
 ---
@@ -222,10 +172,10 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 3 — Pledge Failed (Diagnose Reason)
 
 1. Check against common failure reasons (per **A5**):
-   a. "Something went wrong" error → likely unapproved security. Respond per **A8-R5**.
-   b. T1 shares → respond per **A8-R6**.
-   c. Insufficient qty → check `console_eq_holdings` (per **A6**) for available qty. Respond per **A8-R7**.
-   d. "Pledge is not allowed for your account" or similar account-level restriction → check the client's segment activation status using the Account Modification tool (per **A6**). If F&O is not enabled → respond per **A8-R14**.
+   a. "Something went wrong" error → likely unapproved security. The security may not be in the approved pledge list. Only securities approved for margin are eligible for pledging.
+   b. T1 shares → shares purchased today are not yet settled (T+1). Client can pledge them from tomorrow.
+   c. Insufficient qty → check `console_eq_holdings` (per **A6**) for available qty. Share the available qty. If the client is trying to pledge more than the available free shares, the request will fail.
+   d. "Pledge is not allowed for your account" or similar account-level restriction → check the client's segment activation status using the Account Modification tool (per **A6**). If F&O is not enabled → Pledging requires the F&O segment to be active on the account. To activate F&O, upload valid income proof on Console. Once activated, pledging will be available.
 2. If none of the above explains the failure → escalate per **A7** directly. Do not share a generic response.
 
 ---
@@ -233,22 +183,22 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 4 — Unpledge Rejected (Margin Utilized)
 
 1. `pledge_type` = Unpledge AND status = Failure AND client mentions "margin already utilized."
-2. Respond per **A8-R8**.
+2. Your unpledge request for [tradingsymbol] was rejected because the collateral margin from these pledged shares is currently being used against your open positions. To unpledge, you would need to either close the positions using this margin or add equivalent funds/margin from another source first..
 
 ---
 
 ### Rule 5 — Overdue Pledge Request
 
 1. Check status and `pledge_creation` timestamp:
-   a. Pending/overdue < 30 mins → respond per **A8-R9**.
-   b. Pending/overdue > 30 mins but < 24 hours → respond per **A8-R10**.
+   a. Pending/overdue < 30 mins → Your request is being processed. Please wait up to 30 minutes for confirmation..
+   b. Pending/overdue > 30 mins but < 24 hours → Your pledge request is most likely going to fail as it has been pending for too long. We recommend placing a fresh pledge request on the next trading day, or you can try pledging a different approved security in the meantime..
    c. Pending/overdue > 24 hours → escalate per **A7**.
 
 ---
 
 ### Rule 6 — Holdings Showing Zero After Pledge
 
-1. Respond per **A8-R11**.
+1. Pledged shares may not appear in the standard holdings view on Kite. Your shares are safe — they are pledged as collateral. You can verify them on Console where pledged quantities are displayed..
 2. Check `console_eq_holdings` (per **A6**) to confirm qty is present.
 3. If qty = 0 in Console as well → escalate per **A7** (may be safekeep or DP issue, not pledge-related).
 
@@ -257,11 +207,11 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 7 — MTF Auto-Pledge vs Client Pledge
 
 1. Check `pledge_type` and cross-reference with `console_mtf_holdings` (per **A6**).
-2. Respond per **A8-R12**.
+2. If you purchased shares under MTF (Margin Trading Facility), those shares are automatically pledged as collateral for the funded amount. These auto-pledge entries are separate from pledges you initiate manually. MTF auto-pledge details are covered under your MTF holdings..
 
 ---
 
 ### Rule 8 — Same-Day Unpledge Restriction
 
-1. If the client pledged securities today and is unable to unpledge → respond per **A8-R13**. Same-day restriction details per **A5**.
+1. If the client pledged securities today and is unable to unpledge → Securities pledged on the same day cannot be unpledged. The pledge is processed on the same day and the collateral is credited within 15 minutes, which can be used for trading immediately. However, an unpledge request can only be submitted from the next working day onwards. Please note that you can sell the pledged shares on the same day, provided the collateral is not being utilised against any open positions.. Same-day restriction details per **A5**.
 2. Do not suggest alternative workarounds for same-day unpledging. This is a hard restriction.

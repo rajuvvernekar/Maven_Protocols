@@ -25,13 +25,12 @@ TRIGGER KEYWORDS: "emandate status", "mandate pending", "mandate failed", "manda
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows **Console eMandate status** — for automatic fund transfers from bank to Zerodha (Kite trading account / Stock SIPs). This does not cover Coin/MF mandates or UPI autopay mandates — those are separate systems.
 
 eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. No Zerodha charges; bank may charge verification fee + penalty for failed debits.
 
-**Input:** Client ID — returns mandate records.
 
 ---
 
@@ -96,44 +95,6 @@ When escalating, always include: **client ID, mandate details (bank, creation/ca
 
 ---
 
-### A8 — Response Templates
-
-**R1 — Active:**
-"Your eMandate is active. You can create or manage schedules at console.zerodha.com/funds/mandates."
-
-**R2 — Pending (≤5 working days):**
-"Your eMandate was initiated on [creation date] and is awaiting activation from your bank. This can take up to 5 working days."
-
-**R3 — Pending (>5 working days):**
-"Your eMandate has been pending for more than 5 working days. Sometimes banks delay sending confirmation. We periodically follow up with banks, but cannot provide an exact timeline. If you need funds urgently, you can add funds manually via Kite."
-
-**R4 — Failed:**
-"Your eMandate registration could not be completed. This typically happens when the bank authentication was not successful — for example, if the authentication window was closed before completion or incorrect credentials were entered. You can create a new mandate at console.zerodha.com/funds/mandates."
-
-**R5 — Cancelled:**
-"Your eMandate has been cancelled. If you'd like to set up auto-debit again, you can create a new mandate at console.zerodha.com/funds/mandates."
-
-**R6 — Pending cancellation (≤5 working days):**
-"Your eMandate cancellation is being processed. This may take up to 5 working days."
-
-**R7 — Cancellation failed:**
-"The cancellation attempt for your eMandate did not go through. The mandate is likely not active. You can verify and retry at console.zerodha.com/funds/mandates."
-
-**R8 — Current account restriction:**
-"eMandates cannot be created with current bank accounts. You can set up standing instructions through your bank's netbanking portal by adding Zerodha as a beneficiary."
-
-**R9 — Joint account restriction:**
-"Some banks do not support eMandates for joint accounts. You can set up standing instructions via your bank's netbanking instead."
-
-**R10 — NRE-PIS restriction:**
-"eMandates are not supported for NRE-PIS accounts."
-
-**R11 — iOS pop-up issue:**
-"This usually happens when your browser blocks pop-ups. Go to your iOS browser settings and enable 'Always show' for pop-ups, then retry at console.zerodha.com/funds/mandates."
-
-**R12 — Old mandate blocking new creation:**
-"You cannot create a new eMandate while an existing one is still pending or being cancelled. The old mandate must be fully deleted first, which takes up to 5 working days."
-
 ## Section B: Decision Flow
 
 ---
@@ -176,38 +137,38 @@ If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` f
 ### Rule 1 — Mandate Status Check
 
 1. Determine status (per **A3**) and respond:
-   a. Active → respond per **A8-R1**.
+   a. Active → Your eMandate is active. You can create or manage schedules at console.zerodha.com/funds/mandates..
    b. Pending:
       - Calculate working days since creation date.
-      - ≤5 working days → respond per **A8-R2**.
-      - >5 working days → respond per **A8-R3**. escalate per **A7**.
-   c. Failed → respond per **A8-R4**. If `remark` contains useful info, share in customer-friendly language.
-   d. Cancelled → respond per **A8-R5**.
+      - ≤5 working days → Your eMandate was initiated on [creation date] and is awaiting activation from your bank. This can take up to 5 working days..
+      - >5 working days → Your eMandate has been pending for more than 5 working days. Sometimes banks delay sending confirmation. We periodically follow up with banks, but cannot provide an exact timeline. If you need funds urgently, you can add funds manually via Kite.. escalate per **A7**.
+   c. Failed → Your eMandate registration could not be completed. This typically happens when the bank authentication was not successful — for example, if the authentication window was closed before completion or incorrect credentials were entered. You can create a new mandate at console.zerodha.com/funds/mandates.. If `remark` contains useful info, share in customer-friendly language.
+   d. Cancelled → Your eMandate has been cancelled. If you'd like to set up auto-debit again, you can create a new mandate at console.zerodha.com/funds/mandates..
    e. Pending Cancellation:
       - Check `cancellation_date`.
-      - ≤5 working days → respond per **A8-R6**.
+      - ≤5 working days → Your eMandate cancellation is being processed. This may take up to 5 working days..
       - >5 working days → escalate per **A7**.
-   f. Cancellation Failed → respond per **A8-R7**. If client insists mandate is still debiting → escalate per **A7**.
+   f. Cancellation Failed → The cancellation attempt for your eMandate did not go through. The mandate is likely not active. You can verify and retry at console.zerodha.com/funds/mandates.. If client insists mandate is still debiting → escalate per **A7**.
 
 ---
 
 ### Rule 2 — Cannot Create Mandate (Account Restrictions)
 
 1. Check account type against **A4**:
-   a. Current account → respond per **A8-R8**.
-   b. Joint account → respond per **A8-R9**.
-   c. NRE-PIS → respond per **A8-R10**.
+   a. Current account → eMandates cannot be created with current bank accounts. You can set up standing instructions through your bank's netbanking portal by adding Zerodha as a beneficiary..
+   b. Joint account → Some banks do not support eMandates for joint accounts. You can set up standing instructions via your bank's netbanking instead..
+   c. NRE-PIS → eMandates are not supported for NRE-PIS accounts..
 
 ---
 
 ### Rule 3 — iOS Creation Issue
 
-1. Respond per **A8-R11**.
+1. This usually happens when your browser blocks pop-ups. Go to your iOS browser settings and enable 'Always show' for pop-ups, then retry at console.zerodha.com/funds/mandates..
 
 ---
 
 ### Rule 4 — Old Pending Mandate Blocking New Creation
 
-1. Respond per **A8-R12**. Deletion timeline per **A5**.
+1. You cannot create a new eMandate while an existing one is still pending or being cancelled. The old mandate must be fully deleted first, which takes up to 5 working days.. Deletion timeline per **A5**.
 2. If old mandate has been in pending_cancellation for >5 working days → escalate per **A7**.
 

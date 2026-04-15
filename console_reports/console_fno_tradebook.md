@@ -26,7 +26,7 @@ TRIGGER KEYWORDS: "FnO tradebook", "F&O trade", "futures trade", "options trade"
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool shows the **last 100 days of F&O trades**. For older data, use `console_fno_tradebook_prepared`.
 
@@ -36,7 +36,6 @@ For charges, MTM calculations, and obligation breakdowns: contract note must be 
 
 Auction trades appear in tradebook with specific `order_id` patterns.
 
-**Input:** Client ID + From Date + To Date + Segment (FO/CDS/COM).
 
 ---
 
@@ -110,25 +109,6 @@ When escalating, always include: **client ID, trade_date, tradingsymbol, segment
 
 ---
 
-### A8 — Response Templates
-
-**R1 — Trade verification:**
-"Your [trade_type] trade for [tradingsymbol] ([instrument_type]) on [trade_date] at [order_execution_time]: [quantity] contracts at ₹[price]. Strike: ₹[strike], Expiry: [expiry_date]. Exchange: [exchange]. Order ID: [order_id], Trade ID: [trade_id]."
-
-**R2 — Multiple fills:**
-"Your order (Order ID: [order_id]) was executed in [N] parts at different prices: [list each trade_id with qty and price]. The average execution price across all fills is ₹[calculated avg]."
-
-**R3 — Corporate action adjustment:**
-"After the corporate action ([split/bonus]) on [underlying], your F&O contract was adjusted by the exchange. The strike price and lot size have been modified per the adjustment factor. Your position value remains the same — only the contract terms were adjusted. For more details: https://support.zerodha.com/category/console/corporate-actions/ca-others/articles/impact-of-corporate-actions-on-derivatives"
-
-**R4 — Contract identification:**
-- Futures: "This is a futures contract"
-- Call option: "This is a call option with strike price ₹[strike]"
-- Put option: "This is a put option with strike price ₹[strike]"
-- Expiry: "This contract expires on [expiry_date]"
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -174,14 +154,14 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 ### Rule 1 — Trade Verification
 
-1. Respond per **A8-R1**.
+1. Your [trade_type] trade for [tradingsymbol] ([instrument_type]) on [trade_date] at [order_execution_time]: [quantity] contracts at ₹[price]. Strike: ₹[strike], Expiry: [expiry_date]. Exchange: [exchange]. Order ID: [order_id], Trade ID: [trade_id]..
 
 ---
 
 ### Rule 2 — Trade Missing from Tradebook
 
 1. Search by date, segment, and tradingsymbol.
-2. If found → respond per **A8-R1**.
+2. If found → Your [trade_type] trade for [tradingsymbol] ([instrument_type]) on [trade_date] at [order_execution_time]: [quantity] contracts at ₹[price]. Strike: ₹[strike], Expiry: [expiry_date]. Exchange: [exchange]. Order ID: [order_id], Trade ID: [trade_id]..
 3. If not found → verify correct segment selected (per Preflight / **A3**). Check if date is within 100 days — if not, use `console_fno_tradebook_prepared` (per **A6**).
 4. If still not found after correct segment and date → escalate per **A7**.
 
@@ -190,14 +170,14 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 3 — Multiple Fills for One Order
 
 1. Check if multiple `trade_id`s exist for the same `order_id`.
-2. If yes → respond per **A8-R2** with each fill's qty and price plus calculated average.
+2. If yes → Your order (Order ID: [order_id]) was executed in [N] parts at different prices: [list each trade_id with qty and price]. The average execution price across all fills is ₹[calculated avg]. with each fill's qty and price plus calculated average.
 
 ---
 
 ### Rule 4 — Contract Symbol Change After Corporate Action
 
 1. Explain the CA adjustment per **A5**.
-2. Respond per **A8-R3**.
+2. After the corporate action ([split/bonus]) on [underlying], your F&O contract was adjusted by the exchange. The strike price and lot size have been modified per the adjustment factor. Your position value remains the same — only the contract terms were adjusted. For more details: https://support.zerodha.com/category/console/corporate-actions/ca-others/articles/impact-of-corporate-actions-on-derivatives.
 3. If client is not satisfied → escalate per **A7**.
 
 ---
@@ -205,7 +185,10 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 ### Rule 5 — Identifying Contract Details
 
 1. Use **A4** to identify the contract type from field values.
-2. Respond per **A8-R4**.
+2. - Futures: "This is a futures contract"
+- Call option: "This is a call option with strike price ₹[strike]"
+- Put option: "This is a put option with strike price ₹[strike]"
+- Expiry: "This contract expires on [expiry_date].
 
 ---
 

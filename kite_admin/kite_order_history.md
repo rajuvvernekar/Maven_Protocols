@@ -36,7 +36,7 @@ TRIGGER KEYWORDS: "order history", "past order", "previous order", "old order", 
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool returns **orders for a date range** (from_date to to_date). For today's live orders, use `kite_orders`.
 
@@ -46,7 +46,6 @@ Zerodha pre-validates orders — some rejections won't appear in order book (sho
 
 Execution time beyond market hours = exchange reconciliation after connectivity issues, not actual execution beyond hours.
 
-**Input:** Client ID + from_date + to_date.
 
 ---
 
@@ -226,87 +225,6 @@ When escalating, always include: **client ID, instrument, date, order details, a
 
 ---
 
-### A15 — Response Templates
-
-**R1 — Complete (basic):**
-"Your [type] order for [total_quantity] qty of [instrument] was executed at ₹[average_price] on [exchange_timestamp]."
-
-**R2 — Market order multi-level fill:**
-"Market orders fill at best available prices. Large quantities may fill across multiple price levels — average price reflects the weighted fill."
-
-**R3 — Limit better price:**
-"Limit buy orders can execute below your limit price; limit sell orders above. Your limit at ₹[price] executed at ₹[average_price] because a better price was available."
-
-**R4 — Breakout → use SL or GTT:**
-"Use a Stop-Loss (SL) order with trigger price for intraday, or GTT for a long-standing order valid up to 1 year."
-
-**R5 — SL trigger vs chart:**
-"SL orders trigger on actual exchange ticks, not chart candles. Charts snapshot every 250ms and may miss brief price movements. The execution at ₹[average_price] was at a valid market price."
-
-**R6 — Partial fill:**
-"[filled_quantity] of [total_quantity] filled at ₹[average_price]. Remaining [cancelled_quantity] was cancelled. For IOC orders, unfilled portions are auto-cancelled."
-
-**R7 — RMS square-off:**
-"This [type] order for [instrument] was executed by Zerodha's risk management system on [exchange_timestamp]. This typically happens when:
-- Your account had insufficient margin to maintain the position
-- It was an intraday (MIS) position auto squared off at the scheduled time (Equity 3:25 PM, F&O 3:26 PM, MCX 10 min before close)
-- Your account had a negative cash balance requiring position closure
-
-Auto square-off charge: ₹50 + 18% GST per order."
-
-**R8 — Auto square-off failed (carried forward):**
-"Auto square-off may fail due to circuit limits, system failures, or connectivity issues. When this happens, MIS converts to CNC (equity) or NRML (F&O) and carries forward. You must close the position on the next trading day."
-
-**R9 — Open in history (should be cancelled):**
-"Unmatched pending orders are auto-cancelled by the exchange at session end."
-
-**R10 — Cancelled at session end:**
-"Unmatched pending orders are auto-cancelled by the exchange at session end. Place again next session, or use GTT for orders valid up to 1 year."
-
-**R11 — LPP cancellation:**
-"Exchange cancelled your order — price was outside the allowed range. Retry closer to market price."
-
-**R12 — Partial fill + cancelled remainder:**
-"Partially filled: [filled_quantity] of [total_quantity] executed at ₹[average_price]. Remaining [cancelled_quantity] was cancelled."
-
-**R13 — IOC auto-cancel:**
-"IOC orders auto-cancel any unfilled portion immediately."
-
-**R14 — Unauthorized (client ID placed_by):**
-"This order appears to have been placed from your account. For security, we're escalating this for investigation. Please also check if any third-party apps have Kite Connect API access, and consider blocking your account if you suspect unauthorized activity."
-
-**R15 — SIP order — no order found:**
-"SIP may not have triggered. Check that: basket is linked to SIP, product type is Regular CNC, order type is market or limit. Also check your registered email — Zerodha sends a SIP summary email with rejection reasons if the order failed."
-
-**R16 — ATO rejection:**
-"ATO orders place automatically when your Kite alert triggers. Order slicing is not available — quantity must be within the exchange freeze limit."
-
-**R17 — Basket order:**
-"This order was part of basket '[basket]'. Basket orders execute individually — each is subject to its own margin and exchange validation. Some may succeed while others fail."
-
-**R18 — Execution time beyond market hours:**
-"The displayed time reflects exchange reconciliation after a connectivity disruption. Your order was executed within market hours. Check the tradebook for actual execution time."
-
-**R19 — Multiple orders for same instrument:**
-"[N] orders found for [instrument] on [date]."
-
-**R20 — No orders found:**
-"No orders found for [instrument] between [from_date] and [to_date]. Please verify the instrument name, exchange, and date range. Orders rejected pre-exchange (before reaching exchange) may not appear in history."
-
-**R21 — MIS sell instead of CNC (product mismatch):**
-"Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order."
-
-**R22 — API rate limit (429 response):**
-"Orders placed via third-party API applications are subject to a rate limit of 10 orders per second as per SEBI's retail algo regulations. Your order received a 429 response because it exceeded this limit. To place more than 10 orders per second, the trading strategy must be registered with the stock exchange. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest)"
-
-**R23 — API market protection rejection:**
-"Orders placed via third-party API applications require market protection to be enabled. Orders with market protection set to 0 are rejected — this includes SL-M orders. This is mandated by the exchanges for all algo orders. Use a limit order or set an appropriate market protection value. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest)"
-
-**R24 — API MCX IOC rejection:**
-"MCX does not support IOC (Immediate-or-Cancel) orders in the algo segment. Orders placed via third-party API applications on MCX with IOC validity will be rejected. Use DAY validity instead."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -381,7 +299,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 2 — Order Complete
 
-1. Respond per **A15-R1**.
+1. Your [type] order for [total_quantity] qty of [instrument] was executed at ₹[average_price] on [exchange_timestamp]..
 2. Price discrepancy:
    a. Market order → **A15-R2**.
    b. Limit at better price → **A15-R3**.
@@ -408,8 +326,13 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. Invoke `kite_margins` to check margin shortfall.
 3. Check if MIS + near auto square-off time (per **A6**).
 4. Check for negative cash balance.
-5. Respond per **A15-R7**.
-6. If MIS carried forward (square-off failed) → respond per **A15-R8**.
+5. This [type] order for [instrument] was executed by Zerodha's risk management system on [exchange_timestamp]. This typically happens when:
+- Your account had insufficient margin to maintain the position
+- It was an intraday (MIS) position auto squared off at the scheduled time (Equity 3:25 PM, F&O 3:26 PM, MCX 10 min before close)
+- Your account had a negative cash balance requiring position closure
+
+Auto square-off charge: ₹50 + 18% GST per order..
+6. If MIS carried forward (square-off failed) → Auto square-off may fail due to circuit limits, system failures, or connectivity issues. When this happens, MIS converts to CNC (equity) or NRML (F&O) and carries forward. You must close the position on the next trading day..
 
 ---
 
@@ -417,16 +340,16 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Unusual in history — likely later cancelled at session end.
 2. Check for corresponding CANCELLED entry for same instrument/date. If found → apply Rule 6.
-3. If genuinely open → respond per **A15-R9**. Times per **A7**.
+3. If genuinely open → Unmatched pending orders are auto-cancelled by the exchange at session end.. Times per **A7**.
 
 ---
 
 ### Rule 6 — Order Cancelled
 
-1. Cancelled near session end → respond per **A15-R10**. Times per **A7**. Invoke `kite_gtt` if client wants persistent order.
-2. LPP/price range → respond per **A15-R11**.
-3. Partial fill + cancelled remainder → respond per **A15-R12**.
-4. IOC → respond per **A15-R13**.
+1. Cancelled near session end → Unmatched pending orders are auto-cancelled by the exchange at session end. Place again next session, or use GTT for orders valid up to 1 year.. Times per **A7**. Invoke `kite_gtt` if client wants persistent order.
+2. LPP/price range → Exchange cancelled your order — price was outside the allowed range. Retry closer to market price..
+3. Partial fill + cancelled remainder → Partially filled: [filled_quantity] of [total_quantity] executed at ₹[average_price]. Remaining [cancelled_quantity] was cancelled..
+4. IOC → IOC orders auto-cancel any unfilled portion immediately..
 
 ---
 
@@ -434,7 +357,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Check `placed_by`:
    a. ADMINSQF/rms → apply Rule 4.
-   b. Client's own ID → respond per **A15-R14**. Escalate to support agent, investigation required.
+   b. Client's own ID → This order appears to have been placed from your account. For security, we're escalating this for investigation. Please also check if any third-party apps have Kite Connect API access, and consider blocking your account if you suspect unauthorized activity.. Escalate to support agent, investigation required.
 
 ---
 
@@ -443,14 +366,14 @@ If no route matches, investigate using Section A reference data. If no root caus
 1. `sip` = "Yes" or client asks about SIP failure.
 2. If REJECTED → share reason. Common: wrong product (must be Regular CNC), insufficient margin, instrument blocked, qty exceeded.
 3. If COMPLETE → share execution details per Rule 2.
-4. If no order found → respond per **A15-R15**.
+4. If no order found → SIP may not have triggered. Check that: basket is linked to SIP, product type is Regular CNC, order type is market or limit. Also check your registered email — Zerodha sends a SIP summary email with rejection reasons if the order failed..
 
 ---
 
 ### Rule 9 — ATO Order Investigation
 
 1. `ato` = "Yes" or client asks about ATO.
-2. If REJECTED → share reason + respond per **A15-R16**.
+2. If REJECTED → share reason + ATO orders place automatically when your Kite alert triggers. Order slicing is not available — quantity must be within the exchange freeze limit..
 
 ---
 
@@ -465,13 +388,13 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 ### Rule 11 — Basket Order Investigation
 
-1. `basket` field has a value → respond per **A15-R17**.
+1. `basket` field has a value → This order was part of basket '[basket]'. Basket orders execute individually — each is subject to its own margin and exchange validation. Some may succeed while others fail..
 
 ---
 
 ### Rule 12 — Execution Time Beyond Market Hours
 
-1. Respond per **A15-R18**.
+1. The displayed time reflects exchange reconciliation after a connectivity disruption. Your order was executed within market hours. Check the tradebook for actual execution time..
 
 ---
 
@@ -480,21 +403,21 @@ If no route matches, investigate using Section A reference data. If no root caus
 1. **F&O buy average:** FIFO across MIS + NRML combined. Per **A12**.
 2. **Equity CNC sell + rebuy same day:** Original avg unchanged — speculative per income tax rules. Exception: T2T stocks. Per **A12**.
 3. **Identifying intraday:** Use patterns from **A12**.
-4. **MIS sell instead of CNC:** If client sold under MIS while holding CNC shares → the MIS sell created a fresh short intraday position, not a delivery exit. CNC holdings remain. MIS position auto-squared off at 3:25 PM. Respond per **A15-R21**.
+4. **MIS sell instead of CNC:** If client sold under MIS while holding CNC shares → the MIS sell created a fresh short intraday position, not a delivery exit. CNC holdings remain. MIS position auto-squared off at 3:25 PM. Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order..
 5. If client asks about current buy average → invoke `kite_holdings`. Current positions → invoke `kite_positions`.
 
 ---
 
 ### Rule 14 — Multiple Orders for Same Instrument
 
-1. Respond per **A15-R19** — summarize count, list each with type/order_type/product/status/quantity/price.
+1. [N] orders found for [instrument] on [date]. — summarize count, list each with type/order_type/product/status/quantity/price.
 2. Use **A12** to identify trade type from product and buy/sell pairing.
 
 ---
 
 ### Rule 15 — No Matching Orders Found
 
-1. Respond per **A15-R20**.
+1. No orders found for [instrument] between [from_date] and [to_date]. Please verify the instrument name, exchange, and date range. Orders rejected pre-exchange (before reaching exchange) may not appear in history..
 
 ---
 
@@ -502,8 +425,8 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 Applies when `app_id` is a numerical value (indicating a third-party Kite Connect API application — not "Kite Web", "Kite iOS", or other named Kite apps).
 
-1. **Rate limit (429 response):** The client's API application exceeded the 10 orders-per-second rate limit. Respond per **A15-R22**. To place more than 10 orders per second, the strategy must be registered with the stock exchange.
-2. **Market protection rejection:** Market orders and SL-M orders placed via API with market protection set to 0 are rejected. Respond per **A15-R23**. The client must set an appropriate market protection value, or use limit orders.
-3. **MCX IOC rejection:** MCX does not support IOC validity in the algo segment. Respond per **A15-R24**. The client must use DAY validity for MCX orders via API.
+1. **Rate limit (429 response):** The client's API application exceeded the 10 orders-per-second rate limit. Orders placed via third-party API applications are subject to a rate limit of 10 orders per second as per SEBI's retail algo regulations. Your order received a 429 response because it exceeded this limit. To place more than 10 orders per second, the trading strategy must be registered with the stock exchange. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest). To place more than 10 orders per second, the strategy must be registered with the stock exchange.
+2. **Market protection rejection:** Market orders and SL-M orders placed via API with market protection set to 0 are rejected. Orders placed via third-party API applications require market protection to be enabled. Orders with market protection set to 0 are rejected — this includes SL-M orders. This is mandated by the exchanges for all algo orders. Use a limit order or set an appropriate market protection value. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest). The client must set an appropriate market protection value, or use limit orders.
+3. **MCX IOC rejection:** MCX does not support IOC validity in the algo segment. MCX does not support IOC (Immediate-or-Cancel) orders in the algo segment. Orders placed via third-party API applications on MCX with IOC validity will be rejected. Use DAY validity instead.. The client must use DAY validity for MCX orders via API.
 4. **Order slicing:** API order slicing should be capped at a maximum of 10 slices to stay within the 10 orders-per-second rate limit.
 5. For details on all SEBI retail algo compliance requirements, share the link from **A13**.

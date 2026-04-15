@@ -25,13 +25,12 @@ TRIGGER KEYWORDS: "F&O P&L", "FnO profit", "FnO loss", "futures P&L", "options P
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool looks up a client's realized F&O P&L per contract. It shows realized P&L only — no charge or MTM breakdown.
 
 **Segment selection is critical:** FO for equity F&O, CDS for currency, COM for commodities. Wrong segment = no results or incomplete data.
 
-**Input:** Client ID + segment + date range.
 
 ---
 
@@ -60,36 +59,6 @@ This tool looks up a client's realized F&O P&L per contract. It shows realized P
 ### A4 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol, segment, date range, and specific discrepancy.**
-
----
-
-### A5 — Response Templates
-
-**R1 — P&L verification:**
-"Your realized P&L for [tradingsymbol]: [quantity] contracts with buy value ₹[buy_value] (avg ₹[buy_average]) and sell value ₹[sell_value] (avg ₹[sell_average]), resulting in a [profit/loss] of ₹[realized_profit] ([realized_profit_percentage]%)."
-
-**R2 — Physical delivery P&L:**
-"Your [tradingsymbol] contract was physically settled at expiry. In F&O P&L, the ITM contract is closed at intrinsic value (or zero), which may show as a loss on the F&O side. However, the actual shares were delivered/received, and the delivery P&L is reflected in your equity P&L as an intraday delivery trade.
-
-To see your total P&L on this position, you need to combine the F&O P&L entry with the corresponding equity delivery P&L entry in `console_eq_pnl`."
-
-**R3 — OTM expired (long position):**
-"Your [tradingsymbol] option expired out-of-the-money (OTM) and became worthless. The entire premium paid (₹[buy_value]) is reflected as a realized loss."
-
-**R4 — OTM expired (short position):**
-"Your [tradingsymbol] option expired OTM. The full premium received (₹[sell_value]) is reflected as realized profit since the option expired worthless."
-
-**R5 — Asterisk on P&L entry:**
-"The asterisk (*) mark indicates that the contract symbol was changed during the series due to a corporate action on the underlying stock (e.g., lot size change, symbol rename). The system closed the old contract and opened a new one with adjusted terms. This appears only on the adjustment day — subsequent days will show normally. Your P&L is calculated correctly across both contract versions."
-
-**R6 — Tax P&L vs Console F&O P&L:**
-"The Tax P&L report and Console F&O P&L may show different values because:
-- Tax P&L classifies trades by type (futures, options) and calculates turnover as the absolute value of profit per contract
-- Console F&O P&L shows aggregate realized profit per contract for the selected date range
-- Physical delivery contracts may appear split between F&O and equity sections in Tax P&L
-- Intraday contracts on certain dates may be excluded from one tab — known issue for specific dates
-
-For income tax filing, use the Tax P&L report."
 
 ---
 
@@ -136,13 +105,15 @@ If no route matches, investigate using the tool data and Section A references. I
 
 ### Rule 1 — P&L Verification
 
-1. Respond per **A5-R1**.
+1. Your realized P&L for [tradingsymbol]: [quantity] contracts with buy value ₹[buy_value] (avg ₹[buy_average]) and sell value ₹[sell_value] (avg ₹[sell_average]), resulting in a [profit/loss] of ₹[realized_profit] ([realized_profit_percentage]%)..
 
 ---
 
 ### Rule 2 — Physical Delivery P&L
 
-1. Respond per **A5-R2**. Client needs to combine F&O P&L with equity delivery P&L in `console_eq_pnl`.
+1. Your [tradingsymbol] contract was physically settled at expiry. In F&O P&L, the ITM contract is closed at intrinsic value (or zero), which may show as a loss on the F&O side. However, the actual shares were delivered/received, and the delivery P&L is reflected in your equity P&L as an intraday delivery trade.
+
+To see your total P&L on this position, you need to combine the F&O P&L entry with the corresponding equity delivery P&L entry in `console_eq_pnl`.. Client needs to combine F&O P&L with equity delivery P&L in `console_eq_pnl`.
 2. If client reports double quantity in equity P&L after physical settlement → escalate per **A4**.
 
 ---
@@ -150,14 +121,14 @@ If no route matches, investigate using the tool data and Section A references. I
 ### Rule 3 — OTM Options Expired Worthless
 
 1. Determine if long or short position:
-   a. Long position (bought options) → respond per **A5-R3**.
-   b. Short position (sold options) → respond per **A5-R4**.
+   a. Long position (bought options) → Your [tradingsymbol] option expired out-of-the-money (OTM) and became worthless. The entire premium paid (₹[buy_value]) is reflected as a realized loss..
+   b. Short position (sold options) → Your [tradingsymbol] option expired OTM. The full premium received (₹[sell_value]) is reflected as realized profit since the option expired worthless..
 
 ---
 
 ### Rule 4 — Asterisk (*) on P&L Entry
 
-1. Respond per **A5-R5**.
+1. The asterisk (*) mark indicates that the contract symbol was changed during the series due to a corporate action on the underlying stock (e.g., lot size change, symbol rename). The system closed the old contract and opened a new one with adjusted terms. This appears only on the adjustment day — subsequent days will show normally. Your P&L is calculated correctly across both contract versions..
 
 ---
 
@@ -173,7 +144,13 @@ If no route matches, investigate using the tool data and Section A references. I
 
 ### Rule 6 — Tax P&L vs Console F&O P&L
 
-1. Respond per **A5-R6**.
+1. The Tax P&L report and Console F&O P&L may show different values because:
+- Tax P&L classifies trades by type (futures, options) and calculates turnover as the absolute value of profit per contract
+- Console F&O P&L shows aggregate realized profit per contract for the selected date range
+- Physical delivery contracts may appear split between F&O and equity sections in Tax P&L
+- Intraday contracts on certain dates may be excluded from one tab — known issue for specific dates
+
+For income tax filing, use the Tax P&L report..
 2. If client reports significant unexplained difference between F&O tab and tradewise exits tab → escalate per **A4**.
 
 ---

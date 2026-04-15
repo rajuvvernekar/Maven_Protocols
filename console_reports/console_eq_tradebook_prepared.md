@@ -23,7 +23,7 @@ TRIGGER KEYWORDS: "old trades", "last year trades", "FY 2023-24", "FY 2024-25", 
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool fetches a client's equity tradebook with **no date range limitation** — it can retrieve trades since account inception. It has identical schema and data as `console_eq_tradebook` (same fields, same data source).
 
@@ -33,7 +33,6 @@ For closed accounts, escalate to support agent for historical trade data retriev
 
 All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook` apply here equally.
 
-**Input:** Client ID + From Date + To Date.
 
 ---
 
@@ -71,18 +70,6 @@ All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook
 ### A5 — Escalation Data Template
 
 When escalating, always include: **client ID, date range requested, tradingsymbol (if specific), and error details.**
-
----
-
-### A6 — Response Templates
-
-**R1 — Self-service download guidance (active account):**
-"You can download your tradebook and other reports from Console. Here are the guides:
-- How to download trade and funds reports: https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf
-- Where to see trades for a particular period: https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period"
-
-**R2 — Tradebook vs Tax P&L difference:**
-"The tradebook shows gross trade values for each individual trade. The Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L. Both reports are correct for their respective purposes. The Tax P&L is the report to use for income tax filing."
 
 ---
 
@@ -129,7 +116,9 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 ### Rule 1 — Full Tradebook Request (Tax / Audit / Compliance)
 
-1. If client's account is active → guide client to self-service download. Respond per **A6-R1**.
+1. If client's account is active → guide client to self-service download. You can download your tradebook and other reports from Console. Here are the guides:
+- How to download trade and funds reports: https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf
+- Where to see trades for a particular period: https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period.
 2. If client asks for tradebook in PDF format → share the same links per **A4**.
 
 ---
@@ -151,7 +140,7 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 ### Rule 4 — Tradebook vs Tax P&L Difference
 
-1. Respond per **A6-R2**.
+1. The tradebook shows gross trade values for each individual trade. The Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L. Both reports are correct for their respective purposes. The Tax P&L is the report to use for income tax filing..
 
 ---
 

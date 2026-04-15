@@ -27,7 +27,7 @@ TRIGGER KEYWORDS: "MTF", "margin trading", "funded", "MTF holdings", "MTF intere
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool looks up a client's MTF (Margin Trading Facility) holdings. MTF allows clients to buy shares by paying only initial margin (~20–50% depending on stock); Zerodha funds the rest.
 
@@ -35,7 +35,6 @@ Console P&L does not calculate separately for MTF — it uses FIFO across all ho
 
 Backedated MTM is available on Console MTF holdings — client can select a date to view historical MTM.
 
-**Input:** Client ID.
 
 ---
 
@@ -129,88 +128,6 @@ When escalating, always include: **client ID, tradingsymbol(s), specific issue, 
 
 ---
 
-### A10 — Response Templates
-
-**R1 — Buy average mismatch (Console vs Kite MTF filter):**
-"The buy average on Console is calculated using FIFO across all your holdings of [tradingsymbol] — both regular delivery (CNC) and MTF combined. This is mandated by the Income Tax Department for tax reporting.
-
-The buy average shown under the MTF filter on Kite is calculated only from your MTF trades for that stock. Both values are correct for their respective purposes — Console reflects your tax-reportable average, while the Kite MTF filter shows your MTF-specific cost."
-
-**R2 — Holdings display issue:**
-"Your [quantity_available] shares of [tradingsymbol] are showing correctly in our records. Please try logging out and back in, or use a different browser/device."
-
-**R3 — Interest calculation:**
-"MTF interest is charged at 0.04% per day (₹40 per lakh) on the funded amount. Interest is applied from T+1 day until the stocks are sold, and accrues daily including weekends and holidays.
-
-Please note that interest is calculated on the total funded amount across all your MTF positions combined — a per-stock interest breakdown is not available. You can view your interest statement on Console → Funds → Interest statement → select MTF → select the date for which interest needs to be checked."
-
-**R4 — Weekend interest:**
-"Interest accrues on all calendar days since the funded amount remains outstanding regardless of whether markets are open."
-
-**R5 — Auto square-off explanation:**
-"MTF positions are auto-squared-off by our risk management team when the margin shortfall exceeds 80% of the funded value. This typically happens when the stock price drops significantly, reducing the value of your collateral below the required threshold.
-
-Only the minimum quantity needed to restore your margin is sold — not necessarily all your MTF shares. Your remaining [quantity_available] shares of [tradingsymbol] continue as MTF holdings."
-
-**R6 — Post-square-off discrepancy:**
-"After an auto square-off, a temporary discrepancy may appear in your holdings. This is automatically resolved within 24–28 working hours. If the discrepancy persists beyond 2 trading days, we will investigate further."
-
-**R7 — Conversion guidance:**
-"You can convert your MTF position to regular delivery (CNC) through Kite or Console. To convert, you need sufficient free cash in your account equal to the funded amount for those shares.
-
-If you don't have enough funds, the conversion will fail — it may show as 'Processed' in the status but the shares will remain under MTF. Please verify your available balance before placing the conversion request."
-
-**R8 — Conversion failed (insufficient margin):**
-"The conversion was not processed due to insufficient funds in your account. The 'Processed' status is a display issue. Please add the required funds and place a new conversion request."
-
-**R9 — Conversion failed on ex-date:**
-"MTF conversions on the ex-date of a corporate action are not processed to avoid complications with the credit handling. Please place the conversion request again after the ex-date."
-
-**R10 — P&L mismatch explanation:**
-"Console calculates P&L using FIFO across all your holdings of [tradingsymbol] — both regular delivery and MTF combined. If you held [tradingsymbol] shares as CNC before purchasing under MTF, the FIFO calculation will use the oldest shares first when you sell, which can affect the realized P&L differently than expected.
-
-The P&L figures in your ledger reflect the net settlement (exit value minus entry value for the specific MTF position), while Console P&L reflects FIFO-based accounting. These may differ but both are calculated correctly."
-
-**R11 — Contract note obligation:**
-"The contract note records the gross obligation — the full purchase value of the shares — which is the standard format. The initial margin you paid and the funded amount from Zerodha together make up this total. Your MTF ledger will show the breakup: initial margin from your equity ledger and the funded portion as a debit in your MTF ledger."
-
-**R12 — Corporate action on MTF:**
-"Corporate action adjustments and credits behave the same for MTF and regular holdings — there is no separate or delayed timeline for MTF positions. Your MTF holdings should reflect the updated quantity once the corporate action credit is processed.
-
-If the update hasn't happened after 2 trading days from credit date, we'll escalate this for investigation."
-
-**R13 — MTF charges breakdown:**
-"Here are the charges applicable to MTF positions:
-- Interest: 0.04% per day (₹40 per lakh) on funded amount, applied from T+1 day until stocks are sold (includes weekends/holidays)
-- Brokerage: ₹20 or 0.3% per order, whichever is lower (both intraday and delivery)
-- Square-off by Zerodha: ₹50 + GST per order
-- Auto-pledge on buy: ₹15 + GST per ISIN (once per ISIN per day)
-- Unpledge on sell or conversion: ₹15 + GST per ISIN (once per ISIN per day)"
-
-**R14 — Reclassification (removed from Group 1):**
-"If a stock you hold under MTF is reclassified and removed from Group 1 securities, Zerodha will notify you on the same day. You have until 4 PM to either sell the stock during market hours or convert it to CNC (delivery). If you don't sell or convert by 4 PM, Zerodha will convert your MTF position to CNC on the same day."
-
-**R15 — General removal from MTF list:**
-"If a stock is removed from the MTF approved list without reclassification, your existing MTF position is NOT automatically squared off. You can continue to hold the position. However, you cannot buy more of that stock under MTF. The position will only be squared off if a margin breach occurs as per standard square-off rules."
-
-**R16 — Unrealized P&L verification:**
-"Your unrealized P&L is calculated as: current market value (₹[closing_value]) minus invested value (₹[holdings_buy_value]) = ₹[unrealized_profit] ([unrealized_profit_percentage]%).
-
-Note: This does not include MTF interest charges, brokerage, or other transaction costs. Your actual profit on exit will be lower after accounting for these charges."
-
-**R17 — Same-day sell and re-buy netoff (MTF/CNC holdings):**
-"When you sell shares from your holdings (MTF or CNC) and buy back the same stock on the same day — regardless of which product type (CNC, MIS, etc.) you use for the re-buy — the trades are netted off as an intraday transaction for stocks in the EQ category. This means:
-
-- Your holdings category remains unchanged (MTF stays MTF, CNC stays CNC)
-- Your buy average of the existing holdings is not affected, since intraday trades are treated as separate speculative transactions
-- The re-buy does not create a new delivery position or change the product type of your existing holdings
-
-This netoff applies to EQ category stocks only — it does not apply to BE (Trade-to-Trade) category stocks, where all trades are treated as delivery.
-
-If you want to convert your MTF position to regular delivery (CNC), please use the conversion flow on Kite or Console instead of selling and re-buying."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -262,14 +179,16 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 ### Rule 1 — Buy Average Mismatch (Console vs Kite MTF Filter)
 
-1. Respond per **A10-R1**. Both averages are correct for their purpose (per **A1**).
+1. The buy average on Console is calculated using FIFO across all your holdings of [tradingsymbol] — both regular delivery (CNC) and MTF combined. This is mandated by the Income Tax Department for tax reporting.
+
+The buy average shown under the MTF filter on Kite is calculated only from your MTF trades for that stock. Both values are correct for their respective purposes — Console reflects your tax-reportable average, while the Kite MTF filter shows your MTF-specific cost.. Both averages are correct for their purpose (per **A1**).
 
 ---
 
 ### Rule 2 — MTF Holdings Not Visible
 
 1. Check `quantity_available` in this tool.
-2. If qty > 0 → display issue. Respond per **A10-R2**.
+2. If qty > 0 → display issue. Your [quantity_available] shares of [tradingsymbol] are showing correctly in our records. Please try logging out and back in, or use a different browser/device..
 3. If qty = 0 from this tool, also check `console_eq_holdings` (per **A6**) and Kite holdings before concluding no MTF holdings exist. MTF positions are reflected in both sources. Additionally, check `console_ledger` with MTF ledger type (per **A6**) — if the MTF ledger shows a Debit closing balance, the client has an outstanding MTF funded amount, confirming MTF holdings exist.
 4. If not found in either tool AND MTF interest still being charged → escalate per **A8**.
 
@@ -277,63 +196,88 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 ### Rule 3 — MTF Interest Calculation
 
-1. Respond per **A10-R3**. Charges per **A3**.
-2. If client asks about weekend interest → respond per **A10-R4**.
+1. MTF interest is charged at 0.04% per day (₹40 per lakh) on the funded amount. Interest is applied from T+1 day until the stocks are sold, and accrues daily including weekends and holidays.
+
+Please note that interest is calculated on the total funded amount across all your MTF positions combined — a per-stock interest breakdown is not available. You can view your interest statement on Console → Funds → Interest statement → select MTF → select the date for which interest needs to be checked.. Charges per **A3**.
+2. If client asks about weekend interest → Interest accrues on all calendar days since the funded amount remains outstanding regardless of whether markets are open..
 3. If client says interest charged after selling all MTF positions → verify MTF ledger closing balance was zero on the claimed dates. If balance was non-zero (e.g., settlement timing) → explain. If balance was zero and interest still charged → escalate per **A8**.
 
 ---
 
 ### Rule 4 — Auto Square-Off
 
-1. Respond per **A10-R5**. Rules per **A4**.
-2. If client reports discrepancy after square-off → respond per **A10-R6**. If discrepancy persists beyond 2 trading days → escalate per **A8**.
+1. MTF positions are auto-squared-off by our risk management team when the margin shortfall exceeds 80% of the funded value. This typically happens when the stock price drops significantly, reducing the value of your collateral below the required threshold.
+
+Only the minimum quantity needed to restore your margin is sold — not necessarily all your MTF shares. Your remaining [quantity_available] shares of [tradingsymbol] continue as MTF holdings.. Rules per **A4**.
+2. If client reports discrepancy after square-off → After an auto square-off, a temporary discrepancy may appear in your holdings. This is automatically resolved within 24–28 working hours. If the discrepancy persists beyond 2 trading days, we will investigate further.. If discrepancy persists beyond 2 trading days → escalate per **A8**.
 
 ---
 
 ### Rule 5 — MTF Conversion (MTF to CNC)
 
-1. Respond per **A10-R7**. Rules per **A5**.
+1. You can convert your MTF position to regular delivery (CNC) through Kite or Console. To convert, you need sufficient free cash in your account equal to the funded amount for those shares.
+
+If you don't have enough funds, the conversion will fail — it may show as 'Processed' in the status but the shares will remain under MTF. Please verify your available balance before placing the conversion request.. Rules per **A5**.
 2. If conversion shows "Processed" but shares still in MTF → check `console_mtf_conversion` (per **A6**) for actual `converted_quantity`.
-   a. If `converted_quantity` = 0 → respond per **A10-R8**.
+   a. If `converted_quantity` = 0 → The conversion was not processed due to insufficient funds in your account. The 'Processed' status is a display issue. Please add the required funds and place a new conversion request..
    b. If conversion was 2+ trading days ago and status unclear → escalate per **A8**.
-3. If conversion failed on ex-date → respond per **A10-R9**. Per **A5** ex-date restriction.
-4. **Same-day sell and re-buy check:** When a client reports selling MTF shares and re-buying in CNC on the same day but holdings still show MTF, check the tradebook (`console_eq_tradebook`) to verify the trades. If the stock is EQ series (not BE/T2T) and both a sell and buy trade exist for the same stock on the same day, the trades were netted off as intraday — the holdings category remains unchanged regardless of the product type used for the re-buy. Respond per **A10-R17**. If the client wants to move shares from MTF to CNC, guide them through the conversion flow per **A10-R7**.
+3. If conversion failed on ex-date → MTF conversions on the ex-date of a corporate action are not processed to avoid complications with the credit handling. Please place the conversion request again after the ex-date.. Per **A5** ex-date restriction.
+4. **Same-day sell and re-buy check:** When a client reports selling MTF shares and re-buying in CNC on the same day but holdings still show MTF, check the tradebook (`console_eq_tradebook`) to verify the trades. If the stock is EQ series (not BE/T2T) and both a sell and buy trade exist for the same stock on the same day, the trades were netted off as intraday — the holdings category remains unchanged regardless of the product type used for the re-buy. When you sell shares from your holdings (MTF or CNC) and buy back the same stock on the same day — regardless of which product type (CNC, MIS, etc.) you use for the re-buy — the trades are netted off as an intraday transaction for stocks in the EQ category. This means:
+
+- Your holdings category remains unchanged (MTF stays MTF, CNC stays CNC)
+- Your buy average of the existing holdings is not affected, since intraday trades are treated as separate speculative transactions
+- The re-buy does not create a new delivery position or change the product type of your existing holdings
+
+This netoff applies to EQ category stocks only — it does not apply to BE (Trade-to-Trade) category stocks, where all trades are treated as delivery.
+
+If you want to convert your MTF position to regular delivery (CNC), please use the conversion flow on Kite or Console instead of selling and re-buying.. If the client wants to move shares from MTF to CNC, guide them through the conversion flow per **A10-R7**.
 
 ---
 
 ### Rule 6 — MTF P&L Not Matching
 
-1. Respond per **A10-R10**. FIFO context per **A1**.
+1. Console calculates P&L using FIFO across all your holdings of [tradingsymbol] — both regular delivery and MTF combined. If you held [tradingsymbol] shares as CNC before purchasing under MTF, the FIFO calculation will use the oldest shares first when you sell, which can affect the realized P&L differently than expected.
+
+The P&L figures in your ledger reflect the net settlement (exit value minus entry value for the specific MTF position), while Console P&L reflects FIFO-based accounting. These may differ but both are calculated correctly.. FIFO context per **A1**.
 
 ---
 
 ### Rule 7 — MTF Obligation in Contract Note
 
-1. Respond per **A10-R11**.
+1. The contract note records the gross obligation — the full purchase value of the shares — which is the standard format. The initial margin you paid and the funded amount from Zerodha together make up this total. Your MTF ledger will show the breakup: initial margin from your equity ledger and the funded portion as a debit in your MTF ledger..
 
 ---
 
 ### Rule 8 — Corporate Action Impact on MTF Holdings
 
-1. Respond per **A10-R12**.
+1. Corporate action adjustments and credits behave the same for MTF and regular holdings — there is no separate or delayed timeline for MTF positions. Your MTF holdings should reflect the updated quantity once the corporate action credit is processed.
+
+If the update hasn't happened after 2 trading days from credit date, we'll escalate this for investigation..
 2. If CA credits not reflected after 2+ trading days from credit date → escalate per **A8**.
 
 ---
 
 ### Rule 9 — MTF Charges Breakdown
 
-1. Respond per **A10-R13**. All charge details per **A3**.
+1. Here are the charges applicable to MTF positions:
+- Interest: 0.04% per day (₹40 per lakh) on funded amount, applied from T+1 day until stocks are sold (includes weekends/holidays)
+- Brokerage: ₹20 or 0.3% per order, whichever is lower (both intraday and delivery)
+- Square-off by Zerodha: ₹50 + GST per order
+- Auto-pledge on buy: ₹15 + GST per ISIN (once per ISIN per day)
+- Unpledge on sell or conversion: ₹15 + GST per ISIN (once per ISIN per day). All charge details per **A3**.
 
 ---
 
 ### Rule 10 — Stock Removed from MTF Approved List
 
 1. Determine which scenario applies (per **A9**):
-   a. Reclassification (removed from Group 1) → respond per **A10-R14**.
-   b. General removal (not reclassification) → respond per **A10-R15**.
+   a. Reclassification (removed from Group 1) → If a stock you hold under MTF is reclassified and removed from Group 1 securities, Zerodha will notify you on the same day. You have until 4 PM to either sell the stock during market hours or convert it to CNC (delivery). If you don't sell or convert by 4 PM, Zerodha will convert your MTF position to CNC on the same day..
+   b. General removal (not reclassification) → If a stock is removed from the MTF approved list without reclassification, your existing MTF position is NOT automatically squared off. You can continue to hold the position. However, you cannot buy more of that stock under MTF. The position will only be squared off if a margin breach occurs as per standard square-off rules..
 
 ---
 
 ### Rule 11 — Unrealized P&L Verification
 
-1. Respond per **A10-R16**.
+1. Your unrealized P&L is calculated as: current market value (₹[closing_value]) minus invested value (₹[holdings_buy_value]) = ₹[unrealized_profit] ([unrealized_profit_percentage]%).
+
+Note: This does not include MTF interest charges, brokerage, or other transaction costs. Your actual profit on exit will be lower after accounting for these charges..

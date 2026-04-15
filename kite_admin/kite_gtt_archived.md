@@ -25,7 +25,7 @@ TRIGGER KEYWORDS: "old GTT", "past GTT", "expired GTT", "deleted GTT", "previous
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool returns **historical/old GTT orders** — expired, deleted, cancelled, or triggered GTTs that are no longer in the active GTT list. For current/recent GTTs, use `kite_gtt`.
 
@@ -35,7 +35,6 @@ Triggered GTT becomes CNC limit order with DAY validity — cancelled by exchang
 
 GTT triggers based on ticks recorded by the system — missed ticks mean GTT may not have triggered.
 
-**Input:** Client ID.
 
 ---
 
@@ -100,61 +99,6 @@ When escalating, always include: **client ID, GTT id, tradingsymbol, status, cre
 
 ---
 
-### A7 — Response Templates
-
-**R1 — Triggered + executed:**
-"Your GTT for [tradingsymbol] was triggered and the order was executed on [updated_at]."
-
-**R2 — Triggered + rejected (insufficient margin):**
-"Your GTT triggered but was rejected due to insufficient funds at trigger time."
-
-**R3 — Triggered + rejected (TPIN):**
-"Your sell GTT was rejected because holdings weren't authorised via CDSL TPIN."
-
-**R4 — Triggered + rejected (insufficient holdings):**
-"Your sell GTT was rejected — not enough shares in demat when trigger fired."
-
-**R5 — Triggered + rejected (price band):**
-"Your GTT triggered but the limit price was outside the circuit limit for that day."
-
-**R6 — Triggered + rejected (series change):**
-"Your GTT was rejected because the instrument underwent a series change or suspension."
-
-**R7 — Triggered + cancelled by user:**
-"Your GTT for [tradingsymbol] was triggered and an order was placed, but this order was cancelled from your end during the trading session. The GTT trigger is a one-time event — you would have needed to create a new GTT."
-
-**R8 — Triggered + unfilled (EOD cancellation):**
-"Your GTT triggered and an order was placed, but it wasn't filled by end of day. The exchange cancelled it at session end. A triggered GTT is a one-time event — you would have needed to create a new GTT."
-
-**R9 — Cancelled:**
-"Your GTT for [tradingsymbol] was cancelled. Common reasons: the instrument was delisted, suspended, underwent a series change, or a corporate action affected the contract. For F&O, lot size changes also cause cancellation."
-
-**R10 — Expired (equity):**
-"Your GTT for [tradingsymbol] expired because it wasn't triggered within 1 year of creation (created [created_at])."
-
-**R11 — Expired (F&O):**
-"Your GTT expired because the F&O contract expired. F&O GTTs are valid only until contract expiry."
-
-**R12 — Disabled:**
-"Your GTT for [tradingsymbol] was disabled. This happens when: the trigger was set too close to LTP (< 0.25% for stocks > ₹50), or a corporate action like bonus/stock split affected the instrument."
-
-**R13 — Deleted:**
-"This GTT was deleted from your account on [updated_at]."
-
-**R14 — Active (archived):**
-"This GTT was active but has been archived. It may have been superseded. Create a new GTT if needed."
-
-**R15 — Unavailable fields requested:**
-"The expiry date and exchange details are not available for archived GTT orders. Here's what can be confirmed: your [transaction_type] GTT for [tradingsymbol] had a trigger at ₹[trigger_values] with a limit price of ₹[price] for [quantity] qty, created on [created_at]. Status: [status]."
-
-**R16 — GTT not found in either tool:**
-"No matching GTT found for [tradingsymbol]. Possible reasons:
-- The GTT may have been created with a different instrument name (check exact trading symbol).
-- Very old GTTs may not be available in the system. Check your email for GTT trigger/creation notifications.
-- If you need details for a specific GTT from a long time ago, please raise a support ticket with the approximate date and instrument."
-
----
-
 ## Section B: Decision Flow
 
 ---
@@ -205,8 +149,8 @@ If no route matches, investigate using Section A reference data. If no root caus
    b. Cancelled → Rule 3.
    c. Expired → Rule 4.
    d. Disabled → Rule 5.
-   e. Deleted → respond per **A7-R13**.
-   f. Active (archived) → respond per **A7-R14**.
+   e. Deleted → This GTT was deleted from your account on [updated_at]..
+   f. Active (archived) → This GTT was active but has been archived. It may have been superseded. Create a new GTT if needed..
 3. If looking for current GTT → invoke `kite_gtt`.
 
 ---
@@ -214,7 +158,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 2 — Status: Triggered
 
 1. Check `order_result_status`:
-   a. COMPLETE → respond per **A7-R1**. Invoke `kite_order_history` with date from `updated_at` for execution details.
+   a. COMPLETE → Your GTT for [tradingsymbol] was triggered and the order was executed on [updated_at].. Invoke `kite_order_history` with date from `updated_at` for execution details.
    b. REJECTED → match `order_result_rejection_reason` against **A4**:
       - Insufficient margin → **A7-R2**. If client asks about current balance → invoke `kite_margins`.
       - TPIN → **A7-R3**.
@@ -231,31 +175,34 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 3 — Status: Cancelled
 
 1. Check `rejection_reason` if available.
-2. Respond per **A7-R9**.
+2. Your GTT for [tradingsymbol] was cancelled. Common reasons: the instrument was delisted, suspended, underwent a series change, or a corporate action affected the contract. For F&O, lot size changes also cause cancellation..
 
 ---
 
 ### Rule 4 — Status: Expired
 
-1. Equity → respond per **A7-R10**.
-2. F&O → respond per **A7-R11**.
+1. Equity → Your GTT for [tradingsymbol] expired because it wasn't triggered within 1 year of creation (created [created_at])..
+2. F&O → Your GTT expired because the F&O contract expired. F&O GTTs are valid only until contract expiry..
 
 ---
 
 ### Rule 5 — Status: Disabled
 
-1. Respond per **A7-R12**.
+1. Your GTT for [tradingsymbol] was disabled. This happens when: the trigger was set too close to LTP (< 0.25% for stocks > ₹50), or a corporate action like bonus/stock split affected the instrument..
 
 ---
 
 ### Rule 6 — Client Asks for Unavailable Fields
 
-1. Client asks for expiry date, exchange, or LTP at creation → respond per **A7-R15**.
+1. Client asks for expiry date, exchange, or LTP at creation → The expiry date and exchange details are not available for archived GTT orders. Here's what can be confirmed: your [transaction_type] GTT for [tradingsymbol] had a trigger at ₹[trigger_values] with a limit price of ₹[price] for [quantity] qty, created on [created_at]. Status: [status]..
 2. If client needs these details for dispute resolution → escalate per **A6** with GTT `id` and `created_at`.
 
 ---
 
 ### Rule 7 — GTT Not Found in Either Tool
 
-1. Respond per **A7-R16**.
+1. No matching GTT found for [tradingsymbol]. Possible reasons:
+- The GTT may have been created with a different instrument name (check exact trading symbol).
+- Very old GTTs may not be available in the system. Check your email for GTT trigger/creation notifications.
+- If you need details for a specific GTT from a long time ago, please raise a support ticket with the approximate date and instrument..
 

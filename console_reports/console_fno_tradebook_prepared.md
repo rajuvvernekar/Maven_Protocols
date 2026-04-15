@@ -23,7 +23,7 @@ TRIGGER KEYWORDS: "old F&O trades", "last year F&O", "FY F&O tradebook", "histor
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
 This tool fetches a client's F&O tradebook with **no date range limitation** — it can retrieve trades since account inception. It has identical schema and data as `console_fno_tradebook` (same fields, same data source).
 
@@ -33,7 +33,6 @@ For closed accounts, escalate to support agent for historical F&O trade data ret
 
 All business rules from `console_fno_tradebook` apply here equally.
 
-**Input:** Client ID + From Date + To Date + Segment (FO/CDS/COM).
 
 ---
 
@@ -70,18 +69,6 @@ All business rules from `console_fno_tradebook` apply here equally.
 ### A5 — Escalation Data Template
 
 When escalating, always include: **client ID, date range, segment, tradingsymbol (if specific), and error details.**
-
----
-
-### A6 — Response Templates
-
-**R1 — Redirect to console_fno_tradebook:**
-"This date range is within the last 100 days, so I'll use the standard F&O tradebook tool for faster results."
-
-**R2 — Self-service download guidance (active account):**
-"You can download your F&O tradebook and other reports from Console. Here are the guides:
-- How to download trade and funds reports: https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf
-- Where to see trades for a particular period: https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period"
 
 ---
 
@@ -128,7 +115,9 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 
 ### Rule 1 — Full F&O Tradebook Request (Tax / Audit / Compliance)
 
-1. If client's account is active → guide client to self-service download. Respond per **A6-R2**.
+1. If client's account is active → guide client to self-service download. You can download your F&O tradebook and other reports from Console. Here are the guides:
+- How to download trade and funds reports: https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf
+- Where to see trades for a particular period: https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period.
 2. If client asks for formatted PDF → share the same links per **A4**.
 
 ---
