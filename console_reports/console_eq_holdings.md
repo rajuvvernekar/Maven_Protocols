@@ -29,11 +29,9 @@ TRIGGER KEYWORDS: "holdings", "buy average", "average price", "discrepancy", "no
 
 ---
 
-### A1 — Tool Purpose & Fundamentals
+### A1 — Fundamentals
 
-This tool looks up a client's equity holdings. Buy average uses FIFO (First In, First Out) — mandated by the Income Tax Department. Holdings = available + t1 + margin + pending + discrepant + loan (`total_quantity`). `buy_value` = `buy_average` × `total_quantity`.
-
-**Input:** Client ID.
+This tool looks up a client's equity holdings. Buy average uses FIFO (First In, First Out). Holdings = available + t1 + margin + pending + discrepant + loan (`total_quantity`). `buy_value` = `buy_average` × `total_quantity`.
 
 ---
 
@@ -52,10 +50,9 @@ This tool looks up a client's equity holdings. Buy average uses FIFO (First In, 
 | Internal Term | Client-Facing Alternative |
 |---|---|
 | pending | "being processed for credit" or "yet to be credited" |
-| failure date | (omit — use for internal escalation only) |
-| holdings date | (omit — internal modification timestamp) |
-| instrument ID | (omit — internal system mapping) |
-| Any internal tool or system name | (describe the outcome, not the tool) |
+| failure_date | (omit — use for internal escalation only) |
+| holdings_date | (omit — internal modification timestamp) |
+| instrument_id | (omit — internal system mapping) |
 
 ---
 
@@ -89,7 +86,7 @@ This tool looks up a client's equity holdings. Buy average uses FIFO (First In, 
 
 ### A5 — Buy Average Rules
 
-**Method:** FIFO — sell oldest shares first.
+**Method:** FIFO — sell oldest shares first. Mandated by the Income Tax Department.
 
 **Intraday exception:** Sell from holdings + buy back same day → average unchanged (treated as separate speculative transactions, not delivery).
 
@@ -106,6 +103,8 @@ This tool looks up a client's equity holdings. Buy average uses FIFO (First In, 
 **Buy average ₹0 reason:** Only bonus shares remain after FIFO sold all original bought shares (bonus cost = ₹0).
 
 **Grandfather clause (pre-2018 holdings with no purchase records):** If the client purchased shares before 31 Jan 2018 and original purchase records are unavailable, Section 112A of the Income Tax Act provides a grandfathering provision. The cost of acquisition for tax purposes is the higher of: (a) the actual purchase price, or (b) the stock's high price on NSE or BSE on 31 Jan 2018. The client can enter trade date as 31 Jan 2018 and use the high price from that date. Historical prices are available on the NSE and BSE websites.
+
+**Same-day sell FIFO impact:** When shares are sold today using FIFO, the buy average of remaining shares may change. If the earliest lots had a different average than the current market price, the reduction in holdings value will differ from the sale proceeds received. Updated invested value and buy average reflect after end-of-day processing. Client can verify via View breakdown on Kite or Console.
 
 ---
 
@@ -125,7 +124,7 @@ Fewer shares at higher price. Qty reduces, price increases; fractional shares se
 
 #### Merger
 
-Two companies combine; shares exchanged at defined swap ratio. Old debited, new credited per ratio; fractional shares = cash to bank.
+Two companies combine; shares exchanged at defined swap ratio. Old debited, new credited per ratio; fractional shares = cash to primary bank.
 
 #### Demerger
 
@@ -143,6 +142,10 @@ Hold shares in demat on ex-date/record date. Buy at least 1 trading day before e
 
 Fractional shares from any CA settled in cash by company-appointed trustee → credited to primary bank.
 
+#### Short Delivery
+
+Short delivery occurs when the seller of shares does not deliver them by the settlement deadline. Two common scenarios: (1) Counter-party default — buyer's shares should have been credited by T+1, settlement extends to T+2 while exchange conducts auction. (2) Intraday short sell stuck in circuit — trader unable to close position, results in delivery obligation. In both cases, client receives notification. If auction successful, shares credited. If auction fails, cash settlement at close-out price.
+
 ---
 
 ### A7 — Dividends
@@ -159,6 +162,21 @@ Fractional shares from any CA settled in cash by company-appointed trustee → c
 
 **Tracking:** Kite: Portfolio → select stock → View dividends. Console: Reports → Downloads → Dividend statement.
 
+**Debt Instrument Interest (G-Secs, NCDs, Bonds):**
+
+Interest on G-Secs, NCDs, and bonds is credited directly to the client's primary bank account by RBI or the paying agent — not through Zerodha's trading account. Zerodha does not process or track debt instrument interest payments.
+
+**Interest payment schedule:** The official schedule published by RBI is available at rbi.org.in/Scripts/NotificationUser.aspx — look for the document titled "Auction for Sale (Issue/Re-issue) of Government Stock (GS)" under Notifications. For older issues, check under Archives.
+
+**Payment method:** Interest is credited semi-annually to the client's primary bank account linked with Zerodha, typically within 5–7 working days of the payment date.
+
+**Eligibility:** To receive interest, the client must have purchased the G-Secs at least 15 days before the interest date.
+
+**Tracking methods for clients:**
+1. Bank statements — check primary bank account for the credit
+2. CDSL Consolidated Account Statement (CAS) — available via CDSL website
+3. RBI Retail Direct portal — if the client has an account there
+
 ---
 
 ### A8 — Discrepancy Resolution
@@ -174,6 +192,8 @@ Fractional shares from any CA settled in cash by company-appointed trustee → c
 **Cannot resolve:** Trading holidays | Inactive/suspended/unlisted stocks (verify current exchange status first — see Rule 6) | CA within 10 days | IPO within 3 days.
 
 **Applies to all instrument types:** Equity, NCDs, bonds, and other securities follow the same discrepancy resolution path. If any instrument was transferred from another broker and shows invested value as NA with `discrepant` > 0, the client must add purchase details via the self-resolution path above.
+
+**Transfer-in note:** Only the units are transferred from the previous broker — the purchase history is not carried over automatically. Client should obtain purchase details from their previous broker.
 
 ---
 
@@ -218,144 +238,7 @@ When escalating, always include: **client ID, tradingsymbol(s), specific issue d
 
 ---
 
-### A13 — Response Templates
-
-**R1 — FIFO explanation:**
-"Your buy average is calculated using the FIFO (First In, First Out) method, which is mandated by the Income Tax Department. When you sell shares, the oldest purchased shares are considered sold first, which changes the average of remaining shares. You can check the detailed calculation under View breakdown on Kite or Console."
-
-**R2 — Intraday no-impact:**
-"Intraday transactions don't affect your buy average since those are treated as separate speculative trades. Your delivery holdings average remains unchanged."
-
-**R3 — Discrepancy self-resolution guidance:**
-"Your [tradingsymbol] shares are showing as a discrepancy because the purchase details are not available in our system. This typically happens when shares are transferred from another broker, received via off-market transfer, ESOP, or IPO. To update your buy average, go to Console → Portfolio → Holdings → View discrepancy → select [tradingsymbol] → Add trade → enter the original purchase date, price, and quantity."
-
-**R4 — Discrepancy entry rules (append to R3 when guiding client):**
-"Please note:
-- Enter the original purchase date (must be on or before the date shares were credited to your Zerodha demat)
-- Only one entry per date is allowed; if you bought on multiple dates, add separate entries for each
-- If you bought multiple times on the same date, enter the total quantity with the weighted average price
-- Entries cannot be made on holidays or weekends
-- Once the buy average is updated (within 24 hours), the entry cannot be modified"
-
-**R5 — No purchase details available:**
-"You can obtain the purchase details from your previous broker. Only the units are transferred — the purchase history is not carried over automatically."
-
-**R6 — Entry pending processing:**
-"Your purchase details have been recorded and are being processed. Your buy average will update within 24 hours."
-
-**R7 — CA average adjustment in progress:**
-"Your [tradingsymbol] buy average is being adjusted due to a recent corporate action. This update typically takes about 2 weeks from the corporate action date."
-
-**R8 — Buy average ₹0 (bonus only remaining):**
-"Your [tradingsymbol] buy average is showing ₹0 because all your originally purchased shares have been sold (as per FIFO), and only bonus shares remain. Bonus shares are credited at zero cost, so the average of remaining holdings becomes ₹0. This is correct as per FIFO accounting."
-
-**R9 — Bonus not yet credited:**
-"Your [pending] bonus shares of [tradingsymbol] are being processed for credit. Bonus shares are typically credited within T+2 days from the record date. They initially appear under a temporary ISIN and become tradeable after 4–5 days once the exchange grants trading approval. CDSL will send you an SMS when the shares are credited."
-
-**R10 — P&L temporary drop (bonus/split):**
-"The temporary drop in your P&L is expected — it will auto-correct once the bonus shares are credited to your demat account."
-
-**R11 — Split shares credited:**
-"Your split shares have been successfully credited to your account. You currently have [available] shares of [tradingsymbol] available for trading, totalling [total_quantity] shares after the split. Please note that the buy average may take 2–3 working days to update, but you can sell your shares in the meantime — this will not impact your P&L."
-
-**R12 — Split shares still processing:**
-"You currently have [available] shares of [tradingsymbol], with [pending] shares being processed for credit, totalling [total_quantity] shares after the split. These are typically credited within T+2 days from the record date and will become tradeable after 4–5 days once the exchange grants trading approval. CDSL will notify you via SMS once the shares are credited to your demat account."
-
-**R13 — Demerger shares not credited:**
-"After a demerger, the new entity's shares are typically credited within 30–45 days from the record date. CDSL will notify you via SMS/email once credited."
-
-**R14 — Demerger average not updated:**
-"The buy average for both [original company] and [new entity] will be split based on the Cost of Acquisition (COA) ratio announced by the company. Once the company announces the ratio, we will update the buy average accordingly."
-
-**R15 — Merger share swap:**
-"After the merger, your [old company] shares have been exchanged for [new company] shares at the [ratio] swap ratio. If the swap ratio results in fractional shares, the cash equivalent will be credited to your primary bank account by the company-appointed trustee."
-
-**R16 — Investment value explanation:**
-"Your invested value is calculated as buy average × total quantity. Current values: buy average = ₹[buy_average], total quantity = [total_quantity], invested value = ₹[buy_value]."
-
-**R17 — T1 settlement:**
-"Your [t1] shares of [tradingsymbol] were purchased yesterday and are currently in T+1 settlement. They will move to your available balance by end of today and be visible in your regular holdings from the next trading day."
-
-**R18 — CA eligibility:**
-"To be eligible for corporate action benefits, you must hold the shares in your demat account on the ex-date/record date. Since shares settle on T+1, you need to buy at least one trading day before the ex-date."
-
-**R19 — Sold on ex-date, still eligible:**
-"You are still eligible. When you sell on the ex-date, the shares are debited from your demat on T+1 day. Since you held them on the ex-date, you qualify."
-
-**R20 — Pledged shares CA eligibility:**
-"Pledged shares are eligible for all corporate action benefits. However, for buyback tendering, you must unpledge the shares first."
-
-**R21 — Bought before ex-date but no CA benefit:**
-"In rare cases, a settlement holiday falling on the ex-date or a short delivery by the seller can delay or prevent share credit to your demat by the record date. This would affect eligibility despite a timely purchase."
-
-**R22 — Dividend not received:**
-"Dividends are credited directly to your primary bank account (not your Zerodha trading account) within 30–45 days after the ex-date/record date.
-
-If you haven't received your dividend within this period, please contact the company's Registrar and Transfer Agent (RTA). Zerodha does not process dividend payments and does not receive details about dividend credits. You can find the RTA details on NSE (nseindia.com → search company → Corporate information → Transfer Agent Details) or BSE (bseindia.com → search company → Corp Information)."
-
-**R23 — Dividend TDS:**
-"Companies deduct TDS before crediting dividends. For resident individuals, TDS of 10% applies on total dividend income exceeding ₹10,000 in a financial year. For NRIs, TDS is 20% with no threshold. If PAN is not linked, TDS is 20%. You can verify TDS in Form 26AS on the income tax portal and claim credit when filing ITR."
-
-**R24 — Dividend tracking:**
-"You can track dividends on Kite (Portfolio → select stock → View dividends) or download the dividend statement from Console (Reports → Downloads → Dividend statement)."
-
-**R25 — Pledged qty explanation:**
-"Your [margin] shares of [tradingsymbol] are pledged as collateral for trading margin. These shares remain in your demat account — they are not moved elsewhere."
-
-**R26 — Sell pledged shares:**
-"You can sell pledged shares directly using a CNC sell order on Kite without placing an unpledge request. Your collateral margin will reduce by the value of shares sold."
-
-**R27 — Temporary collateral reduction:**
-"When you sell free (unpledged) shares of a stock that also has pledged quantities, the collateral temporarily reduces because the system considers pledged shares first. This is restored automatically the next trading day after the end-of-day process — no action needed from your side."
-
-**R28 — Gift in (P&L/avg):**
-"For shares received via gift, the system uses the closing price on the transfer date as the entry price for P&L tracking purposes. If you need to update this with the actual acquisition cost, you can add the details via the discrepancy resolution flow on Console.
-
-Please note: While filing income tax returns, you may need to manually adjust the Tax P&L report to reflect the correct cost of acquisition as per your preferred tax treatment. Consult a Chartered Accountant for guidance."
-
-**R29 — Off-market transfer in (P&L/avg):**
-"For shares received via off-market transfer, the system does not automatically assign a buy price. You will need to manually add the purchase details via the discrepancy resolution flow on Console."
-
-**R30 — Gift out:**
-"For gifted shares, Zerodha uses the gift transfer date as the exit date and the closing price on that date as the exit price in your account. This will reflect in your P&L accordingly."
-
-**R31 — Off-market transfer out:**
-"When shares are transferred out via off-market, no automatic exit entry is posted in our system since the transaction happens outside the platform. You can either share the transfer details so we can post a reversal entry, or manually update your Tax P&L report while filing returns."
-
-**R32 — Stock not in holdings:**
-"This stock does not appear in your holdings. Please confirm the tradingsymbol or ISIN, and whether the purchase has settled (shares appear from T+1 day onwards)."
-
-**R33 — Gift entry found in system:**
-"Your gift shares of [tradingsymbol] have been recorded in our system at ₹[price] per share (closing price on transfer date). No further action is needed from your side. Your buy average will reflect this once processed."
-
-**R34 — Shares sold (holdings not visible because of recent sell):**
-"Your [quantity] shares of [tradingsymbol] were sold on [trade_date] at ₹[price] per share. The sale proceeds have been credited to your account. This is why the shares no longer appear in your holdings."
-
-**R35 — Fractional LIQUIDBEES redemption:**
-"Fractional units of LIQUIDBEES (such as [quantity] units) cannot be sold on the secondary market. These units can only be redeemed by making an off-market transfer to the AMC's demat account via CDSL Easiest. For the step-by-step process, please refer to: https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units
-
-If your account is currently dormant due to inactivity for over 24 months, you will need to complete Re-KYC online to reactivate your account (24–48 working hours after IPV) before you can initiate the off-market transfer."
-
-**R36 — NCD transferred in — discrepancy resolution:**
-"Your NCDs of [tradingsymbol] were transferred from another broker, so the invested value is showing as NA. This is because the purchase details are not available in our system — it is not expected behavior for debt instruments.
-
-To update the invested value, you need to manually enter the buy average price on Console via the discrepancy resolution flow: Console → Portfolio → Holdings → View discrepancy → select [tradingsymbol] → Add trade → enter the original purchase date, price, and quantity.
-
-Please note that NCDs do not display their current market value on Kite because they are debt instruments that trade infrequently and lack continuous market pricing due to their illiquid nature. However, the invested value will reflect correctly once you update the purchase details.
-
-For guidance on updating discrepancy details, please refer to:
-https://support.zerodha.com/category/console/portfolio/articles/i-see-a-few-holdings-under-the-discrepancy-tab-what-does-it-mean
-https://support.zerodha.com/category/console/portfolio/articles/how-do-i-add-external-trades-on-console"
-
-**R37 — Investment value changed after same-day sell (FIFO impact):**
-"Your sell of [qty] shares of [tradingsymbol] today was processed using FIFO — the earliest purchased shares are considered sold first. If those earliest shares had a buy average higher than the current market price, the reduction in your holdings value will be greater than the sale proceeds received. Conversely, if the buy average of the earlier purchases was lower than the current market price, the reduction in investment value will be less than the sale proceeds received, and your holdings value may appear to increase. The updated invested value and buy average for remaining shares will reflect after end-of-day processing. You can check the detailed FIFO calculation under View breakdown on Kite or Console."
-
-**R38 — Grandfather clause (pre-2018 holdings, no purchase records):**
-"For shares purchased before 31 Jan 2018 where the original purchase records are unavailable, you can use the grandfathering provision under Section 112A of the Income Tax Act. Under this clause, the cost of acquisition for tax purposes is the higher of: (a) the actual purchase price, or (b) the stock's high price on NSE or BSE on 31 Jan 2018. You can enter the trade date as 31 Jan 2018 and use the high price from that date as the buy price on Console (Console → Portfolio → Holdings → View discrepancy → Add trade). Historical prices can be looked up on the NSE or BSE websites."
-
----
-
-### A14 — Discrepancy Diagnostic Checklist
+### A13 — Discrepancy Diagnostic Checklist
 
 When a client reports a discrepancy or a specific purchase that doesn't match holdings data:
 
@@ -409,7 +292,7 @@ Merger — share swap query                                 → Rule 10
 Holdings not visible / qty mismatch                       → Rule 11
 Investment value mismatch                                 → Rule 12
 Pledged qty in holdings                                   → Rule 13
-Dividend query                                            → Rule 14
+Dividend or debt instrument interest query                → Rule 14
 Corporate action eligibility                              → Rule 15
 T1 / settlement query                                     → Rule 16
 Gift / off-market transfer (P&L / avg)                    → Rule 17
@@ -418,7 +301,7 @@ Fractional unit redemption (LIQUIDBEES)                   → Rule 18
 
 ### Scope
 
-- Address the client's query about their equity holdings, buy averages, corporate actions, discrepancies, dividends, or pledged stock.
+- Address the client's query about their equity holdings, buy averages, corporate actions, discrepancies, dividends, debt instrument interest, or pledged stock.
 - Employer-mandated account deactivation or closure queries (employer compliance, empanelment) are outside protocol scope — escalate to a human agent immediately.
 
 ### Fallback
@@ -433,25 +316,25 @@ If no route matches, interpret the holdings data using Section A reference data.
 
 ### Rule 1 — Buy Average Differs from Expected
 
-1. Respond per **A13-R1** (FIFO explanation).
-2. If client sold and bought back same day → respond per **A13-R2** (intraday no-impact).
-3. If the client's complaint is about investment value or buy average changing today, check Kite Order History and Kite Positions for same-day executed sell trades. If a sell order was executed today → respond per **A13-R37** (FIFO impact on same-day sell).
+1. Explain the FIFO method (mandated by Income Tax Department, per **A5**). Point client to View breakdown on Kite or Console for detailed calculation.
+2. If client sold from holdings and bought back same day → intraday exception: average unchanged because this is treated as a speculative transaction, not delivery (per **A5**).
+3. If the client's complaint is about investment value or buy average changing today, check Kite Order History and Kite Positions for same-day executed sell trades. If a sell order was executed today → explain same-day sell FIFO impact (per **A5**).
 
 ---
 
 ### Rule 2 — Buy Average Showing N/A
 
 1. If `buy_average` is null/N/A AND `discrepant` > 0:
-   a. **If client reports a specific purchase (mentions date, quantity, or price of a buy that doesn't match current holdings data), ALWAYS run A14 checklist before proceeding with standard diagnostics.**
+   a. **If client reports a specific purchase (mentions date, quantity, or price of a buy that doesn't match current holdings data), ALWAYS run A13 checklist before proceeding with standard diagnostics.**
    b. Check Kite holdings or instrument search to verify whether the stock is currently listed and tradeable on an exchange. If the stock has since been listed, proceed with standard discrepancy resolution (Rule 5) — do not apply the unlisted exception from Rule 6.
    c. Check `console_eq_external_trades` for an existing entry for this ISIN.
-   d. If entry exists AND still processing → respond per **A13-R6**.
+   d. If entry exists AND still processing → inform client that purchase details have been recorded and buy average will update within 24 hours (per **A4**).
    e. If entry exists AND processed but avg still N/A → escalate per **A12** with entry details from `console_eq_external_trades`.
-   f. If no entry exists AND A14 confirms stocks NOT bought on Zerodha → respond per **A13-R3** + **A13-R4**.
-   g. If client confirms shares were purchased before 31 Jan 2018 and original purchase records are unavailable → respond per **A13-R38** (grandfather clause). Guide client to use the FMV from 31 Jan 2018 as the cost of acquisition (per **A5**).
+   f. If no entry exists AND A13 confirms stocks NOT bought on Zerodha → guide client through the discrepancy self-resolution path (per **A8**) including entry rules: date ≤ demat credit date, 1 entry per ISIN per date, no holidays/weekends, same-date multiple buys = weighted average with total qty, entries lock once processed within 24 hours.
+   g. If client confirms shares were purchased before 31 Jan 2018 and original purchase records are unavailable → guide client per grandfather clause in **A5**: Section 112A provision, cost = higher of actual price or stock's high on NSE/BSE on 31 Jan 2018, enter trade date as 31 Jan 2018 with the high price.
 
 2. If `buy_average` is null AND `discrepant` = 0 AND `pending` > 0:
-   → Respond per **A13-R7**. Timeline per **A4**.
+   → Corporate action buy average adjustment in progress, typically ~2 weeks from the corporate action date (per **A4**).
 
 ---
 
@@ -459,14 +342,14 @@ If no route matches, interpret the holdings data using Section A reference data.
 
 1. If `buy_average` = 0 AND `total_quantity` > 0:
    a. Check `console_eq_holdings_breakdown` for the same stock/ISIN — look for entries where `exchange` field = "BONUS".
-   b. If confirmed → respond per **A13-R8**.
-   c. If no BONUS entry found → investigate further (may be a system issue or other CA type). escalate per **A12** if unexplained.
+   b. If confirmed → explain that all originally purchased shares have been sold via FIFO, and only bonus shares remain. Bonus shares are credited at zero cost, so the average of remaining holdings becomes ₹0. This is correct as per FIFO accounting (per **A5**).
+   c. If no BONUS entry found → investigate further (may be a system issue or other CA type). Escalate per **A12** if unexplained.
 
 ---
 
 ### Rule 4 — Buy Average Wrong After Corporate Action
 
-1. Check if CA was within last 2 weeks → respond per **A13-R7**. Timeline per **A4**.
+1. Check if CA was within last 2 weeks → corporate action buy average adjustment in progress, typically ~2 weeks (per **A4**).
 2. If CA was 3+ weeks ago and avg still appears wrong → escalate per **A12** with client ID, tradingsymbol, and expected vs actual buy average.
 
 ---
@@ -475,39 +358,39 @@ If no route matches, interpret the holdings data using Section A reference data.
 
 **Preflight (before executing Rule 5):**
 
-If client reports a discrepancy or a specific purchase (mentions date, quantity, or price) that doesn't match holdings data, run **A14** checklist first. Only proceed with self-resolution guidance if A14 confirms stocks were NOT bought on Zerodha.
+If client reports a discrepancy or a specific purchase (mentions date, quantity, or price) that doesn't match holdings data, run **A13** checklist first. Only proceed with self-resolution guidance if A13 confirms stocks were NOT bought on Zerodha.
 
 **If client confirms shares were received via Zerodha gift transfer:**
 
 1. Check `console_eq_external_trades` for `external_trade_type` = gift.
-2. If entry found → respond per **A13-R33**.
+2. If entry found → inform client that gift shares have been recorded in the system at the closing price on the transfer date (per **A9**). No further action needed from the client. Buy average will reflect once processed.
 3. If no entry found → escalate per **A12**. The system should have auto-posted this entry.
 
 **If client confirms shares were transferred from another broker / ESOP / off-market:**
 
 1. Check `console_eq_external_trades` for an existing entry for this ISIN.
-2. If entry exists AND still processing → respond per **A13-R6**.
+2. If entry exists AND still processing → inform client that purchase details have been recorded and buy average will update within 24 hours (per **A4**).
 3. If entry exists AND processed but discrepancy not resolved → route to Console Eq External Trades protocol Rule 2 for post-entry diagnostics.
-4. If no entry exists → respond per **A13-R3** + **A13-R4**.
+4. If no entry exists → guide client through the discrepancy self-resolution path (per **A8**) including entry rules.
 
 **If the client states they have already added external trade details:**
 
 1. Check `console_eq_external_trades` for the entry before guiding them to add it again.
 2. If the entry exists → route to Console Eq External Trades protocol Rule 2 for post-entry diagnostics.
-3. If no entry exists → respond per **A13-R3** + **A13-R4**.
+3. If no entry exists → guide client through the discrepancy self-resolution path (per **A8**) including entry rules.
 
 **If the instrument is an NCD or bond transferred from another broker:**
 
-1. Check `discrepant` field. If > 0, guide the client through the standard discrepancy self-resolution path per **A8**. Respond per **A13-R36**.
+1. Check `discrepant` field. If > 0, guide the client through the standard discrepancy self-resolution path per **A8**. Note: NCDs do not display their current market value on Kite because they are debt instruments that trade infrequently and lack continuous market pricing. The invested value will reflect correctly once the client updates purchase details. Share links: https://support.zerodha.com/category/console/portfolio/articles/i-see-a-few-holdings-under-the-discrepancy-tab-what-does-it-mean and https://support.zerodha.com/category/console/portfolio/articles/how-do-i-add-external-trades-on-console
 
-**If client says they don't have purchase details:** → respond per **A13-R5**.
+**If client says they don't have purchase details:** → advise client to obtain purchase details from their previous broker. Only the units are transferred — the purchase history is not carried over automatically (per **A8**).
 
 ---
 
 ### Rule 6 — Discrepancy (Cannot Resolve / Error)
 
 1. First check `console_eq_external_trades` — the entry may have been posted successfully despite the error.
-2. If entry found → respond per **A13-R6**.
+2. If entry found → inform client that purchase details have been recorded and buy average will update within 24 hours (per **A4**).
 3. If no entry found → check against **A8** cannot-resolve conditions. Before applying the unlisted/inactive exception, verify the stock's current exchange status by checking Kite holdings or instrument search. If the stock has since been listed, proceed with standard discrepancy resolution (Rule 5). Respond with the applicable reason:
    - Trading holiday → "Today is a trading holiday — you can add the entry on the next trading day."
    - Inactive/suspended stock (confirmed still inactive/suspended after verification) → "This stock is currently inactive/suspended on the exchange. However, it is still visible on Console (console.zerodha.com/portfolio/holdings) as Console shows all securities in your demat, including suspended and inactive ones. Once it becomes active on the exchange, you'll be able to resolve the discrepancy."
@@ -521,7 +404,7 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 
 1. Check `console_eq_external_trades` for a system-posted CA credit entry (external_trade_type = devolved or CA-related entry) for this ISIN.
 2. If CA credit entry found but not yet reflecting in holdings → "Your bonus shares of [tradingsymbol] have been processed and the credit entry is in our system. The holdings will update shortly — this can take up to 1 trading day to reflect."
-3. If no CA credit entry found AND shares yet to be credited → respond per **A13-R9**. Append **A13-R10** (P&L temporary drop).
+3. If no CA credit entry found AND shares yet to be credited → bonus shares are typically credited within T+2 days from the record date. They initially appear under a temporary ISIN and become tradeable after 4–5 days once the exchange grants trading approval. CDSL will send an SMS when credited (per **A4**, **A6**). Also note: the temporary drop in P&L is expected and will auto-correct once bonus shares are credited to the demat account.
 4. If more than 5 trading days since record date AND shares still not credited → escalate per **A12**.
 
 ---
@@ -530,91 +413,92 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 
 1. Use `total_quantity`, `available`, and `pending` from `console_eq_holdings` as the basis — do not derive quantity from recent trade history.
 2. Check `kite_holdings` to verify whether split shares have already been credited.
-3. If `kite_holdings` shows the full post-split quantity → respond per **A13-R11**.
-4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → respond per **A13-R12**.
+3. If `kite_holdings` shows the full post-split quantity → confirm the split shares have been credited. Share the available and total quantity. Note: buy average may take 2–3 working days to update, but client can sell in the meantime without P&L impact (per **A4**, **A6**).
+4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → inform client of the available and pending quantities. Shares are typically credited within T+2 days from the record date and become tradeable after 4–5 days once the exchange grants trading approval. CDSL will notify via SMS once credited (per **A4**, **A6**).
 5. If more than 5 trading days since record date AND split shares still not credited → escalate per **A12**.
 
 ---
 
 ### Rule 9 — Demerger (New Shares / Avg Update)
 
-1. Shares not credited → respond per **A13-R13**. Timeline per **A4**.
-2. Avg not updated → respond per **A13-R14**. Timeline per **A4**.
+1. Shares not credited → new entity's shares are typically credited within 30–45 days from the record date. CDSL will notify via SMS/email once credited (per **A4**, **A6**).
+2. Avg not updated → the buy average for both the original company and the new entity will be split based on the Cost of Acquisition (COA) ratio announced by the company. Once announced, Zerodha will update the buy average (per **A6**).
 3. If COA announced but avg still not updated after 3 weeks → escalate per **A12**.
 
 ---
 
 ### Rule 10 — Merger (Share Swap)
 
-1. Respond per **A13-R15**.
+1. Shares exchanged at the defined swap ratio. Old shares debited, new shares credited per ratio. If the swap ratio results in fractional shares, the cash equivalent will be credited to the client's primary bank account by the company-appointed trustee (per **A6**).
 
 ---
 
 ### Rule 11 — Holdings Not Visible / Qty Mismatch
 
 1. Apply Preflight step 2 first (cross-reference `console_eq_pseudo_holdings`).
-2. **If the stock was recently purchased (within last 90 days), check `console_eq_tradebook` for a subsequent sell trade for that instrument before concluding the shares are missing.** If a sell trade is found → respond per **A13-R34**. Do not proceed with further missing-holdings diagnostics.
+2. **If the stock was recently purchased (within last 90 days), check `console_eq_tradebook` for a subsequent sell trade for that instrument before concluding the shares are missing.** If a sell trade is found → inform client that the shares were sold, share the trade date, quantity, and price per share. The sale proceeds have been credited to their account — this is why the shares no longer appear in holdings. Do not proceed with further missing-holdings diagnostics.
 3. Additionally check each quantity field and respond accordingly:
-   - `t1` > 0 → respond per **A13-R17**.
+   - `t1` > 0 → shares were purchased yesterday and are currently in T+1 settlement. They will move to the available balance by end of today and be visible in regular holdings from the next trading day (per **A3**, **A4**).
    - `pending` > 0 → "You have [pending] shares yet to be credited from a corporate action. These will be credited once processed." Timeline per **A4** (bonus credit).
    - `margin` > 0 → "[margin] shares are pledged as collateral. They are in your demat account but blocked for margin. They appear under the margin/pledged section."
    - `loan` > 0 → "[loan] shares are under stock lending or pledged outside Zerodha."
-   - All fields = 0 and stock not found → respond per **A13-R32**.
+   - All fields = 0 and stock not found → stock does not appear in holdings. Ask client to confirm the tradingsymbol or ISIN, and whether the purchase has settled (shares appear from T+1 day onwards).
 
 ---
 
 ### Rule 12 — Investment Value Mismatch
 
-1. Respond per **A13-R16**.
+1. Explain: invested value = buy_average × total_quantity. Share the current values from the tool data (per **A1**).
 2. Common causes:
    - Recent CA → average adjustment in progress (per **A4**).
-   - `discrepant` > 0 → invested value inaccurate until purchase details added. This applies to all instrument types including NCDs and bonds (per **A8**). If the instrument was transferred from another broker, guide the client through the discrepancy self-resolution path. For NCDs specifically, respond per **A13-R36**.
+   - `discrepant` > 0 → invested value inaccurate until purchase details added. This applies to all instrument types including NCDs and bonds (per **A8**). If the instrument was transferred from another broker, guide the client through the discrepancy self-resolution path. For NCDs specifically: NCDs do not display current market value on Kite (illiquid instruments), but invested value will reflect correctly once purchase details are updated. Share the discrepancy resolution links from Rule 5 NCD section.
    - "Ensure you're comparing equity holdings only — Console dashboard may include mutual fund values separately."
 
 ---
 
 ### Rule 13 — Pledged Qty in Holdings
 
-1. Respond per **A13-R25**.
-2. If client asks about selling pledged shares → respond per **A13-R26**.
-3. If client reports collateral reduced after selling → respond per **A13-R27**.
+1. The `margin` shares are pledged as collateral for trading margin. They remain in the client's demat account — they are not moved elsewhere (per **A10**).
+2. If client asks about selling pledged shares → can sell directly using a CNC sell order on Kite without placing an unpledge request. Collateral margin will reduce by the value of shares sold (per **A10**).
+3. If client reports collateral reduced after selling → this is a temporary reduction. When selling free (unpledged) shares of a stock that also has pledged quantities, the collateral temporarily reduces because the system considers pledged shares first. This is restored automatically the next trading day after the end-of-day process — no action needed (per **A10**).
 
 ---
 
-### Rule 14 — Dividend Queries
+### Rule 14 — Dividend & Debt Instrument Interest Queries
 
-1. Dividend not received → respond per **A13-R22**. RTA details per **A7**.
-2. Dividend amount less than expected → respond per **A13-R23**.
-3. Dividend tracking → respond per **A13-R24**.
+1. Dividend not received → dividends are credited to the primary bank account (not trading account), 30–45 days after ex/record date. Contact company's RTA — Zerodha does not process dividend payments. RTA lookup per **A7**.
+2. Dividend amount less than expected → companies deduct TDS before crediting. TDS rules per **A7**.
+3. Dividend tracking → Kite: Portfolio → select stock → View dividends. Console: Reports → Downloads → Dividend statement (per **A7**).
+4. G-Sec, NCD, or bond interest query → interest is credited by RBI/paying agent directly to primary bank account, not through Zerodha. Details per **A7** debt instrument interest section.
 
 ---
 
 ### Rule 15 — Corporate Action Eligibility
 
-1. General eligibility → respond per **A13-R18**. Rules per **A6** eligibility.
-2. Sold on ex-date → respond per **A13-R19**.
-3. Pledged shares → respond per **A13-R20**. Buyback exception per **A10**.
-4. Bought before ex-date but no CA benefit → respond per **A13-R21**.
+1. General eligibility → must hold shares in demat on ex-date/record date. Buy at least 1 trading day before ex-date due to T+1 settlement (per **A6** eligibility).
+2. Sold on ex-date → still eligible. Shares are debited from demat on T+1 day. Since client held them on the ex-date, they qualify (per **A6** eligibility).
+3. Pledged shares → eligible for all corporate action benefits. However, for buyback tendering, shares must be unpledged first (per **A6**, **A10**).
+4. Bought before ex-date but no CA benefit → in rare cases, a settlement holiday falling on the ex-date or a short delivery by the seller can delay or prevent share credit to demat by the record date, affecting eligibility despite a timely purchase (per **A6** eligibility, **A6** short delivery).
+5. If client asks what short delivery means or reports missing shares due to short delivery → explain per **A6** short delivery section.
 
 ---
 
 ### Rule 16 — T1 / Settlement Queries
 
-1. If `t1` > 0 → respond per **A13-R17**.
+1. If `t1` > 0 → shares were purchased yesterday and are currently in T+1 settlement. They will move to the available balance by end of today and be visible in regular holdings from the next trading day (per **A3**, **A4**).
 
 ---
 
 ### Rule 17 — Gift / Off-Market Transfer (P&L / Avg)
 
-1. **Gift in** (received via gift, asks about avg or P&L) → respond per **A13-R28**. Price rules per **A9**.
-2. **Off-market transfer in** (asks about avg or P&L) → respond per **A13-R29**. Resolution path per **A8**.
-3. **Gift out** → respond per **A13-R30**. Rules per **A9**.
-4. **Off-market transfer out** → respond per **A13-R31**. Rules per **A9**.
+1. **Gift in** (received via gift, asks about avg or P&L) → entry price = closing price on transfer date (per **A9**). Client can update via discrepancy resolution flow on Console if they need the actual acquisition cost. For income tax returns, may need to manually adjust Tax P&L — advise consulting a CA (per **A9**).
+2. **Off-market transfer in** (asks about avg or P&L) → no automatic buy price assigned. Client must manually add purchase details via the discrepancy resolution flow on Console (per **A8**, **A9**).
+3. **Gift out** → Zerodha uses the gift transfer date as the exit date and the closing price on that date as the exit price. This reflects in P&L accordingly (per **A9**).
+4. **Off-market transfer out** → no automatic exit entry is posted since the transaction happens outside the platform. Client can either share transfer details for a reversal entry, or manually update their Tax P&L report while filing returns (per **A9**).
 
 ---
 
 ### Rule 18 — Fractional Unit Redemption (LIQUIDBEES)
 
-1. Fractional units of LIQUIDBEES cannot be sold on the secondary market. They can only be redeemed via off-market transfer to the AMC's demat account.
-2. Respond per **A13-R35**.
-3. If the client's account is dormant, include the Re-KYC reactivation requirement in the response (covered in **A13-R35**).
+1. Fractional units of LIQUIDBEES cannot be sold on the secondary market. They can only be redeemed by making an off-market transfer to the AMC's demat account via CDSL Easiest. Step-by-step process: https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units
+2. If the client's account is currently dormant due to inactivity for over 24 months, they will need to complete Re-KYC online to reactivate their account (24–48 working hours after IPV) before they can initiate the off-market transfer.

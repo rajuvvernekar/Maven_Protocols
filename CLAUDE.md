@@ -134,3 +134,42 @@ If feedback says "Maven should have checked [Tool B] instead of [Tool A]", consi
 - Use concise business rules (if/then format)
 - Don't repeat information already in `<facts>` inside business rules
 - Merge related rules rather than creating new ones
+
+### Protocol optimization (lean rewrite) rules
+
+**Architecture context:** Description = tool selection guide (LLM reads to pick the right tool). Protocol = business logic (loaded after tool is fetched). System prompt = always loaded, handles tone/voice/formatting/response structure. Protocols should tell the LLM **what facts to use and what logic to follow** — not what sentence to write.
+
+**What TO remove:**
+- Response template sections (A13/R1-R38 style) where each template restates facts already in the reference sections — the system prompt handles sentence formation
+- "respond per A13-RN" indirection in rules — replace with direct logic stating the key facts + `(per AX)` source reference
+- Structural boilerplate ("All rules reference these blocks as single sources of truth")
+- `Input: Client ID` lines — pre-injected in all tools, redundant
+- Generic instructions already covered by system prompt (e.g., "Any internal tool or system name → describe the outcome")
+
+**What to do with unique template content:**
+- If a template contains a fact not present in any reference section, move that fact to the appropriate reference section (e.g., R37 same-day sell FIFO → A5 buy average rules)
+- If a template contains compliance phrasing, a counter-intuitive distinction, or specific URLs → inline in the rule that uses it or add to the relevant reference section
+
+**What NEVER to remove or trim:**
+- Contextual qualifiers: "from holdings" in "Sell from holdings + buy back same day" — dropping qualifiers changes meaning
+- Examples with computational value: "(bought Monday → holdings Tuesday)" — LLM needs these for date computation
+- Precision terms: "primary bank" — never shorten to just "bank" (clients have primary + secondary)
+- Full labels: "Corporate action buy average adjustment" — don't abbreviate to "CA buy avg adjustment", minimal savings and risks confusion
+- Instructions on internal fields: "use for reasoning; communicate outcomes in plain language" — without this, LLM may silently skip info instead of translating it
+- "working hours" — never shorten to just "hours" when the distinction matters
+- Numbered steps in branching logic — don't collapse multi-step decisions into single sentences
+- Causal links: "before you can initiate the off-market transfer" explains WHY Re-KYC is needed
+
+**Before trimming any phrase, ask:** "Is this fact/qualifier/context stated elsewhere in the protocol? If not, keep it."
+
+**Structural decisions:**
+- Keep paragraph format with #### sub-headers for corporate actions (not tables) — LLM processes tokens not visual layout, sub-headers are easier to parse for lookup
+- Keep escalation template as a standalone section — rules reference it by section number
+- When renumbering sections after template deletion, update ALL rule references to match
+- Keep ASCII route format — don't change to markdown tables unless all protocols are migrated together
+
+**Workflow for lean rewrites:**
+1. Create before/after line-by-line comparison in `proposed_changes/`
+2. Wait for user review and confirmation
+3. On confirmation: apply to actual file, delete temp files, commit and push
+4. Do one tool at a time — never batch lean rewrites
