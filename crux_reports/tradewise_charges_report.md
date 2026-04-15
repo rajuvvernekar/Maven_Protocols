@@ -17,9 +17,6 @@ TRIGGER KEYWORDS: "tradewise charges", "trade charges", "charges breakdown", "br
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ### A1 — Report Fundamentals
 
@@ -102,9 +99,6 @@ Call `get_all_client_data` and resolve account type using the detection logic be
 
 **Collateral debit additional brokerage (all account types):** An additional ₹20 per executed F&O order applies when the client's cash collateral is negative and the cash shortfall exceeds ₹5,00,000. This stacks on top of the standard F&O brokerage — e.g., ₹20 base + ₹20 additional brokerage = ₹40 per order. Applies to all account types (Individual, Non-Individual, NRI). This additional brokerage is independent of DPC — delayed payment charges continue to apply separately on any end-of-day debit balance.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -157,9 +151,6 @@ Query relates to trade charges →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 10.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — Single Trade Charges Breakdown
 

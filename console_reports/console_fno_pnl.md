@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "F&O P&L", "FnO profit", "FnO loss", "futures P&L", "options P
 
 # CONSOLE FNO PNL PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -31,8 +28,6 @@ This tool looks up a client's realized F&O P&L per contract. It shows realized P
 
 **Segment selection is critical:** FO for equity F&O, CDS for currency, COM for commodities. Wrong segment = no results or incomplete data.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -44,7 +39,6 @@ This tool looks up a client's realized F&O P&L per contract. It shows realized P
 
 `client_id`
 
----
 
 ### A3 — Segment Mapping
 
@@ -54,15 +48,11 @@ This tool looks up a client's realized F&O P&L per contract. It shows realized P
 | CDS | Currency derivatives |
 | COM | Commodities |
 
----
 
 ### A4 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol, segment, date range, and specific discrepancy.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -97,9 +87,6 @@ Charges / brokerage / STT / MTM query                       → Rule 7
 
 If no route matches, investigate using the tool data and Section A references. If no root cause is found, escalate per **A4**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -107,7 +94,6 @@ If no route matches, investigate using the tool data and Section A references. I
 
 1. Your realized P&L for [tradingsymbol]: [quantity] contracts with buy value ₹[buy_value] (avg ₹[buy_average]) and sell value ₹[sell_value] (avg ₹[sell_average]), resulting in a [profit/loss] of ₹[realized_profit] ([realized_profit_percentage]%)..
 
----
 
 ### Rule 2 — Physical Delivery P&L
 
@@ -116,7 +102,6 @@ If no route matches, investigate using the tool data and Section A references. I
 To see your total P&L on this position, you need to combine the F&O P&L entry with the corresponding equity delivery P&L entry in `console_eq_pnl`.. Client needs to combine F&O P&L with equity delivery P&L in `console_eq_pnl`.
 2. If client reports double quantity in equity P&L after physical settlement → escalate per **A4**.
 
----
 
 ### Rule 3 — OTM Options Expired Worthless
 
@@ -124,13 +109,11 @@ To see your total P&L on this position, you need to combine the F&O P&L entry wi
    a. Long position (bought options) → Your [tradingsymbol] option expired out-of-the-money (OTM) and became worthless. The entire premium paid (₹[buy_value]) is reflected as a realized loss..
    b. Short position (sold options) → Your [tradingsymbol] option expired OTM. The full premium received (₹[sell_value]) is reflected as realized profit since the option expired worthless..
 
----
 
 ### Rule 4 — Asterisk (*) on P&L Entry
 
 1. The asterisk (*) mark indicates that the contract symbol was changed during the series due to a corporate action on the underlying stock (e.g., lot size change, symbol rename). The system closed the old contract and opened a new one with adjusted terms. This appears only on the adjustment day — subsequent days will show normally. Your P&L is calculated correctly across both contract versions..
 
----
 
 ### Rule 5 — Expired Contract Not in P&L
 
@@ -140,7 +123,6 @@ To see your total P&L on this position, you need to combine the F&O P&L entry wi
 2. If both correct and contract still missing → escalate per **A4** immediately with: client ID, tradingsymbol, expiry date, segment, date range used.
 3. Escalate directly 
 
----
 
 ### Rule 6 — Tax P&L vs Console F&O P&L
 
@@ -153,7 +135,6 @@ To see your total P&L on this position, you need to combine the F&O P&L entry wi
 For income tax filing, use the Tax P&L report..
 2. If client reports significant unexplained difference between F&O tab and tradewise exits tab → escalate per **A4**.
 
----
 
 ### Rule 7 — Charges and MTM Queries
 

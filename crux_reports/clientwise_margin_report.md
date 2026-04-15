@@ -26,11 +26,6 @@ TRIGGER KEYWORDS: "margin penalty", "short margin", "shortfall penalty", "peak m
 
 # CLIENTWISE MARGIN REPORT PROTOCOL
 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Report Fundamentals
 
@@ -156,9 +151,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, segment, date, report values, and the specific discrepancy or request.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -231,11 +223,6 @@ Query relates to margin penalty →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 18.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Upfront Penalty Calculation
 

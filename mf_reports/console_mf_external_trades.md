@@ -16,9 +16,6 @@ TRIGGER KEYWORDS: "transferred from Groww/Kuvera", "wrong buy average", "P&L inc
 
 # CONSOLE MF EXTERNAL TRADES PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ### A1 — Tool Purpose & Scope
 
@@ -69,8 +66,6 @@ Escalate to support agent when any of the following occur:
 
 Include in escalation: fund name, trade_date, quantity, price, trade_type, and the specific issue.
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. Fetch the external trades data for the client and relevant fund.
@@ -112,9 +107,6 @@ Query relates to MF external trades →
 
 If no root cause is identified after checking all relevant rules → escalate per **A7**.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — Discrepancy After Transfer
 

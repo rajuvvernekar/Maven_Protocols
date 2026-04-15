@@ -20,11 +20,6 @@ TRIGGER KEYWORDS: "quarterly settlement", "settlement", "when is settlement", "s
 
 # QS PAYOUT PROTOCOL
 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Settlement Fundamentals
 
@@ -106,9 +101,6 @@ Escalate when:
 - Bank rejection persists after client verifies bank details match.
 - Client provides bank statement showing no credit after QS completed status.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -157,11 +149,6 @@ Query relates to QS payout →
 
 If no matching scenario is found → escalate per **A10**.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Settlement Non-Negotiable
 

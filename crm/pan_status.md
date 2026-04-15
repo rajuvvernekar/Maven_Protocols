@@ -21,9 +21,6 @@ PREREQUISITE: Always run get_all_client_data FIRST to obtain client_name, pan, d
 
 # PAN STATUS PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -33,8 +30,6 @@ This tool checks **PAN verification status** — validity + name/DOB match acros
 
 Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -46,7 +41,6 @@ All raw field values: `pan_valid_status` | `name_match` | `dob_match` | `aadhaar
 
 All raw values are for internal decision-making only. Communicate the outcome and resolution steps, not the field values or status codes.
 
----
 
 ### A3 — PAN Validity Status
 
@@ -55,7 +49,6 @@ All raw values are for internal decision-making only. Communicate the outcome an
 | E | Valid | Proceed to check name/DOB match |
 | Any other value | Invalid / deactivated / blocked | Escalate immediately |
 
----
 
 ### A4 — Name / DOB Match Status
 
@@ -64,7 +57,6 @@ All raw values are for internal decision-making only. Communicate the outcome an
 | Y | Matches ITD records |
 | N | Mismatch — resolution required |
 
----
 
 ### A5 — Aadhaar-PAN Seeding Status
 
@@ -76,7 +68,6 @@ All raw values are for internal decision-making only. Communicate the outcome an
 
 All routing and action decisions in this protocol are driven by PAN validity (**A3**) and Name/DOB match (**A4**). Aadhaar-PAN seeding status is retained as informational context only.
 
----
 
 ### A6 — Name Change Categories & Process
 
@@ -92,7 +83,6 @@ All routing and action decisions in this protocol are driven by PAN validity (**
 
 **Offline fix:** Courier documents to Zerodha. Charges: ₹25 + GST. Updated within 72 working hours. Resolution may take up to 7 working days after documents received.
 
----
 
 ### A7 — Links
 
@@ -104,15 +94,11 @@ All routing and action decisions in this protocol are driven by PAN validity (**
 
 **Courier address:** Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
 
----
 
 ### A8 — Escalation Data Template
 
 When escalating, always include: **client ID, PAN, and specific issue (invalid PAN, persistent mismatch, etc.).**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -153,9 +139,6 @@ Single ledger activation error (name/DOB mismatch)          → Rule 4
 
 If the client still faces issues despite all-clear PAN status, check `get_all_client_data` for other remarks or blocks. If no root cause found, escalate per **A8**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -182,7 +165,6 @@ For an online fix, visit account.zerodha.com and complete the re-KYC process (Aa
 
 Please note: It may take up to 7 working days after documents are received for the update to take effect. Transactions will be enabled once records are updated.. Name change options per **A6**. Links per **A7**.
 
----
 
 ### Rule 2 — Name and DOB Both Match
 
@@ -190,14 +172,12 @@ Please note: It may take up to 7 working days after documents are received for t
 2. Your PAN verification is successful — your name and date of birth match the Income Tax Department records..
 3. If client still faces issues (segment rejection, block) → check `get_all_client_data` for other remarks or blocks.
 
----
 
 ### Rule 3 — Minor Account PAN Verification Failed
 
 1. Query is about minor account opening + PAN verification failed.
 2. The minor's PAN verification has failed. This means the PAN number or date of birth entered does not match the Income Tax Department records. Please verify the minor's PAN details and date of birth on the ITD portal at incometax.gov.in, and retry. If the PAN was recently issued, it may take a few days to reflect in the ITD database..
 
----
 
 ### Rule 4 — Single Ledger Activation Error
 

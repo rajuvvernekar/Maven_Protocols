@@ -19,11 +19,6 @@ TRIGGER KEYWORDS: "gift stock", "gift request", "gift status", "gift failed", "g
 ## Protocol
 
 # STOCK GIFT REQUESTS PROTOCOL
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Gift Fundamentals
 
@@ -97,9 +92,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID (sender/receiver), creation date, status, items, and the specific issue.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -153,11 +145,6 @@ Query relates to stock gift →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 10.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Gift Status Check
 

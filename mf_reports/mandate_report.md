@@ -16,11 +16,6 @@ TRIGGER KEYWORDS: "mandate status", "mandate pending", "mandate failed", "eNACH"
 
 # MANDATE REPORT PROTOCOL
 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Tool Purpose & Scope
 
@@ -86,8 +81,6 @@ Suppress (no client use, only internal reasoning use): client_id, umrn, merchant
 | Debit attempts and status | mandate_debit_report |
 | Mandate deletion process (unlink SIPs first) | Mandate Debit Report protocol — A5 |
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. **Tool routing check:** Determine if this is an MF/Coin mandate or Console/equity mandate per **A3**. If Console/equity → route to Console eMandate report.
@@ -124,11 +117,6 @@ Query relates to MF/Coin mandate →
 
 If mandate status doesn't match any expected value or activation is stuck beyond expected timelines → escalate with mandate type, time_created, and current status.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Activation Status
 

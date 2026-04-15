@@ -16,9 +16,6 @@ TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted fro
 
 # MANDATE DEBIT REPORT PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ### A1 — Tool Purpose & Scope
 
@@ -79,8 +76,6 @@ Zerodha does not charge for Coin mandate registrations at present. However, the 
 
 Reference: [What are the charges for Coin mandates?](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/charges-for-coin-mandates)
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. Fetch the mandate debit report for the client and relevant SIP/date.
@@ -125,9 +120,6 @@ Query relates to mandate debit →
 
 If no debit record exists and SIP-level checks are inconclusive → advise manual order (after AMC SIP check per **A3**) and escalate if issue persists.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — Debit Not Initiated
 
@@ -177,5 +169,4 @@ Otherwise, check `sip_type` per **A3** before responding.
 3. Respond: "Zerodha does not charge for Coin mandate registrations at present. However, your bank may charge penalties for failed transactions due to insufficient funds and mandate verification charges. For details on the specific charges, please check with your bank." Share link from **A7**.
 
 
----
 ---

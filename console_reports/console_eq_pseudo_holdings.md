@@ -20,9 +20,6 @@ TRIGGER KEYWORDS: "quantity mismatch", "Kite shows different", "Console shows di
 
 # CONSOLE EQ PSEUDO HOLDINGS PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -30,8 +27,6 @@ TRIGGER KEYWORDS: "quantity mismatch", "Kite shows different", "Console shows di
 
 This tool looks up a client's SOT-based (Statement of Transaction) equity holdings — an independent source of truth separate from the tradebook-backed `console_eq_holdings`. It is primarily used for **cross-validation** of holdings quantities. The two systems should match; discrepancies indicate data issues requiring investigation.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -53,7 +48,6 @@ This tool looks up a client's SOT-based (Statement of Transaction) equity holdin
 | pending | "being processed for credit" or "yet to be credited" |
 | Any internal tool or system name | (describe the outcome, not the tool) |
 
----
 
 ### A3 — Cross-Validation Logic Summary
 
@@ -66,21 +60,16 @@ This tool looks up a client's SOT-based (Statement of Transaction) equity holdin
 | Pseudo shows zero/no record but Holdings shows active | Possible transferred-out without reversal | Escalate with full holdings list |
 | Tradingsymbol mismatch between tools | NSE vs BSE naming, post-CA rename, or temp ISIN | Compare by ISIN, not tradingsymbol |
 
----
 
 ### A4 — Discrepancy Resolution Path
 
 Shares with `discrepant` > 0 follow the same resolution as `console_eq_holdings` — shares received via transfer, gift, IPO, ESOP, or CA rearrangement without matching tradebook entry. Guide client to: **Console → Portfolio → Holdings → View discrepancy → Add trade.** Refer to `console_eq_holdings` protocol Rule 5 for detailed instructions.
 
----
 
 ### A5 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol(s), ISIN(s), qty from each tool (pseudo_holdings and console_eq_holdings), and screenshots if available.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -119,9 +108,6 @@ Safekeep / frozen shares (CDSL statement mismatch)          → Rule 10
 
 If no route matches, cross-reference with `console_eq_holdings` and `console_eq_external_trades` for additional context. If no root cause is found, escalate per **A5**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -131,7 +117,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 2. Quantity is correct across both systems.
 3. If client still reports a display issue → Your holdings quantity of [available] shares of [tradingsymbol] is confirmed correct in our records. Please try logging out and back in, clearing your browser cache, or using a different browser/device..
 
----
 
 ### Rule 2 — Qty Validation: Mismatch Found
 
@@ -140,7 +125,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 3. We've identified a discrepancy in your [tradingsymbol] holdings and have raised this for investigation. Our team will review and update your holdings. You'll be notified once resolved.. Do not tell the client "there is a system mismatch."
 4. Escalate per **A5** with qty from each tool.
 
----
 
 ### Rule 3 — Stock in Holdings but Not in Pseudo
 
@@ -150,7 +134,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
    c. Neither a nor b → possible sync issue or tradingsymbol name difference. Check if same ISIN exists under a different tradingsymbol in pseudo_holdings (e.g., company renamed, NSE vs BSE symbol per **A3**).
    d. If no match on ISIN → Escalate per **A5**.
 
----
 
 ### Rule 4 — Stock in Pseudo but Not in Holdings
 
@@ -161,7 +144,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 2. We can see your [tradingsymbol] shares in our records. They may be awaiting system processing. We're investigating and will update you..
 3. If no clear cause → Escalate per **A5**.
 
----
 
 ### Rule 5 — Pseudo Shows Zero but Holdings Shows Active
 
@@ -169,7 +151,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 2. Possible transferred-out shares without reversal entry in Console.
 3. Escalate per **A5** with: client ID, full list of holdings showing in `console_eq_holdings`, note that pseudo_holdings shows zero.
 
----
 
 ### Rule 6 — Tradingsymbol Name Mismatch
 
@@ -180,7 +161,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 2. If ISIN matches across tools → same stock, name difference only.
 3. If ISIN not found in either tool → Escalate per **A5**.
 
----
 
 ### Rule 7 — Stock Split (Qty / Price Query)
 
@@ -190,7 +170,6 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 4. If `kite_holdings` does not show the full post-split quantity AND Console shows shares still being processed → For split share responses, use the templates from `console_eq_holdings` protocol (**A13-R11** for credited, **A13-R12** for still processing). (processing template).
 5. If more than 5 trading days since record date AND split shares still not credited → Escalate per **A5**.
 
----
 
 ### Rule 8 — Discrepant Qty in Pseudo Holdings
 
@@ -198,14 +177,12 @@ If no route matches, cross-reference with `console_eq_holdings` and `console_eq_
 2. Same logic as `console_eq_holdings` discrepancy — guide client to self-resolution path per **A4**.
 3. Refer to `console_eq_holdings` protocol Rule 5 for detailed discrepancy resolution instructions.
 
----
 
 ### Rule 9 — Transfer-In with Overlapping T1
 
 1. Transfer credit date = T1 purchase date for same stock AND discrepant qty appears partial.
 2. When shares are transferred on the same date as a purchase, the discrepancy quantity may appear partial until the T1 shares settle. The full transferred quantity will show correctly after settlement (next trading day)..
 
----
 
 ### Rule 10 — Safekeep / Frozen Shares
 

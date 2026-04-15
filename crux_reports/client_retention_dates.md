@@ -18,11 +18,6 @@ TRIGGER KEYWORDS: "quarterly settlement breakdown", "settlement payout details",
 
 # CLIENT RETENTION DATES PROTOCOL
 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Settlement Fundamentals
 
@@ -69,9 +64,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -115,11 +107,6 @@ Query relates to QS payout / client retention →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 7.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — QS Payout Breakdown
 

@@ -27,9 +27,6 @@ TRIGGER KEYWORDS: "GTT", "good till triggered", "trigger order", "GTT triggered"
 
 # KITE GTT PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -50,8 +47,6 @@ GTT triggers based on ticks recorded by the system — if a tick is not captured
 Max 500 active GTTs per account. Notifications: email + Kite push notification on trigger and order placement.
 
 
----
-
 ### A2 — Field Usage Rules
 
 **Shareable fields:**
@@ -70,7 +65,6 @@ Max 500 active GTTs per account. Notifications: email + Kite push notification o
 | `exchange` | (omit — internal routing) |
 | `expires_at` | Describe as "valid for 1 year" (equity) or "until contract expiry" (F&O) |
 
----
 
 ### A3 — Status Values
 
@@ -83,7 +77,6 @@ Max 500 active GTTs per account. Notifications: email + Kite push notification o
 | Disabled | Trigger set too close to LTP (< 0.25% for stocks > ₹50), or CA like bonus/stock split affected instrument |
 | Deleted | Removed by user |
 
----
 
 ### A4 — Trigger Distance Rules
 
@@ -92,7 +85,6 @@ Max 500 active GTTs per account. Notifications: email + Kite push notification o
 | Above ₹50 | At least 0.25% away from LTP |
 | Below ₹50 | At least 9 paise away from LTP |
 
----
 
 ### A5 — Buy GTT Rejections
 
@@ -104,7 +96,6 @@ Max 500 active GTTs per account. Notifications: email + Kite push notification o
 | Contract not allowed | F&O contract not allowed by Zerodha at trigger time |
 | Segment killed | Segment disabled via Kill Switch at trigger time |
 
----
 
 ### A6 — Sell GTT Rejections
 
@@ -115,7 +106,6 @@ Max 500 active GTTs per account. Notifications: email + Kite push notification o
 | Series change | Instrument underwent series change or suspension |
 | Segment killed | Segment disabled via Kill Switch |
 
----
 
 ### A7 — F&O GTT Rules
 
@@ -129,7 +119,6 @@ Max 500 active GTTs per account. Notifications: email + Kite push notification o
 | Currency | GTT not available for Currency segment |
 | OCO restriction | Buy OCO available only for F&O. NRML only for index F&O OCO. |
 
----
 
 ### A8 — Links
 
@@ -139,15 +128,11 @@ Max 500 active GTTs per account. Notifications: email + Kite push notification o
 | Generate CDSL TPIN | support.zerodha.com — How to generate CDSL TPIN |
 | Activate DDPI | support.zerodha.com — How to activate DDPI |
 
----
 
 ### A9 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol, GTT type, status, trigger values, and specific issue.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -187,9 +172,6 @@ GTT stoploss prompt (index options)                         → Rule 11
 
 If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A9**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -199,7 +181,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. Route by status: active → Rule 2, triggered → Rule 3, cancelled → Rule 5, expired → Rule 6, disabled → Rule 7, deleted → This GTT was deleted from your account [on updated_at]..
 3. If GTT not found → invoke `kite_gtt_archived`.
 
----
 
 ### Rule 2 — Status: Active
 
@@ -207,7 +188,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. If client asks when it will trigger → Your GTT will trigger when the LTP of [tradingsymbol] hits or breaches ₹[trigger_values]. Once triggered, a [order_type] order at ₹[price] will be placed on the exchange..
 3. If OCO → Your OCO GTT has two triggers — stoploss at ₹[lower_trigger] and target at ₹[upper_trigger]. When one triggers, the other is automatically cancelled..
 
----
 
 ### Rule 3 — Status: Triggered
 
@@ -219,7 +199,6 @@ If no route matches, investigate using Section A reference data. If no root caus
       - Cancelled after market hours → Your GTT for [tradingsymbol] triggered on [trigger date] and an order was placed, but it wasn't filled by end of day. Triggered GTT orders become limit orders with DAY validity — if unfilled, the exchange cancels them at session end. You'll need to create a new GTT. (EOD unfilled).
 2. If triggered GTT not visible in order book → Once triggered, the GTT order is a regular limit order with DAY validity. If it wasn't filled, the exchange cancelled it at end of day. From the next day, it won't appear in the order book. Check your email for the trigger and order details..
 
----
 
 ### Rule 4 — Price Reached but GTT Didn't Fire
 
@@ -229,7 +208,6 @@ If no route matches, investigate using Section A reference data. If no root caus
    - GTT was modified — check `updated_at` to confirm latest trigger value.
    - GTT was disabled due to CA or trigger too close to LTP.
 
----
 
 ### Rule 5 — Status: Cancelled
 
@@ -239,26 +217,22 @@ If no route matches, investigate using Section A reference data. If no root caus
    b. F&O CA or lot size change → **A10-R16**.
    c. Extraordinary CA (dividend >2%, rights, consolidation, capital reduction) → **A10-R17**.
 
----
 
 ### Rule 6 — Status: Expired
 
 1. Equity → Your GTT expired because it wasn't triggered within 1 year of creation (created on [created_at]). Create a new GTT if needed..
 2. F&O → Your GTT expired because the F&O contract expired. GTTs for derivatives are valid only until contract expiry..
 
----
 
 ### Rule 7 — Status: Disabled
 
 1. Your GTT was disabled because the trigger price was set too close to LTP (less than 0.25% for stocks above ₹50, or less than 9 paise for stocks below ₹50) after validation, or the instrument underwent a corporate action like a bonus issue or stock split. You'll need to create a new GTT with a valid trigger price.. Trigger distance rules per **A4**.
 
----
 
 ### Rule 8 — GTT Email Price Mismatch
 
 1. The price in the email is the actual LTP at the moment the GTT triggered — not your trigger price. Due to market volatility or gaps (opening gap up/down), the LTP at trigger time may be higher or lower than your set trigger price. Example: if you set a sell trigger at ₹95 but the stock opened at ₹90 (gap down), the trigger fires at ₹90 and the email shows ₹90..
 
----
 
 ### Rule 9 — F&O GTT Specifics
 
@@ -270,7 +244,6 @@ If no route matches, investigate using Section A reference data. If no root caus
    - Currency: GTT not available.
    - OCO restriction: buy OCO for F&O only, NRML for index F&O OCO.
 
----
 
 ### Rule 10 — GTT Creation Errors
 
@@ -278,7 +251,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. No LTP (illiquid) → GTTs require an LTP to validate the trigger. If the instrument has no LTP due to illiquidity, GTT creation is not possible..
 3. Max 500 active GTTs reached → You can have a maximum of 500 active GTTs. Delete existing GTTs to create new ones..
 
----
 
 ### Rule 11 — GTT Stoploss Prompt (Index Options)
 

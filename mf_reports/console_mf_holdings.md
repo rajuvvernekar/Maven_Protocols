@@ -18,9 +18,6 @@ TRIGGER KEYWORDS: "available units", "demat holdings", "units for redemption", "
 
 # CONSOLE MF HOLDINGS PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ### A1 — Tool Purpose & Scope
 
@@ -83,8 +80,6 @@ Reference: [Why does Console show a different MF NAV?](https://support.zerodha.c
 | Buy average correction / external trade entries | console_mf_external_trades |
 | Pure ETF holdings | Kite equity holdings |
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. Determine if this tool is needed: check if the query requires `available`, `holdings_date`, or `total_quantity`. If not → route to console_mf_pseudo_holdings per **A5**.
@@ -128,9 +123,6 @@ Query relates to MF holdings →
 
 If query doesn't match any rule and doesn't require this tool's specific fields → route to console_mf_pseudo_holdings per **A5**.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — Units Available for Redemption/SWP
 
@@ -171,5 +163,4 @@ If query doesn't match any rule and doesn't require this tool's specific fields 
 2. Share link from **A3**.
 
 
----
 ---

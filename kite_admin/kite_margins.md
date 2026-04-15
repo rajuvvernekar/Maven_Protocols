@@ -31,9 +31,6 @@ TRIGGER KEYWORDS: "available margin", "available cash", "opening balance", "used
 
 # KITE MARGINS PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -45,8 +42,6 @@ Available Cash on Kite is rounded to 1 decimal place for display; the full amoun
 
 Positions P&L uses entry price; Funds page uses last MTM settlement price → may differ intraday. Overall P&L will be the same once positions are closed.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -60,7 +55,6 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price → ma
 
 Always use ₹ formatting for amounts.
 
----
 
 ### A3 — Field Definitions
 
@@ -84,7 +78,6 @@ Always use ₹ formatting for amounts.
 | M2M Realised | Realised MTM P&L from closed F&O positions |
 | M2M Unrealised | Unrealised MTM P&L from open F&O positions (internal use only) |
 
----
 
 ### A4 — Customer Language → Field Mapping
 
@@ -101,7 +94,6 @@ Always use ₹ formatting for amounts.
 | "payout" / "withdrawal" | `payout` |
 | "MTM" / "M2M" | `m2m_realised` (internal only for unrealised) |
 
----
 
 ### A5 — Negative Balance Rules
 
@@ -111,7 +103,6 @@ Always use ₹ formatting for amounts.
 | Negative balance + F&O orders | Brokerage: ₹40 per executed F&O order (instead of ₹20) |
 | No funds added | Positions may be squared off without notice |
 
----
 
 ### A6 — Collateral Rules
 
@@ -123,7 +114,6 @@ Always use ₹ formatting for amounts.
 | Usable for | Equity intraday, futures, options buying and writing |
 | Not usable for | Equity delivery (CNC) purchases — cash or cash-equivalent margin is required for delivery buys |
 
----
 
 ### A7 — Margin Call Rules
 
@@ -135,7 +125,6 @@ Always use ₹ formatting for amounts.
 
 CC takes 4 random margin snapshots/day; peak used for shortfall calculation. Shortfall can occur even after closing positions if a snapshot was already captured.
 
----
 
 ### A8 — Settlement & Availability
 
@@ -145,7 +134,6 @@ CC takes 4 random margin snapshots/day; peak used for shortfall calculation. Sho
 | Sale proceeds from holdings | 100% available same day (effective Oct 7, 2024) |
 | Unsettled funds | Pending T+1 settlement — cannot withdraw until complete |
 
----
 
 ### A9 — Links
 
@@ -158,13 +146,11 @@ CC takes 4 random margin snapshots/day; peak used for shortfall calculation. Sho
 | Verify commodity collateral | clientreports.mcxccl.com |
 | Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
 
----
 
 ### A10 — Escalation Data Template
 
 When escalating, always include: **client ID, current margin values, and specific issue.**
 
----
 
 ### A11 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
 
@@ -182,9 +168,6 @@ This margin is blocked progressively for ITM stock options and futures positions
 
 **Reference:** [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -231,9 +214,6 @@ Balance negative due to physical delivery margin near expiry → Rule 19
 
 If no route matches, explain from **A3** field definitions. If no root cause is found, escalate per **A10**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -242,7 +222,6 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 1. Map customer language to field using **A4**.
 2. Explain using **A3** definitions.
 
----
 
 ### Rule 2 — Balance Inquiry
 
@@ -251,28 +230,24 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 3. If `used_margin` is negative → also explain per **A11-R2**.
 4. If client asks why margin is blocked or about a specific order → invoke `kite_orders`.
 
----
 
 ### Rule 3 — Profit Not Showing in Balance
 
 1. Intraday and F&O profits are available only after T+1 settlement (next trading day). Your current available margin of ₹[available_margin] does not include today's unsettled profits. These will reflect in your opening balance on the next trading day. If the next day is a settlement holiday, it takes an additional day.. Settlement per **A8**.
 2. If client asks about specific position P&L → invoke `kite_positions`.
 
----
 
 ### Rule 4 — Negative Available Cash
 
 1. `available_cash` < 0 → Your available cash is ₹[available_cash]. A negative cash balance attracts interest at 0.05% per day (18% p.a.). Please add funds to clear the negative balance. If no funds are added, open positions may be squared off.. Interest/consequences per **A5**.
 2. If client has ITM stock option positions approaching expiry → check whether physical delivery margin is the cause. Invoke `ledger_report` and check remarks for "Physical delivery margin blocked for long options in NSE F&O". If found → Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. This margin increases progressively as expiry approaches (schedule per **A11**). To confirm, invoke `ledger_report` and check remarks for 'Physical delivery margin blocked for long options in NSE F&O' with the corresponding debit entry. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement) with the margin schedule from **A11**. If not found → continue with standard negative cash handling.
 
----
 
 ### Rule 5 — Used Margin Negative
 
 1. Your used margin shows ₹[used_margin] (negative) because you have received credit from selling holdings or closing long option positions today. This credit is included in your available margin..
 2. If client asks which holdings were sold → invoke `kite_holdings`.
 
----
 
 ### Rule 6 — Collateral Query
 
@@ -280,7 +255,6 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 2. Verification links per **A9** (equity collateral, commodity collateral).
 3. Approved list and haircuts per **A9** (approved securities).
 
----
 
 ### Rule 7 — Margin Call / Shortfall
 
@@ -292,19 +266,16 @@ If no route matches, explain from **A3** field definitions. If no root cause is 
 Note: The Clearing Corporation takes 4 random margin snapshots during the day. The peak requirement is used — so a shortfall can occur even after closing positions if a snapshot was already captured.. Timing per **A7**.
 2. If client asks which positions caused shortfall → invoke `kite_positions`.
 
----
 
 ### Rule 8 — Shortfall After Closing Positions
 
 1. The Clearing Corporation captures 4 random margin snapshots during the day and uses the peak margin requirement. Even if you've closed your positions, a shortfall can occur if a snapshot was already captured when your margin was at its peak. Please add the shortfall amount mentioned in the email by 11:59 PM today to avoid a margin penalty.. Snapshot logic per **A7**.
 
----
 
 ### Rule 9 — Option Premium Field
 
 1. The option premium field shows: positive (+ve) = premium received from selling/writing options; negative (−ve) = premium paid for buying options. This amount is included in your available cash and shown separately for visibility..
 
----
 
 ### Rule 10 — SPAN / Exposure / Delivery Margin
 
@@ -313,46 +284,39 @@ Note: The Clearing Corporation takes 4 random margin snapshots during the day. T
 3. If client asks which position is blocking margin → invoke `kite_positions`.
 4. If client asks about a specific order's margin requirement → invoke `kite_orders`.
 
----
 
 ### Rule 11 — Payin / Payout Query
 
 1. Share: `payin` (₹), `payout` (₹). Payin = funds added today. Payout = funds withdrawn today. Weekend payins appear on Monday..
 
----
 
 ### Rule 12 — P&L Mismatch (Positions vs Funds)
 
 1. Kite positions calculates P&L based on your original entry price. The funds page uses the last Mark to Market (MTM) settlement price for open futures and short options positions. The overall P&L will be the same once positions are closed, but intraday values may differ due to this MTM adjustment.. Share `m2m_realised`.
 2. If client wants position-level breakdown → invoke `kite_positions`.
 
----
 
 ### Rule 13 — Opening Balance Mismatch
 
 1. Your opening balance of ₹[opening_balance] is the previous day's closing balance after reversing any blocked margin. Differences may occur due to: settlement of previous day's trades (T+1), MTM settlement on open F&O positions, charges/brokerage deducted, or settlement holiday delays..
 2. If client asks about specific charges or ledger entries → invoke `ledger_report`.
 
----
 
 ### Rule 14 — Sale Proceeds Availability
 
 1. As of October 7, 2024, 100% of the proceeds from selling your holdings are available on the same day for all trades, including stocks and F&O positions.. Per **A8**.
 2. If client asks about specific holdings sold → invoke `kite_holdings`.
 
----
 
 ### Rule 15 — Unsettled Funds
 
 1. Unsettled funds are credits you expect from profits or sold holdings that are pending T+1 settlement. You cannot withdraw these until settlement is complete. If T+1 falls on a settlement holiday, it takes an additional day.. Per **A8**.
 
----
 
 ### Rule 16 — Available Cash Rounding
 
 1. Available cash on Kite is rounded to 1 decimal place for display. For example, ₹1005.53 shows as ₹1005.5. The full amount is withdrawable..
 
----
 
 ### Rule 17 — Negative Balance After Market Order
 
@@ -360,14 +324,12 @@ Note: The Clearing Corporation takes 4 random margin snapshots during the day. T
 2. If client asks about the specific order → invoke `kite_orders`.
 3. If client asks about order history → invoke `kite_order_history`.
 
----
 
 ### Rule 18 — MTM Explanation
 
 1. Mark to Market (MTM) is the daily revaluation of open futures positions by the exchange at the closing price. Profits or losses are settled to your account daily. Short options don't undergo daily MTM. Instead, margin increases as they move in-the-money.. Share `m2m_realised`.
 2. If client asks about specific position MTM → invoke `kite_positions`.
 
----
 
 ### Rule 19 — Balance Negative Due to Physical Delivery Margin
 

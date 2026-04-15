@@ -19,11 +19,6 @@ TRIGGER KEYWORDS: "pledge history", "old pledge request", "unpledge history", "p
 ## Protocol
 
 # PLEDGE REQUEST REPORT PROTOCOL 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Tool Modes
 
@@ -121,9 +116,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, tradingsymbol, pledge_date, status, and the specific issue.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -174,11 +166,6 @@ Query relates to pledge/unpledge/collateral →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 9.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Historical Pledge/Unpledge Status
 

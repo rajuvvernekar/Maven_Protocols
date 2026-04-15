@@ -15,11 +15,6 @@ TRIGGER KEYWORDS: "contract note charges", "total charges", "aggregate charges",
 ## Protocol
 
 # CONTRACT NOTE CHARGES PROTOCOL 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Report Fundamentals
 
@@ -78,9 +73,6 @@ Escalate when:
 
 Include in escalation: client ID, date range, exchange, segment, and the specific discrepancy.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -118,11 +110,6 @@ Query relates to contract note charges →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 5.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Charges Summary
 

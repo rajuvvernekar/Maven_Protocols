@@ -20,11 +20,6 @@ TRIGGER KEYWORDS: "delayed payment charges", "DPC", "interest charges", "debit b
 
 # DELAYED PAYMENT CHARGES (DPC) PROTOCOL
 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — DPC Fundamentals
 
@@ -103,9 +98,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, date range, specific discrepancy (or client's stated reason for dispute), DPC report values, and interest amounts.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -157,11 +149,6 @@ Query relates to DPC / interest charges →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 10.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Debit Balance Interest Explanation
 

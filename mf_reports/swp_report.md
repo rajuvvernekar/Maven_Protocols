@@ -16,9 +16,6 @@ TRIGGER KEYWORDS: "SWP", "systematic withdrawal", "withdrawal plan", "SWP not tr
 
 # SWP REPORT PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ### A1 — SWP Fundamentals
 
@@ -65,8 +62,6 @@ Run these checks in order — complete all steps before concluding:
 | Pledged units (`margin`) | console_mf_pseudo_holdings |
 | Available units for redemption (`available`) | console_mf_holdings |
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. Fetch the SWP report for the client.
@@ -100,9 +95,6 @@ Query relates to SWP →
 
 If no root cause found after completing all diagnostic steps → suggest manual redemption and escalate if issue recurs.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — SWP Not Triggered: Sequential Diagnostic
 
@@ -129,5 +121,4 @@ If no root cause found after completing all diagnostic steps → suggest manual 
 2. Recommend DDPI: "To avoid this every cycle, we recommend enabling DDPI on your account — this allows automatic debit of units without requiring T-PIN authorization each time."
 
 
----
 ---

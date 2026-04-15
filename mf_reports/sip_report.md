@@ -17,9 +17,6 @@ TRIGGER KEYWORDS: "SIP", "SIP not triggered", "SIP cancelled", "SIP paused", "SI
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ### A1 — SIP Fundamentals
 
@@ -136,8 +133,6 @@ Escalate when:
 - SIP deletion failing for any SIP type → escalate to support agent immediately.
 - Any unresolvable SIP trigger issue after completing all diagnostic steps in **A5**.
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. Fetch the SIP report for the client.
@@ -181,9 +176,6 @@ Query relates to SIP →
 
 If no root cause is identified after completing all diagnostic steps → escalate per **A10**.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — SIP Not Triggered: Sequential Diagnostic
 

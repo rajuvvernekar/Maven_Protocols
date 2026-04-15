@@ -33,9 +33,6 @@ TRIGGER KEYWORDS: "position", "open position", "intraday", "MIS", "NRML", "carry
 
 # KITE POSITIONS PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -51,8 +48,6 @@ P&L in positions includes both realised (closed trades) and unrealised (open tra
 
 Zerodha does not square off for freak trades — unrealised loss lasts only a fraction of a second.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -71,7 +66,6 @@ Zerodha does not square off for freak trades — unrealised loss lasts only a fr
 | `ltp` | "current market price" |
 | `day_buy_*` / `day_sell_*` fields | (use for internal calculations; describe outcomes in plain language) |
 
----
 
 ### A3 — P&L Timing Rules
 
@@ -86,7 +80,6 @@ Settlement price = 0 for OTM options regardless of LTP — this is normal.
 
 Funds page uses MTM settlement price for futures/short options — will differ from positions P&L.
 
----
 
 ### A4 — Auto Square-Off
 
@@ -102,7 +95,6 @@ Funds page uses MTM settlement price for futures/short options — will differ f
 
 **Failure consequence:** MIS converts to CNC (equity) or NRML (F&O). Client responsible for closing. Zerodha may square off at discretion without margin call.
 
----
 
 ### A5 — Product Conversion Rules
 
@@ -114,7 +106,6 @@ Funds page uses MTM settlement price for futures/short options — will differ f
 | CO → anything | No | Cover Order positions cannot be converted. |
 | Agricultural commodity → MIS | No | Blocked 1 day before tender period (cardamom, mentha oil). |
 
----
 
 ### A6 — Expiry & Physical Settlement
 
@@ -142,7 +133,6 @@ This margin is blocked progressively for ITM stock options and futures positions
 
 **Reference:** [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement)
 
----
 
 ### A7 — Margin Shortfall & Penalty
 
@@ -154,7 +144,6 @@ This margin is blocked progressively for ITM stock options and futures positions
 
 **Snapshots:** 4 random intraday snapshots (all segments except commodity). 8 for commodity. Peak margin penalty if snapshot catches one leg open.
 
----
 
 ### A8 — Hedged Positions
 
@@ -162,7 +151,6 @@ This margin is blocked progressively for ITM stock options and futures positions
 - Hedged margin < unhedged margin. Closing low-risk leg increases margin requirement.
 - Order sequence matters: buy hedge first → lower margin. Sell/short first → full margin until hedge placed.
 
----
 
 ### A9 — Circuit Limit Impact on MIS
 
@@ -171,7 +159,6 @@ This margin is blocked progressively for ITM stock options and futures positions
 | MIS sell + upper circuit | Cannot buy back → converts to delivery. No shares in demat → short delivery + auction penalty. |
 | MIS buy + lower circuit | Cannot sell → converts to CNC. Must maintain margin for delivery. |
 
----
 
 ### A10 — Profit Availability
 
@@ -185,7 +172,6 @@ This margin is blocked progressively for ITM stock options and futures positions
 
 **Reference:** [Why are same-day profits not available for trading?](https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits)
 
----
 
 ### A11 — Links
 
@@ -200,13 +186,11 @@ This margin is blocked progressively for ITM stock options and futures positions
 | Options on expiry day | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day |
 | Same-day profits | https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits |
 
----
 
 ### A12 — Escalation Data Template
 
 When escalating, always include: **client ID, instrument_name, product type, and specific issue.**
 
----
 
 ### A13 — F&O Ban Period Delta Rules
 
@@ -221,9 +205,6 @@ When a stock enters the F&O ban period, fresh positions that increase net delta 
 | Long futures | Sell futures, buy puts, sell calls | Buy more futures, buy calls, sell puts |
 | Short futures | Buy futures, buy calls, sell puts | Sell more futures, sell calls, buy puts |
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -274,9 +255,6 @@ F&O ban period — what trades are allowed                    → Rule 11
 
 If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A12**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -287,13 +265,11 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. Positions P&L ≠ funds page → The Positions page calculates P&L from your original entry price. The Funds page uses the MTM (Mark-to-Market) settlement price for futures and short options. These are different calculations. The funds page reflects what's actually settled in your account.. If client wants funds breakdown → invoke `kite_margins`.
 4. Settlement price = 0 for options → A settlement price of 0 means your option expired OTM (Out of The Money). This is normal regardless of what the LTP was. The settlement price is based on the underlying's weighted average in the last 30 minutes..
 
----
 
 ### Rule 2 — Net vs Day Positions
 
 1. Net position shows your actual current portfolio after combining overnight carry-forward and today's trades. Day position shows only today's trading activity. Example: if you carried forward 75 NIFTY FUT and squared off today, net shows 0 (current state), day shows -75 (today's sell action)..
 
----
 
 ### Rule 3 — Auto Square-Off
 
@@ -304,7 +280,6 @@ If no route matches, investigate using Section A reference data. If no root caus
    b. Buy + lower circuit → If your MIS buy position hits lower circuit, it converts to CNC and you must maintain delivery margin.. Per **A9**.
    c. If client asks about holdings for delivery → invoke `kite_holdings`.
 
----
 
 ### Rule 4 — Product Conversion
 
@@ -312,14 +287,12 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. CO conversion → Cover Order positions cannot be converted to any other product type..
 3. Agricultural commodity restriction → Agricultural commodity contracts (cardamom, mentha oil) cannot be converted to MIS one day before the tender period starts..
 
----
 
 ### Rule 5 — Hedged Positions & Margin
 
 1. Can't close hedge leg → You need sufficient margin to cover the remaining unhedged position. Closing the hedge leg increases your margin requirement. Options: add funds first, or exit both legs simultaneously.. Rules per **A8**. Invoke `kite_margins` to check available_margin and used_margin.
 2. Peak margin penalty from exiting one leg → Even if you close both legs, the exchange takes random intraday snapshots (4 for equity F&O, 8 for commodity). If a snapshot catches one leg open, you may face a penalty.. Snapshot rules per **A7**.
 
----
 
 ### Rule 6 — Margin Call / Shortfall / Penalty
 
@@ -327,7 +300,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. Margin penalty charged → Exchange imposes margin penalty when insufficient margin is detected during intraday snapshots or at end of day. Penalty: 0.5% for shortfall under ₹1 lakh, 1% for ₹1 lakh+, up to 5% for 3+ instances in a month.. Rates per **A7**.
 3. Shortfall despite positions closed → Shortfall can occur from intraday snapshots taken while your position was still open. Even if you closed it later, the snapshot captured the shortfall at that moment.. Snapshot explanation per **A7**.
 
----
 
 ### Rule 7 — F&O Expiry & Physical Settlement
 
@@ -342,14 +314,12 @@ If no route matches, investigate using Section A reference data. If no root caus
    b. If found → Your balance went negative because physical delivery margin has been blocked for your ITM stock option position approaching expiry. The margin increases progressively: E-4 (Wed) 10% of VaR+ELM+Adhoc, E-3 (Thu) 25%, E-2 (Fri) 45%, E-1 (Mon) 25% of contract value, Expiry day (Tue) 50% of contract value. For more details: [Physical settlement policy](https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement). Share the debit amount from the ledger and the margin schedule from **A6**.
    c. If not found → invoke `kite_margins` to investigate other causes of negative balance.
 
----
 
 ### Rule 8 — Sold Holdings as Negative Positions
 
 1. When you sell shares from holdings during the trading day, they appear as a negative position tagged HOLDING in Positions. This is normal. It allows intraday traders to buy back. If you don't intend to rebuy, ignore it. Shares debited from demat by end of day..
 2. If client asks about holdings status → invoke `kite_holdings`.
 
----
 
 ### Rule 9 — Profit Availability
 
@@ -358,7 +328,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. If client asks about order execution details → invoke `kite_orders`.
 4. If client asks about historical trades → invoke `kite_order_history`.
 
----
 
 ### Rule 10 — Odd-Lot Quantity from Lot Size Revision
 
@@ -368,7 +337,6 @@ If no route matches, investigate using Section A reference data. If no root caus
    c. A 5% extra margin applies on odd-lot positions.
 2. If client asks about margin for the odd-lot position → invoke `kite_margins`.
 
----
 
 ### Rule 11 — F&O Ban Period (Delta Exposure Rules)
 

@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "old GTT", "past GTT", "expired GTT", "deleted GTT", "previous
 
 # KITE GTT ARCHIVED PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -35,8 +32,6 @@ Triggered GTT becomes CNC limit order with DAY validity — cancelled by exchang
 
 GTT triggers based on ticks recorded by the system — missed ticks mean GTT may not have triggered.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -56,7 +51,6 @@ GTT triggers based on ticks recorded by the system — missed ticks mean GTT may
 | `exchange` | (omit — not available for archived GTTs) |
 | `expires_at` | (omit — describe as "1 year validity" for equity or "until contract expiry" for F&O) |
 
----
 
 ### A3 — Status Values
 
@@ -69,7 +63,6 @@ GTT triggers based on ticks recorded by the system — missed ticks mean GTT may
 | Disabled | Trigger too close to LTP, or CA like bonus/stock split |
 | Deleted | Removed by user |
 
----
 
 ### A4 — Common Rejection Reasons (Triggered but Failed)
 
@@ -83,7 +76,6 @@ GTT triggers based on ticks recorded by the system — missed ticks mean GTT may
 | Segment killed | Segment disabled via Kill Switch |
 | Contract not allowed | F&O contract not allowed by Zerodha at trigger time |
 
----
 
 ### A5 — Links
 
@@ -91,15 +83,11 @@ GTT triggers based on ticks recorded by the system — missed ticks mean GTT may
 |---|---|
 | GTT Terms of Service | zerodha.com/tos/gtt |
 
----
 
 ### A6 — Escalation Data Template
 
 When escalating, always include: **client ID, GTT id, tradingsymbol, status, created_at, and specific issue.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -135,9 +123,6 @@ GTT not found in either tool                                → Rule 7
 
 If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A6**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -153,7 +138,6 @@ If no route matches, investigate using Section A reference data. If no root caus
    f. Active (archived) → This GTT was active but has been archived. It may have been superseded. Create a new GTT if needed..
 3. If looking for current GTT → invoke `kite_gtt`.
 
----
 
 ### Rule 2 — Status: Triggered
 
@@ -170,34 +154,29 @@ If no route matches, investigate using Section A reference data. If no root caus
       - Cancelled during market hours → **A7-R7** (user cancelled).
       - Cancelled after market hours → **A7-R8** (EOD unfilled).
 
----
 
 ### Rule 3 — Status: Cancelled
 
 1. Check `rejection_reason` if available.
 2. Your GTT for [tradingsymbol] was cancelled. Common reasons: the instrument was delisted, suspended, underwent a series change, or a corporate action affected the contract. For F&O, lot size changes also cause cancellation..
 
----
 
 ### Rule 4 — Status: Expired
 
 1. Equity → Your GTT for [tradingsymbol] expired because it wasn't triggered within 1 year of creation (created [created_at])..
 2. F&O → Your GTT expired because the F&O contract expired. F&O GTTs are valid only until contract expiry..
 
----
 
 ### Rule 5 — Status: Disabled
 
 1. Your GTT for [tradingsymbol] was disabled. This happens when: the trigger was set too close to LTP (< 0.25% for stocks > ₹50), or a corporate action like bonus/stock split affected the instrument..
 
----
 
 ### Rule 6 — Client Asks for Unavailable Fields
 
 1. Client asks for expiry date, exchange, or LTP at creation → The expiry date and exchange details are not available for archived GTT orders. Here's what can be confirmed: your [transaction_type] GTT for [tradingsymbol] had a trigger at ₹[trigger_values] with a limit price of ₹[price] for [quantity] qty, created on [created_at]. Status: [status]..
 2. If client needs these details for dispute resolution → escalate per **A6** with GTT `id` and `created_at`.
 
----
 
 ### Rule 7 — GTT Not Found in Either Tool
 

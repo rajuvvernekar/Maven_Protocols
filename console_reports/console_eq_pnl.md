@@ -21,9 +21,6 @@ TRIGGER KEYWORDS: "P&L", "profit and loss", "realized profit", "realized loss", 
 
 # CONSOLE EQ P&L PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -37,7 +34,6 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 
 **P&L affected by missing/wrong external trade entries:** If discrepant shares are sold without a buy entry, cost = ₹0 → inflated profit.
 
----
 
 ### A2 — Field Usage Rules
 
@@ -49,7 +45,6 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 
 `name` | `client_id` | `instrument_id`
 
----
 
 ### A3 — P&L Calculations
 
@@ -60,7 +55,6 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 | Unrealized (Console) | (closing price − buy avg) × qty | Uses previous day's closing price |
 | Unrealized (Kite) | (LTP − buy avg) × qty | Uses live last traded price |
 
----
 
 ### A4 — Tax P&L vs Console P&L
 
@@ -73,7 +67,6 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 
 **Verified P&L:** console.zerodha.com/verified — third-party verified report for ITR filing.
 
----
 
 ### A5 — Corporate Action P&L Impact
 
@@ -85,7 +78,6 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 | Merger | Shares swapped at defined ratio. P&L uses original acquisition cost carried over to new shares. |
 | Fractional shares (any CA) | Settled in cash → appears as a realized P&L entry for the fractional quantity. |
 
----
 
 ### A6 — Cross-Reference Tools
 
@@ -96,15 +88,11 @@ This tool looks up a client's realized equity P&L. Realized P&L = sell_value −
 | `console_eq_holdings_breakdown` | Walk through FIFO entry by entry to explain P&L calculation. |
 | `console_eq_external_trades` | Missing external entries cause wrong P&L (cost = ₹0 for discrepant shares). |
 
----
 
 ### A7 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol, ISIN, expected vs actual P&L values, and date range.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -146,9 +134,6 @@ Stock in unrealized P&L despite all shares sold             → Rule 9
 
 If no route matches, use **A6** to cross-reference other tools for additional context. If no root cause is found, escalate per **A7**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -158,7 +143,6 @@ If no route matches, use **A6** to cross-reference other tools for additional co
 
 This is calculated using the FIFO method — when you sold, the cost of the oldest purchased shares was used as the buy value. — share realized P&L details with FIFO context.
 
----
 
 ### Rule 2 — FIFO Causing Unexpected P&L
 
@@ -167,7 +151,6 @@ This is calculated using the FIFO method — when you sold, the cost of the olde
 If you had older shares bought at a different price, FIFO consumes those first. You can verify the exact FIFO matching in the holdings breakdown on Console or Kite (View breakdown)..
 2. If agent needs to prove the calculation → use `console_eq_holdings_breakdown` (per **A6**) to walk through entries.
 
----
 
 ### Rule 3 — Discrepant Shares Causing Inflated Profit
 
@@ -178,7 +161,6 @@ If you had older shares bought at a different price, FIFO consumes those first. 
 To correct this, the original purchase details need to be added. If the shares have already been sold, the buy average cannot be updated from your end — we'll need to investigate this further..
 4. If shares already sold with ₹0 cost → escalate per **A7**. Backend correction needed.
 
----
 
 ### Rule 4 — Console P&L vs Kite P&L
 
@@ -186,7 +168,6 @@ To correct this, the original purchase details need to be added. If the shares h
 2. **Realized:** Should match. If different → check date range used. Console P&L requires specific date range; Kite shows current FY by default.
 3. **Unrealized:** Console uses the previous day's closing price to calculate unrealized P&L, while Kite uses the live last traded price (LTP). This is why the values differ during and after market hours.. Calculation details per **A3**.
 
----
 
 ### Rule 5 — MTF P&L (No Separate Calculation)
 
@@ -194,7 +175,6 @@ To correct this, the original purchase details need to be added. If the shares h
 
 Your MTF ledger settlements (net settlement entries) reflect the MTF-specific funding and margin — these are separate from the FIFO-based P&L shown on Console..
 
----
 
 ### Rule 6 — Intraday vs Delivery P&L Classification
 
@@ -208,7 +188,6 @@ Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shar
 
 For more details: https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/what-does-cnc-mis-and-nrml-mean
 
----
 
 ### Rule 7 — Corporate Action Impact on P&L
 
@@ -223,7 +202,6 @@ You can verify this by checking the holdings breakdown on Console or Kite — th
    - Fractional shares → **A8-R14**. Impact per **A5**.
 2. If CA was 3+ weeks ago and P&L still appears wrong → escalate per **A7**.
 
----
 
 ### Rule 8 — Tax P&L vs Console P&L
 
@@ -234,7 +212,6 @@ You can verify this by checking the holdings breakdown on Console or Kite — th
 The values may differ because Tax P&L separates intraday trades from delivery, applies holding period classification, and includes charges. For income tax filing, please use the Tax P&L report.. Differences per **A4**.
 2. If client wants to edit Tax P&L → You can edit the Tax P&L report on Console (Reports → Tax P&L → Edit) to adjust cost of acquisition for gifted shares, transferred shares, or other special cases.. Edit path per **A4**.
 
----
 
 ### Rule 9 — Unrealized P&L Orphan Entry
 

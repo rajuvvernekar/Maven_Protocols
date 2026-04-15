@@ -18,9 +18,6 @@ TRIGGER KEYWORDS: "MTF conversion", "MTF to CNC", "MTF to delivery", "convert MT
 
 # CONSOLE MTF CONVERSION PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -32,8 +29,6 @@ This tool tracks **MTF-to-CNC conversion requests** — requested qty, converted
 
 Conversion requires full funded amount available as free cash in the account — partial funds = full failure.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -47,7 +42,6 @@ Conversion requires full funded amount available as free cash in the account —
 
 **Communication rule:** When sharing conversion outcome with the client, always base the response on `converted_quantity` vs `request_quantity` — not on the `status` field value alone.
 
----
 
 ### A3 — Status Values
 
@@ -56,7 +50,6 @@ Conversion requires full funded amount available as free cash in the account —
 | Processed | System attempted conversion | Check `converted_quantity`: if = `request_quantity` → success. If = 0 → failed (display issue). If < `request_quantity` → partial. |
 | Pending | Request awaiting processing | Typically processed same day or next morning. |
 
----
 
 ### A4 — Common Failure Reasons
 
@@ -67,7 +60,6 @@ Conversion requires full funded amount available as free cash in the account —
 | Ex-date restriction | Conversions on ex-date of corporate actions are not processed — retry after ex-date |
 | Short delivery | Short-delivered MTF position auto-converted to CNC — interest should stop; if not, escalate for reversal |
 
----
 
 ### A5 — Cross-Reference Tools
 
@@ -76,15 +68,11 @@ Conversion requires full funded amount available as free cash in the account —
 | `console_mtf_holdings` | Verify if shares still under MTF after conversion. Contains MTF-specific rules, interest, square-off details. |
 | `console_eq_holdings` | Verify if converted shares now appear in regular equity holdings. |
 
----
 
 ### A6 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol/ISIN, conversion date, request_quantity, converted_quantity, and specific issue.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -121,9 +109,6 @@ Remarks field interpretation                                → Rule 7
 
 If no route matches, cross-reference with **A5** tools for additional context. If no root cause is found, escalate per **A6**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -136,7 +121,6 @@ If no route matches, cross-reference with **A5** tools for additional context. I
    c. `converted_quantity` < `request_quantity` → Only [converted_quantity] of your requested [request_quantity] shares were converted. The remaining shares are still under MTF. This may be due to insufficient funds for the full conversion..
    d. Status = Pending → Your conversion request is pending processing. It will typically be processed by the next trading day..
 
----
 
 ### Rule 2 — Conversion Cost Inquiry
 
@@ -145,7 +129,6 @@ If no route matches, cross-reference with **A5** tools for additional context. I
 You can check the funded amount in the remarks field of your conversion request, or calculate it as: total purchase value minus the initial margin you paid..
 2. If client asks about MTM already paid → The MTM (Mark-to-Market) margin you've paid covers daily price fluctuations. The conversion cost is the original funded amount, not the MTM..
 
----
 
 ### Rule 3 — Conversion Failed (Diagnose Reason)
 
@@ -155,7 +138,6 @@ You can check the funded amount in the remarks field of your conversion request,
    c. Ex-date → Conversions on the ex-date of a corporate action are not processed. Please retry after the ex-date..
 2. If none of the above explains → escalate per **A6**.
 
----
 
 ### Rule 4 — Shares Still in MTF After Successful Conversion
 
@@ -165,7 +147,6 @@ You can check the funded amount in the remarks field of your conversion request,
 4. If 2+ trading days since conversion and still in MTF → escalate per **A6**.
 5. Also check `console_eq_holdings` (per **A5**) — converted shares should now appear there.
 
----
 
 ### Rule 5 — Interest After Conversion
 
@@ -173,13 +154,11 @@ You can check the funded amount in the remarks field of your conversion request,
 2. Verify conversion was successful (`converted_quantity` > 0).
 3. If yes and interest still charged → escalate per **A6**.
 
----
 
 ### Rule 6 — Stock Removed from MTF List
 
 1. If a stock is removed from the MTF approved list, your existing MTF position is NOT automatically converted or squared off. You can continue to hold the position under MTF. However, if you wish to convert to regular delivery to avoid ongoing MTF interest, you can place a conversion request provided you have sufficient funds..
 
----
 
 ### Rule 7 — Remarks Field Interpretation
 

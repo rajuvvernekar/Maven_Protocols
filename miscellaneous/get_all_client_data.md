@@ -14,9 +14,6 @@ WHEN TO USE:
 
 # GET ALL CLIENT DATA PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -24,7 +21,6 @@ WHEN TO USE:
 
 This tool collects and interprets client data, then routes to the appropriate downstream tool for resolution — all client queries are resolved exclusively by downstream tools, not by this tool.
 
----
 
 ### A2 — Field Usage Rules
 
@@ -44,7 +40,6 @@ This tool collects and interprets client data, then routes to the appropriate do
 
 **Documents tab:** Access only if the client explicitly requests it AND the agent has the "Client Documents Viewer" role.
 
----
 
 ### A3 — Account Type Detection
 
@@ -63,7 +58,6 @@ This tool collects and interprets client data, then routes to the appropriate do
 
 **NRI resolution chain:** If `client_acc_type` = "NRI" → determine NRE/NRO via `bo_sub_status` → determine PIS/Non-PIS via `pis_bank_*` fields.
 
----
 
 ### A4 — Account Statuses
 
@@ -73,7 +67,6 @@ This tool collects and interprets client data, then routes to the appropriate do
 | Deactivated | Closed permanently |
 | Inactivated | Soft-closed / voluntarily deactivated |
 
----
 
 ### A5 — Segment Statuses
 
@@ -90,7 +83,6 @@ This tool collects and interprets client data, then routes to the appropriate do
 
 **Kill switch:** `*_soft_enable` = 0 means the client has disabled this segment themselves. `*_soft_enable` = 1 means the kill switch is OFF (segment enabled by client).
 
----
 
 ### A6 — Segment Field Mapping
 
@@ -113,7 +105,6 @@ This tool collects and interprets client data, then routes to the appropriate do
 | `itd` | Income Tax Department |
 | `zbl_mcx` | Single Ledger MCX |
 
----
 
 ### A7 — Account Type Flags
 
@@ -124,7 +115,6 @@ This tool collects and interprets client data, then routes to the appropriate do
 | Non-Individual (`category` = "Non-Individual") | Pass non-individual status to downstream tools. |
 | Orbis (`custodial_participant_code` NOT None OR `cp_code` NOT None) | Route all queries to Orbis team per Rule 4. |
 
----
 
 ### A8 — Key Account Flags
 
@@ -134,15 +124,11 @@ This tool collects and interprets client data, then routes to the appropriate do
 | `idfc_3_in_1_status` = Yes | IDFC 3-in-1 account active. |
 | `rekyc_flag` = True | ReKYC completed; `rekyc_date` = date of completion. |
 
----
 
 ### A9 — Client ID Field
 
 The `name` field in the tool response is the client's unique Client ID (e.g., "XX0000"). Store this value and pass it to any downstream tool that requires a client ID (e.g., `stock_gift_requests` fields like `gifted_by`, `claimed_by`, `client_id`).
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -194,9 +180,6 @@ Orbis account — any support query             → Rule 4
 
 If the query does not match any route above, interpret the tool response using the reference data in Section A and general knowledge of the account structure. If no root cause is found, acknowledge the question and escalate if appropriate.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -208,14 +191,12 @@ If the query does not match any route above, interpret the tool response using t
 4. Collect the segment status, `*_update_on` timestamp, and kill switch state.
 5. Route to `account_modification_report` for resolution.
 
----
 
 ### Rule 2 — PAN / Name / DOB Mismatch
 
 1. Extract `pan`, `client_name`, `dob` from the tool response.
 2. Route to `pan_status` tool with those fields for validation and resolution.
 
----
 
 ### Rule 3 — DDPI / POA Status
 
@@ -223,7 +204,6 @@ If the query does not match any route above, interpret the tool response using t
 2. Note account type and online DDPI eligibility: Individual account + Aadhaar-linked mobile number. Not eligible: Joint, Non-Individual, Orbis NRI.
 3. Route to `account_modification_report` for resolution.
 
----
 
 ### Rule 4 — Orbis Partner-Managed Account
 

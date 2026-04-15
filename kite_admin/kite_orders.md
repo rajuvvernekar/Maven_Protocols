@@ -28,9 +28,6 @@ TRIGGER KEYWORDS: "order rejected", "order pending", "order cancelled", "not exe
 
 # KITE ORDERS PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -44,8 +41,6 @@ Orders follow **price-time priority**: first come, first served at same price.
 
 Zerodha pre-validates orders — some rejections won't appear in the order book (shown in status notification only).
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -66,7 +61,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 | `placed_by` = ADMINSQF or starts with "rms" | "executed by Zerodha's risk management system" |
 | `placed_by` = client ID | (normal client-placed order — do not mention the field) |
 
----
 
 ### A3 — Order Statuses
 
@@ -77,7 +71,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 | Cancelled | By user, system (IOC unmatched), or exchange (end of session / LPP range) |
 | Rejected | Failed validation — check `rejection_reason` |
 
----
 
 ### A4 — Product Types
 
@@ -89,7 +82,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 | MTF | Margin Trading Facility — partial funding, interest charged, equity only |
 | CO | Cover Order — intraday with compulsory SL, cannot convert to other product types |
 
----
 
 ### A5 — Order Types
 
@@ -100,7 +92,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 | SL | Stop-Loss Limit — triggers at `trigger_price`, places limit at `price` |
 | SL-M | Stop-Loss Market — triggers at `trigger_price`, places market order. Discontinued on BSE. |
 
----
 
 ### A6 — Validity Types
 
@@ -110,7 +101,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 | IOC | Immediate or Cancel — partial fill possible, unfilled auto-cancelled |
 | TTL | Minutes validity (1–120 min) — not available in BFO and MCX |
 
----
 
 ### A7 — Order Limits
 
@@ -122,7 +112,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 | Max order value (equity) | ₹10 Crore |
 | Max quantity (equity) | 1,00,000 (regular can exceed; iceberg/CO cannot) |
 
----
 
 ### A8 — Unmatched Order Cancellation Times
 
@@ -132,7 +121,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 | Currency | 5:00 PM |
 | Commodities (MCX) | MCX market close (shifts with US DST: Nov–Mar 11:55 PM, Mar–Nov 11:30 PM) |
 
----
 
 ### A9 — MIS Auto Square-Off Times
 
@@ -144,7 +132,6 @@ Zerodha pre-validates orders — some rejections won't appear in the order book 
 
 Auto square-off charge: ₹50 + 18% GST per order. If auto square-off fails (system failure, circuit hit, connectivity), MIS converts to CNC/NRML and carries forward — client must close next day.
 
----
 
 ### A10 — Market Order Blocks
 
@@ -161,7 +148,6 @@ Auto square-off charge: ₹50 + 18% GST per order. If auto square-off fails (sys
 
 **Resolution:** Use limit order or market order with market protection enabled.
 
----
 
 ### A11 — MIS/Intraday Blocks
 
@@ -169,7 +155,6 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 
 **Resolution:** Use CNC (equity) or NRML (F&O) instead.
 
----
 
 ### A12 — Common Rejections
 
@@ -198,7 +183,6 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | CO on ETF / restricted instruments | Cover orders are not allowed on ETFs, BSE scrips, stock options, currency options, and index options | Use CNC or MIS instead. |
 | Invalid quantity / odd lot | Order quantity does not match the current lot size — residual odd-lot from SEBI lot size revision | Odd-lot positions cannot be traded. Must hold until expiry — will be cash-settled based on moneyness. Redirect to `kite_positions` Rule 10 for full guidance. For details on the lot size revision: [Lot size revision bulletin](https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025). |
 
----
 
 ### A13 — `placed_by` Values
 
@@ -208,7 +192,6 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | ADMINSQF | Auto square-off by Zerodha RMS |
 | Starts with "rms" + number (rms1, rms2...) | Squared off by Zerodha RMS |
 
----
 
 ### A14 — AMO (After Market Orders)
 
@@ -218,7 +201,6 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 
 **Pre-open session conversion:** AMO market orders convert to limit at equilibrium price (or previous day's close if no equilibrium). Standard exchange behavior.
 
----
 
 ### A15 — Product Conversion Rules
 
@@ -230,7 +212,6 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | CO → anything | No | Cover orders cannot be converted. |
 | Any → MIS (after square-off time) | No | No conversions to MIS after square-off time. |
 
----
 
 ### A16 — Links
 
@@ -243,15 +224,11 @@ Blocked for: T2T stocks | ASM/GSM stocks | low-liquidity scrips | high-VAR scrip
 | SL execution explained | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger |
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 
----
 
 ### A17 — Escalation Data Template
 
 When escalating, always include: **client ID, instrument, order type, time, and specific issue.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -294,9 +271,6 @@ Order book display issues                                   → Rule 10
 
 If no route matches, investigate using Order History sub-view and Section A reference data. If no root cause is found, escalate per **A17**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -311,7 +285,6 @@ If no route matches, investigate using Order History sub-view and Section A refe
 3. If `filled_quantity` < `total_quantity` → partial fill. Check `cancelled_quantity`. IOC orders: unfilled portion auto-cancelled.
 4. If client asks where bought shares are → invoke `kite_holdings` (settled) or `kite_positions` (today's buy).
 
----
 
 ### Rule 2 — Order Open / Pending
 
@@ -320,7 +293,6 @@ If no route matches, investigate using Order History sub-view and Section A refe
 3. SL/SL-M trigger not yet hit → Your stop-loss order will activate when the price reaches your trigger price of ₹[trigger_price]. It is currently pending..
 4. SL-M orders with trigger outside circuit limits stay open without rejection — normal exchange behavior.
 
----
 
 ### Rule 3 — Order Cancelled
 
@@ -330,7 +302,6 @@ If no route matches, investigate using Order History sub-view and Section A refe
    c. IOC partial fill + cancel → Your IOC (Immediate or Cancel) order was partially filled ([filled_quantity] of [total_quantity] qty). The unfilled portion was auto-cancelled. This is how IOC orders work..
    d. Cancelled by user → This order was cancelled. No action needed..
 
----
 
 ### Rule 4 — Order Rejected
 
@@ -347,7 +318,6 @@ If no route matches, investigate using Order History sub-view and Section A refe
 8. For invalid quantity / odd lot from lot size revision → use matching row in **A12**. Redirect to `kite_positions` Rule 10 for full guidance on holding until expiry and cash settlement.
 9. For any rejection not matching **A12** → share the `rejection_reason` text verbatim and suggest retrying or contacting support.
 
----
 
 ### Rule 5 — AMO (After Market Orders)
 
@@ -355,14 +325,12 @@ If no route matches, investigate using Order History sub-view and Section A refe
 2. AMO market order for index options rejected → Market orders via AMO are blocked for index options. Use a limit order instead..
 3. AMO became limit order → Market orders placed in the pre-open session (including AMO) are converted to limit orders at the equilibrium price (or previous day's close if no equilibrium). This is standard exchange behavior..
 
----
 
 ### Rule 6 — Product Conversion
 
 1. Check conversion rules per **A15**.
 2. If margin insufficient for conversion → invoke `kite_margins`.
 
----
 
 ### Rule 7 — RMS / Admin Square-Off
 
@@ -378,7 +346,6 @@ If no route matches, investigate using Order History sub-view and Section A refe
 Auto square-off charges: ₹50 + 18% GST per order.. Include margin data from `kite_margins` if available.
 6. If client asks about the squared-off position → invoke `kite_positions`.
 
----
 
 ### Rule 8 — Unauthorized Order ("I didn't place this")
 
@@ -386,14 +353,12 @@ Auto square-off charges: ₹50 + 18% GST per order.. Include margin data from `k
    a. ADMINSQF or starts with "rms" → apply Rule 7 (RMS square-off).
    b. Client's own ID → escalate to escalation team immediately.
 
----
 
 ### Rule 9 — Circuit / Ban Period Impact
 
 1. Can't exit at circuit → When a stock hits circuit, there are no counterparties. Your order will remain pending. If the instrument is in MIS, it may convert to delivery (CNC) if not filled by square-off time. This can lead to short delivery or auction risk.. If client asks about resulting position → invoke `kite_positions`.
 2. Ban period → [instrument] is in the F&O ban period. Only exit orders are allowed. No new positions or intraday trades.. Only exit allowed. Restriction lifts when OI falls below 80% of market-wide limit. If the client asks what specific trades are permitted during the ban (delta exposure rules) → redirect to `kite_positions` Rule 11.
 
----
 
 ### Rule 10 — Order Book Display Issues
 

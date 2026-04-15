@@ -22,11 +22,6 @@ TRIGGER KEYWORDS: "conditional order", "NAV trigger", "trigger pending", "condit
 
 # CONDITIONAL ORDERS PROTOCOL
 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Conditional Order Fundamentals
 
@@ -67,8 +62,6 @@ All rules reference these blocks as single sources of truth.
 | Topic | Refer to |
 |---|---|
 | Triggered order status | mf_order_history (10:05 AM buy / 10:15 AM sell, variety = GTT on trigger date) |
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -118,11 +111,6 @@ Query relates to conditional orders →
 
 If the conditional order is no longer visible in this tool → it was triggered. Check mf_order_history per **A5**.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Order Not Triggered
 

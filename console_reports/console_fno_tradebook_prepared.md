@@ -17,9 +17,6 @@ TRIGGER KEYWORDS: "old F&O trades", "last year F&O", "FY F&O tradebook", "histor
 
 # CONSOLE FNO TRADEBOOK PREPARED PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -34,8 +31,6 @@ For closed accounts, escalate to support agent for historical F&O trade data ret
 All business rules from `console_fno_tradebook` apply here equally.
 
 
----
-
 ### A2 — Field Usage Rules
 
 **Shareable fields:**
@@ -46,7 +41,6 @@ All business rules from `console_fno_tradebook` apply here equally.
 
 `client_id`
 
----
 
 ### A3 — Cross-Reference Tools
 
@@ -55,7 +49,6 @@ All business rules from `console_fno_tradebook` apply here equally.
 | `console_fno_tradebook` | Same schema, limited to last 100 days. Use for recent F&O trades. |
 | `console_fno_pnl` | Realized P&L computed from tradebook entries. |
 
----
 
 ### A4 — Self-Service Download Links
 
@@ -64,15 +57,11 @@ All business rules from `console_fno_tradebook` apply here equally.
 | How to download trade and funds reports | https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf |
 | Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |
 
----
 
 ### A5 — Escalation Data Template
 
 When escalating, always include: **client ID, date range, segment, tradingsymbol (if specific), and error details.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -107,9 +96,6 @@ Report fails to load / times out                            → Rule 4
 
 If no route matches, cross-reference with **A3** tools for additional context. If no root cause is found, escalate per **A5**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -120,14 +106,12 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 - Where to see trades for a particular period: https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period.
 2. If client asks for formatted PDF → share the same links per **A4**.
 
----
 
 ### Rule 2 — Closed Account F&O Trade Data
 
 1. Client's account is closed and they need historical F&O trade data.
 2. Escalate to support agent.
 
----
 
 ### Rule 3 — Trade Verification for Old Dates
 
@@ -135,7 +119,6 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 2. All business rules from `console_fno_tradebook` (Rules 1–6 in that protocol's v2) apply identically here.
 3. If trade not found → check `console_fno_tradebook` as well (per **A3**). If still not found → escalate per **A5**.
 
----
 
 ### Rule 4 — Report Fails to Load / Times Out
 

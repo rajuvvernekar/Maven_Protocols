@@ -33,9 +33,6 @@ TRIGGER KEYWORDS: "withdrawal failed", "partial amount", "can't withdraw", "zero
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ### A1 — Ledger Fundamentals
 
@@ -164,9 +161,6 @@ For the detailed MTF interest statement (with per-day breakdown and funded amoun
 - Detection: If a withdrawal was rejected and the rejection date or the expected T+1 date falls on a settlement holiday, apply Rule 19.
 - The settlement calendar determines settlement working days — do not assume T+1 always equals the next trading day.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -251,9 +245,6 @@ Query relates to ledger →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 18.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — With Margin vs Without Margin Explanation
 

@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "emandate status", "mandate pending", "mandate failed", "manda
 
 # E MANDATE REPORT PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -31,8 +28,6 @@ This tool shows **Console eMandate status** — for automatic fund transfers fro
 
 eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. No Zerodha charges; bank may charge verification fee + penalty for failed debits.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -46,7 +41,6 @@ eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. N
 
 `cancellation_date`: share only if the client specifically asks when they cancelled. `status`: use for routing/diagnosis only — communicate the outcome, not the raw value.
 
----
 
 ### A3 — Status Values
 
@@ -59,7 +53,6 @@ eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. N
 | Pending Cancellation | Cancellation in progress | ≤5 working days from cancellation → inform processing. >5 working days → escalate. |
 | Cancellation Failed | Cancellation did not go through — mandate likely not active (rare) | Guide to verify/retry. If still debiting → escalate. |
 
----
 
 ### A4 — Account Restrictions
 
@@ -69,7 +62,6 @@ eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. N
 | Joint account | Some banks do not support eMandates | Set up standing instructions via bank's netbanking |
 | NRE-PIS | Cannot create eMandate | Not supported |
 
----
 
 ### A5 — Timelines
 
@@ -79,7 +71,6 @@ eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. N
 | Mandate deletion | Up to 5 working days |
 | Schedule cancellation advance notice | 3 working days (4 for SBI) |
 
----
 
 ### A6 — Links
 
@@ -87,15 +78,11 @@ eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. N
 |---|---|
 | Mandate management on Console | console.zerodha.com/funds/mandates |
 
----
 
 ### A7 — Escalation Data Template
 
 When escalating, always include: **client ID, mandate details (bank, creation/cancellation date), and specific issue.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -128,9 +115,6 @@ Old pending mandate blocking new creation                   → Rule 4
 
 If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` for related context. If no root cause is found, escalate per **A7**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -150,7 +134,6 @@ If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` f
       - >5 working days → escalate per **A7**.
    f. Cancellation Failed → The cancellation attempt for your eMandate did not go through. The mandate is likely not active. You can verify and retry at console.zerodha.com/funds/mandates.. If client insists mandate is still debiting → escalate per **A7**.
 
----
 
 ### Rule 2 — Cannot Create Mandate (Account Restrictions)
 
@@ -159,13 +142,11 @@ If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` f
    b. Joint account → Some banks do not support eMandates for joint accounts. You can set up standing instructions via your bank's netbanking instead..
    c. NRE-PIS → eMandates are not supported for NRE-PIS accounts..
 
----
 
 ### Rule 3 — iOS Creation Issue
 
 1. This usually happens when your browser blocks pop-ups. Go to your iOS browser settings and enable 'Always show' for pop-ups, then retry at console.zerodha.com/funds/mandates..
 
----
 
 ### Rule 4 — Old Pending Mandate Blocking New Creation
 

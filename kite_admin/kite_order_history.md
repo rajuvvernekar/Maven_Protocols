@@ -30,9 +30,6 @@ TRIGGER KEYWORDS: "order history", "past order", "previous order", "old order", 
 
 # KITE ORDER HISTORY PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -46,8 +43,6 @@ Zerodha pre-validates orders — some rejections won't appear in order book (sho
 
 Execution time beyond market hours = exchange reconciliation after connectivity issues, not actual execution beyond hours.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -73,7 +68,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 
 `validity` | `parent_order_id` | `order_id` | `exchange_id` | `validity_ttl` | `silo` | `basket_id` | `tags` | `gttp` | `order_result_id`
 
----
 
 ### A3 — Order Statuses
 
@@ -84,7 +78,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | Cancelled | By user, exchange end-of-session, IOC unfilled, or LPP range violation |
 | Rejected | Failed validation — check `rejection_reason` |
 
----
 
 ### A4 — Product Types
 
@@ -96,7 +89,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | MTF | Margin Trading Facility — delivery with leverage |
 | CO | Cover Order — intraday with compulsory SL, cannot convert |
 
----
 
 ### A5 — Order Limits
 
@@ -108,7 +100,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | Max order value (equity) | ₹10 Crore |
 | Max quantity (equity) | 1,00,000 |
 
----
 
 ### A6 — Auto Square-Off
 
@@ -120,7 +111,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 
 **Charge:** ₹50 + 18% GST per order. **Failure:** MIS converts to CNC/NRML, client must close next day. CO positions cannot be converted.
 
----
 
 ### A7 — Unmatched Order Cancellation Times
 
@@ -130,7 +120,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | Currency | 5:00 PM |
 | MCX | Market close (Nov–Mar 11:55 PM, Mar–Nov 11:30 PM — DST shift) |
 
----
 
 ### A8 — `placed_by` Values
 
@@ -140,7 +129,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | ADMINSQF | Auto square-off by Zerodha RMS |
 | Starts with "rms" + number | Squared off by Zerodha RMS |
 
----
 
 ### A9 — Common Rejections
 
@@ -163,7 +151,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | Market order blocked | Stock options, T2T, debt, illiquid/deep ITM, zero-volume | Use limit order. |
 | MIS blocked | T2T, ASM/GSM, low-liquidity, high-VAR, ban period | Use CNC or NRML. |
 
----
 
 ### A10 — AMO Rules
 
@@ -176,7 +163,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | Pre-open AMO market | Converts to limit at equilibrium/previous close |
 | Sell AMO without DDPI/POA | T-day stocks: only after 6:30 AM next day. Delivered stocks: after 5 PM. |
 
----
 
 ### A11 — Special Order Types
 
@@ -188,7 +174,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | `gtt` | trigger ID | GTT-triggered order — cross-verify via kite_gtt / kite_gtt_archived |
 | `variety` = "iceberg" | — | Iceberg — `parent_order_id` links child orders to parent |
 
----
 
 ### A12 — Intraday Identification Logic
 
@@ -207,7 +192,6 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 
 **Equity CNC sell + rebuy same day:** Original buy average unchanged. Same-day round-trip = speculative per income tax rules.
 
----
 
 ### A13 — Links
 
@@ -217,15 +201,11 @@ Execution time beyond market hours = exchange reconciliation after connectivity 
 | Market intelligence bulletin | zerodha.com/marketintel/bulletin |
 | SEBI retail algo compliance | https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest |
 
----
 
 ### A14 — Escalation Data Template
 
 When escalating, always include: **client ID, instrument, date, order details, and specific issue.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -280,9 +260,6 @@ API order rejection or rate limiting (app_id = numerical)   → Rule 16
 
 If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A14**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -295,7 +272,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 5. Check `app_id` internally → numerical value → if rejection or rate limit query, route to Rule 16.
 6. Route by status: COMPLETE → Rule 2, REJECTED → Rule 3, OPEN → Rule 5, CANCELLED → Rule 6.
 
----
 
 ### Rule 2 — Order Complete
 
@@ -308,7 +284,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. Partial fill → **A15-R6**.
 4. Where are bought shares? → invoke `kite_holdings` (settled) or `kite_positions` (same day / F&O).
 
----
 
 ### Rule 3 — Order Rejected
 
@@ -318,7 +293,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 4. If `app_id` is a numerical value and rejection relates to market protection, rate limit, or IOC on MCX → route to Rule 16.
 5. For unmatched rejection → share `rejection_reason` verbatim.
 
----
 
 ### Rule 4 — RMS / Admin Square-Off
 
@@ -334,7 +308,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 Auto square-off charge: ₹50 + 18% GST per order..
 6. If MIS carried forward (square-off failed) → Auto square-off may fail due to circuit limits, system failures, or connectivity issues. When this happens, MIS converts to CNC (equity) or NRML (F&O) and carries forward. You must close the position on the next trading day..
 
----
 
 ### Rule 5 — Order Open in History
 
@@ -342,7 +315,6 @@ Auto square-off charge: ₹50 + 18% GST per order..
 2. Check for corresponding CANCELLED entry for same instrument/date. If found → apply Rule 6.
 3. If genuinely open → Unmatched pending orders are auto-cancelled by the exchange at session end.. Times per **A7**.
 
----
 
 ### Rule 6 — Order Cancelled
 
@@ -351,7 +323,6 @@ Auto square-off charge: ₹50 + 18% GST per order..
 3. Partial fill + cancelled remainder → Partially filled: [filled_quantity] of [total_quantity] executed at ₹[average_price]. Remaining [cancelled_quantity] was cancelled..
 4. IOC → IOC orders auto-cancel any unfilled portion immediately..
 
----
 
 ### Rule 7 — Unauthorized ("I Didn't Place This")
 
@@ -359,7 +330,6 @@ Auto square-off charge: ₹50 + 18% GST per order..
    a. ADMINSQF/rms → apply Rule 4.
    b. Client's own ID → This order appears to have been placed from your account. For security, we're escalating this for investigation. Please also check if any third-party apps have Kite Connect API access, and consider blocking your account if you suspect unauthorized activity.. Escalate to support agent, investigation required.
 
----
 
 ### Rule 8 — SIP Order Investigation
 
@@ -368,14 +338,12 @@ Auto square-off charge: ₹50 + 18% GST per order..
 3. If COMPLETE → share execution details per Rule 2.
 4. If no order found → SIP may not have triggered. Check that: basket is linked to SIP, product type is Regular CNC, order type is market or limit. Also check your registered email — Zerodha sends a SIP summary email with rejection reasons if the order failed..
 
----
 
 ### Rule 9 — ATO Order Investigation
 
 1. `ato` = "Yes" or client asks about ATO.
 2. If REJECTED → share reason + ATO orders place automatically when your Kite alert triggers. Order slicing is not available — quantity must be within the exchange freeze limit..
 
----
 
 ### Rule 10 — AMO Order Behavior
 
@@ -384,19 +352,16 @@ Auto square-off charge: ₹50 + 18% GST per order..
 3. Pre-open AMO market → converts to limit at equilibrium/previous close.
 4. Sell AMO without DDPI/POA: T-day stocks → after 6:30 AM next day; delivered → after 5 PM.
 
----
 
 ### Rule 11 — Basket Order Investigation
 
 1. `basket` field has a value → This order was part of basket '[basket]'. Basket orders execute individually — each is subject to its own margin and exchange validation. Some may succeed while others fail..
 
----
 
 ### Rule 12 — Execution Time Beyond Market Hours
 
 1. The displayed time reflects exchange reconciliation after a connectivity disruption. Your order was executed within market hours. Check the tradebook for actual execution time..
 
----
 
 ### Rule 13 — F&O Buy Average / Intraday Identification
 
@@ -406,20 +371,17 @@ Auto square-off charge: ₹50 + 18% GST per order..
 4. **MIS sell instead of CNC:** If client sold under MIS while holding CNC shares → the MIS sell created a fresh short intraday position, not a delivery exit. CNC holdings remain. MIS position auto-squared off at 3:25 PM. Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order..
 5. If client asks about current buy average → invoke `kite_holdings`. Current positions → invoke `kite_positions`.
 
----
 
 ### Rule 14 — Multiple Orders for Same Instrument
 
 1. [N] orders found for [instrument] on [date]. — summarize count, list each with type/order_type/product/status/quantity/price.
 2. Use **A12** to identify trade type from product and buy/sell pairing.
 
----
 
 ### Rule 15 — No Matching Orders Found
 
 1. No orders found for [instrument] between [from_date] and [to_date]. Please verify the instrument name, exchange, and date range. Orders rejected pre-exchange (before reaching exchange) may not appear in history..
 
----
 
 ### Rule 16 — API Order Issues (SEBI Retail Algo Rules)
 

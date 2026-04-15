@@ -20,10 +20,6 @@ TRIGGER KEYWORDS: "primary to secondary transfer", "secondary to primary transfe
 
 —
 
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
-
 ### A1 — Transfer Fundamentals
 
 - This report tracks transfers between a client's own primary and secondary Zerodha demat accounts only.
@@ -93,9 +89,6 @@ Escalate when any of the following occur:
 
 Include in escalation: client ID, creation date, direction, status, items, and the specific issue.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -135,11 +128,6 @@ Query relates to demat transfer →
 
 If no root cause is identified after checking all relevant rules → escalate per Rule 6.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Transfer Status Check
 

@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "buyback order", "buyback status", "rights issue order", "righ
 
 # CORPORATE ACTION ORDERS PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -31,8 +28,6 @@ This tool shows client orders placed for **buybacks and open offers**. It return
 
 Rights issue applications are not tracked in this tool — they are submitted through the client's bank (ASBA) or the company's registrar (see **Rule 3**).
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -51,7 +46,6 @@ Rights issue applications are not tracked in this tool — they are submitted th
 | allotment_price = 0 | "The allotment price has not been updated yet" (not "₹0") |
 | trade_type | Describe as "buyback", "rights issue", or "open offer" |
 
----
 
 ### A3 — Status Values
 
@@ -61,7 +55,6 @@ Rights issue applications are not tracked in this tool — they are submitted th
 | Processed | Order accepted and executed — shares debited (buyback/open offer) or allotted (rights) |
 | Rejected | Order not accepted — shares returned, no debit |
 
----
 
 ### A4 — Cross-Reference Tools
 
@@ -71,7 +64,6 @@ Rights issue applications are not tracked in this tool — they are submitted th
 | `console_eq_external_trades` | Buyback exit entries and rights issue allotment entries appear here. |
 | `console_eq_pnl` | Buyback P&L reflected here — may need manual Tax P&L editing for post-Oct 2024 buybacks. |
 
----
 
 ### A5 — Buyback Tax Treatment (Post Oct 2024)
 
@@ -79,13 +71,11 @@ From 1st October 2024, buyback proceeds are taxed as **capital gains** in the ha
 
 If Tax P&L shows profit instead of expected loss for buyback → known issue for recent buybacks. Client can edit Tax P&L manually.
 
----
 
 ### A6 — Escalation Data Template
 
 When escalating, always include: **client ID, trading_symbol, trade_type, status, and specific issue.**
 
----
 
 ### A7 — Key Timelines
 
@@ -95,9 +85,6 @@ When escalating, always include: **client ID, trading_symbol, trade_type, status
 | Status stuck at "Placed" → escalate | Beyond CA closure date + 5 working days |
 | Rights allotment discrepancy → escalate | Beyond listing date + 3 days |
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -135,9 +122,6 @@ Buyback tax treatment / Tax P&L issue                       → Rule 7
 
 If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A6**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -149,7 +133,6 @@ If no route matches, cross-reference with **A4** tools for additional context. I
    b. Processed → route to **Rule 2** (buyback) or **Rule 4** (open offer) for type-specific details.
    c. Rejected → append **A8-R3**.
 
----
 
 ### Rule 2 — Buyback Order (Processed)
 
@@ -158,7 +141,6 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 Note: If only part of your tendered shares were accepted (partial acceptance), the remaining shares will continue in your holdings.. Proceeds timeline per **A7**.
 2. If client says shares still showing in holdings despite status = Processed → check `console_eq_holdings` (per **A4**). If shares still there → escalate per **A6**.
 
----
 
 ### Rule 3 — Rights Issue (Not Available on This Tool)
 
@@ -166,19 +148,15 @@ Note: If only part of your tendered shares were accepted (partial acceptance), t
 2. Rights issue applications are tracked through the client's bank (ASBA) or company registrar — this tool has no data for them.
 
 
----
-
 ### Rule 4 — Open Offer Order (Processed)
 
 1. Your open offer tender of [quantity] shares of [trading_symbol] at ₹[allotment_price > 0 ? allotment_price : price] has been accepted. The tendered shares will be debited and proceeds credited to your bank account by the acquirer..
 
----
 
 ### Rule 5 — Allotment Price = 0
 
 1. If `allotment_price` = 0 AND status = Placed or Processed → The allotment price has not been updated yet. This does not mean your order was rejected — it will be updated once the company confirms the final allotment details.. Per **A2** terminology table, communicate as "not yet updated," not "₹0."
 
----
 
 ### Rule 6 — Order Not Found
 
@@ -189,7 +167,6 @@ Note: If only part of your tendered shares were accepted (partial acceptance), t
 Could you confirm how and when you placed the application? If you have a confirmation screenshot, that would help us investigate further..
 2. If client confirms they applied → escalate per **A6**.
 
----
 
 ### Rule 7 — Buyback Tax Treatment (Post Oct 2024)
 

@@ -17,9 +17,6 @@ TRIGGER KEYWORDS: "AMC charges", "annual maintenance charges", "demat charges", 
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ### A1 — AMC Fundamentals
 
@@ -90,9 +87,6 @@ Determine BSDA status from `charge_after_gst` and `client_holdings` per **A4**. 
 | Debit balance from AMC → DPC interest risk | Delayed Payment Charges protocol |
 | AMC debit entry on ledger | Ledger Report protocol |
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -140,9 +134,6 @@ Query relates to AMC charges →
 
 If the AMC amount doesn't match any expected slab or the data seems inconsistent → escalate with client ID, charged_date, charged_amount, and the discrepancy.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — AMC Charge Explanation
 

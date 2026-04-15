@@ -17,9 +17,6 @@ TRIGGER KEYWORDS: "old trades", "last year trades", "FY 2023-24", "FY 2024-25", 
 
 # CONSOLE EQ TRADEBOOK PREPARED PROTOCOL 
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -34,8 +31,6 @@ For closed accounts, escalate to support agent for historical trade data retriev
 All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook` apply here equally.
 
 
----
-
 ### A2 — Field Usage Rules
 
 **Shareable fields:**
@@ -46,7 +41,6 @@ All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook
 
 `instrument_id` | `settlement_type` | `client_id`
 
----
 
 ### A3 — Cross-Reference Tools
 
@@ -56,7 +50,6 @@ All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook
 | `console_eq_external_trades` | Off-platform trades. If trade not found here, check external trades. |
 | `console_eq_pnl` | Realized P&L computed from tradebook FIFO. |
 
----
 
 ### A4 — Self-Service Download Links
 
@@ -65,15 +58,11 @@ All facts about series, T2T, FIFO, and contract notes from `console_eq_tradebook
 | How to download trade and funds reports | https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf |
 | Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |
 
----
 
 ### A5 — Escalation Data Template
 
 When escalating, always include: **client ID, date range requested, tradingsymbol (if specific), and error details.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -108,9 +97,6 @@ Report fails to load / times out                            → Rule 5
 
 If no route matches, cross-reference with **A3** tools for additional context. If no root cause is found, escalate per **A5**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -121,14 +107,12 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 - Where to see trades for a particular period: https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period.
 2. If client asks for tradebook in PDF format → share the same links per **A4**.
 
----
 
 ### Rule 2 — Closed Account Trade Data
 
 1. Client's account is closed and they need historical trade data.
 2. Escalate to support agent.
 
----
 
 ### Rule 3 — Trade Verification for Old Dates
 
@@ -136,13 +120,11 @@ If no route matches, cross-reference with **A3** tools for additional context. I
 2. All business rules from `console_eq_tradebook` (Rules 1–9 in that protocol's v2) apply identically here.
 3. If trade not found → check `console_eq_external_trades` (per **A3**). If still not found → escalate per **A5**.
 
----
 
 ### Rule 4 — Tradebook vs Tax P&L Difference
 
 1. The tradebook shows gross trade values for each individual trade. The Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L. Both reports are correct for their respective purposes. The Tax P&L is the report to use for income tax filing..
 
----
 
 ### Rule 5 — Report Fails to Load / Times Out
 

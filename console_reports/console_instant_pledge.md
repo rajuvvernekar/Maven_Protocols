@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "pledge status", "pledge failed", "pledge request", "unpledge 
 
 # CONSOLE INSTANT PLEDGE PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -33,8 +30,6 @@ This tool shows instant pledge/unpledge request history — status, qty, date, a
 
 MTF shares are auto-pledged — those are separate from client-initiated pledges in this tool.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -54,7 +49,6 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | uid | (omit — internal transaction ID) |
 | psnstatus | (omit — internal depository status) |
 
----
 
 ### A3 — Pledge Types
 
@@ -64,7 +58,6 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | Unpledge | Release existing pledge |
 | Re-pledge | Re-pledging previously unpledged shares |
 
----
 
 ### A4 — Status Values
 
@@ -74,7 +67,6 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | Failure | Request rejected — security not approved, insufficient qty, or CDSL rejection |
 | Pending | Awaiting CDSL confirmation — usually resolves within 30 minutes |
 
----
 
 ### A5 — Common Failure Reasons
 
@@ -88,7 +80,6 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | Same-day pledge | Securities pledged today cannot be unpledged on the same day. The pledge is processed on the same day and collateral is credited within 15 minutes. An unpledge request can only be submitted from the next working day onwards. The client can sell the pledged shares on the same day, provided the collateral is not being utilised. |
 | F&O segment not active | Pledging requires the F&O segment to be enabled on the client's account. Error message may show as "Pledge is not allowed for your account" or similar account-level restriction. |
 
----
 
 ### A6 — Cross-Reference Tools
 
@@ -99,15 +90,11 @@ MTF shares are auto-pledged — those are separate from client-initiated pledges
 | `console_mtf_holdings` | Cross-reference if client is confused about auto-pledge entries from MTF. |
 | Account Modification tool | Check segment activation status when pledge fails with account-level restriction. |
 
----
 
 ### A7 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol, pledge_type, status, pledge_date, and specific issue.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -146,9 +133,6 @@ Pledged today, cannot unpledge                              → Rule 8
 
 If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, escalate per **A7**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -160,14 +144,12 @@ If no route matches, cross-reference with **A6** tools for additional context. I
    b. Failure → route to **Rule 3** for diagnosis.
    c. Pending → append **A8-R3**.
 
----
 
 ### Rule 2 — Collateral Not Reflecting After Successful Pledge
 
 1. If pledge was within last 30 minutes → Collateral margin can take up to 30 minutes to reflect after a successful pledge. Please check again shortly..
 2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate per **A7**.
 
----
 
 ### Rule 3 — Pledge Failed (Diagnose Reason)
 
@@ -178,14 +160,12 @@ If no route matches, cross-reference with **A6** tools for additional context. I
    d. "Pledge is not allowed for your account" or similar account-level restriction → check the client's segment activation status using the Account Modification tool (per **A6**). If F&O is not enabled → Pledging requires the F&O segment to be active on the account. To activate F&O, upload valid income proof on Console. Once activated, pledging will be available.
 2. If none of the above explains the failure → escalate per **A7** directly. Do not share a generic response.
 
----
 
 ### Rule 4 — Unpledge Rejected (Margin Utilized)
 
 1. `pledge_type` = Unpledge AND status = Failure AND client mentions "margin already utilized."
 2. Your unpledge request for [tradingsymbol] was rejected because the collateral margin from these pledged shares is currently being used against your open positions. To unpledge, you would need to either close the positions using this margin or add equivalent funds/margin from another source first..
 
----
 
 ### Rule 5 — Overdue Pledge Request
 
@@ -194,7 +174,6 @@ If no route matches, cross-reference with **A6** tools for additional context. I
    b. Pending/overdue > 30 mins but < 24 hours → Your pledge request is most likely going to fail as it has been pending for too long. We recommend placing a fresh pledge request on the next trading day, or you can try pledging a different approved security in the meantime..
    c. Pending/overdue > 24 hours → escalate per **A7**.
 
----
 
 ### Rule 6 — Holdings Showing Zero After Pledge
 
@@ -202,14 +181,12 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 2. Check `console_eq_holdings` (per **A6**) to confirm qty is present.
 3. If qty = 0 in Console as well → escalate per **A7** (may be safekeep or DP issue, not pledge-related).
 
----
 
 ### Rule 7 — MTF Auto-Pledge vs Client Pledge
 
 1. Check `pledge_type` and cross-reference with `console_mtf_holdings` (per **A6**).
 2. If you purchased shares under MTF (Margin Trading Facility), those shares are automatically pledged as collateral for the funded amount. These auto-pledge entries are separate from pledges you initiate manually. MTF auto-pledge details are covered under your MTF holdings..
 
----
 
 ### Rule 8 — Same-Day Unpledge Restriction
 

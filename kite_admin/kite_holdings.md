@@ -27,9 +27,6 @@ TRIGGER KEYWORDS: "holdings", "portfolio", "shares missing", "shares not visible
 
 # KITE HOLDINGS PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -47,7 +44,6 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 
 **Sold stocks during the day:** When shares are sold from holdings during the trading day, they appear as a negative position (tagged HOLDING) in the Positions tab. This is normal — it allows intraday traders to buy them back. If the client doesn't intend to rebuy, the negative position can be ignored. Shares are debited from demat by end of day.
 
----
 
 ### A2 — Field Usage Rules
 
@@ -65,7 +61,6 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 |---|---|
 | `ltp` | "current market price" |
 
----
 
 ### A3 — Settlement Schedule
 
@@ -77,7 +72,6 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 | Split shares | Up to 2 working days from ex-date; if not credited after 4 days → escalate |
 | IPO allotment | Visible after listing; may take a day to reflect on Kite |
 
----
 
 ### A4 — T1 / BTST Rules
 
@@ -98,7 +92,6 @@ Buy average on Kite is fetched from Console using FIFO. If not on Console → N/
 
 For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds)
 
----
 
 ### A5 — Corporate Action Impact on Holdings
 
@@ -109,7 +102,6 @@ For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading
 | Demerger | New entity shares credited post-record date. Timelines vary by company/RTA. Buy avg updated manually by Zerodha. |
 | Eligibility | Must hold on or before day before ex-date/record date (T+1 settlement). Pledged shares still eligible. |
 
----
 
 ### A6 — Shares Not Visible: Possible Reasons
 
@@ -125,7 +117,6 @@ For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading
 | Transfer from other broker pending | Check CDSL Easiest status. Once credited to Zerodha demat, shares appear in holdings. Client will need to update buy average manually on Console: [How to update buy average](https://support.zerodha.com/category/console/portfolio/console-holdings/articles/how-to-update-buy-average) |
 | IPO allotment not yet credited | Check CDSL SMS/email for credit confirmation. If allotment is confirmed but shares aren't visible on Kite, wait until end of listing day. |
 
----
 
 ### A7 — Buy Average Issues
 
@@ -135,7 +126,6 @@ For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading
 | Incorrect after CA | Auto-adjusted within ~2 weeks from record date. If longer → raise a ticket. |
 | Sell + rebuy same day = avg unchanged | Intraday = speculative, not delivery — shares don't physically move in/out of demat. Exception: T2T stocks (avg updates to latest buy). |
 
----
 
 ### A8 — P&L Calculations
 
@@ -149,7 +139,6 @@ For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading
 
 **Smallcase vs Kite:** Kite uses FIFO, Smallcase uses simple average — prices may differ. If client sold Smallcase stocks directly on Kite, Smallcase platform may not reflect this — contact help@smallcase.com for Smallcase-specific discrepancies.
 
----
 
 ### A9 — Links
 
@@ -164,13 +153,11 @@ For details: [T1 holdings proceeds](https://support.zerodha.com/category/trading
 | Privacy Mode (Kite web) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-web |
 | Privacy Mode (Kite app) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-app |
 
----
 
 ### A10 — Escalation Data Template
 
 When escalating, always include: **client ID, instrument_name, and specific issue.**
 
----
 
 ### A11 — Short Delivery Investigation Checklist
 
@@ -188,7 +175,6 @@ Invoke `ledger_report` (check the last 2 weeks) and search for a `remarks` entry
 
 **Reference:** [What is short delivery and what are its consequences?](https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences)
 
----
 
 ### A12 — Buy Average Discrepancy Investigation Checklist
 
@@ -209,9 +195,6 @@ If quantity does not match (from Step 2), invoke `console_eq_external_trades` fo
   - **If the entry date is more than 3 days from the current date:** escalate to support agent — the update should have reflected by now but hasn't. Include client ID, instrument, entry date, and discrepant quantity in escalation.
   - **If the entry date is less than 3 days from the current date:** the buy average is being updated. The external trade entry typically reflects within 2 working days. If the average still shows N/A after 2 working days, raise a support ticket.
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -257,9 +240,6 @@ Smallcase vs Kite mismatch                                  → Rule 10
 
 If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A10**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -270,7 +250,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. Total P&L seems wrong → check for `avg_cost` = 0 or N/A. Some holdings have no buy average recorded, so their invested value is excluded from the total calculation. Guide client to update buy average on Console (per **A7**, **A8**, link in **A9**).
 4. If client asks about intraday or F&O position P&L → invoke `kite_positions`.
 
----
 
 ### Rule 2 — Buy Average Issues
 
@@ -283,7 +262,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. Sell + rebuy same day, avg unchanged → this is treated as an intraday trade — shares don't physically move in/out of demat, so buy average stays unchanged. Exception: T2T stocks where buy average updates to latest buy price (per **A7**).
 4. If client wants to verify original purchase → invoke `kite_order_history`.
 
----
 
 ### Rule 3 — T1 / Settlement / BTST
 
@@ -297,7 +275,6 @@ If no route matches, investigate using Section A reference data. If no root caus
    f. Settlement holiday: if a settlement holiday falls between the buy and sell dates, settlement extends — BTST credit may take an additional day.
 3. If client asks why proceeds not reflected in balance → invoke `kite_margins`.
 
----
 
 ### Rule 4 — Pledge / Collateral Status
 
@@ -307,7 +284,6 @@ If no route matches, investigate using Section A reference data. If no root caus
 4. For pledge/unpledge process or why can't pledge a specific stock → redirect to pledge protocol.
 5. Can collateral margin be used for equity delivery (CNC) purchases? → collateral margin from pledged shares can be used for equity intraday trading, futures, and options (buying and writing). For equity delivery (CNC) purchases, available cash or cash-equivalent margin is required — collateral margin alone is not sufficient for buying shares for delivery (per Kite Margins **A6**).
 
----
 
 ### Rule 5 — Shares Not Visible
 
@@ -327,7 +303,6 @@ Invoke `console_eq_tradebook` for the instrument within the relevant date range.
    g. IPO allotment → IPO shares appear after listing. Check CDSL SMS/email for credit confirmation. If allotment is confirmed but shares aren't visible on Kite, wait until end of listing day (per **A3**, **A6**).
 3. If client confirms order was placed → invoke `kite_order_history` to verify execution.
 
----
 
 ### Rule 6 — CDSL TPIN / DDPI (Can't Sell)
 
@@ -337,26 +312,22 @@ Invoke `console_eq_tradebook` for the instrument within the relevant date range.
 4. If sell order was rejected (not authorisation issue) → invoke `kite_orders` for rejection reason.
 5. If GTT sell order didn't trigger → invoke `kite_gtt`.
 
----
 
 ### Rule 7 — Exchange / LTP Mismatch
 
 1. Kite displays holdings from the exchange with the higher previous closing price — not necessarily where the client bought the shares. Demat shares are not mapped to a specific exchange, so the client can sell on either NSE or BSE. Advise checking prices on both exchanges before selling to get the best price (per **A1**).
 
----
 
 ### Rule 8 — Sold Stocks as Negative Positions
 
 1. When shares are sold from holdings during the trading day, they appear as a negative position (tagged HOLDING) in the Positions tab. This is normal — it allows intraday traders to buy them back. If the client doesn't intend to rebuy, the negative position can be ignored. Shares are debited from demat by end of day (per **A1**).
 2. If client asks about sell order details → invoke `kite_orders`.
 
----
 
 ### Rule 9 — Console vs Kite Mismatch
 
 1. Kite shows only actively traded, listed instruments. Console shows everything including suspended, delisted, unlisted shares, GSM 3+ stocks, and locked-in ESOP shares. The value difference is typically from these instruments that Kite cannot price accurately (per **A1**).
 
----
 
 ### Rule 10 — Smallcase vs Kite Mismatch
 

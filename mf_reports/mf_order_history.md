@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "order", "status", "processing", "allotted", "failed", "cancel
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -43,7 +40,6 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | Failed | "Your order was not processed. Reason: [status_message in plain language]" |
 | TPV Pending | "Your order is pending third-party bank account validation at the exchange. The exchange automatically re-validates pending orders on the next business day." |
 
----
 
 ### A2: Payment & NAV Rules
 
@@ -78,7 +74,6 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | inapp_upi | In-app UPI |
 | upi_mandates | UPI autopay |
 
----
 
 ### A3: Order Variety Mapping
 
@@ -94,7 +89,6 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 
 `purchase_type`: FRESH = first-ever order in a fund; ADDITIONAL = subsequent order (SIP instalments, top-ups, repeat lumpsum).
 
----
 
 ### A4: Refund Rules
 
@@ -112,7 +106,6 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 - `payment_confirmed` = true → payment was debited, refund applies.
 - `payment_confirmed` = false → no payment was debited.
 
----
 
 ### A5: Common Rejections
 
@@ -141,7 +134,6 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 | TPV INVALID | Bank validation failed | See Rule 3 (TPV Pending) |
 | BSE infrastructure/database errors (e.g., "network-related or instance-specific error", "BSEMFDB", "Connection Timeout", "DUPLICATE UNIQUE REF NO", "CLIENT DOES NOT EXISTS", "PASSWORD EXPIRED", "login failed") | BSE STAR MF system-side failure — order failed due to exchange infrastructure issue | "As per the reverse feed received from BSE, there was a technical issue at the exchange level. Your payment will be refunded to your bank account within 7 working days. We apologize for the inconvenience." Apply **A4** refund language if `payment_confirmed` = true. |
 
----
 
 ### A6: Redemption Settlement Computation
 
@@ -149,7 +141,6 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 2. **Credit date:** Add `redemption_time` working days (Mon–Fri, excluding trading/settlement holidays) to T. `redemption_time` applies only to redemption (SELL) orders — it is the settlement period for redemption proceeds. If `redemption_time` is blank or null in the order data, do not assume a default settlement period. State: "The settlement timeline for this fund is being updated and will be available shortly."
 3. **Response:** "Your redemption was processed on [T]. Based on [redemption_time] working days settlement, funds should be credited to your primary bank account by [date]."
 
----
 
 ### A7: Field Rules
 
@@ -166,7 +157,6 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 - Financial figures: Always display to 2 decimal places.
 - Communicate payment failures in plain language: state that the payment failed and where in the process it failed (gateway, bank, exchange). Technical details such as error codes and system error descriptions are for internal diagnosis only — translate them into the cause before responding.
 
----
 
 ### A8: Key Facts
 
@@ -183,7 +173,6 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 - Client cannot view fund on Coin: Check console_mf_pseudo_holdings first. If holdings exist → escalate. If no holdings → ask for screenshot.
 - Allotment timeline: Units are typically allotted within T+3 working days (excluding weekends and trading/settlement holidays) from `exchange_timestamp`. When explaining allotment timelines, compute T+3 from `exchange_timestamp` accounting for holidays. Once `exchange_timestamp` is established, it is the processing date. Holidays falling after that date are skipped when counting the T+3 working days, extending the allotment window. State the `exchange_timestamp` date as the processing date and count forward from it.
 
----
 
 ### A9: Links
 
@@ -199,7 +188,6 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 | Convert resident account to NRI | https://support.zerodha.com/category/account-opening/nri-account-opening/process-nri/articles/convert-resident-account-to-nri-account |
 | Delay allotment / NA units | https://support.zerodha.com/category/mutual-funds/payments-and-orders/orders-on-coin/articles/coin-app-na-new-units |
 
----
 
 ### A10: Direct vs Non-Direct Settlement Banks
 
@@ -250,7 +238,6 @@ Non-direct settlement banks report payments to the exchange on the next business
 | | IndusInd Bank |
 | | Yes Bank |
 
----
 
 ### A11: NRI MF Investment Eligibility
 
@@ -262,9 +249,6 @@ Non-direct settlement banks report payments to the exchange on the next business
 
 **Support article:** [Convert resident account to NRI account](https://support.zerodha.com/category/account-opening/nri-account-opening/process-nri/articles/convert-resident-account-to-nri-account)
 
----
-
-## Section B: Decision Flow
 
 On every MF order query, execute in order:
 
@@ -305,9 +289,6 @@ On every MF order query, execute in order:
    orders only when directly relevant to the reported issue.
 ```
 
----
-
-## Section C: Rules
 
 ---
 
@@ -370,7 +351,6 @@ Cross-check fund_allocation_report. No entry → escalate.
 **Step 6.5 — payment_confirmed = true, settled_flag = N, beyond T+2:**
 "Your order is likely to fail. Place a lumpsum order for the current cycle." + **A4** refund language.
 
----
 
 ### Rule 2: Failed Orders
 
@@ -382,7 +362,6 @@ If multiple recent orders failing → check fund_allocation_report `error_remark
 
 Escalate if: INVALID BANK ACCOUNT, PAN/PEKRN MISMATCH, KRA LOCKED, MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC.
 
----
 
 ### Rule 3: Cancelled Orders & TPV Pending
 
@@ -403,7 +382,6 @@ Cancellation time is not recorded — communicate only: "Your order was cancelle
 
 If rejected after re-validation → check `status_message` for TPV INVALID per **A5**. Escalate to support agent.
 
----
 
 ### Rule 4: Redemption Issues
 
@@ -432,7 +410,6 @@ Occurs when recently allotted units haven't synced with CDSL. Units credited by 
 
 Response: "This occurs due to a delay in crediting recently purchased units to your CDSL demat account. Units are normally credited by 8 PM on the settlement date. If delayed, they will be available on the second business day after settlement (T+3). You can place a fresh redemption for your remaining units (excluding recently allotted ones) now, or wait until the next business day for holdings to sync. To avoid this in future, enable DDPI: Console → Settings → Account Authorization → complete DDPI activation using your Aadhaar-linked mobile number."
 
----
 
 ### Rule 5: NAV Disputes
 
@@ -455,7 +432,6 @@ Use `payment_updated_at` vs **A2** cutoffs for the fund type. State the exact ti
 
 Payment mapping: Match `exchange_order_id` = `settlement_number` in fund_allocation_report. This mapping applies to UPI and netbanking orders only.
 
----
 
 ### Rule 6: SIP Queries
 
@@ -483,7 +459,6 @@ If `next_sip_date` within 5 days → check MF Order History for already-placed S
 - Fortnightly SIP contribution counts depend on actual allotment dates. Always verify actual executed orders rather than assuming fixed triggers per month.
 - AMC SIP allotment: always check full MF Order History by fund and date range, not just SIP order book.
 
----
 
 ### Rule 7: NEFT/RTGS/IMPS Payments
 
@@ -495,7 +470,6 @@ If `next_sip_date` within 5 days → check MF Order History for already-placed S
 - Common issue: transferred without selecting NEFT mode on Coin first → payment not received.
 - Order still Processing beyond T+4 → "Your order is likely to fail. Please place a fresh order if needed."
 
----
 
 ### Rule 8: Payment Gateway Failures
 
@@ -507,7 +481,6 @@ Links: Payments on Coin and NEFT/RTGS on Coin from **A9**.
 
 If all methods fail → escalate.
 
----
 
 ### Rule 9: Escalation Triggers
 
@@ -518,7 +491,6 @@ If all methods fail → escalate.
 - Client asks about children's fund / gift plans → these schemes are not available on Coin.
 - INVALID BANK ACCOUNT DETAILS in any context.
 
----
 
 ### Rule 10: NRI MF Investment Eligibility
 
@@ -535,7 +507,6 @@ If all methods fail → escalate.
 **Account conversion queries:**
 - If client asks how to convert their resident account to NRI → share the conversion support article from **A11**: "You can initiate the conversion from your Zerodha account. KYC details are collected as part of the conversion process."
 
----
 
 ### Rule 11: Duplicate/Extra Payment Claims
 

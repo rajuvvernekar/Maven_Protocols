@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "breakdown", "view breakdown", "holdings breakdown", "FIFO cal
 
 # CONSOLE EQ HOLDINGS BREAKDOWN PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ---
 
@@ -33,8 +30,6 @@ Buy average is calculated from these entries using FIFO —  use this to walk th
 
 Breakdown entries may be delayed by up to 1 day after trade execution due to file processing.
 
-
----
 
 ### A2 — Field Usage Rules
 
@@ -55,7 +50,6 @@ Breakdown entries may be delayed by up to 1 day after trade execution due to fil
 | pledged | (use internally to check pledge status; describe outcome to client) |
 | Any internal field name or system term | (describe the outcome, not the field) |
 
----
 
 ### A3 — Entry Type Identification
 
@@ -67,7 +61,6 @@ Breakdown entries may be delayed by up to 1 day after trade execution due to fil
 | `pseudo_trade` = true, `corporate_action_id` populated (qty/price adjusted) | Split adjustment | Qty multiplied, price divided per split ratio |
 | `external_trade_type` populated (discrepant/buyback/IPO/gift/ESOP/internal_transfer) | External entry | Came from external trades system |
 
----
 
 ### A4 — Cross-Reference Tools
 
@@ -78,7 +71,6 @@ Breakdown entries may be delayed by up to 1 day after trade execution due to fil
 | `console_eq_external_trades` | External entries only. Breakdown includes these; use external trades tool to check if a specific entry was posted. |
 | `console_eq_pnl` | Realized P&L. Both breakdown and P&L are computed from the same FIFO logic. |
 
----
 
 ### A5 — CA Entry Timelines
 
@@ -90,15 +82,11 @@ Breakdown entries may be delayed by up to 1 day after trade execution due to fil
 
 If beyond expected timeline and CA entry not found → escalate.
 
----
 
 ### A6 — Escalation Data Template
 
 When escalating, always include: **client ID, tradingsymbol, ISIN, specific missing/wrong entries, and dates.**
 
----
-
-## Section B: Decision Flow
 
 ---
 
@@ -136,9 +124,6 @@ Verify if a specific CA was posted in breakdown             → Rule 8
 
 If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A6**.
 
----
-
-## Section C: Rules
 
 ---
 
@@ -153,14 +138,12 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 Your buy average is calculated using FIFO — when you sell, the oldest purchased shares are consumed first, changing the average of remaining shares..
 4. If sell entries exist, explain FIFO consumption per **A7-R2** — show which buy entries each sell consumed.
 
----
 
 ### Rule 2 — Dividend Reinvestment Entries
 
 1. Identify entries via **A3** (exchange = DIVIDEND, price = 0, fractional qty, pseudo_trade = true).
 2. The entries showing ₹0 price with small/fractional quantities for [tradingsymbol] are dividend reinvestment credits. When ETFs like LIQUIDBEES distribute dividends, the dividend amount is reinvested as additional units at zero acquisition cost. These are normal entries and directly impact your buy average calculation..
 
----
 
 ### Rule 3 — Bonus / Split Entries in Breakdown
 
@@ -168,7 +151,6 @@ Your buy average is calculated using FIFO — when you sell, the oldest purchase
 2. Bonus (price = 0, CA entry) → The entry showing [quantity] shares at ₹0 on [date] is your bonus share credit. Bonus shares are credited at zero cost, which reduces your overall buy average..
 3. Split (qty/price adjusted, CA entry) → The split adjustment on [date] changed your holding from [old qty] shares to [new qty] shares. The price per share was proportionally adjusted. Your total investment value remains unchanged..
 
----
 
 ### Rule 4 — Entry Missing from Breakdown
 
@@ -176,7 +158,6 @@ Your buy average is calculated using FIFO — when you sell, the oldest purchase
 2. If trade was yesterday → Breakdown entries can take up to 1 trading day to reflect. The trade is recorded in the tradebook and will appear in the breakdown shortly. This delay does not affect your buy average or P&L..
 3. If trade was 2+ trading days ago and still not in breakdown → escalate per **A6**.
 
----
 
 ### Rule 5 — Unrecognized Entries in Breakdown
 
@@ -186,7 +167,6 @@ Your buy average is calculated using FIFO — when you sell, the oldest purchase
    c. Corporate action entry (price = 0, system entry) → This is a corporate action entry for [bonus/split/merger/demerger] of [tradingsymbol]..
    d. None of the above explain it → escalate per **A6** as potential breakdown-tradebook mismatch.
 
----
 
 ### Rule 6 — Breakdown Not Loading / Error
 
@@ -194,7 +174,6 @@ Your buy average is calculated using FIFO — when you sell, the oldest purchase
 2. Stock-specific → may be a data issue for that ISIN. escalate per **A6** with client ID and tradingsymbol.
 3. Account-wide → The breakdown view is experiencing a temporary issue. Please try again after some time or use a different browser. If the issue persists, we'll investigate further.. If persists beyond 24 hours → escalate per **A6**.
 
----
 
 ### Rule 7 — Verifying Buy Average is Correct
 
@@ -204,7 +183,6 @@ b. Weighted average = total value of all entries / total quantity.
 Respond per A7-R3.
 If the calculation does not match what console_eq_holdings shows → escalate per A6.
 
----
 
 ### Rule 8 — Corporate Action Entry Verification
 

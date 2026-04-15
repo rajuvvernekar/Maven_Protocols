@@ -15,9 +15,6 @@ TRIGGER KEYWORDS: "money deducted but not invested", "refund UTR", "payment mapp
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ### A1 — Tool Purpose & Scope
 
@@ -71,8 +68,6 @@ If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → escalate to suppor
 | Mandate debit cross-reference | mandate_debit_report (cashier_reference = cfppg_bank_ref_no) |
 | NEFT/RTGS/IMPS payment handling | mf_order_history Rule 7 |
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. **NEFT/RTGS/IMPS gate:** Check if payment method is NEFT/RTGS/IMPS per **A2**. If yes → do not use this tool. Route to mf_order_history.
@@ -110,9 +105,6 @@ Query relates to MF payment / fund allocation →
 
 If no entry found and payment is beyond 24 hours → advise 5–7 working day refund timeline per **A4**.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — Payment Debited But Not Allotted
 

@@ -19,9 +19,6 @@ TRIGGER KEYWORDS: "holdings", "units", "buy average", "portfolio", "pledged", "n
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ### A1 — Tool Purpose & Scope
 
@@ -186,9 +183,6 @@ Portfolio XIRR will not display if the majority of investments are less than one
 
 Reference: https://support.zerodha.com/category/console/portfolio/console-holdings/articles/portfolio-xirr
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -254,9 +248,6 @@ Query relates to MF holdings →
 
 If no root cause is identified after the diagnostic steps → escalate with fund name, discrepant value (internal), and the specific issue.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — Failure Date: Immediate Escalation
 

@@ -16,9 +16,6 @@ TRIGGER KEYWORDS: "modified SIP", "changed SIP date", "paused SIP", "who changed
 
 ## Protocol
 
----
-
-## Section A: Reference Data
 
 ### A1 — Tool Purpose & Scope
 
@@ -66,8 +63,6 @@ A modification within 1–2 days of the trigger date means the current instalmen
 | SIP-not-triggered sequential diagnostic | sip_report Rule 1 |
 | last_sip_at field (order execution date, not modification) | sip_report |
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. **public_id gate (hard block):** Verify `public_id` is available from sip_report before querying this tool. If not available → fetch sip_report first. Do not query this tool without `public_id` — results will be incorrect or empty.
@@ -106,9 +101,6 @@ Query relates to SIP/SWP/STP modification history →
 
 If no entries found → report that no modifications were made and route back to sip_report Rule 1 for continued diagnosis.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — Modification Near Trigger Date
 

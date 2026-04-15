@@ -15,9 +15,6 @@ TRIGGER KEYWORDS: "STP", "systematic transfer", "transfer between funds", "coin"
 
 # STP REPORT PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ### A1 — STP Fundamentals
 
@@ -95,8 +92,6 @@ To set up an STP on Coin web: Dashboard → Mutual Funds → select the **source
 | Source fund available units (`available`) | console_mf_holdings |
 | Order status for both legs on trigger date | mf_order_history (SWP leg: variety = SWP; SIP leg: variety = SIP) |
 
-## Section B: Decision Flow
-
 ### Preflight (run on every query)
 
 1. Fetch the STP report for the client.
@@ -137,9 +132,6 @@ Query relates to STP →
 
 If no root cause found after completing all diagnostic steps → escalate with screenshot.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — STP Not Working: Sequential Diagnostic
 

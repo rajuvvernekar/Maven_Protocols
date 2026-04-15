@@ -21,11 +21,6 @@ TRIGGER KEYWORDS: "IPO", "mandate", "UPI", "UPI handle", "UPI not showing", "not
 
 # IPO PROTOCOL
 
----
-
-## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — IPO Fundamentals
 
@@ -148,9 +143,6 @@ Escalate when:
 
 Collect for escalation: screenshot, IPO name, action attempted, device type.
 
----
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -241,11 +233,6 @@ Query relates to IPO →
 
 If no matching scenario is found after checking all rules → collect details and escalate per **A10**.
 
----
-
-## Section C: Rules
-
-Rules reference Section A blocks. They do not redefine what is already defined there.
 
 ### Rule 1 — Mandate Not Received
 

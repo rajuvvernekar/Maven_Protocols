@@ -17,9 +17,6 @@ TRIGGER KEYWORDS: "lock-in", "ELSS unlock", "when can I redeem ELSS", "allotment
 
 # CONSOLE MF TRADEBOOK PROTOCOL
 
----
-
-## Section A: Reference Data
 
 ### A1 — Tool Purpose & Scope
 
@@ -51,8 +48,6 @@ TRIGGER KEYWORDS: "lock-in", "ELSS unlock", "when can I redeem ELSS", "allotment
 | Units missing after allotment — discrepancy diagnosis | console_mf_pseudo_holdings (primary source) |
 | Transferred-in units affecting P&L / buy average | console_mf_external_trades |
 | Redeemable units verification | console_mf_holdings (`available` field) |
-
-## Section B: Decision Flow
 
 ### Preflight (run on every query)
 
@@ -87,9 +82,6 @@ Query relates to MF tradebook →
 
 If trade data seems inconsistent or missing entries cannot be explained → escalate with client ID, fund name, trade dates, and the specific discrepancy.
 
----
-
-## Section C: Rules
 
 ### Rule 1 — ELSS Lock-in
 
