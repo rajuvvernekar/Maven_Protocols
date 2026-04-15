@@ -15,13 +15,9 @@ TRIGGER KEYWORDS: "money deducted but not invested", "refund UTR", "payment mapp
 
 ## Protocol
 
-# MF FUND ALLOCATION REPORT PROTOCOL
-
 ---
 
 ## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Tool Purpose & Scope
 
@@ -47,7 +43,7 @@ NEFT/RTGS/IMPS payments go directly to ICCL and will not appear in this report. 
 
 | Condition | Client-Facing Communication |
 |---|---|
-| `refund_utr` populated | "Your refund of ₹[refund_amount] has been processed on [date_of_refund]. Use reference number [refund_utr] to track it with your bank." Do not add the 5–7 day disclaimer — refund is already initiated. Only share `date_of_refund` if available in the report — never infer or compute from other fields. |
+| `refund_utr` populated | "Your refund of ₹[refund_amount] has been processed on [date_of_refund]. Use reference number [refund_utr] to track it with your bank." The refund has already been initiated — share the refund amount, date_of_refund (if available in the report), and refund_utr. Direct the client to track with their bank using the reference number. Only share `date_of_refund` if available in the report — never infer or compute from other fields. |
 | `refund_utr` empty | "Your payment could not be settled and the order will not be processed. The debited amount will be refunded to your bank account within 5–7 working days (excluding weekends and holidays)." |
 | No entry at all | "Payment not yet reflected. Allow 24 hours. If not visible, the amount will be refunded within 5–7 working days (excluding weekends and holidays)." |
 
@@ -118,15 +114,13 @@ If no entry found and payment is beyond 24 hours → advise 5–7 working day re
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ### Rule 1 — Payment Debited But Not Allotted
 
 1. Find the payment by date/UTR.
 2. Check `error_remarks` first per **A5**. If "INVALID BANK ACCOUNT DETAIL" → escalate immediately. Do not continue.
 3. Check `settled_flag` and `allotment_flag` and respond using the matching row from **A3**.
 4. If `settled_flag` = N and beyond T+2 → check refund status per **A4**:
-   - `refund_utr` populated → share refund details.
+   - `refund_utr` populated → share refund details per **A4**.
    - `refund_utr` empty → "Refund will be credited within 5–7 working days."
 5. If no entry found → "Payment not yet reflected. Allow 24 hours. If not visible, refund within 5–7 working days (excluding weekends and holidays)." (Per **A4**.)
 
@@ -134,7 +128,6 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 
 1. Check `refund_amount`, `date_of_refund`, and `refund_utr`.
 2. Respond using the matching condition from **A4**.
-3. If `refund_utr` is populated → share amount, date (if available), and reference number. Do not add the 5–7 day disclaimer.
+3. If `refund_utr` is populated → share amount, date (if available), and reference number. The refund has already been initiated — only the reference details are needed.
 4. If `refund_utr` is empty → "Your refund is being processed and will be credited within 5–7 working days (excluding weekends and holidays)."
 5. Always provide the range only — specific refund credit dates are not available (per **A4**).
-

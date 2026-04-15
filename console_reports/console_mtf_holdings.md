@@ -21,8 +21,6 @@ TRIGGER KEYWORDS: "MTF", "margin trading", "funded", "MTF holdings", "MTF intere
 
 ## Protocol
 
-# CONSOLE MTF HOLDINGS PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -113,7 +111,7 @@ Backedated MTM is available on Console MTF holdings — client can select a date
 | MTF approved stock list | zerodha.com/margin/mtf |
 | MTF interest statement | Console → Funds → Interest statement → select MTF → select the date for which interest needs to be checked |
 
-A full-year downloadable MTF holdings statement is not available. Zerodha does not create custom reports or statements on request. The MTF Interest Statement and tradebook download are the only available alternatives for MTF-related data.
+Zerodha does not prepare custom MTF holdings statements on request, regardless of purpose (tax filing, audit, or any other). Do not offer to escalate for a custom report or suggest that writing back will produce one. When a client requests a full-year MTF statement, respond: "A full-year downloadable MTF holdings statement is not available. The MTF Interest Statement (Console → Funds → Interest statement → select MTF) and tradebook download are the available alternatives for MTF-related data." The MTF Interest Statement and tradebook download are the only available alternatives — there is no other escalation path for this request.
 
 ---
 
@@ -163,7 +161,7 @@ Only the minimum quantity needed to restore your margin is sold — not necessar
 If you don't have enough funds, the conversion will fail — it may show as 'Processed' in the status but the shares will remain under MTF. Please verify your available balance before placing the conversion request."
 
 **R8 — Conversion failed (insufficient margin):**
-"The conversion was not processed due to insufficient margin. The 'Processed' status is a display issue. Please add the required funds and place a new conversion request."
+"The conversion was not processed due to insufficient funds in your account. The 'Processed' status is a display issue. Please add the required funds and place a new conversion request."
 
 **R9 — Conversion failed on ex-date:**
 "MTF conversions on the ex-date of a corporate action are not processed to avoid complications with the credit handling. Please place the conversion request again after the ex-date."

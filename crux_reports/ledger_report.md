@@ -33,8 +33,6 @@ TRIGGER KEYWORDS: "withdrawal failed", "partial amount", "can't withdraw", "zero
 
 ## Protocol
 
-# LEDGER REPORT PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -280,12 +278,12 @@ If no root cause is identified after checking all relevant rules → escalate pe
 **Step 4 — Trade breakdown for settlement entries:**
 When the entry is a settlement or net obligation (voucher_type = "Book Voucher" with settlement/obligation remarks per **A3**), identify and name the underlying trades that make up the net obligation:
 
-1. Fetch `kite_order_history` for the trading date associated with the settlement entry. The trading date is one settlement working day before the posting date (T+1 posting means the trades were placed on T).
+1. A settlement entry posted on a given date corresponds to trades executed on that same date. Fetch `kite_order_history` for the posting date of the settlement entry to identify the underlying trades. Do not assume the trades were placed on a prior date — the posting date is the trade date.
 2. For each order in the order history:
    - **Status = "COMPLETE":** The order was fully executed. Trade value = filled quantity × average price. Buy orders contribute a debit; sell orders contribute a credit to the net obligation.
    - **Status = "CANCELLED":** Check the filled quantity. If filled quantity > 0, the order was partially executed before cancellation. Trade value = filled quantity × average price (debit for buy, credit for sell). If filled quantity = 0, the order was fully cancelled and does not contribute to the settlement.
    - Other statuses (REJECTED, etc.): Do not contribute to the settlement.
-3. Present the breakdown: "This settlement entry includes the following trades from [trading date]:" followed by each executed/partially executed trade with stock name, transaction type (buy/sell), filled quantity, average price, and trade value.
+3. Present the breakdown: "This settlement entry includes the following trades from [posting date]:" followed by each executed/partially executed trade with stock name, transaction type (buy/sell), filled quantity, average price, and trade value.
 4. Confirm that the sum of individual trade values (net of buys and sells) aligns with the settlement debit/credit amount. Minor differences may exist due to charges (brokerage, STT, etc.) included in the net obligation.
 
 ### Rule 4 — Withdrawal Failed: Same-Day Funds

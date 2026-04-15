@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "SIP", "SIP not triggered", "SIP cancelled", "SIP paused", "SI
 
 ## Protocol
 
-# SIP REPORT PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -97,9 +95,10 @@ Perform for each affected Zerodha SIP (`sip_type` = sip):
 3. **No units found** → check mf_order_history for a FRESH order (purchase_type = FRESH) for that fund:
    - FRESH Processing/Placed → "Initial investment is still being processed. SIP will trigger once units are allotted and settled." If the next SIP date (`next_sip_date` from sip_report) falls before the expected allotment and settlement date (T+2 from `exchange_timestamp` or `payment_updated_at`), the upcoming instalment will be skipped. State: "Your initial investment is still being processed and will not be settled before your next SIP date. The upcoming SIP instalment will be skipped. Once the initial investment is allotted and settled, please pause and resume the SIP on Coin to reset the trigger date for the next cycle."
    - FRESH Failed/Cancelled → "Initial investment was not completed. Place a fresh lumpsum order. Once allotted, pause and resume the SIP to reset the trigger date."
-   - No FRESH order in mf_order_history → mf_order_history covers only the last 30 days. Check console_mf_tradebook for an allotment entry (trade_type = BUY, purchase_type = FRESH) for this fund. If an allotment entry exists → initial investment was completed but is older than 30 days. Proceed to Step 1.5 in **A5**. If no entry in console_mf_tradebook either → initial investment was never placed. "Please place a lumpsum order for [fund name]. Once allotted and settled (T+2), the SIP will begin triggering."
+   - No FRESH order in mf_order_history → mf_order_history covers only the last 180 days. Check console_mf_tradebook for an allotment entry (trade_type = BUY, purchase_type = FRESH) for this fund. If an allotment entry exists → initial investment was completed but is older than 180 days. Proceed to Step 1.5 in **A5**. If no entry in console_mf_tradebook either → initial investment was never placed. "Please place a lumpsum order for [fund name]. Once allotted and settled (T+2), the SIP will begin triggering."
 4. Name the fund explicitly in the response.
 5. If multiple SIPs affected: perform this check for each fund separately. List every fund missing initial investment by name: "We checked your SIPs and found that the following funds are missing an initial investment: [fund 1], [fund 2], [fund 3]. Please place a lumpsum order for each of these funds. Once the units are allotted and settled (T+2), the respective SIPs will begin triggering automatically."
+6. **Mandate linkage check (always perform after initial investment diagnostic):** After diagnosing the initial investment issue, also check `fund_source` per **A4** for mandate linkage on each affected SIP. If `fund_source` = `rp-pg`, `pool`, or blank → inform the client that no mandate is linked to this SIP and advise creating and linking one. Share link from **A8**. Communicate both issues together — the client needs to resolve both the initial investment and mandate linkage for the SIP to trigger automatically.
 
 ### A7 — Field Rules
 
@@ -189,7 +188,7 @@ If no root cause is identified after completing all diagnostic steps → escalat
 ### Rule 1 — SIP Not Triggered: Sequential Diagnostic
 
 1. Run through the diagnostic sequence in **A5** in order.
-2. For Step 1 (Zerodha SIP initial investment): follow the full diagnostic in **A6** for each affected fund. Name every fund explicitly.
+2. For Step 1 (Zerodha SIP initial investment): follow the full diagnostic in **A6** for each affected fund. Name every fund explicitly. After diagnosing the initial investment issue, also check mandate linkage per **A6** Step 6 and communicate both issues together.
 3. For Step 1.5 (initial allotment timing): if FRESH order allotted on/after `preferred_date` or within 2 days → advise to pause and resume.
 4. For Step 2 (recent modification): get `public_id` from sip_report → check sip_modification_log. If any modification is found within T-2 of the expected trigger date → "Your SIP was [modified/paused] on [date], within 2 days of the execution date. The current instalment was skipped. It will trigger from the next SIP date."
 5. For Step 6 (mandate linkage): follow the full mandate verification in Rule 5.
@@ -240,4 +239,3 @@ Orders for daily SIPs are placed on T-1 day in the system. Before concluding a d
 
 1. If client reports they cannot delete a SIP → escalate to support agent immediately per **A10**.
 2. Respond: "We are escalating this to our team for resolution. You can expect an update within 24–48 hours."
-

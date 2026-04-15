@@ -19,8 +19,6 @@ TRIGGER KEYWORDS: "holdings", "units", "buy average", "portfolio", "pledged", "n
 
 ## Protocol
 
-# CONSOLE MF PSEUDO HOLDINGS PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -63,9 +61,9 @@ Check in this order — stop at the first match:
 
 | Step | Cause | How to Identify | Action |
 |---|---|---|---|
-| 1 | Delay allotment (most common) | Recent order found in mf_order_history with `exchange_timestamp` within T+3 working days (excluding weekends and trading/settlement holidays). Cross-check console_mf_tradebook for allotment entry. | Respond per **A9** template R1. Share delay allotment link below. Do NOT suggest app troubleshooting (log out/in, clear cache, refresh) — the issue is settlement-side, not client-side. If specific funds show no values and no Coin purchase history exists, ask the client whether units were transferred from another platform before proceeding — transferred-in units require external trade entries (see Step 3). |
+| 1 | Delay allotment (most common) | Recent order found in mf_order_history with `exchange_timestamp` within T+3 working days (excluding weekends and trading/settlement holidays). Cross-check console_mf_tradebook for allotment entry. | If `exchange_timestamp` is within T+3 working days → respond per **A9** template R1. Share delay allotment link below. If `exchange_timestamp` is beyond T+3 working days → proceed directly to Step 1b (escalation). Do NOT suggest app troubleshooting (log out/in, clear cache, refresh) — the issue is settlement-side, not client-side. If specific funds show no values and no Coin purchase history exists, ask the client whether units were transferred from another platform before proceeding — transferred-in units require external trade entries (see Step 3). |
 | 1a | Units allotted but invested value not updated | Units are allotted (confirmed in mf_order_history or console_mf_tradebook) but invested value still displays as NA or incorrectly | Respond per **A9** template R2. This is caused by incremental settlement file processing. Share delay allotment link below. |
-| 1b | Delay allotment — escalation | Discrepancy from Step 1 persists beyond T+3 working days (client confirms issue is not resolved) | Escalate to support agent. |
+| 1b | Delay allotment — escalation | `exchange_timestamp` is beyond T+3 working days (excluding weekends and trading/settlement holidays) | Escalate to support agent. |
 | 2 | Wrongly entered external trades | All purchases through Coin + client added external entries manually | Escalate to support agent: "External trade entries were incorrectly added for this fund. We will request deletion from our end." |
 | 3 | Transferred from another platform | Units transferred in, no external entries added | "Add external trades: Console → Portfolio → Holdings → fund → Add External Trade." |
 | 4 | NFO recently allotted | New Fund Offer units allotted recently | "May auto-resolve in 3–5 days." |
@@ -114,6 +112,7 @@ The discrepant field and unit count comparisons between internal reports are for
 | Order status, allotment confirmation, exchange_timestamp | mf_order_history |
 | Non-demat MF unit transfer / dematerialization | Rule 7 (**A8a**) |
 | Demat MF unit transfer / CDSL Easiest / ELSS lock-in transfer | Rule 7 (**A8b**) |
+| Outward MF unit transfer from Zerodha | Rule 7 (**A8c**) |
 | LAS / Loan Against Securities queries | Rule 9 |
 | Client account classification (Silo) for collateral timelines | get_all_client_data |
 
@@ -145,6 +144,32 @@ For clients who hold MF units in demat mode with another broker and want to tran
 
 **Support article:** [How to transfer shares from another demat account to Zerodha?](https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/transfer-securities/articles/how-do-i-transfer-shares-from-another-demat-account-to-my-zerodha-demat#H1)
 
+### A8c — Outward MF Unit Transfer (Transfer from Zerodha to Another Platform)
+
+For clients who want to transfer mutual fund units out of Coin to another platform or demat account:
+
+**Three methods available:**
+
+1. **Transfer to another CDSL demat account:** Done online via CDSL Easiest.
+2. **Transfer to an NSDL demat account:** Done via off-market transfer.
+3. **Transfer to non-demat mode (physical/RTA/offline):** Requires rematerialisation.
+
+**Transferring units under lock-in period:**
+- For NSDL accounts: locked-in units cannot be transferred in demat mode — they must be rematerialised first, then transferred.
+- For CDSL accounts: locked-in units can only be transferred to another CDSL demat account under the same PAN using the closure cum transfer process.
+
+**Before initiating transfer:** Check if units are pledged (`margin` > 0 in this tool). Pledged units must be unpledged before transfer: Console → Portfolio → Holdings → [fund] → Unpledge.
+
+**Client's demat details:** The client's DP ID and Client ID from get_all_client_data are needed for the transfer process.
+
+**Transfer charges:**
+- ₹25 per security per transaction + 18% GST.
+- Stamp duty of 0.015% on the considered amount (paid to CDSL).
+- For rematerialisation: ₹150 + 18% GST per scheme (₹150 per investment for ELSS).
+- DIS booklet: first booklet of 10 slips is free; additional booklets ₹100 + 18% GST per booklet + ₹100 + 18% GST courier charges.
+
+**Support article:** https://support.zerodha.com/category/mutual-funds/coin-general/transferring-mf/articles/transfer-mutual-funds-out-of-coin
+
 ### A9 — Response Templates
 
 **R1 — Delay allotment (units not yet allotted):**
@@ -152,6 +177,22 @@ For clients who hold MF units in demat mode with another broker and want to tran
 
 **R2 — Units allotted, invested value not updated:**
 "Your order for [fund] of ₹[amount] was placed on [date]. The payment was settled, and units were allotted on [allotment date]. You received [X] units at a NAV of ₹[NAV]. The invested value display may take up to 24–48 hours to update due to settlement file processing. You can check the correct values in a day or two."
+
+### A10 — Holdings Verification Alternatives
+
+Clients can verify their mutual fund holdings through:
+- Coin app or Console (primary).
+- Monthly CAS (Consolidated Account Statement) email.
+- Statement of Holdings (SOH) — Zerodha sends the holdings statement to the registered email on a monthly basis.
+- Transaction cum holding statement from CDSL Easi portal.
+
+Reference: https://support.zerodha.com/category/console/portfolio/console-holdings/articles/transaction-cum-holding-statement
+
+### A11 — XIRR Display Behavior
+
+Portfolio XIRR will not display if the majority of investments are less than one year old. The system shows '–' instead to avoid displaying disproportionately high or misleading XIRR values. This is expected behavior.
+
+Reference: https://support.zerodha.com/category/console/portfolio/console-holdings/articles/portfolio-xirr
 
 ---
 
@@ -193,7 +234,7 @@ Query relates to MF holdings →
 ├─ Console vs Coin value difference
 │  → Rule 6
 │
-├─ Client asks about transferring MF units to Zerodha (demat or non-demat) / dematerialization
+├─ Client asks about transferring MF units to or from Zerodha (demat or non-demat) / dematerialization
 │  → Rule 7
 │
 ├─ Fund still showing in portfolio after full redemption (residual decimal units)
@@ -202,6 +243,12 @@ Query relates to MF holdings →
 ├─ Client asks about MF units in loan / collateral / LAS
 │  → Rule 9
 │
+├─ Client asks about XIRR not displaying or showing '–'
+│  → Rule 10
+│
+├─ Client asks about verifying holdings outside Coin (CAS, SOH, CDSL statement)
+│  → Rule 11
+│
 └─ General MF holdings query
    → Check data here first, invoke console_mf_holdings only if
      available/holdings_date/total_quantity needed (per A6)
@@ -209,8 +256,7 @@ Query relates to MF holdings →
 
 ### Scope
 
-- Address: MF holdings status, discrepancy diagnosis, buy average verification, pledged units, NAV differences, MF unit transfer guidance (demat and non-demat), and residual unit display issues.
-- Share only fields per **A5**. Use client-facing language for all tool references, discrepancy explanations, and unit comparisons.
+- Address: MF holdings status, discrepancy diagnosis, buy average verification, pledged units, NAV differences, MF unit transfer guidance (demat and non-demat, inward and outward), residual unit display issues, XIRR display behavior, and holdings verification alternatives.
 
 ### Fallback
 
@@ -229,9 +275,9 @@ If no root cause is identified after the diagnostic steps → escalate with fund
 ### Rule 2 — Discrepancy Detection & Diagnosis
 
 1. Triggered when: `discrepant` > 0, client reports "fix discrepancy" message, or invested amount shows as "NA".
-2. **Preflight for discrepancy:** Before entering the A4 diagnostic sequence, check mf_order_history (per **A7**) for recent orders in the affected fund. If recent orders exist, check `exchange_timestamp`: if T+3 working days (excluding weekends and trading/settlement holidays) have not elapsed from `exchange_timestamp` → this is a delay allotment. Respond per **A4** Step 1 with the appropriate template from **A9**. If units are confirmed allotted (in mf_order_history or console_mf_tradebook) but invested value shows as NA or incorrect → respond per **A4** Step 1a with template R2 from **A9**.
+2. **Preflight for discrepancy:** Before entering the A4 diagnostic sequence, check mf_order_history (per **A7**) for recent orders in the affected fund. If recent orders exist, check `exchange_timestamp`: if T+3 working days (excluding weekends and trading/settlement holidays) have not elapsed from `exchange_timestamp` → this is a delay allotment. Respond per **A4** Step 1 with the appropriate template from **A9**. If `exchange_timestamp` is beyond T+3 working days → proceed directly to **A4** Step 1b (escalation). If units are confirmed allotted (in mf_order_history or console_mf_tradebook) but invested value shows as NA or incorrect → respond per **A4** Step 1a with template R2 from **A9**.
 3. If no recent orders explain the discrepancy, work through the remaining diagnostic steps in **A4** in order — stop at the first match.
-4. For Step 1b (delay allotment — escalation): only if the client confirms the discrepancy has persisted beyond T+3 working days, escalate to support agent.
+4. For Step 1b (delay allotment — escalation): if `exchange_timestamp` is beyond T+3 working days, escalate to support agent.
 5. For Step 2 (wrongly entered external trades): verify via console_mf_external_trades (per **A7**). If confirmed → escalate.
 6. For Step 3 (transferred from another platform): guide client to add external trades using the Console path from **A4**.
 7. For Step 4 (NFO): advise to wait 3–5 days.
@@ -259,11 +305,24 @@ If no root cause is identified after the diagnostic steps → escalate with fund
 1. Respond using **A2**: "Console displays the NAV as of T-2 days, while Coin displays the NAV as of T-1 day. This difference in NAV dates causes the P&L values to appear different. For the latest valuation, please refer to Coin."
 2. Share link from **A2**.
 
-### Rule 7 — MF Unit Transfer to Zerodha
+### Rule 7 — MF Unit Transfer (Inward and Outward)
+
+**Inward transfers (to Zerodha):**
 
 1. If client holds non-demat (physical/statement-based) MF units → dematerialization is required first (per **A8a**). Respond: "To transfer mutual fund units from another platform to Coin, the units need to be converted to demat form (dematerialization). Charges apply: ₹150 + 18% GST per scheme (₹150 per investment for ELSS schemes), plus ₹100 courier charges. If your units are in physical mode or held in Statement of Account (SOA), they must be dematerialised or destatementized before transferring." Share support article links from **A8a**.
 2. If client holds MF units in demat mode with another broker → guide per **A8b**. If the source broker's depository is CDSL, the client can use the CDSL Easiest online facility. For ELSS units under lock-in, transfer is only via the closure cum transfer process to another demat account of the same holder. Share support article link from **A8b**.
 3. Once units are transferred → they will appear in this tool. The client may then need to add external trade entries (Console → Portfolio → Holdings → fund → Add External Trade) for correct buy average and P&L calculation.
+
+**Outward transfers (from Zerodha):**
+
+4. Check if units are pledged (`margin` > 0). If pledged → advise unpledging first: Console → Portfolio → Holdings → [fund] → Unpledge.
+5. Guide per **A8c** based on the destination:
+   - To another CDSL demat account → online via CDSL Easiest.
+   - To an NSDL demat account → off-market transfer.
+   - To non-demat mode (physical/RTA/offline) → rematerialisation required.
+6. For units under lock-in: NSDL destination requires rematerialisation first. CDSL destination can use closure cum transfer process (same PAN only).
+7. Share the client's DP ID and Client ID from get_all_client_data to facilitate the transfer.
+8. Share transfer charges and support article from **A8c**.
 
 ### Rule 8 — Residual Decimal Units After Full Redemption
 
@@ -278,6 +337,12 @@ If no root cause is identified after the diagnostic steps → escalate with fund
 2. Respond: "For queries related to loans against mutual fund holdings, please email capitalsupport@zerodha.com. They will be able to assist you with this."
 3. This is outside MF protocol scope.
 
+### Rule 10 — XIRR Not Displaying
 
----
----\
+1. Respond using **A11**: "Portfolio XIRR will not display if the majority of investments are less than one year old. The system shows '–' instead to avoid displaying disproportionately high or misleading XIRR values. This is expected behavior."
+2. Share reference link from **A11**.
+
+### Rule 11 — Holdings Verification Alternatives
+
+1. Respond using **A10**: "You can verify your mutual fund holdings through the monthly CAS email, the Statement of Holdings (SOH) sent to your registered email monthly, or by downloading the transaction cum holding statement from the CDSL Easi portal."
+2. Share reference link from **A10**.

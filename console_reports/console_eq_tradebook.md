@@ -19,8 +19,6 @@ TRIGGER KEYWORDS: "tradebook", "trade history", "trade details", "execution pric
 
 ## Protocol
 
-# CONSOLE EQ TRADEBOOK PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -65,7 +63,7 @@ Tradebook does not have a product type (CNC/MIS) field. For EQ series, intraday 
 | Tool | When to Use |
 |---|---|
 | `console_eq_external_trades` | If trade not found in tradebook — may be an off-platform entry (IPO, transfer, buyback, gift, ESOP). |
-| `console_eq_tradebook_prepared` | For trade data older than 100 days. Supports any date range. |
+| `console_eq_tradebook_prepared` | For trade data older than 100 days. Supports any date range. Call immediately when this tool returns an error or when the requested date range falls outside the last 100 days. |
 | `console_eq_holdings_breakdown` | Walk through FIFO entry by entry to verify buy average. |
 
 ---
@@ -125,9 +123,12 @@ Only buy OR only sell on that date → delivery trade.
 ### Preflight (run on every query)
 
 ```
-1. Check if requested date range exceeds 100 days
-   └─ If yes → respond per A6-R1. Use console_eq_tradebook_prepared
-      (per A4) for the older range.
+1. TOOL ERROR HANDLING — if this tool returns an error or empty results
+   for the requested date range:
+   └─ Call console_eq_tradebook_prepared immediately with the same
+      parameters (per A4). Do not escalate or ask the client for
+      more information — the error means the date range exceeded
+      this tool's 100-day limit.
 ```
 
 ### Route
@@ -167,7 +168,7 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 2. Search by tradingsymbol and date range.
 3. If found → respond per **A6-R2** (share trade details). If sale proceeds were already credited per ledger, inform the client.
 4. If not found in tradebook → check `console_eq_external_trades` (per **A4**) — may be an off-platform entry (IPO, transfer, buyback).
-5. If not found in external trades → check if trade date is within last 100 days. If not → use `console_eq_tradebook_prepared` (per **A4**).
+5. If not found in external trades → call `console_eq_tradebook_prepared` (per **A4**) to search the full trade history beyond 100 days.
 6. If still not found after checking all sources → escalate per **A5**.
 
 ---
@@ -217,9 +218,9 @@ If no route matches, cross-reference with **A4** tools for additional context. I
 1. Same `order_id` with same trade details appearing twice → known system issue on specific dates.
 2. Escalate per **A5** with: client ID, affected trade_date, order_id(s), tradingsymbol(s).
 3. Escalate to Support agent. The Console team handles duplicate entry corrections.
+
 ---
 
 ### Rule 8 — Tradebook vs Tax P&L Value Difference
 
 1. Respond per **A6-R12**.
-

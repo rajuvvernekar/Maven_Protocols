@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "external trade", "discrepancy entry", "discrepant entry", "ad
 
 ## Protocol
 
-# CONSOLE EQ EXTERNAL TRADES PROTOCOL
-
 --
 
 ## Section A: Reference Data
@@ -86,6 +84,7 @@ Always translate the raw `external_trade_type` value to the client-facing label 
 | `pending_recalc` = true → holdings/P&L update | Up to 24 hours |
 | IPO allotment entry posting | Up to 3 trading days from listing date |
 | Buyback entry posting | Posted on the day the "Net settlement for buyback with settlement number" entry appears in `ledger_report`; escalate if >5 trading days after confirmed acceptance |
+| Gift transfer buy average update | Up to 72 working hours from transfer date |
 
 ---
 
@@ -101,7 +100,8 @@ Once added and processed (`pending_recalc` = false), entries are locked and cann
 
 | Share Source | Default Entry Price | Notes |
 |---|---|---|
-| Gift shares | Closing price on transfer date | Client may want actual acquisition cost instead; requires backend correction |
+| Gift shares (Console gifting) | Closing price on transfer date | Auto-posted by system. Buy average updates within 72 working hours of transfer. Client does not need to add a manual discrepancy entry. |
+| Gift shares (off-market) | N/A — no automatic entry | Client must add purchase details manually via discrepancy flow (**A6**) |
 | ESOP shares | Exercise price (client-entered) | If ISIN not listed on exchange, entry cannot be added until listed |
 
 ---
@@ -158,6 +158,9 @@ Share: `trade_date`, `tradingsymbol`, `quantity`, `price`, `trade_type`. Use the
 "The P&L for [tradingsymbol] appears incorrect because there is no purchase entry in the system for the [discrepant] shares you hold. P&L is calculated using FIFO from all available trade entries. Without a buy entry, the system cannot compute the correct cost of acquisition.
 
 To fix this, you need to add the purchase details via Console → Portfolio → Holdings → View discrepancy → Add trade. Once the entry is processed, the P&L will recalculate automatically."
+
+**R14 — Console gift transfer — buy average pending:**
+"Your gifted shares of [tradingsymbol] were received via the Console gifting process on [trade_date]. The entry is auto-posted at the closing price on the transfer date — no manual discrepancy entry is needed from your side. The buy average updates within 72 working hours of the transfer. If it has been more than 72 working hours and the buy average still shows N/A, we'll investigate further."
 
 ---
 
@@ -244,6 +247,7 @@ If no route matches, use **A4** to cross-reference other tools (`console_eq_hold
    b. If the client has also made a separate discrepant entry for the same stock → escalate (possible duplicate entries causing wrong buy average).
    c. Respond per **A9-R5**. Default price per **A7**.
 3. If client wants actual acquisition cost instead → respond per **A9-R6**. escalate per **A8** with requested price.
+4. **Console gift transfer — buy average not yet updated:** If the client confirms shares were received via Console Gifting and the gift entry exists but the buy average still shows N/A or has not updated, check the transfer date. If the transfer was within the last 72 working hours → respond per **A9-R14**. The buy average auto-updates within 72 working hours — no manual discrepancy entry is needed. Do not route to the manual discrepancy path for Console gift transfers. If more than 72 working hours have passed and buy average still shows N/A → escalate per **A8**.
 
 ---
 
@@ -289,3 +293,5 @@ Escalate to support agent.
 ### Rule 10 — P&L Wrong Due to Missing External Entry
 
 1. Respond per **A9-R13** — explain FIFO dependency and direct client to self-resolution path in **A6**.
+
+console_eq_holdings

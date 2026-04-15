@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "AMC charges", "annual maintenance charges", "demat charges", 
 
 ## Protocol
 
-# AMC CHARGES PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -167,7 +165,7 @@ If the AMC amount doesn't match any expected slab or the data seems inconsistent
 ### Rule 4 — AMC on Inactive/Zero Holdings Account
 
 1. Respond: "AMC is charged for maintaining an active demat account. This applies even if the account has zero holdings or no recent trading activity." (Per **A1**.)
-2. Add: "If you'd like to stop future AMC charges, you may consider closing the demat account."
+2. Add: "If you maintain a single demat account with a holdings value of less than ₹4,00,000, you can avail of BSDA (Basic Services Demat Account) benefits, where AMC is not charged. If you have demat accounts with other brokers, closing those accounts so that only one demat is registered against your PAN can help you qualify for BSDA." Share BSDA eligibility criteria from **A3** and the support article link.
 
 ### Rule 5 — AMC for Primary and Secondary Demat
 

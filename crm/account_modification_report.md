@@ -28,8 +28,6 @@ TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "cha
 
 ## Protocol
 
-# ACCOUNT MODIFICATION REPORT PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -468,6 +466,7 @@ On every account modification query, execute in order:
    ├─ DDPI / POA queries → refer to A9
    ├─ Nomination queries → refer to A11
    ├─ KYC / reactivation → refer to A12
+   ├─ Client reports app/web error message but account data is normal → Rule 13
    └─ Closure-related escalations (secondary demat, employer policy,
        IL&FS, closure cum transfer) → Rule 4 escalation
 
@@ -528,15 +527,27 @@ Visit account.zerodha.com/account → complete ReKYC with Aadhaar eSign. Require
 
 **Escalation triggers:** If query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" → **ESCALATE** — relevant team review needed. Note: accounts with a third-party demat are caught earlier at preflight (`third_party_demat = true`) and escalated before reaching this rule.
 
-**Before responding:** Check `account_modification_report` for an existing account closure request. If a closure request is already in progress → confirm its status to the client using the status table below. Do not offer retention or Kill Switch if a closure request has already been submitted.
+**Before responding:** Check `account_modification_report` for an existing account closure request.
+
+If a closure request exists with status = Request_pending or Processing:
+1. Fetch `ledger_report` and check for a debit balance.
+2. Fetch `console_eq_holdings` and check for active stock holdings.
+3. If a debit balance exists → inform the client: "Your account closure request may be rejected because your account has an outstanding debit balance of ₹[amount]. Please clear the debit balance by adding funds before the closure can be processed."
+4. If active holdings exist → inform the client: "Your account closure request may be rejected because you have active holdings in your demat account. Please sell your listed holdings or transfer them to another demat account before the closure can proceed."
+5. If both conditions exist → inform the client of both issues.
+6. If neither condition exists → confirm the closure status using the status table below.
+
+If a closure request exists with any other status → confirm its status to the client using the status table below. Do not offer retention or Kill Switch if a closure request has already been submitted.
 
 | Status | Response |
 |---|---|
-| blank / Request_pending / Processing | Express regret; offer Kill Switch alternative; invite feedback call |
+| Request_pending / Processing | "Your account closure request has been received and is being processed. It will be completed within **A1** account closure timeline." |
 | Pending_eSign | Complete eSign on Console to proceed; invite feedback call |
 | Rejected | State rejection reason; invite feedback call |
 | Approved | Completed within **A1** account closure timeline; invite feedback call |
 | No match | **ESCALATE** — support manager review needed |
+
+If no closure request exists → express regret; offer Kill Switch alternative; invite feedback call.
 
 **Post-closure new account error:** **ESCALATE** — agent review needed.
 
@@ -646,3 +657,14 @@ If the client wants to disable or deactivate an F&O, Currency, or Commodity segm
 2. **Temporary (Kill Switch):** Ensure no open orders or positions before disabling. Guide per **A10** Kill Switch process. Mention the 12-hour re-enable restriction.
 3. **Permanent deactivation:** Guide per **A10** permanent deactivation process — download the account modification form, specify the segment(s) to be permanently deactivated, eSign via Digilocker, and submit the eSigned form in the same support ticket. Share the support article: [How do I deactivate F&O on my account?](https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/how-do-i-deactivate-f-o-on-my-account)
 4. **Equity segment deactivation:** Equity segments cannot be individually deactivated. If the client wants to deactivate all trading → refer to **A6** Account Deactivation (Kill Switch for entire account) or **A8** Account Closure.
+
+---
+
+### Rule 13: App/Web Error Message with Normal Account Data
+
+When the client reports an error message in the app or web platform (e.g., "account is inactive," "service unavailable," "account not found") but account data shows no issues (account status = Approved, segments are Activated, no account blocks):
+
+1. Ask the client to verify they are entering the correct User ID during login.
+2. If the User ID is correct, ask the client to retry logging in after clearing the app cache or trying a different browser/device.
+3. If the issue persists, ask the client to share a screenshot of the error message for further investigation.
+4. If screenshot confirms a persistent error with no account-level cause → **ESCALATE** — technical investigation needed. Include: client ID, error message from screenshot, and confirmation that account data shows no issues.

@@ -16,13 +16,9 @@ TRIGGER KEYWORDS: "modified SIP", "changed SIP date", "paused SIP", "who changed
 
 ## Protocol
 
-# SIP MODIFICATION LOG PROTOCOL
-
 ---
 
 ## Section A: Reference Data
-
-All rules reference these blocks as single sources of truth.
 
 ### A1 — Tool Purpose & Scope
 
@@ -114,8 +110,6 @@ If no entries found → report that no modifications were made and route back to
 
 ## Section C: Rules
 
-Rules reference Section A blocks. They do not redefine what is already defined there.
-
 ### Rule 1 — Modification Near Trigger Date
 
 1. Translate `type` to plain language per **A3**.
@@ -131,4 +125,3 @@ Rules reference Section A blocks. They do not redefine what is already defined t
 1. Respond: "Our records show no modifications, pauses, or cancellations were made to this [SIP/SWP/STP]."
 2. If investigating SIP-not-triggered → route back to sip_report Rule 1 sequential diagnostic (per **A6**) to continue diagnosis (mandate, order status, etc.).
 3. Do not infer a modification from any other field (per **A2**).
-

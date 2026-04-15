@@ -19,8 +19,6 @@ TRIGGER KEYWORDS: "order", "status", "processing", "allotted", "failed", "cancel
 
 ## Protocol
 
-# MF ORDER HISTORY PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -172,7 +170,7 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 
 ### A8: Key Facts
 
-- Order history covers last 30 days only. For older records → **console_mf_tradebook**.
+- Order history has a backend limitation of 180 days. For orders older than 180 days, use **console_mf_tradebook** — it has no time limitation. Always use console_mf_tradebook for verifying older allotments, historical trade entries, and XIRR-related checks that require complete buy/sell history.
 - Stamp duty: 0.005% deducted from allotted units.
 - Cancelled/failed order refunds: per **A4**.
 - Zerodha fund house WhatsApp orders are processed separately and appear in AMC records, not in Coin order history.
@@ -183,7 +181,7 @@ STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
 - ETF NFO allotment verification: check console_eq_external_trades for an "IPO" entry matching the fund. Order status in mf_order_history may remain "Processing" even after ETF NFO allotment is complete.
 - MF units not in CDSL statement: "Units are held in demat with CDSL. Delays may be due to reporting cycles or PAN/email mismatches. Check monthly CAS email or view on Coin/Console."
 - Client cannot view fund on Coin: Check console_mf_pseudo_holdings first. If holdings exist → escalate. If no holdings → ask for screenshot.
-- Allotment timeline: Units are typically allotted within T+3 working days (excluding weekends and trading/settlement holidays) from `exchange_timestamp`. When explaining allotment timelines, compute T+3 from `exchange_timestamp` accounting for holidays.
+- Allotment timeline: Units are typically allotted within T+3 working days (excluding weekends and trading/settlement holidays) from `exchange_timestamp`. When explaining allotment timelines, compute T+3 from `exchange_timestamp` accounting for holidays. Once `exchange_timestamp` is established, it is the processing date. Holidays falling after that date are skipped when counting the T+3 working days, extending the allotment window. State the `exchange_timestamp` date as the processing date and count forward from it.
 
 ---
 
@@ -298,7 +296,7 @@ On every MF order query, execute in order:
    ├─ Payment gateway failures → Rule 8
    ├─ NRI MF investment eligibility / account conversion → Rule 10
    ├─ Duplicate/extra payment claims → Rule 11
-   ├─ Order older than 30 days → "Check console_mf_tradebook for older records."
+   ├─ Order older than 180 days → "Check console_mf_tradebook for older records."
    └─ Escalation trigger → Rule 9
 
 3. SCOPE
@@ -390,7 +388,7 @@ Escalate if: INVALID BANK ACCOUNT, PAN/PEKRN MISMATCH, KRA LOCKED, MODE OF HOLDI
 
 **Cancelled:**
 
-When multiple orders exist for the same fund (some successful, some cancelled), address every order the client asks about individually. For successful orders, confirm units were allotted. For cancelled orders, check `payment_confirmed` independently per **A4**. For cancelled orders with `payment_confirmed` = true, apply refund language. For cancelled orders with `payment_confirmed` = false, check further per the SIP mandate check below before concluding no payment was debited. A wrong refund determination directly contradicts the client's bank statement.
+When multiple orders exist for the same fund (some successful, some cancelled), address every order the client asks about individually. For successful orders, confirm units were allotted. For cancelled orders, check `payment_confirmed` independently per **A4** and include the refund information in the response for each cancelled order where `payment_confirmed` = true. For cancelled orders with `payment_confirmed` = false, check further per the SIP mandate check below before concluding no payment was debited. A wrong refund determination directly contradicts the client's bank statement.
 
 For SIP orders (`variety` = sip) cancelled after placement: if `payment_confirmed` = false, check sip_report for the SIP's `fund_source`. If `fund_source` = `digio-mandates` or `upi-mandates` → check mandate_debit_report for a debit entry on the same date. If debit status = Success or Created and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply **A4** refund language. If `fund_source` = `rp-pg`, `pool`, or blank → no mandate-based debit occurred, no payment was debited.
 
@@ -544,4 +542,3 @@ If all methods fail → escalate.
 1. When a client claims extra or duplicate debits for MF orders: check fund_allocation_report for all entries on the order date. Look for entries without a matching `exchange_order_id` from mf_order_history (unmapped payments).
 2. If an unmapped payment is found → apply **A4** refund language: "The debited amount will be refunded by BSE STAR MF to your source bank account within 5–7 working days (excluding weekends and holidays)."
 3. If no unmapped payment is found → ask the client to share a bank statement showing the debit(s) with UTR numbers for further investigation.
-

@@ -20,8 +20,6 @@ TRIGGER KEYWORDS: "withdraw", "withdrawal", "payout", "transfer to bank", "not r
 
 ## Protocol
 
-# WITHDRAWAL PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -266,9 +264,14 @@ On every withdrawal query, execute in order:
    ├─ Verify payout_type field for each (correct client if misidentified)
    ├─ For each fetched withdrawal, compare amount vs processed_amount.
    │   If processed_amount < amount AND the difference ≥ ₹1 → route to Rule 3 (Partial Withdrawals).
-   ├─ If any fetched withdrawal has a creation date matching the query date,
-   │   note its status. Address this existing request's status before suggesting
-   │   a new withdrawal request.
+   ├─ EXISTING WITHDRAWAL PRIORITY: If any fetched withdrawal has a creation
+   │   date matching the query date, note its status. Address this existing
+   │   request's status using Rule 1 (Status Responses) before evaluating any
+   │   eligibility blockers or suggesting a new withdrawal request. Same-day
+   │   deposit restrictions (T+1) apply to new withdrawal requests — they do not
+   │   retroactively block or explain a withdrawal that is already in Pending
+   │   status and processing normally. Do not cite T+1 or same-day deposit
+   │   restrictions when the customer's withdrawal is already placed and pending.
    ├─ Present relevant withdrawal details to the client immediately — do not
    │   probe for information that is already available in the fetched data.
    │   If the client's stated date or amount does not match any fetched withdrawal
@@ -448,19 +451,30 @@ When troubleshooting instant issues, use only instant withdrawal data. Instant a
 
 Invoke `kite_orders` (for the query date from Preflight) + `kite_positions` (for the query date). Use the query date determined in Preflight — not the current handling date.
 
-**Step 1 — Check A2 blockers:**
+**Step 1 — Check existing successful instant first:**
 
-Before citing any orders or positions as the blocker, compare the ticket creation time (or the client's reported error time) against the earliest order/position timestamp. If the earliest order/position was placed after the client's reported error time, those orders/positions did not exist when the error occurred and cannot be the cause. In this case, skip directly to Step 3 (intermittent/cache issue). Then acknowledge that instant withdrawal is now blocked for the rest of the day due to subsequent trading activity, and offer regular withdrawal as the alternative per **A3**.
+If a successful instant withdrawal already exists for the query date, lead with that confirmation before explaining why a second attempt is blocked: *"You successfully processed an instant withdrawal of ₹[amount] on [date] at [time] (ref: [bank_ref_no])."* Then explain why a second instant is not available: *"Instant withdrawal is available only once per day."* If an additional **A2** blocker also applies (e.g., same-day deposit, subsequent orders/positions), cite it after the once-per-day explanation.
+
+**Step 2 — Check A2 blockers:**
+
+If the client is attempting an instant withdrawal post-09:25 and it is not available, check for these blockers in order:
+
+1. **Active F&O position:** Open F&O positions block instant withdrawal for the entire day per **A2**.
+2. **Any order other than CNC sell executed:** Any order placed today (regardless of status — failed, cancelled, completed, or rejected) blocks instant withdrawal for the entire day, except CNC sell executed orders.
+3. **Already placed an instant withdrawal today:** Only one instant withdrawal request can be placed per day, regardless of outcome.
+4. **Same-day deposit, weekend deposit, Paytm, Orbis, non-whole amount:** Cite the specific blocker per **A2**.
+
+Before citing any orders or positions as the blocker, compare the ticket creation time (or the client's reported error time) against the earliest order/position timestamp. If the earliest order/position was placed after the client's reported error time, those orders/positions did not exist when the error occurred and cannot be the cause. In this case, skip directly to Step 4 (intermittent/cache issue). Then acknowledge that instant withdrawal is now blocked for the rest of the day due to subsequent trading activity, and offer regular withdrawal as the alternative per **A3**.
 
 - Filter out CNC sell executed orders/positions first — these are confirmed non-blockers per **A2**.
-- Evaluate only the remaining orders/positions. If any non-CNC-sell-executed orders or positions exist and were placed before the reported error → cite them: *"Instant withdrawal is not available when any orders or positions exist on the same day (except CNC sell executed). You can use regular withdrawal instead (processed EOD, credited within 24h)."* Once any such order/position exists for the day, regular is the only same-day option.
-- Same-day deposit, weekend deposit, Paytm, Orbis, non-whole amount → cite specific blocker.
 - If `bank_response_remarks` contains "NPCI" AND `bank_response_status` = failed → follow **A6** Step 2 (NPCI rejection). Instant is unavailable for the rest of the day.
 
-**Step 2 — No blockers found → check settlement/balance:**
+When any blocker is confirmed: *"Instant withdrawal is not available because [cite specific blocker]. You can use regular withdrawal instead (processed at the applicable cutoff per A3, credited within 24h)."*
+
+**Step 3 — No blockers found → check settlement/balance:**
 Invoke `ledger_report`. If unsettled funds → explain T+1 per **A4**, suggest regular.
 
-**Step 3 — No blockers, funds settled, error persists:**
+**Step 4 — No blockers, funds settled, error persists:**
 - Before 09:25 → intermittent issue, retry after 09:25.
 - After 09:25 → close all open withdrawal/Console pages, wait 15–20 minutes, re-login, retry via https://console.zerodha.com/funds/overview → Withdraw → Instant Withdrawal.
 - If issue continues → try alternate device.

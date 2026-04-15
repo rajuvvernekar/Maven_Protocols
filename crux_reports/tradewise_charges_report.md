@@ -17,8 +17,6 @@ TRIGGER KEYWORDS: "tradewise charges", "trade charges", "charges breakdown", "br
 
 ## Protocol
 
-# TRADEWISE CHARGES PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -35,7 +33,7 @@ TRIGGER KEYWORDS: "tradewise charges", "trade charges", "charges breakdown", "br
 
 | Charge | Rate / Basis | Notes |
 |---|---|---|
-| Brokerage | Delivery (CNC): ₹0 for Individual accounts only. Non-Individual and NRI accounts are charged — see A6. Intraday/F&O: ₹20 per executed order OR 0.03% of trade value, whichever is lower. | Can be null/0 for some trades. |
+| Brokerage | Delivery (CNC): ₹0 for Individual accounts only. Non-Individual and NRI accounts are charged — see A6. Intraday/F&O: ₹20 per executed order OR 0.03% of trade value, whichever is lower. Collateral debit additional brokerage: an additional ₹20 per executed F&O order applies when the client's cash collateral is negative and the cash shortfall exceeds ₹5,00,000, resulting in ₹40 per order. This additional brokerage does not replace delayed payment charges — DPC continues to apply separately. To avoid the additional brokerage, maintain at least 50% of margin in cash or cash equivalents, or ensure the cash shortfall does not exceed ₹5,00,000. | Can be null/0 for some trades. |
 | Exchange transaction charges | Charged by exchange on turnover. Rate varies by exchange and segment — NSE equity ~0.00297%, BSE equity varies, NSE F&O varies by contract type. | SENSEX options have specific rates different from NIFTY options. Rates updated periodically — recent changes may cause different charges for the same trade type on different dates. |
 | STT (Securities Transaction Tax) | Equity delivery: 0.1% on both buy and sell value. Equity intraday: 0.025% on sell-side only. Futures: 0.02% on sell-side. Options: 0.1% on sell-side (on premium value). | Government tax on securities transactions. |
 | Stamp duty | Buy-side transactions. Typically 0.015% for delivery, 0.003% for intraday/F&O. | Varies by state. |
@@ -72,7 +70,7 @@ Use client-facing names in all responses — never use internal field names.
 ### A5 — Escalation Triggers (Consolidated)
 
 Escalate when any of the following occur:
-- Brokerage exceeds the applicable cap per order after summing all fills by `order_no` (Individual: ₹20 for F&O/intraday; Non-Individual: verify per A6; NRI: verify per A6).
+- Brokerage exceeds the applicable cap per order after summing all fills by `order_no` and accounting for the collateral debit additional brokerage per **A2** (Individual: ₹20 for F&O/intraday, or ₹40 if additional brokerage applies; Non-Individual: verify per A6; NRI: verify per A6).
 - Exchange transaction charge rate significantly differs from published rate for that exchange/segment.
 - Contract note charges differ from tradewise charges sum for the same date/exchange/segment, and no ledger adjustment entry is found.
 - Auction trade requiring detailed charge calculation (manual handling required).
@@ -101,6 +99,8 @@ Call `get_all_client_data` and resolve account type using the detection logic be
 | Non-Individual (HUF, Corporate, LLP, Partnership, Trust) | 0.1% or ₹20 per executed order, whichever is lower | Same as Individual |
 | NRI PIS | 0.5% or ₹200 per executed order, whichever is lower | Same as Individual |
 | NRI Non-PIS | 0.5% or ₹50 per executed order, whichever is lower | Same as Individual |
+
+**Collateral debit additional brokerage (all account types):** An additional ₹20 per executed F&O order applies when the client's cash collateral is negative and the cash shortfall exceeds ₹5,00,000. This stacks on top of the standard F&O brokerage — e.g., ₹20 base + ₹20 additional brokerage = ₹40 per order. Applies to all account types (Individual, Non-Individual, NRI). This additional brokerage is independent of DPC — delayed payment charges continue to apply separately on any end-of-day debit balance.
 
 ---
 
@@ -191,7 +191,7 @@ If no root cause is identified after checking all relevant rules → escalate pe
    - NRI Non-PIS: brokerage should be 0.5% of trade value or ₹50, whichever is lower.
    - If brokerage = null/0 for a Non-Individual or NRI delivery trade → escalate per Rule 10 (brokerage may have been incorrectly waived).
 3. For Intraday/F&O (all account types): ₹20 per executed order OR 0.03% of trade value, whichever is lower.
-4. If brokerage exceeds the applicable cap for a single executed order → check if multiple fills exist (sum by `order_no`). If still exceeds cap after summing → escalate per Rule 10.
+4. If brokerage exceeds the applicable cap for a single executed order → first check whether the collateral debit additional brokerage applies (per **A2**): if the trade is F&O and brokerage = ₹40, verify that the client's cash collateral was negative with a shortfall exceeding ₹5,00,000. If so, the ₹40 charge is the standard ₹20 + ₹20 additional brokerage and is correct. If the additional brokerage condition does not apply, check if multiple fills exist (sum by `order_no`). If brokerage still exceeds the cap after both checks → escalate per Rule 10.
 5. When explaining brokerage to the client, state the applicable rate for their account type: "Since you hold a [account type] account, the applicable delivery brokerage is [rate]."
 
 ### Rule 4 — Exchange Transaction Charges Dispute

@@ -21,8 +21,6 @@ TRIGGER KEYWORDS: "holdings", "buy average", "average price", "discrepancy", "no
 
 ## Protocol
 
-# CONSOLE EQ HOLDINGS PROTOCOL
-
 ---
 
 ## Section A: Reference Data
@@ -81,6 +79,7 @@ This tool looks up a client's equity holdings. Buy average uses FIFO (First In, 
 | Discrepant entry buy average update | Within 24 hours of adding entry |
 | Dividend credit to primary bank | 30–45 days after ex-date/record date |
 | Split share buy average update | 2–3 working days after split shares are credited |
+| Gift transfer (Console gifting) buy average update | Within 72 working hours of transfer date |
 
 ---
 
@@ -96,7 +95,7 @@ This tool looks up a client's equity holdings. Buy average uses FIFO (First In, 
 
 **Transfer-in entry rules:** Date must be ≤ demat credit date. Only 1 entry per ISIN per date. No holidays/weekends. Same-date multiple buys = weighted average, total qty.
 
-**Gift transfer in:** Closing price on transfer date used as entry price (gift only — off-market transfers require manual discrepancy entry).
+**Gift transfer in (Console gifting):** Closing price on transfer date is auto-posted as entry price. Buy average updates within 72 working hours — no manual discrepancy entry needed. Off-market transfers require manual discrepancy entry.
 
 **Buy average null reasons:** Discrepant without entry | Transfer without manual update | CA in progress | ESOP/off-market without entry.
 
@@ -199,7 +198,7 @@ Interest on G-Secs, NCDs, and bonds is credited directly to the client's primary
 
 ### A9 — Gift & Off-Market Transfer Rules
 
-**Gift transfer in:** Closing price on transfer date used as entry price for P&L tracking (gift only). Off-market transfers require client to manually add buy details via discrepancy flow (**A8**).
+**Gift transfer in (Console gifting):** Closing price on transfer date is auto-posted as entry price for P&L tracking. Buy average updates within 72 working hours of transfer — no manual discrepancy entry is needed. Off-market transfers require client to manually add buy details via discrepancy flow (**A8**).
 
 **Gift transfer out:** Zerodha uses the gift transfer date as exit date in sender's account; closing price on transfer date as exit price.
 
@@ -363,7 +362,7 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 **If client confirms shares were received via Zerodha gift transfer:**
 
 1. Check `console_eq_external_trades` for `external_trade_type` = gift.
-2. If entry found → inform client that gift shares have been recorded in the system at the closing price on the transfer date (per **A9**). No further action needed from the client. Buy average will reflect once processed.
+2. If entry found → inform client that gift shares have been recorded in the system at the closing price on the transfer date (per **A9**). Buy average updates within 72 working hours (per **A4**). No further action needed from the client.
 3. If no entry found → escalate per **A12**. The system should have auto-posted this entry.
 
 **If client confirms shares were transferred from another broker / ESOP / off-market:**
@@ -491,7 +490,7 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 
 ### Rule 17 — Gift / Off-Market Transfer (P&L / Avg)
 
-1. **Gift in** (received via gift, asks about avg or P&L) → entry price = closing price on transfer date (per **A9**). Client can update via discrepancy resolution flow on Console if they need the actual acquisition cost. For income tax returns, may need to manually adjust Tax P&L — advise consulting a CA (per **A9**).
+1. **Gift in via Console gifting** (received via gift, asks about avg or P&L) → entry price = closing price on transfer date (per **A9**). The gift entry is auto-posted by the system — no manual discrepancy entry is needed. Buy average updates within 72 working hours of the transfer (per **A4**). If buy average still shows N/A within 72 working hours, inform the client the update is in progress. If more than 72 working hours have passed and buy average still shows N/A → escalate per **A12**. For income tax returns, client may need to manually adjust Tax P&L — advise consulting a CA.
 2. **Off-market transfer in** (asks about avg or P&L) → no automatic buy price assigned. Client must manually add purchase details via the discrepancy resolution flow on Console (per **A8**, **A9**).
 3. **Gift out** → Zerodha uses the gift transfer date as the exit date and the closing price on that date as the exit price. This reflects in P&L accordingly (per **A9**).
 4. **Off-market transfer out** → no automatic exit entry is posted since the transaction happens outside the platform. Client can either share transfer details for a reversal entry, or manually update their Tax P&L report while filing returns (per **A9**).
@@ -502,3 +501,5 @@ If client reports a discrepancy or a specific purchase (mentions date, quantity,
 
 1. Fractional units of LIQUIDBEES cannot be sold on the secondary market. They can only be redeemed by making an off-market transfer to the AMC's demat account via CDSL Easiest. Step-by-step process: https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units
 2. If the client's account is currently dormant due to inactivity for over 24 months, they will need to complete Re-KYC online to reactivate their account (24–48 working hours after IPV) before they can initiate the off-market transfer.
+
+console_mtf_holdings
