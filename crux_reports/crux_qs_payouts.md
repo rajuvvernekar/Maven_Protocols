@@ -179,40 +179,39 @@ If no matching scenario is found → escalate per **A10**.
 
 ### Rule 1 — Settlement Non-Negotiable
 
-1. Respond: "Settlement is mandatory. The frequency (monthly or quarterly) is set at account opening and cannot be changed." (Per **A1**.)
+1. Settlement is mandatory, frequency (monthly/quarterly) set at account opening, cannot be changed (per **A1**).
 
 ### Rule 2 — Determine and Explain Settlement Type
 
-1. Apply the detection logic from **A5** to determine if this is a Regular QS or Inactivity QS.
-2. **Regular QS:** "A quarterly settlement was processed on [date] as per the regular schedule. Settlement happens on the first Friday of January, April, July, and October." (Per **A2**.)
-3. **Inactivity QS:** "A settlement was processed on [date] because there was no trading activity in your account for 30+ days. When an account is inactive for 30+ calendar days, the settlement frequency shifts to monthly. Once you resume trading, it will revert to your original frequency." (Per **A3**.)
+1. Apply detection logic from **A5** to determine Regular QS or Inactivity QS.
+2. **Regular QS:** State the settlement date and that it follows the regular schedule (per **A2**).
+3. **Inactivity QS:** State the settlement date, explain 30+ day inactivity triggered monthly settlement, and that it reverts when trading resumes (per **A3**).
 4. If both conditions apply (inactive during regular QS period), mention inactivity first.
 
 ### Rule 3 — New Account Exclusion
 
-1. Confirm: no payout found for last quarter and account was opened after the previous settlement date.
-2. Respond: "Your account was opened after the last settlement date. Your first payout will be on [next settlement date per **A2**]." (Per **A1**.)
+1. Confirm: no payout found for last quarter and account opened after previous settlement date.
+2. Inform client their first payout will be on the next settlement date per **A2** (per **A1**).
 
 ### Rule 4 — Outstanding Positions / Fund Retention
 
-1. Respond: "If you have outstanding positions, 225% of your EOD margin requirement is blocked to cover them. The remaining balance is transferred to your primary bank account." (Per **A4**.)
+1. Explain: 225% of EOD margin requirement blocked for outstanding positions, remainder transferred to primary bank account (per **A4**).
 2. For detailed retention breakdown (margin, obligation, max retention), refer to `client_retention_dates` (per **A9**).
 
 ### Rule 5 — Bank Rejection (Standard Accounts)
 
 1. Apply field protection per **A6** — never share raw `remarks` or bank rejection reasons.
-2. Apply bank reference sharing per **A7** (uppercase → share; all lowercase → "Check your bank statement").
-3. Respond:
-   - "The transfer of ₹[amount] on [date] was rejected by your bank [share reference per **A7** if applicable]."
-   - "The funds have been credited back to your Zerodha account on [reversal_date] and are available for trading or withdrawal."
-   - "Bank rejections usually happen when the primary bank details on your Zerodha account don't match your bank's records. Please download your CMR from Console → Profile → CMR and cross-check your Name, Account Number, and IFSC."
-   - If mismatch found: "You can update your primary bank details here: [**A8** regular link]."
-   - "Your next settlement will be on the first Friday of [next quarter month per **A2**]."
-   - **April 2026 note:** If the rejection occurs around 17–18 April 2026 and the client wants to withdraw the reversed funds, inform them that instant withdrawal is not available on 18 April 2026, and regular withdrawal requests placed from 17 April onwards will be processed on 18 April 2026.
+2. Apply bank reference sharing per **A7** (uppercase → share; all lowercase → direct client to check bank statement).
+3. Key facts to communicate:
+   - Rejection amount, date, and bank reference (per **A7**).
+   - Funds credited back to Zerodha account on reversal date, available for trading/withdrawal.
+   - Common cause: primary bank details on Zerodha don't match bank records — advise CMR download from Console → Profile → CMR to cross-check Name, Account Number, IFSC.
+   - If mismatch found: share bank update link per **A8**.
+   - Next settlement date per **A2**.
+   - **April 2026 note:** If rejection occurs around 17–18 April 2026 and client wants to withdraw reversed funds: instant withdrawal not available on 18 April 2026, regular withdrawal requests from 17 April onwards processed on 18 April 2026.
 
 ### Rule 6 — QS Credited But Not Received in Bank
 
 1. Share the transaction reference number (apply **A7** for uppercase/lowercase check).
-2. Respond: "You can confirm this transaction with your bank using the provided reference number."
-3. Add: "If the amount has not been credited, please share your bank statement for the settlement date so we can investigate."
+2. If not credited, request client's bank statement for the settlement date to investigate.
 
