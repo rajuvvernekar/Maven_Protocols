@@ -13,8 +13,26 @@ When clients:
 - Ask about moving funds to LIQUIDCASE to prevent settlement
 - Report funds not showing / not there / missing, and the cause may be a quarterly settlement payout
 - Report funds were automatically withdrawn or transferred without their action
+- Report their balance suddenly showing zero or reduced without any trade, withdrawal, or pledge action from their side — especially around known quarterly settlement dates
+- Report money was debited or deducted from their Zerodha account automatically but not credited to their bank account
+- See "inactive" in their ledger or statement and are confused about why money was deducted
+- Report their quarterly settlement payout was rejected or failed due to bank issues (bank frozen, IFSC mismatch, bank closed, account details mismatch)
+- Reference SEBI guidelines about unused funds being transferred to their bank account
+- Received an email or notification about funds being transferred back but haven't received the money in their bank
+- Are worried about settlement impacting their MTF positions, SIP mandates, or open orders
+- Paste a settlement reference number and ask about fund status
+- Ask about unused funds or unused balance being sent back to their bank
 
-TRIGGER KEYWORDS: "quarterly settlement", "settlement", "when is settlement", "settlement date", "payout", "settled", "transfer back", "funds transferred", "LIQUIDCASE", "opt out settlement", "change settlement", "monthly settlement instead of quarterly", "funds not showing", "money not there", "where is my money", "funds not reflected", "automatically withdrawn", "auto withdrawn"
+WHEN NOT TO USE:
+
+Client has an open withdrawal request that failed or is delayed (use Funds-Payout tool instead)
+Client is asking about trading P&L, brokerage charges, STT, or other trading-related deductions
+Client is asking about a specific buy/sell transaction debit
+Client's issue is about UPI or payment gateway failure while adding funds
+Client is asking about DP charges, account opening charges, or AMC charges
+Client is asking about a pledge or margin shortfall debit
+
+TRIGGER KEYWORDS: "quarterly settlement", "settlement", "when is settlement", "settlement date", "payout", "settled", "transfer back", "funds transferred", "LIQUIDCASE", "opt out settlement", "change settlement", "monthly settlement instead of quarterly", "funds not showing", "money not there", "where is my money", "funds not reflected", "automatically withdrawn", "auto withdrawn", "balance showing zero suddenly", "balance became zero", "balance showing 0", "funds not credited to bank", "amount not credited to bank", "funds not received in bank", "amount not received in bank", "debited without action", "debited automatically", "amount deducted automatically", "deducted from account without", "money gone", "money lost", "money disappeared", "unused funds", "unused balance", "amount missing", "funds missing", "inactive", "inactivity", "SEBI", "SEBI guideline", "payout rejected", "settlement rejected", "transfer rejected by bank", "payout failed", "settlement failed", "IFSC", "bank frozen", "bank closed", "refund settlement amount", "settlement reference number"
 
 ## Protocol
 
@@ -33,6 +51,12 @@ TRIGGER KEYWORDS: "quarterly settlement", "settlement", "when is settlement", "s
 ### A2 — Settlement Dates
 
 First Friday of January, April, July, and October. If that Friday is a bank holiday, the previous trading day is used.
+
+**April 2026 operational note:**
+- Clients with inactive accounts (no trades or fund additions for the last five days) will have funds transferred back on 18 April 2026.
+- Funds added back to the trading account before 17 April 2026 that remain unused will be settled back to the bank account per regulatory requirement.
+- Regular withdrawal requests placed on 17 April 2026 onwards will be processed on 18 April 2026.
+- Instant withdrawal is not available on 18 April 2026.
 
 ### A3 — Inactivity Rules
 
@@ -93,6 +117,7 @@ Raw bank rejection reasons from `remarks` (e.g., "NOCM Not Compliant", error cod
 | QS retention breakdown (margin, obligation, max retention) | Client Retention Dates protocol |
 | QS payout entry on ledger | Ledger Report protocol |
 | QS facts (schedule, opt-out, LIQUIDCASE) | Ledger Report protocol — A4 (QS Facts) |
+| Instant withdrawal eligibility / regular withdrawal processing cutoffs | Withdrawal Protocol — A2 (Instant Eligibility) and A3 (Processing Cutoffs) |
 
 ### A10 — Escalation Triggers
 
@@ -110,6 +135,7 @@ Escalate when:
 4. Apply field protection per **A6** — identify shareable vs internal-only fields.
 5. Determine settlement type using the detection logic in **A5**.
 6. Format amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
+7. If the query date falls on or near 17–18 April 2026, note the instant withdrawal unavailability (18 Apr) and regular withdrawal processing delay (requests from 17 Apr processed on 18 Apr) per **A2** operational note. Factor these into any withdrawal guidance given alongside QS responses.
 
 ### Routing Tree
 
@@ -181,6 +207,7 @@ If no matching scenario is found → escalate per **A10**.
    - "Bank rejections usually happen when the primary bank details on your Zerodha account don't match your bank's records. Please download your CMR from Console → Profile → CMR and cross-check your Name, Account Number, and IFSC."
    - If mismatch found: "You can update your primary bank details here: [**A8** regular link]."
    - "Your next settlement will be on the first Friday of [next quarter month per **A2**]."
+   - **April 2026 note:** If the rejection occurs around 17–18 April 2026 and the client wants to withdraw the reversed funds, inform them that instant withdrawal is not available on 18 April 2026, and regular withdrawal requests placed from 17 April onwards will be processed on 18 April 2026.
 
 ### Rule 6 — QS Credited But Not Received in Bank
 
