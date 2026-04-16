@@ -54,7 +54,7 @@ First Friday of January, April, July, and October. If that Friday is a bank holi
 
 **April 2026 operational note:**
 - Clients with inactive accounts (no trades or fund additions for the last five days) will have funds transferred back on 18 April 2026.
-- Funds added back to the trading account before 17 April 2026 that remain unused will be settled back to the bank account per regulatory requirement.
+- Funds added back to the trading account before 17 April 2026 that remain unused will be settled back to the primary bank account per regulatory requirement.
 - Regular withdrawal requests placed on 17 April 2026 onwards will be processed on 18 April 2026.
 - Instant withdrawal is not available on 18 April 2026.
 
@@ -68,13 +68,14 @@ First Friday of January, April, July, and October. If that Friday is a bank holi
 ### A4 — Outstanding Positions
 
 - If client has outstanding positions: 225% of EOD margins blocked, remaining balance transferred.
+- Check `client_retention_dates` for the specific funds retained and breakdown for the client.
 
 ### A5 — Inactivity QS Detection Logic
 
 Apply layered detection in this order:
 
-1. Ledger text contains "quarterly settlement (inactive)" → **Inactivity QS**.
-2. Payout date does not match **A2** settlement dates (first Friday of Jan/Apr/Jul/Oct) → **Inactivity QS**.
+1. `ledger_report` text contains "quarterly settlement (inactive)" → **Inactivity QS**.
+2. Payout date does not match **A2** settlement dates (first Friday of Jan/Apr/Jul/Oct, or any date listed in the **A2** operational note) → **Inactivity QS**.
 3. If still ambiguous (payout date matches **A2** + no "(inactive)" marker): call `kite_order_history` for the 30 calendar days before the payout date. No trades found → **Inactivity QS**. Trades found → **Regular QS**.
 4. Fallback: if `kite_order_history` is unavailable or inconclusive → default to **Regular QS**, use general language accurate for both types.
 
@@ -112,12 +113,12 @@ Raw bank rejection reasons from `remarks` (e.g., "NOCM Not Compliant", error cod
 
 ### A9 — Cross-Reference Protocols
 
-| Topic | Refer to |
+| Topic | Tool |
 |---|---|
-| QS retention breakdown (margin, obligation, max retention) | Client Retention Dates protocol |
-| QS payout entry on ledger | Ledger Report protocol |
-| QS facts (schedule, opt-out, LIQUIDCASE) | Ledger Report protocol — A4 (QS Facts) |
-| Instant withdrawal eligibility / regular withdrawal processing cutoffs | Withdrawal Protocol — A2 (Instant Eligibility) and A3 (Processing Cutoffs) |
+| QS retention breakdown (margin, obligation, max retention) | `client_retention_dates` |
+| QS payout entry on ledger | `ledger_report` |
+| QS facts (schedule, opt-out, LIQUIDCASE) | `ledger_report` — A4 (QS Facts) |
+| Instant withdrawal eligibility / regular withdrawal processing cutoffs | `withdrawal_request` — A2 (Instant Eligibility) and A3 (Processing Cutoffs) |
 
 ### A10 — Escalation Triggers
 
@@ -195,7 +196,7 @@ If no matching scenario is found → escalate per **A10**.
 ### Rule 4 — Outstanding Positions / Fund Retention
 
 1. Respond: "If you have outstanding positions, 225% of your EOD margin requirement is blocked to cover them. The remaining balance is transferred to your primary bank account." (Per **A4**.)
-2. For detailed retention breakdown (margin, obligation, max retention), refer to the Client Retention Dates protocol (per **A9**).
+2. For detailed retention breakdown (margin, obligation, max retention), refer to `client_retention_dates` (per **A9**).
 
 ### Rule 5 — Bank Rejection (Standard Accounts)
 
