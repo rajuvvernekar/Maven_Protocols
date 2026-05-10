@@ -33,6 +33,7 @@ Maps display names (used in feedback) to tool file paths.
 | Ledger Report / Ledger Balance | ledger_report | crux_reports/ledger_report.md | CRUX Reports |
 | Withdrawal / Crux Withdrawal Request | withdrawal_request | crux_reports/withdrawal_request.md | CRUX Reports |
 | Delayed Payment Charges | delayed_payment_charges | crux_reports/delayed_payment_charges.md | CRUX Reports |
+| Clientwise Margin Report | clientwise_margin_report | crux_reports/clientwise_margin_report.md | CRUX Reports |
 | Pledge Request Report | pledge_request_report | crux_reports/pledge_request_report.md | CRUX Reports |
 | Tradewise / Orderwise Charges Report | tradewise_charges_report | crux_reports/tradewise_charges_report.md | CRUX Reports |
 | IPO / IPO Application | ipo_application | crux_reports/ipo_application.md | CRUX Reports |
