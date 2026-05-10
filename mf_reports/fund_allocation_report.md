@@ -25,7 +25,7 @@ TAGS: investments, funds
 
 ### A1 — Scope
 
-- Shows payments reported to BSE STAR MF and their mapping to orders.  
+- Shows payments reported to BSE STAR MF and their mapping to orders.
 - One UTR can map to multiple orders (bulk payment).
 
 ---
@@ -44,11 +44,11 @@ This report covers BUY-side payments only — redemption proceeds are credited d
 
 ### A4 — Settlement & Allotment Flag Meanings
 
-| `settled_flag` | `allotment_flag` | Meaning |  
-|---|---|---|  
-| Y | Y | Payment settled, units allotted. |  
-| Y | N | Payment settled, allotment pending from the AMC. |  
-| N | — (within T+1 of payment) | Payment received; exchange settlement in progress. Allotment pending — allow one working day. |  
+| `settled_flag` | `allotment_flag` | Meaning |
+|---|---|---|
+| Y | Y | Payment settled, units allotted. |
+| Y | N | Payment settled, allotment pending from the AMC. |
+| N | — (within T+1 of payment) | Payment received; exchange settlement in progress. Allotment pending — allow one working day. |
 | N | — (beyond T+2) | Payment received but exchange settlement not completed. Order will not process; refund per A5. |
 
 ---
@@ -57,9 +57,9 @@ This report covers BUY-side payments only — redemption proceeds are credited d
 
 Standard refund language: "The debited amount will be refunded by BSE STAR MF to your source bank account within 5–7 working days (excluding weekends and holidays)."
 
-| Condition | Communicate |  
-|---|---|  
-| `refund_utr` populated | Refund processed. Share `refund_amount`, `date_of_refund` (only if present in the report), and `refund_utr`. Direct client to track with their bank using `refund_utr`. |  
+| Condition | Communicate |
+|---|---|
+| `refund_utr` populated | Refund processed. Share `refund_amount`, `date_of_refund` (only if present in the report), and `refund_utr`. Direct client to track with their bank using `refund_utr`. |
 | `refund_utr` empty | Apply standard refund language. |
 
 ---
@@ -68,27 +68,27 @@ Standard refund language: "The debited amount will be refunded by BSE STAR MF to
 
 **Shareable with client:**
 
-| Field | Interpretation |  
-|---|---|  
-| `order_number` | Order number for the application |  
-| `utr_no` | Unique Transaction Reference number for the payment |  
-| `payment_date` | Date the payment was made |  
-| `total_allocated_amount` | Total amount allocated |  
-| `total_settlement_amount` | Total amount settled with the exchange |  
-| `total_allotment_amount` | Total amount allotted |  
-| `refund_amount` | Refund amount — share only if present |  
-| `date_of_refund` | Date the refund was processed — share only if present |  
+| Field | Interpretation |
+|---|---|
+| `order_number` | Order number for the application |
+| `utr_no` | Unique Transaction Reference number for the payment |
+| `payment_date` | Date the payment was made |
+| `total_allocated_amount` | Total amount allocated |
+| `total_settlement_amount` | Total amount settled with the exchange |
+| `total_allotment_amount` | Total amount allotted |
+| `refund_amount` | Refund amount — share only if present |
+| `date_of_refund` | Date the refund was processed — share only if present |
 | `refund_utr` | UTR number for the refund — share only if present |
 
 **Non-shareable:**
 
-| Field | Interpretation |  
-|---|---|  
-| `settled_flag` | Y = payment settled with exchange; N = not settled |  
-| `allotment_flag` | Y = units allotted; N = allotment not yet done |  
-| `settlement_number` | Maps to `settlement_id` in `mf_order_history` for cross-referencing |  
-| `remitter_acct_no` | Client's bank account used for payment |  
-| `error_remarks` | Rejection reason — check for "INVALID BANK ACCOUNT DETAIL" |  
+| Field | Interpretation |
+|---|---|
+| `settled_flag` | Y = payment settled with exchange; N = not settled |
+| `allotment_flag` | Y = units allotted; N = allotment not yet done |
+| `settlement_number` | Maps to `settlement_id` in `mf_order_history` for cross-referencing |
+| `remitter_acct_no` | Client's bank account used for payment |
+| `error_remarks` | Rejection reason — check for "INVALID BANK ACCOUNT DETAIL" |
 | `cfppg_bank_ref_no` | Maps to `cashier_reference` in `mandate_debit_report` for mandate payment cross-referencing |
 
 ---
@@ -97,11 +97,11 @@ Standard refund language: "The debited amount will be refunded by BSE STAR MF to
 
 ### Routing
 
-```  
-Query relates to MF payment / fund allocation →  
-│  
-├─ Payment debited but order not allotted / units not showing → Rule 1  
-└─ Refund status or refund UTR query → Rule 2  
+```
+Query relates to MF payment / fund allocation →
+│
+├─ Payment debited but order not allotted / units not showing → Rule 1
+└─ Refund status or refund UTR query → Rule 2
 ```
 
 ### Fallback
@@ -122,9 +122,9 @@ If both `order_number` AND `settlement_number` are null or empty → unmapped pa
 
 Check `settled_flag` and `allotment_flag` per A4:
 
-- `settled_flag` = N, within T+1 working day of payment → communicate: payment pending settlement. Allow one working day.  
-- `settled_flag` = N, beyond T+2 → order will not process. Apply A5 refund status logic.  
-- `settled_flag` = Y, `allotment_flag` = N → communicate: payment settled, allotment pending from the AMC.  
+- `settled_flag` = N, within T+1 working day of payment → communicate: payment pending settlement. Allow one working day.
+- `settled_flag` = N, beyond T+2 → order will not process. Apply A5 refund status logic.
+- `settled_flag` = Y, `allotment_flag` = N → communicate: payment settled, allotment pending from the AMC.
 - `settled_flag` = Y, `allotment_flag` = Y → check order status in `mf_order_history`. If status shows Processing → within T+3 working days from `exchange_timestamp` (excluding weekends and trading/settlement holidays) → late delivery of units. Communicate that payment is settled, units are allotted, and holdings will be credited. Beyond T+3 → escalate to a human agent.
 
 ---
@@ -133,5 +133,5 @@ Check `settled_flag` and `allotment_flag` per A4:
 
 Find the row by payment date or UTR. Check `refund_utr` per A5:
 
-- `refund_utr` populated → share `refund_amount`, `date_of_refund` (only if present in the report), and `refund_utr`. Direct client to track with their bank.  
+- `refund_utr` populated → share `refund_amount`, `date_of_refund` (only if present in the report), and `refund_utr`. Direct client to track with their bank.
 - `refund_utr` empty → apply A5 refund language.

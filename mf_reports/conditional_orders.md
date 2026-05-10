@@ -28,65 +28,65 @@ TAGS: investments
 
 ### A1 — Conditional Order Fundamentals
 
-- Available for lumpsum only.  
-- Trigger check uses T-1 day NAV. Actual allotment/redemption NAV = T day NAV (will differ from trigger price).  
-- Once triggered, the order moves to ‘mf_order_history’. No longer visible in this tool.  
-- Valid for 365 days. Auto-rejected after expiry.  
-- Payment is not debited at placement. Client must pay manually (UPI/Netbanking) after trigger notification. No payment held = no refund on expiry/cancellation.  
-- "Redeem all" is not available with conditional orders — client must enter exact unit count manually.  
+- Available for lumpsum only.
+- Trigger check uses T-1 day NAV. Actual allotment/redemption NAV = T day NAV (will differ from trigger price).
+- Once triggered, the order moves to ‘mf_order_history’. No longer visible in this tool.
+- Valid for 365 days. Auto-rejected after expiry.
+- Payment is not debited at placement. Client must pay manually (UPI/Netbanking) after trigger notification. No payment held = no refund on expiry/cancellation.
+- "Redeem all" is not available with conditional orders — client must enter exact unit count manually.
 - Sell redemption proceeds credited to primary bank account as per scheme settlement time.
 
 ### A2 — Trigger Times & Limits
 
-| | Buy Conditional | Sell Conditional |  
-|---|---|---|  
-| Trigger time | 10:05 AM | 10:15 AM |  
-| Trigger limit | Cannot set below 60% of current NAV | Cannot set above 200% of current NAV |  
+| | Buy Conditional | Sell Conditional |
+|---|---|---|
+| Trigger time | 10:05 AM | 10:15 AM |
+| Trigger limit | Cannot set below 60% of current NAV | Cannot set above 200% of current NAV |
 | Below current NAV | — | Can set below current NAV (acts as stop-loss) |
 
 ### A3 — T-PIN / DDPI Authorization (Sell Only)
 
-| Account Type | Requirement |  
-|---|---|  
-| Non-DDPI/POA | Must authorize CDSL T-PIN before 3 PM on trigger day (not at placement). If missed → order rejected. |  
+| Account Type | Requirement |
+|---|---|
+| Non-DDPI/POA | Must authorize CDSL T-PIN before 3 PM on trigger day (not at placement). If missed → order rejected. |
 | DDPI enabled | No T-PIN required. |
 
 ### A4 — Field Usage Rules
 
 **Shareable with client:**
 
-| Field | Interpretation |  
-|---|---|  
-| `fund` | Fund name |  
-| `transaction_type` | BUY/SELL |  
-| `trigger_price` | Trigger price |  
-| `created` | Share only if asked |  
+| Field | Interpretation |
+|---|---|
+| `fund` | Fund name |
+| `transaction_type` | BUY/SELL |
+| `trigger_price` | Trigger price |
+| `created` | Share only if asked |
 | `remarks` | Translate to plain language before sharing — do not share raw value |
 
 **Non-shareable:**
 
-| Field | Interpretation |  
-|---|---|  
-| `amount` | Internal reasoning |  
-| `gtt_id` | Internal GTT identifier |  
-| `client_id` | Internal client identifier |  
-| `tradingsymbol` | Internal |  
+| Field | Interpretation |
+|---|---|
+| `amount` | Internal reasoning |
+| `gtt_id` | Internal GTT identifier |
+| `client_id` | Internal client identifier |
+| `tradingsymbol` | Internal |
 | `tag` | Internal tag |
 
 ## Section B: Decision Flow
 
 ### Routing
 
-```  
-Route by scenario  
-   ├─ Order not triggered despite NAV reaching target → Rule 1  
-   ├─ NAV mismatch after trigger → Rule 2  
-   ├─ When is payment debited (buy) → Rule 3  
-   ├─ CDSL authorization for sell → Rule 4  
-   ├─ Triggered order — status inquiry → Rule 5  
-   ├─ "Redeem all" not available → Rule 6  
-   ├─ Can conditional sell act as stop-loss → Rule 7  
-   └─ Expired / cancelled order → Rule 8  
+```
+Route by scenario
+   ├─ Order not triggered despite NAV reaching target → Rule 1
+   ├─ NAV mismatch after trigger → Rule 2
+   ├─ When is payment debited (buy) → Rule 3
+   ├─ CDSL authorization for sell → Rule 4
+   ├─ Triggered order — status inquiry → Rule 5
+   ├─ "Redeem all" not available → Rule 6
+   ├─ Can conditional sell act as stop-loss → Rule 7
+   └─ Expired / cancelled order → Rule 8
 ```
 
 ### Fallback
@@ -113,7 +113,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 ### Rule 5 — Triggered Order: Cross-Tool Lookup
 
-1. Invoke `mf_order_history` — check for orders at 10:05 AM (buy) or 10:15 AM (sell) on the trigger date, variety = GTT.  
+1. Invoke `mf_order_history` — check for orders at 10:05 AM (buy) or 10:15 AM (sell) on the trigger date, variety = GTT.
 2. Once triggered, conditional order becomes a regular order; status can be checked in order history.
 
 ### Rule 6 — Redeem All Not Available

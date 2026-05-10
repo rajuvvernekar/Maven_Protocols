@@ -20,7 +20,7 @@ TRIGGER KEYWORDS: "FnO tradebook", "F&O trade", "futures trade", "options trade"
 
 ## Protocol
 
-# CONSOLE FNO TRADEBOOK PROTOCOL 
+# CONSOLE FNO TRADEBOOK PROTOCOL
 
 
 ---

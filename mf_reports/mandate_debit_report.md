@@ -36,37 +36,37 @@ TAGS: investments, funds
 
 **Shareable with client:**
 
-| Field | Interpretation |  
-|---|---|  
-| `amount` | Debit amount |  
-| `status` | Debit status — translate per A3 |  
+| Field | Interpretation |
+|---|---|
+| `amount` | Debit amount |
+| `status` | Debit status — translate per A3 |
 | `remark` | Debit remark — communicate in plain language per A4 |
 
 **Non-shareable:**
 
-| Field | Interpretation |  
-|---|---|  
-| `created_at` | Record creation timestamp |  
-| `transaction_timestamp` | Timestamp of the actual debit attempt |  
-| `order_id` | Maps to `cashier_reference` in `fund_allocation_report` per A1 |  
-| `order_type` | Type of SIP order associated with the debit |  
-| `mandate_id` | Internal identifier linking to the associated mandate record |  
-| `umrn` | Bank-assigned mandate registration number |  
-| `transaction_id` | Internal transaction identifier |  
-| `provider_transaction_id` | Payment provider's transaction identifier |  
-| `bank_reference` | Bank-assigned reference for the debit transaction |  
-| `tag` | Internal tag |  
-| `merchant` | Mandate issuer entity (Coin/Zerodha) |  
-| `type` | Mandate type — `autopay` (UPI) or `enach` |  
+| Field | Interpretation |
+|---|---|
+| `created_at` | Record creation timestamp |
+| `transaction_timestamp` | Timestamp of the actual debit attempt |
+| `order_id` | Maps to `cashier_reference` in `fund_allocation_report` per A1 |
+| `order_type` | Type of SIP order associated with the debit |
+| `mandate_id` | Internal identifier linking to the associated mandate record |
+| `umrn` | Bank-assigned mandate registration number |
+| `transaction_id` | Internal transaction identifier |
+| `provider_transaction_id` | Payment provider's transaction identifier |
+| `bank_reference` | Bank-assigned reference for the debit transaction |
+| `tag` | Internal tag |
+| `merchant` | Mandate issuer entity (Coin/Zerodha) |
+| `type` | Mandate type — `autopay` (UPI) or `enach` |
 | `provider` | Mandate provider — `ybl` (UPI autopay) or `digio` (eNACH) |
 
 ### A3 — Debit Status Values
 
-| Status | Meaning |  
-|---|---|  
-| draft | Debit request created, scheduled for debit on the scheduled date |  
-| success | Bank debited successfully — payment will be mapped to the order |  
-| pending | Debit request has an issue or execution is pending — `remark` carries the cause |  
+| Status | Meaning |
+|---|---|
+| draft | Debit request created, scheduled for debit on the scheduled date |
+| success | Bank debited successfully — payment will be mapped to the order |
+| pending | Debit request has an issue or execution is pending — `remark` carries the cause |
 | failed | Bank rejected the debit — order will not process this cycle |
 
 ---
@@ -75,13 +75,13 @@ TAGS: investments, funds
 
 When `status` = `pending` or `failed`, the `remark` field carries the cause:
 
-| Remark value | Meaning |  
-|---|---|  
-| Insufficient balance / Balance Insufficient | Insufficient funds in the client's bank account at debit time |  
-| Maximum limit exceeded | UPI transaction limit was exceeded |  
-| KYC-related issue | KYC issue with the client's bank account |  
-| A/c closed | Linked bank account is closed |  
-| Unable to Notify the Customer / Mandate notification pending / Mandate notification failed | Network error at the client's bank blocked the debit notification — temporary bank-side issue |  
+| Remark value | Meaning |
+|---|---|
+| Insufficient balance / Balance Insufficient | Insufficient funds in the client's bank account at debit time |
+| Maximum limit exceeded | UPI transaction limit was exceeded |
+| KYC-related issue | KYC issue with the client's bank account |
+| A/c closed | Linked bank account is closed |
+| Unable to Notify the Customer / Mandate notification pending / Mandate notification failed | Network error at the client's bank blocked the debit notification — temporary bank-side issue |
 | SeqNum Mismatch (Remitter) | Technical issue at the client's bank — temporary bank-side issue |
 
 ---
@@ -96,8 +96,8 @@ Juspay-based mandates do not auto-debit. A payment approval request is sent to t
 
 ### A6 — Links
 
-| Topic | URL |  
-|---|---|  
+| Topic | URL |
+|---|---|
 | Coin mandate management (creation, linkage, deletion) | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin |
 
 ---
@@ -106,7 +106,7 @@ Juspay-based mandates do not auto-debit. A payment approval request is sent to t
 
 Escalate to human agent when any of the following apply:
 
-- Draft status persists beyond T+2 from `created_at` and the cause is unclear after checking mandate status.  
+- Draft status persists beyond T+2 from `created_at` and the cause is unclear after checking mandate status.
 - Any debit issue with no clear root cause after applying the relevant rules.
 
 Include in escalation: client ID, debit details (date, amount, status, remark), and the specific issue.
@@ -117,14 +117,14 @@ Include in escalation: client ID, debit details (date, amount, status, remark), 
 
 ### Routing
 
-```  
-Route by scenario  
-   ├─ No debit record for expected date → Rule 1  
-   ├─ Debit status = draft → Rule 2  
-   ├─ Debit status = success → Rule 3  
-   ├─ Debit status = pending → Rule 4  
-   ├─ Debit status = failed → Rule 5  
-   └─ How to delete a mandate (Coin) → Rule 6  
+```
+Route by scenario
+   ├─ No debit record for expected date → Rule 1
+   ├─ Debit status = draft → Rule 2
+   ├─ Debit status = success → Rule 3
+   ├─ Debit status = pending → Rule 4
+   ├─ Debit status = failed → Rule 5
+   └─ How to delete a mandate (Coin) → Rule 6
 ```
 
 ### Fallback
@@ -139,9 +139,9 @@ If no debit record exists and SIP-level checks are inconclusive → escalate per
 
 When no debit record is found for the expected date:
 
-1. Invoke `sip_report` to confirm the SIP is active and check `fund_source` for mandate linkage.  
-2. Use `public_id` from `sip_report` as the `sip_id` input. Invoke `sip_modification_log` to check whether the SIP was modified near the trigger date — a recent modification can explain the missing debit.  
-3. If neither check explains the missing debit → communicate that there was a technical issue with the auto-debit for this cycle.  
+1. Invoke `sip_report` to confirm the SIP is active and check `fund_source` for mandate linkage.
+2. Use `public_id` from `sip_report` as the `sip_id` input. Invoke `sip_modification_log` to check whether the SIP was modified near the trigger date — a recent modification can explain the missing debit.
+3. If neither check explains the missing debit → communicate that there was a technical issue with the auto-debit for this cycle.
 4. For Zerodha SIPs (`sip_type` = `sip` in `sip_report`), advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs (`sip_type` = `amc_sip`), the next AMC SIP cycle will retry automatically per A1.
 
 ---
@@ -172,8 +172,8 @@ Confirm `status` = `success`. Communicate that the bank has been debited success
 
 If the client reports the order has not been allotted yet:
 
-1. Use `order_id` to look up `cashier_reference` in `fund_allocation_report` for payment mapping.  
-2. If payment is mapped → invoke `mf_order_history` for the corresponding order status. Communicate the order status.  
+1. Use `order_id` to look up `cashier_reference` in `fund_allocation_report` for payment mapping.
+2. If payment is mapped → invoke `mf_order_history` for the corresponding order status. Communicate the order status.
 3. If payment is not yet mapped → communicate that payment mapping takes T+1 to T+2 business days.
 
 ---

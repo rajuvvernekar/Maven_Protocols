@@ -32,7 +32,7 @@ TAGS: orders, reports
 
 ### A1 — Fundamentals
 
-- Each entry represents a single executed trade. One order may have multiple fills (multiple `trade_id`s for the same `order_id`).  
+- Each entry represents a single executed trade. One order may have multiple fills (multiple `trade_id`s for the same `order_id`).
 - For charges, MTM calculations, and obligation breakdowns: contract note must be referred manually — not available in this tool.
 
 ---
@@ -41,48 +41,48 @@ TAGS: orders, reports
 
 **Shareable with client:**
 
-| Field | Interpretation |  
-|---|---|  
-| `trade_date` | Date the trade was executed |  
-| `order_execution_time` | Timestamp of trade execution |  
-| `tradingsymbol` | Trading symbol of the instrument |  
-| `exchange` | Exchange on which the trade was executed |  
-| `segment` | Segment — FO (equity F&O), CDS (currency), COM (commodities) |  
-| `trade_type` | Buy or Sell |  
-| `quantity` | Number of contracts traded |  
-| `price` | Execution price per unit |  
-| `order_id` | Order identifier |  
-| `trade_id` | Trade identifier |  
-| `strike` | Strike price — populated for options only |  
-| `expiry_date` | Contract expiry date |  
+| Field | Interpretation |
+|---|---|
+| `trade_date` | Date the trade was executed |
+| `order_execution_time` | Timestamp of trade execution |
+| `tradingsymbol` | Trading symbol of the instrument |
+| `exchange` | Exchange on which the trade was executed |
+| `segment` | Segment — FO (equity F&O), CDS (currency), COM (commodities) |
+| `trade_type` | Buy or Sell |
+| `quantity` | Number of contracts traded |
+| `price` | Execution price per unit |
+| `order_id` | Order identifier |
+| `trade_id` | Trade identifier |
+| `strike` | Strike price — populated for options only |
+| `expiry_date` | Contract expiry date |
 | `instrument_type` | FUT = futures; OPT = options |
 
 **Non-shareable:**
 
-| Field | Interpretation |  
-|---|---|  
+| Field | Interpretation |
+|---|---|
 | `client_id` | Internal client identifier |
 
 ---
 
 ### A3 — Segment Mapping
 
-| Segment Code | Covers |  
-|---|---|  
-| FO | Equity F&O |  
-| CDS | Currency Derivatives |  
+| Segment Code | Covers |
+|---|---|
+| FO | Equity F&O |
+| CDS | Currency Derivatives |
 | COM | Commodities |
 
 ---
 
 ### A4 — Instrument Type Identification
 
-| Field Value / Pattern | Contract Type |  
-|---|---|  
-| `instrument_type` = FUT | Futures contract |  
-| `instrument_type` = OPT \+ tradingsymbol ends with CE | Call option |  
-| `instrument_type` = OPT \+ tradingsymbol ends with PE | Put option |  
-| `strike` field | Strike price of the option contract (populated for options only) |  
+| Field Value / Pattern | Contract Type |
+|---|---|
+| `instrument_type` = FUT | Futures contract |
+| `instrument_type` = OPT \+ tradingsymbol ends with CE | Call option |
+| `instrument_type` = OPT \+ tradingsymbol ends with PE | Put option |
+| `strike` field | Strike price of the option contract (populated for options only) |
 | `expiry_date` field | Last trading day of the contract |
 
 - **Contract symbol format:** underlying \+ expiry \+ strike \+ CE/PE (e.g., NIFTY2621727100CE = NIFTY, 26 Feb 2026 expiry, 27100 strike, Call).
@@ -93,19 +93,19 @@ TAGS: orders, reports
 
 When a corporate action occurs on the underlying stock (e.g., stock split, bonus), the exchange adjusts derivative contracts:
 
-- **Options:** Strike price adjusted (Old Strike / Adjustment Factor), market lot adjusted (Old Lot × Adjustment Factor).  
-- **Futures:** Base price adjusted (Old Price / Adjustment Factor), market lot adjusted (Old Lot × Adjustment Factor).  
-- The contract symbol itself does not change — strike price and lot size change. Position value remains the same; only contract terms are adjusted.  
+- **Options:** Strike price adjusted (Old Strike / Adjustment Factor), market lot adjusted (Old Lot × Adjustment Factor).
+- **Futures:** Base price adjusted (Old Price / Adjustment Factor), market lot adjusted (Old Lot × Adjustment Factor).
+- The contract symbol itself does not change — strike price and lot size change. Position value remains the same; only contract terms are adjusted.
 - **Example — ANGELONE 10:1 split:** Old lot 250 → New lot 2500. Old strike ₹5000 → New strike ₹500.
 
 ---
 
 ### A6 — Links
 
-| Topic | URL |  
-|---|---|  
-| How to download trade and funds reports | https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf |  
-| Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |  
+| Topic | URL |
+|---|---|
+| How to download trade and funds reports | https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf |
+| Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |
 | Corporate action impact on derivatives | https://support.zerodha.com/category/console/corporate-actions/ca-others/articles/impact-of-corporate-actions-on-derivatives |
 
 ---
@@ -120,17 +120,17 @@ Include when escalating to human agent: client ID, trade_date, tradingsymbol, se
 
 ### Routing
 
-```  
-Route by scenario  
-   ├─ Full F&O tradebook needed (tax / audit / compliance) → Rule 1  
-   ├─ Closed account — historical F&O trade data needed → Rule 2  
-   ├─ Verify an F&O trade → Rule 3  
-   ├─ Trade missing from tradebook → Rule 4  
-   ├─ Execution price doesn't match (possible multiple fills) → Rule 5  
-   ├─ Contract details changed after corporate action → Rule 6  
-   ├─ Client asks about contract characteristics → Rule 7  
-   ├─ Charges / brokerage / STT / MTM query → Rule 8  
-   └─ Report fails to load or times out → Rule 9  
+```
+Route by scenario
+   ├─ Full F&O tradebook needed (tax / audit / compliance) → Rule 1
+   ├─ Closed account — historical F&O trade data needed → Rule 2
+   ├─ Verify an F&O trade → Rule 3
+   ├─ Trade missing from tradebook → Rule 4
+   ├─ Execution price doesn't match (possible multiple fills) → Rule 5
+   ├─ Contract details changed after corporate action → Rule 6
+   ├─ Client asks about contract characteristics → Rule 7
+   ├─ Charges / brokerage / STT / MTM query → Rule 8
+   └─ Report fails to load or times out → Rule 9
 ```
 
 ### Fallback
@@ -143,7 +143,7 @@ Route by scenario
 
 ### Rule 1 — Full F&O Tradebook Request (Tax / Audit / Compliance)
 
-1. Share the links from A6 with the client.  
+1. Share the links from A6 with the client.
 2. If the client requests a formatted PDF, share the same links from A6.
 
 ---
@@ -162,43 +162,43 @@ Route by scenario
 
 ### Rule 4 — Trade Missing from Tradebook
 
-1. Search by date, segment (per A3), and tradingsymbol.  
-2. If found → confirm trade details per Rule 3.  
-3. If not found → verify correct segment is selected (per A3).  
+1. Search by date, segment (per A3), and tradingsymbol.
+2. If found → confirm trade details per Rule 3.
+3. If not found → verify correct segment is selected (per A3).
 4. If still not found after correct segment → escalate per A7.
 
 ---
 
 ### Rule 5 — Multiple Fills for One Order
 
-1. Check if multiple `trade_id`s exist for the same `order_id`.  
+1. Check if multiple `trade_id`s exist for the same `order_id`.
 2. If yes → confirm each fill (trade_id, quantity, price) and the calculated average execution price across all fills.
 
 ---
 
 ### Rule 6 — Contract Symbol Change After Corporate Action
 
-1. Explain the CA adjustment per A5.  
-2. Share the corporate action impact link from A6.  
+1. Explain the CA adjustment per A5.
+2. Share the corporate action impact link from A6.
 3. If client is not satisfied → escalate per A7.
 
 ---
 
 ### Rule 7 — Identifying Contract Details
 
-1. Use A4 to identify the contract type from field values.  
+1. Use A4 to identify the contract type from field values.
 2. Communicate contract type (futures / call option / put option), strike price if applicable, and expiry date.
 
 ---
 
 ### Rule 8 — Contract Note Queries (Charges / MTM)
 
-1. This tool provides trade-level execution data only — no charge, MTM, or obligation data.  
+1. This tool provides trade-level execution data only — no charge, MTM, or obligation data.
 2. Escalate to human agent for contract note charges, MTM, and settlement details.
 
 ---
 
 ### Rule 9 — Report Fails to Load / Times Out
 
-1. Retry with a narrower date range (e.g., one financial year at a time) or filter by segment.  
+1. Retry with a narrower date range (e.g., one financial year at a time) or filter by segment.
 2. If the issue persists → escalate to human agent.
