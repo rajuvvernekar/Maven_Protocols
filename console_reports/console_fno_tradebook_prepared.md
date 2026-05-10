@@ -30,8 +30,6 @@ TAGS: orders, reports
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - Each entry represents a single executed trade. One order may have multiple fills (multiple `trade_id`s for the same `order_id`).  
@@ -142,8 +140,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Full F&O Tradebook Request (Tax / Audit / Compliance)
 

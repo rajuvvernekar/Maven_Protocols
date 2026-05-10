@@ -27,8 +27,6 @@ TAGS: ipo
 
 ## Section A: Reference Data
 
----
-
 ### A1 — IPO Fundamentals
 
 - Mandates are bank-controlled. Zerodha cannot regenerate, resend, or modify mandates.  
@@ -229,8 +227,6 @@ Query relates to IPO →
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Mandate Not Received
 

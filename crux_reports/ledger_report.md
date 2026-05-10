@@ -41,8 +41,6 @@ TAGS: funds, charges, reports
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Ledger Fundamentals
 
 - Two views: **"Without Margin"** (only cash movements = actual cash balance) and **"With Margin"** (cash adjusted for margin blocks, includes margin blocked/reversed entries for F&O).    
@@ -238,8 +236,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — With Margin vs Without Margin Explanation
 

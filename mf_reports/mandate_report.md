@@ -22,8 +22,6 @@ TAGS: investments, funds
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Mandate Fundamentals
 
 -A Coin mandate must be linked to a SIP for auto-debit to work. The mandate limit (typically ₹1,00,000 for UPI autopay, ₹1,00,00,000 for eNACH) is the maximum permissible debit per transaction — not the actual debit amount. The actual debit equals the sum of linked SIP instalments for that cycle.
@@ -165,8 +163,6 @@ If no rule matches and no root cause is identified after checks → escalate to 
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Mandate Status Check
 

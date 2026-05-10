@@ -25,8 +25,6 @@ TAGS: reports, holdings
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - Realized P&L only — no charge or MTM breakdown.
@@ -119,8 +117,6 @@ If no root cause is found → escalate to human agent.
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — P&L Verification
 

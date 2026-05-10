@@ -25,8 +25,6 @@ TAGS: holdings, demat
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - Buy average is calculated from these entries using FIFO.  
@@ -115,8 +113,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Walk Through FIFO Calculation
 

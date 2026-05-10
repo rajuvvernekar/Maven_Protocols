@@ -22,8 +22,6 @@ TAGS: investments, funds
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 -Failed debits are not retried automatically — the client must add funds manually for that cycle. The mandate must be active before debits can be processed.
@@ -136,8 +134,6 @@ If no debit record exists and SIP-level checks are inconclusive → escalate per
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Debit Not Initiated
 

@@ -26,8 +26,6 @@ TAGS: margins
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Pledge Fundamentals
 
 - Pledge charges: ₹30 \+ 18% GST = ₹35.4 standard. A Journal Entry may appear on the ledger for specific pledge types (some instruments).  
@@ -146,8 +144,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Historical Pledge/Unpledge Status
 

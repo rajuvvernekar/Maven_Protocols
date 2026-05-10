@@ -28,8 +28,6 @@ TAGS: funds
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Withdrawal Types
 
 | Field Value | Label | Amount Range | Frequency | Window | Credit Timeline | Cancellable |    
@@ -264,8 +262,6 @@ Route by scenario
 If no route matches after all checks, escalate to human agent per A14.
 
 ## Section C: Rules
-
----
 
 ### Rule 1: Early Exit — Escalate to Human Agent
 

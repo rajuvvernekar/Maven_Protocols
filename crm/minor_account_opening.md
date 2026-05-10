@@ -23,8 +23,6 @@ TAGS: account
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Field Usage Rules
 
 **Shareable with client:**
@@ -147,8 +145,6 @@ If no rule matches, escalate to human agent.
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Application Processing (Within Timeline)
 

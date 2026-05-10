@@ -29,8 +29,6 @@ TAGS: margins, holdings
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - MTF allows clients to buy shares by paying only initial margin (\~20–50% depending on stock); Zerodha funds the rest.  
@@ -147,8 +145,6 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Buy Average Mismatch (Console vs Kite MTF Filter)
 

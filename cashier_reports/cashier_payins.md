@@ -25,8 +25,6 @@ TAGS: funds
 
 ## Section A: Reference Data
 
----
-
 ### A1: Payment Methods & Specs
 
 | Method | Charge | Credit Timeline | Refund Timeline | Limits / Notes |    
@@ -199,8 +197,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1: Early Exit
 

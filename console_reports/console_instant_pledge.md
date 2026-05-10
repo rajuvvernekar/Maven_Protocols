@@ -25,8 +25,6 @@ TAGS: margins
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - Collateral is reflected after CDSL confirmation — usually instant, can take up to 30 minutes.
@@ -146,8 +144,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — LAS Early Exit
 

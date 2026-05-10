@@ -24,8 +24,6 @@ TAGS: holdings
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - **Unrealized P&L** = closing_value − open_value = (close_price − open_average) × open_quantity.  
@@ -111,8 +109,6 @@ If no route matches → escalate to human agent.
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Position Verification
 

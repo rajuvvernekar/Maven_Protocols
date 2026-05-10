@@ -27,8 +27,6 @@ TAGS: investments
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Order Lifecycle and Status Values
 
 ```  
@@ -309,8 +307,6 @@ If no rule matches and no root cause is identified → escalate to a human agent
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Processing Orders
 

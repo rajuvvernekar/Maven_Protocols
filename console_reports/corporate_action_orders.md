@@ -25,8 +25,6 @@ TAGS: corporate-actions, orders
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - OFS (Offer for Sale) orders are not handled in this tool — escalate to human agent for all OFS queries without checking the tool.  
@@ -140,8 +138,6 @@ If no route matches and no root cause is found → escalate to human agent.
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Order Status Verification
 

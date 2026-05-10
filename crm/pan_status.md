@@ -27,8 +27,6 @@ TAGS: account
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 -PAN verification checks name/DOB validity across ITD, Exchange, Depository, and KRA. All intermediary records must match for trading — SEBI requirement.
@@ -148,8 +146,6 @@ If no rule matches, check `get_all_client_data` for other account remarks or blo
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — PAN Invalid
 

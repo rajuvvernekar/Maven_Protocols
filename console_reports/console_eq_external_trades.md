@@ -25,8 +25,6 @@ TAGS: holdings, demat
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - External trades directly affect buy average and P&L via FIFO.
@@ -146,8 +144,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Verify External Entry Exists
 

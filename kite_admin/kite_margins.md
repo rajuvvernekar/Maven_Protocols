@@ -37,8 +37,6 @@ TAGS: margins
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 Positions P&L uses entry price; Funds page uses last MTM settlement price — these may differ intraday. Overall P&L will be the same once positions are closed.
@@ -183,8 +181,6 @@ Ledger entry: "Physical delivery margin blocked for long options in NSE F&O"
 
 ## Section B: Decision Flow
 
----
-
 ### Routing 
 
 ```  
@@ -211,8 +207,6 @@ If no root cause is found, escalate to a human agent per **A9**.
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Balance Inquiry
 

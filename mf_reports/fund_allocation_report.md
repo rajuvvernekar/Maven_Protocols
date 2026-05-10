@@ -23,8 +23,6 @@ TAGS: investments, funds
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Scope
 
 - Shows payments reported to BSE STAR MF and their mapping to orders.  
@@ -113,8 +111,6 @@ If no root cause is identified → escalate to a human agent with the UTR, payme
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Payment & Allotment Status
 

@@ -31,8 +31,6 @@ TAGS: orders, reports
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - Intraday vs delivery is not a stored field — it is inferred from trade patterns per A3.
@@ -145,8 +143,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Trade Existence Verification
 

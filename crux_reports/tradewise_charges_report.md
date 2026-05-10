@@ -25,8 +25,6 @@ TAGS: charges, reports
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Report Fundamentals
 
 - With "View orderwise" selected, each row represents one complete order with charges already consolidated across all fills — no manual summing needed.  
@@ -127,8 +125,6 @@ If no rule matches, ESCALATE TO HUMAN AGENT.
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Trade Charges Breakdown
 

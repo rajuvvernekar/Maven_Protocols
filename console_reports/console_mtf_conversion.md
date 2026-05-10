@@ -24,8 +24,6 @@ TAGS: margins, holdings
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - Conversion requires the funded amount as free cash. If free cash is less than the funded amount, only the affordable portion converts (`converted_quantity` < `request_quantity`); the rest stays under MTF.  
@@ -122,8 +120,6 @@ If no rule matches → escalate to human agent per A7.
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Conversion Outcome Verification
 

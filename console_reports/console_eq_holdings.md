@@ -29,8 +29,6 @@ TAGS: holdings, demat, corporate-actions
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Field Usage Rules
 
 **Shareable with client:**
@@ -253,8 +251,6 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Buy Average Handling
 

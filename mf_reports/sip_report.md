@@ -25,8 +25,6 @@ TAGS: investments
 
 ## Section A: Reference Data
 
----
-
 ### A1 — SIP Fundamentals
 
 - SIP types: `sip` (Zerodha — modifiable), `amc_sip` (BSE — delete-only),   
@@ -177,8 +175,6 @@ If no rule matches and no root cause is identified after checks → escalate to 
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — SIP Not Triggered
 

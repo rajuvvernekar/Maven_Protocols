@@ -26,8 +26,6 @@ TAGS: holdings
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Field Usage Rules
 
 **Shareable with client:**
@@ -102,8 +100,6 @@ Route by scenario
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — Qty Validation
 

@@ -27,8 +27,6 @@ TAGS: reports, holdings
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Fundamentals
 
 - Realized P&L = sell_value − buy_value (per FIFO matching of sell qty against oldest buys). Only shows P&L for stocks that have been sold — no P&L for holdings still held.
@@ -188,8 +186,6 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 ---
 
 ## Section C: Rules
-
----
 
 ### Rule 1 — P&L Verification
 
