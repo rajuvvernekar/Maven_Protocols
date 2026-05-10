@@ -61,7 +61,7 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 | `option_premium` | Net option premium paid or received |
 | `liquid_collateral` | Collateral value from liquid mutual fund pledges |
 | `equity_collateral` | Collateral value from equity share pledges |
-| `total_collateral` | Total collateral value (liquid \+ equity) |
+| `total_collateral` | Total collateral value (liquid + equity) |
 | `m2m_realised` | Realised MTM P&L for the day from closed positions |
 
 **Non-shareable:**
@@ -76,21 +76,21 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 
 | Field | Definition |
 |---|---|
-| Available Margin | Total funds for trading: cash \+ payin \+ collateral \+ premium received \+ realised P&L − unrealised losses − used margin |
-| Available Cash | Previous day closing balance \+ payin − payout ± day's settled activity. If negative → interest applies per **A5**. Rounded to 1 decimal place on Kite for display; the full amount is withdrawable. |
+| Available Margin | Total funds for trading: cash + payin + collateral + premium received + realised P&L − unrealised losses − used margin |
+| Available Cash | Previous day closing balance + payin − payout ± day's settled activity. If negative → interest applies per **A5**. Rounded to 1 decimal place on Kite for display; the full amount is withdrawable. |
 | Opening Balance | Previous day's closing balance after reversing blocked margin. Differences from previous close can occur due to: settlement of previous day's trades (T+1), MTM settlement on open F&O positions, charges/brokerage deducted, or settlement holiday delays. |
 | Used Margin | Margin blocked for open positions and orders (pending and executed). Negative when selling holdings or closing long options — the credit received is included in available margin. |
-| Free Cash | Cash Margin Available \+ Pay In \+ Direct Collateral − Margin Used |
+| Free Cash | Cash Margin Available + Pay In + Direct Collateral − Margin Used |
 | Payin | Funds added during the day. Weekend payins appear on Monday. |
 | Payout | Funds withdrawn during the day. |
-| Total Collateral | Liquid Collateral \+ Equity Collateral |
+| Total Collateral | Liquid Collateral + Equity Collateral |
 | Liquid Collateral | Pledged LiquidBees/liquid MFs after haircut — treated as cash equivalent. Satisfies the 50% cash requirement per **A6**. |
 | Equity Collateral | Pledged stocks/ETFs/MFs after haircut. Non-cash — attracts 0.035%/day if used beyond the 50% cash limit per **A6**. |
 | Option Premium | Negative when premium is received from selling/writing options; positive when premium is paid for buying. Included in available cash. |
 | SPAN | Margins blocked for F&O portfolios. Exchanges use Standard Portfolio Analysis of Risk (SPAN) to calculate risk. |
 | Exposure | Margin charged over and above SPAN to cover risks that SPAN may not account for (index: 2% of contract value; stock: 3.5% or 1.5 SD). |
-| SPAN \+ Exposure | Initial Margin required by exchange for F&O. |
-| Delivery Margin | T1 sale proceeds \+ physical delivery margin for ITM stock options during expiry week \+ additional MCX margin near expiry. Physical delivery margin increases progressively from 4 days before expiry to expiry day — see **A10** for the full schedule. |
+| SPAN + Exposure | Initial Margin required by exchange for F&O. |
+| Delivery Margin | T1 sale proceeds + physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry. Physical delivery margin increases progressively from 4 days before expiry to expiry day — see **A10** for the full schedule. |
 | M2M Realised | Realised MTM P&L from closed F&O positions. Mark to Market is the daily revaluation of open futures positions at the closing price — profits or losses are settled to the client's account daily. Options do not have MTM settlement. |
 | M2M Unrealised | Unrealised MTM P&L from open F&O positions (internal use only). |
 
@@ -118,7 +118,7 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 | Condition | Consequence |
 |---|---|
 | Negative available cash | Interest: 0.05%/day (18% p.a.) |
-| Negative balance \+ F&O orders | Brokerage: ₹40 per executed F&O order (instead of ₹20) |
+| Negative balance + F&O orders | Brokerage: ₹40 per executed F&O order (instead of ₹20) |
 | No funds added / insufficient margins | Positions may be squared off |
 
 ---
@@ -165,9 +165,9 @@ Escalate to a human agent. Always include: **client ID, current margin values, a
 
 | Day | Margin Requirement |
 |---|---|
-| 4 days before expiry — Wednesday (E-4) | 10% of (VaR \+ ELM \+ Adhoc) |
-| 3 days before expiry — Thursday (E-3) | 25% of (VaR \+ ELM \+ Adhoc) |
-| 2 days before expiry — Friday (E-2) | 45% of (VaR \+ ELM \+ Adhoc) |
+| 4 days before expiry — Wednesday (E-4) | 10% of (VaR + ELM + Adhoc) |
+| 3 days before expiry — Thursday (E-3) | 25% of (VaR + ELM + Adhoc) |
+| 2 days before expiry — Friday (E-2) | 45% of (VaR + ELM + Adhoc) |
 | 1 day before expiry — Monday (E-1) | 25% of contract value |
 | Expiry day — Tuesday | 50% of contract value |
 
@@ -197,7 +197,7 @@ Route by scenario
    ├─ Sale proceeds availability / BTST / same-day trading → Rule 9
    ├─ Negative balance after market order → Rule 10
    ├─ MTM explanation → Rule 11
-   └─ Balance negative \+ ITM stock options near expiry → Rule 12
+   └─ Balance negative + ITM stock options near expiry → Rule 12
 ```
 
 ### Fallback
@@ -251,7 +251,7 @@ If no root cause is found, escalate to a human agent per **A9**.
 
 ### Rule 5 — SPAN / Exposure / Delivery Margin
 
-1. Per **A3**: SPAN \+ Exposure = Initial Margin required by exchange for F&O.
+1. Per **A3**: SPAN + Exposure = Initial Margin required by exchange for F&O.
 2. For physical delivery margin near expiry → share **A10** schedule. Margin calculator per **A8**.
 3. If client asks which position is blocking margin → invoke `kite_positions`.
 4. If client asks about a specific order's margin requirement → invoke `kite_orders` and check `filled_quantity` and `average_price` for OPEN and COMPLETE orders.

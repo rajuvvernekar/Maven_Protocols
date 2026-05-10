@@ -25,7 +25,7 @@ TAGS: funds
 
 ### A1 — Fundamentals
 
-- eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. No Zerodha charges; bank may charge verification fee \+ penalty for failed debits.
+- eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. No Zerodha charges; bank may charge verification fee + penalty for failed debits.
 
 ### A2 — Field Usage Rules
 

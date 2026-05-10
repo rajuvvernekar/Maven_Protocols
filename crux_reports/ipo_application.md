@@ -164,7 +164,7 @@ ASBA keeps money in customer's bank account but blocks it until allotment. Allot
 | Account Type | Rules |
 |---|---|
 | Minor | Own bank/demat required — cannot use parent/guardian bank. Can apply via UPI (if bank enabled) or ASBA. |
-| NRI | UPI on NRE/NRO with Indian mobile number (up to ₹5L per A2) or ASBA. Cannot apply from both NRE and NRO accounts (same PAN). NRE demat holders must use NRE bank account only — not NRO. PIS holders: bank-specific annexure \+ bank statement showing IPO debit required post-allotment via ticket. |
+| NRI | UPI on NRE/NRO with Indian mobile number (up to ₹5L per A2) or ASBA. Cannot apply from both NRE and NRO accounts (same PAN). NRE demat holders must use NRE bank account only — not NRO. PIS holders: bank-specific annexure + bank statement showing IPO debit required post-allotment via ticket. |
 
 ---
 
@@ -363,7 +363,7 @@ Apply rules from A9 for the customer's account type.
 - UPI on NRE/NRO with Indian mobile number (up to ₹5L per A2) or ASBA.
 - Cannot apply from both NRE and NRO accounts (same PAN).
 - NRE demat holders must use NRE bank account only — not NRO.
-- PIS holders: submit bank-specific annexure \+ bank statement showing IPO debit via ticket post-allotment.
+- PIS holders: submit bank-specific annexure + bank statement showing IPO debit via ticket post-allotment.
 
 ---
 

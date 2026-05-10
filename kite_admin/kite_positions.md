@@ -41,7 +41,7 @@ TAGS: holdings, margins
 
 -CNC buy on the same day appears in Positions → moves to Holdings on T+1.
 
--Net position = actual current portfolio (overnight \+ today's trades). Day position = only today's trading activity.
+-Net position = actual current portfolio (overnight + today's trades). Day position = only today's trading activity.
 
 -P&L in positions includes both realised (closed trades) and unrealised (open trades), calculated from original entry price. Multiple trades in same instrument same day: buy avg calculated across ALL trades, not just current position — can show profit even if current buy avg > LTP.
 
@@ -101,7 +101,7 @@ TAGS: holdings, margins
 | Equity F&O | 3:26 PM |
 | MCX | 10 min before market close (Nov–Mar: 11:55 PM; Mar–Nov: 11:30 PM — shifts with US DST) |
 
--Charge: ₹50 \+ 18% GST per order squared off.
+-Charge: ₹50 + 18% GST per order squared off.
 
 -Failure reasons: System/link failure, stock at circuit limit, connectivity issues.
 
@@ -131,9 +131,9 @@ TAGS: holdings, margins
 
 | Day | Margin Requirement |
 |---|---|
-| E-4 (Wednesday) | 10% of (VaR \+ ELM \+ Adhoc) |
-| E-3 (Thursday) | 25% of (VaR \+ ELM \+ Adhoc) |
-| E-2 (Friday) | 45% of (VaR \+ ELM \+ Adhoc) |
+| E-4 (Wednesday) | 10% of (VaR + ELM + Adhoc) |
+| E-3 (Thursday) | 25% of (VaR + ELM + Adhoc) |
+| E-2 (Friday) | 45% of (VaR + ELM + Adhoc) |
 | E-1 (Monday) | 25% of contract value |
 | Expiry day (Tuesday) | 50% of contract value |
 
@@ -142,7 +142,7 @@ TAGS: holdings, margins
 ### A7 — Margin Shortfall & Penalty
 
 - Causes: Exiting hedge leg (remaining leg needs full margin), expiry of hedge leg, MTM loss exceeding 50% of funds, pledged stock value drop, haircut increase.
-- Margin call: SMS \+ email \+ voice message. Add funds by 11:59 PM same day (after hours) or immediately (before hours).
+- Margin call: SMS + email + voice message. Add funds by 11:59 PM same day (after hours) or immediately (before hours).
 - Penalty rate: 0.5% of shortfall (< ₹1L), 1% (≥ ₹1L). Up to 5% for 3+ instances/month.
 - Snapshots: 4 random intraday snapshots (all segments except commodity). 8 for commodity. Peak margin penalty if snapshot catches one leg open.
 
@@ -156,8 +156,8 @@ TAGS: holdings, margins
 
 | Scenario | Consequence |
 |---|---|
-| MIS sell \+ upper circuit | Cannot buy back → converts to delivery. No shares in demat → short delivery \+ auction penalty. |
-| MIS buy \+ lower circuit | Cannot sell → converts to CNC. Must maintain margin for delivery. |
+| MIS sell + upper circuit | Cannot buy back → converts to delivery. No shares in demat → short delivery + auction penalty. |
+| MIS buy + lower circuit | Cannot sell → converts to CNC. Must maintain margin for delivery. |
 
 ### A10 — Profit Availability
 
@@ -235,15 +235,15 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 ### Rule 2 — Net vs Day Positions
 
-1. Per **A1**, net includes carry-forward \+ today's trades; day = today's activity only. Example: carried forward 75 NIFTY FUT and squared off today → net shows 0, day shows -75.
+1. Per **A1**, net includes carry-forward + today's trades; day = today's activity only. Example: carried forward 75 NIFTY FUT and squared off today → net shows 0, day shows -75.
 
 ### Rule 3 — Auto Square-Off
 
 1. Position squared off → check `product` = MIS or CO. Intraday positions auto-squared off per **A4**. Invoke `kite_orders` to show the order. To avoid, close intraday positions before square-off time.
 2. Position NOT squared off (carried forward) → Per **A4**, MIS can fail to square off and carry forward — client responsible for closing. Invoke `kite_margins` to check margin sufficiency.
 3. Circuit limit impact on MIS:
-   a. Sell \+ upper circuit → MIS sell at upper circuit cannot buy back → converts to delivery. If no shares in demat, short delivery and auction penalties per **A9**.
-   b. Buy \+ lower circuit → MIS buy at lower circuit converts to CNC; must maintain delivery margin per **A9**.
+   a. Sell + upper circuit → MIS sell at upper circuit cannot buy back → converts to delivery. If no shares in demat, short delivery and auction penalties per **A9**.
+   b. Buy + lower circuit → MIS buy at lower circuit converts to CNC; must maintain delivery margin per **A9**.
    c. If client asks about holdings for delivery → invoke `kite_holdings`.
 
 ### Rule 4 — Product Conversion

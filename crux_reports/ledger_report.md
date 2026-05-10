@@ -62,17 +62,17 @@ TAGS: funds, charges, reports
 
 ### A3 — Voucher Type Translations
 
-| Voucher Type \+ Remark Pattern | Meaning |
+| Voucher Type + Remark Pattern | Meaning |
 |---|---|
 | "Bank Receipts" | Funds added via bank (blocks same-day withdrawal) |
-| "Book Voucher" \+ "Net settlement for equity" | Equity settlement (T+1) |
-| "Book Voucher" \+ "Net obligation of equity F&O" | F&O settlement (T+1) |
-| "Book Voucher" \+ "Net obligation for MCX commodity FNO" | Commodity settlement (T+1) |
-| "Book Voucher" \+ "Net obligation for CDS FNO" | Currency settlement (T+1) |
-| "Bank Payments" \+ "quarterly settlement" | Quarterly settlement payout |
+| "Book Voucher" + "Net settlement for equity" | Equity settlement (T+1) |
+| "Book Voucher" + "Net obligation of equity F&O" | F&O settlement (T+1) |
+| "Book Voucher" + "Net obligation for MCX commodity FNO" | Commodity settlement (T+1) |
+| "Book Voucher" + "Net obligation for CDS FNO" | Currency settlement (T+1) |
+| "Bank Payments" + "quarterly settlement" | Quarterly settlement payout |
 | "Bank Payments" | Withdrawals processed |
 | "Journal Entry" | Charges (DP, pledge, interest, penalties, AMC, modification charges etc.) — not brokerage related |
-| "Journal Entry" \+ "Interest for MTF funded value on [date]" | MTF interest charge for funded amount on that date |
+| "Journal Entry" + "Interest for MTF funded value on [date]" | MTF interest charge for funded amount on that date |
 | "Delivery Voucher" | Margin blocked/reversed entries |
 | "MTF Delivery Voucher" | MTF margin/settlement entries |
 
@@ -94,15 +94,15 @@ TAGS: funds, charges, reports
 
 | Charge Type | Ledger Remark Pattern | Amount | Notes |
 |---|---|---|---|
-| DP charges (Male primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.34** = ₹9.50 Zerodha \+ ₹3.50 CDSL \+ 18% GST | Per scrip per transaction whenever stock is debited from demat — applies to regular sale, SLB lending, and MTF unpledge sales |
-| DP charges (Female primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.045** = ₹9.50 Zerodha \+ ₹3.25 CDSL \+ 18% GST | Same as above — CDSL gives a reduced depository charge when the primary demat holder is female |
-| Pledge / unpledge charges | "Being pledge charges for [STOCK]" (non-MTF) or "MTF pledge charges for [STOCK]" / "MTF unpledge charges for [STOCK]" | **₹35.40** = ₹30 \+ 18% GST per scrip per action | Pledging or unpledging a stock (for collateral margin or MTF). Each pledge and each unpledge is charged separately |
+| DP charges (Male primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.34** = ₹9.50 Zerodha + ₹3.50 CDSL + 18% GST | Per scrip per transaction whenever stock is debited from demat — applies to regular sale, SLB lending, and MTF unpledge sales |
+| DP charges (Female primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.045** = ₹9.50 Zerodha + ₹3.25 CDSL + 18% GST | Same as above — CDSL gives a reduced depository charge when the primary demat holder is female |
+| Pledge / unpledge charges | "Being pledge charges for [STOCK]" (non-MTF) or "MTF pledge charges for [STOCK]" / "MTF unpledge charges for [STOCK]" | **₹35.40** = ₹30 + 18% GST per scrip per action | Pledging or unpledging a stock (for collateral margin or MTF). Each pledge and each unpledge is charged separately |
 | AMC for Demat Account | "AMC for Demat Account for [period]" | ₹88.50 quarterly (standard) or ₹29.50 for small/BSDA-eligible accounts | Demat account maintenance, billed quarterly |
 | Account opening fee | "Account opening fee" | **₹500** | One-time, typically for Non-individual, Corporate, or NRI accounts. Resident individual accounts are usually opened for free |
-| DDPI activation charge | "Charges for enabling DDPI" | **₹118** = ₹100 \+ 18% GST | One-time, when DDPI is enabled on the account |
+| DDPI activation charge | "Charges for enabling DDPI" | **₹118** = ₹100 + 18% GST | One-time, when DDPI is enabled on the account |
 | Modification Charges | Remark reflects the specific modification type (e.g., "Bank Modification Charges", "Address Modification Charges") | **₹29.50** | Any account-detail modification — bank account change, address change, or other KYC/profile modifications. The ledger remark will reflect the actual modification type |
-| Payment gateway charges | "Being payment gateway charges debited for [CLIENT_ID]" | **₹10.62** = ₹9 \+ 18% GST | Each time funds are added via Payment Gateway (Netbanking). UPI deposits do NOT attract this charge |
-| Call and Trade / Auto Square-Off | "Call and Trade charges(Auto Square Off) for [date]" or "Call and Trade charges for [date]" | **₹59** = ₹50 \+ 18% GST per order | Orders placed via phone, or RMS auto-square-off triggered by margin shortfall or end-of-day intraday close |
+| Payment gateway charges | "Being payment gateway charges debited for [CLIENT_ID]" | **₹10.62** = ₹9 + 18% GST | Each time funds are added via Payment Gateway (Netbanking). UPI deposits do NOT attract this charge |
+| Call and Trade / Auto Square-Off | "Call and Trade charges(Auto Square Off) for [date]" or "Call and Trade charges for [date]" | **₹59** = ₹50 + 18% GST per order | Orders placed via phone, or RMS auto-square-off triggered by margin shortfall or end-of-day intraday close |
 | Delayed Payment Charges (DPC) | "Delayed payment charges for [month] - [year]" | Variable — interest on debit balance | Monthly, posted early in the following month. Invoke `delayed_payment_charges` for day-wise breakdown |
 
 ---
@@ -144,9 +144,9 @@ TAGS: funds, charges, reports
 | Scenario | Formula | Condition |
 |---|---|---|
 | No collateral | Closing balance − same-day payin − credits from unsettled trades | Always applies |
-| Equity collateral only | Closing balance \+ 50% of margin blocked from equity collateral − same-day payin − unsettled credits | Only when position is closed and equity collateral is not actively being used as margin |
-| Liquid collateral only | Closing balance \+ margin blocked from liquid collateral − same-day payin − unsettled credits | Only when position is closed and liquid collateral is not actively being used as margin |
-| Both collateral types | Closing balance \+ 50% equity collateral margin \+ liquid collateral margin − same-day payin − unsettled credits | Only when position is closed and neither collateral type is actively being used as margin |
+| Equity collateral only | Closing balance + 50% of margin blocked from equity collateral − same-day payin − unsettled credits | Only when position is closed and equity collateral is not actively being used as margin |
+| Liquid collateral only | Closing balance + margin blocked from liquid collateral − same-day payin − unsettled credits | Only when position is closed and liquid collateral is not actively being used as margin |
+| Both collateral types | Closing balance + 50% equity collateral margin + liquid collateral margin − same-day payin − unsettled credits | Only when position is closed and neither collateral type is actively being used as margin |
 
 ---
 
@@ -193,7 +193,7 @@ Withdrawal processing uses settled funds only. Unsettled credits posted on T day
 
 | Balance Type | Formula |
 |---|---|
-| Net account balance (visible in ledger) | Opening settled (A) \+ unsettled credits (B) − unsettled debits (D) |
+| Net account balance (visible in ledger) | Opening settled (A) + unsettled credits (B) − unsettled debits (D) |
 | Withdrawal-eligible balance | Opening settled (A) − unsettled debits (D) |
 
 **Outcomes:**
@@ -335,7 +335,7 @@ Apply the applicable formula from A8. Formulas apply only when the position is c
 
 ### Rule 8 — Quarterly Settlement
 
-1. Check ledger for "Bank Payments" \+ "quarterly settlement" entry per A3.
+1. Check ledger for "Bank Payments" + "quarterly settlement" entry per A3.
 2. If QS entry found: present date, amount, and balance after. Reference A4 for schedule and regulatory context.
 3. If no QS entry found:
    - Check account opening date against the previous settlement date per A4 — if opened after, first payout is at the next quarter's settlement date.
@@ -399,8 +399,8 @@ When escalating, include: client ID, date range, and a summary of the context an
    - Total unsettled credits on T day = B: sum of same-day payin, equity / FNO / MTF / MCX / CDS settlement credits per A11.
    - Total unsettled debits on T day = D: sum of equity / FNO / MTF / MCX / CDS obligation debits per A11.
 2. Compute:
-   - Net account balance = A \+ B − D (what the client sees in the ledger — likely positive).
+   - Net account balance = A + B − D (what the client sees in the ledger — likely positive).
    - Withdrawal-eligible = A − D (FIFO: debits consume settled funds first per A11).
 3. Confirm: if withdrawal-eligible ≤ 0, this is the cause of the failed withdrawal.
 4. Identify the next settlement working day from the settlement calendar.
-5. The net account balance (A \+ B − D) is visible but unsettled credits (B) cannot offset obligation debits (D) under FIFO — withdrawal-eligible = A − D. The full balance becomes withdrawable on the next settlement working day; client should place a new request from that date.
+5. The net account balance (A + B − D) is visible but unsettled credits (B) cannot offset obligation debits (D) under FIFO — withdrawal-eligible = A − D. The full balance becomes withdrawable on the next settlement working day; client should place a new request from that date.

@@ -88,8 +88,8 @@ Include when escalating to human agent: client ID, trading_symbol, trade_type, s
 | Event | Expected Timeline |
 |---|---|
 | Buyback proceeds credited to primary bank | 5–15 working days after acceptance (paid by the company, not Zerodha) |
-| Order status stuck at "Placed" | Up to CA closure date \+ 5 working days |
-| Rights allotment discrepancy | Up to listing date \+ 3 days |
+| Order status stuck at "Placed" | Up to CA closure date + 5 working days |
+| Rights allotment discrepancy | Up to listing date + 3 days |
 
 - If actual timing exceeds these thresholds → escalate to human agent per A5.
 
@@ -97,8 +97,8 @@ Include when escalating to human agent: client ID, trading_symbol, trade_type, s
 
 | CA Type | Data Visible in This Tool |
 |---|---|
-| Buyback | \~7 days |
-| Takeover | \~14 days |
+| Buyback | ~7 days |
+| Takeover | ~14 days |
 | Delisting | 5–7 days |
 
 If the corporate action is older than the above window, data will not be available in this tool. In that case, invoke `console_eq_external_trades` and look under the buyback section there.
@@ -144,7 +144,7 @@ If no route matches and no root cause is found → escalate to human agent.
 1. Look up by client ID and find the matching `trading_symbol`.
 2. Communicate order details: trade_type, trading_symbol, quantity, price, creation date, and status.
 3. Apply status handling per A3:
-   - Placed → order pending; processing timeline depends on corporate action schedule. If beyond CA closure date \+ 5 working days per A6 → escalate to human agent.
+   - Placed → order pending; processing timeline depends on corporate action schedule. If beyond CA closure date + 5 working days per A6 → escalate to human agent.
    - Processed → route to Rule 2 (buyback) or Rule 4 (delisting/takeover).
    - Rejected → shares not debited; identify rejection scenario per A3.
 

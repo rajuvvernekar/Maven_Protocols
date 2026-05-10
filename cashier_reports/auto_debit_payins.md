@@ -95,7 +95,7 @@ When escalating, always include: client ID, amount, transaction date, and specif
 ```
 Route by scenario
    ├─ Auto-debit status check / money debited but not in Kite → Rule 1
-   ├─ SIP failed \+ has mandate set up → Rule 2
+   ├─ SIP failed + has mandate set up → Rule 2
    ├─ Why was money debited before scheduled date → Rule 3
    ├─ Receiving "mandate debit delayed" emails repeatedly → Rule 4
    ├─ Double debit complaint → Rule 5
@@ -138,7 +138,7 @@ If no route matches, escalate to human agent per **A6**.
 
 1. Check for multiple records with the same `transaction_id`. If the same `transaction_id` appears twice, it is a duplicate entry — escalate to human agent per **A6**.
 2. If two records with different `transaction_id` values both show Success → escalate to human agent per **A6**.
-3. If one Success \+ one Failed (different `transaction_id`) → only the successful debit was credited. The failed debit was not processed.
+3. If one Success + one Failed (different `transaction_id`) → only the successful debit was credited. The failed debit was not processed.
 
 ### Rule 6 — Out-of-Scope Redirect
 

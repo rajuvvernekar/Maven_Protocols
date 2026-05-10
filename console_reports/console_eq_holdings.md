@@ -45,7 +45,7 @@ TAGS: holdings, demat, corporate-actions
 | `pending` | Qty expected from a corporate action; not yet credited to demat — communicate as "being processed for credit" or "yet to be credited" |
 | `discrepant` | Qty mismatch between tradebook and demat holdings file (transfers, IPOs, off-market, gifts, ESOPs, CA delays) |
 | `loan` | Qty pledged outside Zerodha via LAS or lent externally to an NBFC |
-| `total_quantity` | Sum of `available` \+ `t1` \+ `margin` \+ `pending` \+ `discrepant` \+ `loan` |
+| `total_quantity` | Sum of `available` + `t1` + `margin` + `pending` + `discrepant` + `loan` |
 
 **Non-shareable:**
 
@@ -65,7 +65,7 @@ TAGS: holdings, demat, corporate-actions
 |---|---|
 | T+1 settlement (shares visible in holdings) | T+1 day (bought Monday → holdings Tuesday) |
 | Bonus share credit | T+2 from record date; tradeable after 4–5 days (temp ISIN → perm ISIN) |
-| Corporate action buy average adjustment | \~2 weeks from CA date |
+| Corporate action buy average adjustment | ~2 weeks from CA date |
 | Demerger new entity share credit | 30–45 days from record date |
 | Discrepant entry buy average update | Within 24 hours of adding entry |
 | Gift transfer-in buy average update | 3–4 working days from transfer date; shares may show as discrepant until then |
@@ -80,8 +80,8 @@ TAGS: holdings, demat, corporate-actions
 
 - **FIFO basis:** Sell oldest lots first (mandated by Income Tax Department).
 - **Same-date multiple buys:** Multiple purchases on the same date are combined into a single lot using weighted average price and total qty.
-- **Intraday exception (EQ stocks):** Sell from holdings \+ buy back same day → subsequent buy is treated as intraday (speculative, not delivery) → shares are not debited/credited to demat → buy average of holdings unchanged.
-- **T2T exception:** Trade-to-Trade stocks have no intraday exception — all trades are compulsory delivery. Sell from holdings \+ buy back same day → sold shares are debited from demat; newly purchased shares settle to demat separately → buy average updates to reflect the new purchase price and qty.
+- **Intraday exception (EQ stocks):** Sell from holdings + buy back same day → subsequent buy is treated as intraday (speculative, not delivery) → shares are not debited/credited to demat → buy average of holdings unchanged.
+- **T2T exception:** Trade-to-Trade stocks have no intraday exception — all trades are compulsory delivery. Sell from holdings + buy back same day → sold shares are debited from demat; newly purchased shares settle to demat separately → buy average updates to reflect the new purchase price and qty.
 - **Transfer-in:** Appears as discrepancy; entry price added via self-resolution path (see A7).
 - **Partial sell FIFO impact:** When shares are partially sold, buy average of remaining shares may change if earliest FIFO lots differed from current market price. Updated invested value and buy average reflect after end-of-day processing. Verifiable via View breakdown on Kite or Console.
 - **Grandfather clause (Section 112A, Income Tax Act):** For shares purchased before 31 Jan 2018 with no purchase records available, cost of acquisition = higher of (a) actual purchase price or (b) stock's high price on NSE or BSE on 31 Jan 2018. Trade date entered as 31 Jan 2018, with the high price from that date.
@@ -256,7 +256,7 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 
 **1a. Buy average differs from expected**
 1. Explain FIFO basis (A3). Point to View breakdown on Kite / Console.
-2. Sold \+ bought back same day → intraday exception (A3).
+2. Sold + bought back same day → intraday exception (A3).
 3. Same-day change in invested value / buy average → check Kite Order History and Kite Positions for today's executed sell trades. If found → partial sell FIFO impact (A3).
 
 **1b. `buy_average` is null / N/A**
@@ -291,7 +291,7 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 
 **2a. Bonus — not credited / not visible**
 1. Invoke `console_eq_external_trades`; check for a system-posted CA credit entry (e.g., `external_trade_type` = devolved or CA-related) for this ISIN.
-2. Entry found but not in holdings → credit is in system; holdings update within \~1 trading day.
+2. Entry found but not in holdings → credit is in system; holdings update within ~1 trading day.
 3. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
    - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
    - Mismatch → escalate to human agent per A14 with both values.

@@ -50,11 +50,11 @@ TAGS: charges, reports
 | Charge | Rate / Basis | Notes |
 |---|---|---|
 | Brokerage | Delivery (CNC): varies by account type — see table below. Intraday/F&O: ₹20 per executed order OR 0.03% of trade value, whichever is lower. | Can be null/0 for some trades. |
-| Exchange transaction charges | Charged by exchange on turnover. Rate varies by exchange and segment — NSE equity \~0.00297%, BSE equity varies, NSE F&O varies by contract type. | SENSEX options have specific rates different from NIFTY options. Rates updated periodically — recent changes may cause different charges for the same trade type on different dates. |
+| Exchange transaction charges | Charged by exchange on turnover. Rate varies by exchange and segment — NSE equity ~0.00297%, BSE equity varies, NSE F&O varies by contract type. | SENSEX options have specific rates different from NIFTY options. Rates updated periodically — recent changes may cause different charges for the same trade type on different dates. |
 | STT (Securities Transaction Tax) | Equity delivery: 0.1% on both buy and sell value. Equity intraday: 0.025% on sell-side only. Futures: 0.02% on sell-side. Options: 0.1% on sell-side (on premium value). | Government tax on securities transactions. |
 | Stamp duty | Buy-side transactions. Typically 0.015% for delivery, 0.003% for intraday/F&O. | Varies by state. |
 | SEBI turnover fee | ₹10 per crore of turnover (0.0001%). | — |
-| GST (CGST \+ SGST) | 18% (9% CGST \+ 9% SGST) on brokerage \+ exchange transaction charges. | IGST is typically null (only for inter-state; standard is CGST \+ SGST). |
+| GST (CGST + SGST) | 18% (9% CGST + 9% SGST) on brokerage + exchange transaction charges. | IGST is typically null (only for inter-state; standard is CGST + SGST). |
 
 **Delivery Brokerage by Account Type:**
 
@@ -137,8 +137,8 @@ If no rule matches, ESCALATE TO HUMAN AGENT.
 
 1. From `get_all_client_data`, confirm account type per A2.
 2. Verify delivery brokerage against the applicable rate per A3 for the client's account type:
-   - If Individual account \+ delivery trade \+ brokerage ≠ ₹0 → flag discrepancy, escalate to human agent.
-   - If Non-Individual or NRI account \+ delivery trade \+ brokerage = null/0 → brokerage may have been incorrectly waived, escalate to human agent.
+   - If Individual account + delivery trade + brokerage ≠ ₹0 → flag discrepancy, escalate to human agent.
+   - If Non-Individual or NRI account + delivery trade + brokerage = null/0 → brokerage may have been incorrectly waived, escalate to human agent.
    - For all other Non-Individual and NRI delivery trades → verify brokerage against rates per A3.
 3. For Intraday/F&O trades (all account types): verify brokerage cap per A3. If brokerage exceeds the cap → escalate to human agent.
 
@@ -162,7 +162,7 @@ If no rule matches, ESCALATE TO HUMAN AGENT.
 
 ### Rule 5 — GST Calculation
 
-1. GST base = `brokerage` \+ `turnover` (per A3).
+1. GST base = `brokerage` + `turnover` (per A3).
 
 ---
 

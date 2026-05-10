@@ -78,7 +78,7 @@ TAGS: funds
 
 Escalate when any of the following occur:
 - Funds released > 0 but not credited to bank after 3 working days.
-- Maximum retention amount seems incorrect — exceeds visible margin \+ obligations.
+- Maximum retention amount seems incorrect — exceeds visible margin + obligations.
 - No settlement entry exists for a QS date when client was eligible.
 
 Include in escalation: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.

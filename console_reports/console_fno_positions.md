@@ -79,8 +79,8 @@ TAGS: holdings
 - **Auto-square-off on expiry:** ITM options exercised; OTM options expire worthless.
 - **Physical delivery (stock F&O):** Stock futures and ITM stock options expiring are subject to physical delivery. Long futures / ITM call → shares credited to demat T+1 after expiry. Short futures / ITM put → shares debited. Delivery margin blocked from the Wednesday before expiry.
 - **Carry-forward positions:** Positions held overnight incur margin requirements; margin recalculated at EOD.
-- **Contract symbol format:** underlying \+ expiry date \+ strike (for options) \+ CE/PE (e.g., NIFTY2621727100CE).
-- **MCX commodity physical delivery:** Zerodha does not support physical delivery of MCX commodity contracts. Positions not closed before the delivery period are auto-squared-off, with a charge of ₹50 \+ 18% GST per order.
+- **Contract symbol format:** underlying + expiry date + strike (for options) + CE/PE (e.g., NIFTY2621727100CE).
+- **MCX commodity physical delivery:** Zerodha does not support physical delivery of MCX commodity contracts. Positions not closed before the delivery period are auto-squared-off, with a charge of ₹50 + 18% GST per order.
 - **Position disappeared:** If a position appears on a past date but not on the current date, it was closed or expired in between. Realized P&L for closed/expired positions is available via `console_fno_pnl`.
 - **Console vs Kite price source:** Console positions use the settlement/closing price for the selected date; Kite positions use live LTP. Values will differ during market hours and may differ slightly after market close if settlement price differs from LTP.
 

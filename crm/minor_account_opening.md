@@ -82,14 +82,14 @@ Guardian can transfer securities to minor's account using CDSL Easiest or Zerodh
 
 ### A5 — Account Opening Requirements
 
-- **Online:** Guardian needs Zerodha account \+ both guardian and minor Aadhaar linked to mobile. No charges or AMC.
+- **Online:** Guardian needs Zerodha account + both guardian and minor Aadhaar linked to mobile. No charges or AMC.
 - **Documents (online):** Minor PAN | Guardian PAN | Minor Aadhaar (OTP) | DOB proof | Minor photo | Bank proof | Guardian signature | Legal guardian letter (if not parent).
 - **PAN:** Mandatory for minor — apply at onlineservices.nsdl.com if needed.
 - **Bank account:** Only the minor's bank account can be linked (not guardian's). Joint bank account is OK only if minor is a holder.
-- **Guardian:** Signs all forms. Unique mobile \+ email required per minor account (offline).
+- **Guardian:** Signs all forms. Unique mobile + email required per minor account (offline).
 - **NRI-minor:** Offline only.
 - **When minor turns 18:** Convert to individual account (fresh KYC required).
-- **Pre-Jan 2024 demat-only accounts:** Submit trading form \+ KYC for Kite access (72 working hours).
+- **Pre-Jan 2024 demat-only accounts:** Submit trading form + KYC for Kite access (72 working hours).
 
 ---
 

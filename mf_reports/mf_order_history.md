@@ -40,8 +40,8 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | Processing | Order is being processed |
 | Allotted | Order is successfully allotted |
 | Redeemed | Redemption order is placed |
-| Cancel \+ `payment_confirmed` = true | Order is placed, payment is made, order is cancelled. Refund is due. |
-| Cancel \+ `payment_confirmed` = false | Order is placed and cancelled without payment. No refund applies. |
+| Cancel + `payment_confirmed` = true | Order is placed, payment is made, order is cancelled. Refund is due. |
+| Cancel + `payment_confirmed` = false | Order is placed and cancelled without payment. No refund applies. |
 | Failed | Order did not go through. See A5 for specific failure causes. |
 | TPV Pending | Pending third-party bank account validation at the exchange. |
 
@@ -414,7 +414,7 @@ Match the client's scenario:
 | UI error, no order found | Advise clearing cache, retrying with fewer units, retrying the next day. If persistent → escalate to a human agent with screenshot. |
 | TPV failed on redemption | Escalate to a human agent. |
 | CDSL portal showing all funds | Apply A8 CDSL redemption redirect explanation. Share redemption links from A9. |
-| NRI account \+ exit load/TDS dispute | Escalate to a human agent. |
+| NRI account + exit load/TDS dispute | Escalate to a human agent. |
 | Non-NRI exit load dispute | Escalate to a human agent. |
 | Client disputes redemption NAV (lower than published NAV for that date) | Escalate to a human agent. |
 | Repeated OTP redirect on CDSL authorisation | Apply A8 CDSL authorisation loop context. Advise the client of the two options: place a fresh redemption for remaining units (excluding recently allotted ones), or wait until the next working day for holdings to sync. Suggest enabling DDPI via Console → Settings → Account Authorization (using the Aadhaar-linked mobile number) to avoid this in future. |

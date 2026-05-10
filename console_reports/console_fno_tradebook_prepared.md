@@ -80,12 +80,12 @@ TAGS: orders, reports
 | Field Value / Pattern | Contract Type |
 |---|---|
 | `instrument_type` = FUT | Futures contract |
-| `instrument_type` = OPT \+ tradingsymbol ends with CE | Call option |
-| `instrument_type` = OPT \+ tradingsymbol ends with PE | Put option |
+| `instrument_type` = OPT + tradingsymbol ends with CE | Call option |
+| `instrument_type` = OPT + tradingsymbol ends with PE | Put option |
 | `strike` field | Strike price of the option contract (populated for options only) |
 | `expiry_date` field | Last trading day of the contract |
 
-- **Contract symbol format:** underlying \+ expiry \+ strike \+ CE/PE (e.g., NIFTY2621727100CE = NIFTY, 26 Feb 2026 expiry, 27100 strike, Call).
+- **Contract symbol format:** underlying + expiry + strike + CE/PE (e.g., NIFTY2621727100CE = NIFTY, 26 Feb 2026 expiry, 27100 strike, Call).
 
 ---
 

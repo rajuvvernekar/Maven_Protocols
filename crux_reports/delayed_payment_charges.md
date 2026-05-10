@@ -30,12 +30,12 @@ TAGS: charges, margins
 
 - DPC report provides a daily breakdown of interest calculation for a selected date range.
 - Three types of interest: debit balance interest, excess collateral interest, margin shortfall interest.
-- `interest_amount` = total daily interest = sum of `debit_balance_interest` \+ `margin_shortfall_interest` \+ `excess_collateral_interest`.
+- `interest_amount` = total daily interest = sum of `debit_balance_interest` + `margin_shortfall_interest` + `excess_collateral_interest`.
 - Interest calculated daily including weekends and holidays (based on position held, not trading days).
 - DPC debited to ledger monthly (typically first week of following month) as a lump sum.
 - A positive ledger balance does not mean zero DPC — if margin requirement exceeds cash, excess collateral is used and interest applies.
 - 50% of margin must come from cash; remaining 50% can come from collateral. If cash < 50% of margin, excess collateral interest applies.
-- Liquid collateral (LIQUIDBEES etc.) valued at 100% for margin; equity collateral valued at \~50% (haircut-dependent).
+- Liquid collateral (LIQUIDBEES etc.) valued at 100% for margin; equity collateral valued at ~50% (haircut-dependent).
 
 ### A2 — Interest Rate Table
 
@@ -43,7 +43,7 @@ TAGS: charges, margins
 |---|---|---|---|
 | Debit balance interest | `ledger_balance` < 0 (debit) | 0.05% per day (18.25% annualised) | abs(ledger_balance) |
 | Excess collateral interest | `ledger_balance` > 0 but margin exceeds cash → collateral covers gap | 0.035% per day | excess collateral utilised amount |
-| Margin shortfall interest | Total margin required exceeds cash \+ collateral combined | 0.05% per day (18.25% annualised) | shortfall amount |
+| Margin shortfall interest | Total margin required exceeds cash + collateral combined | 0.05% per day (18.25% annualised) | shortfall amount |
 
 ### A3 — Field Rules
 
@@ -80,7 +80,7 @@ TAGS: charges, margins
 |---|---|
 | Debit balance | Charged when account is in debit balance during the period. |
 | Excess collateral | Charged when margin requirement exceeds available cash and pledged collateral covers the gap. |
-| Margin shortfall | Charged when total available margin (cash \+ collateral) falls below required margin. |
+| Margin shortfall | Charged when total available margin (cash + collateral) falls below required margin. |
 
 ### A5 — How to Avoid DPC
 
@@ -88,7 +88,7 @@ TAGS: charges, margins
 |---|---|
 | Debit balance | Maintain a positive cash balance by adding funds before charges or obligations are debited. |
 | Excess collateral | Ensure at least 50% of margin requirement is covered by cash (not just collateral). Add funds or reduce F&O positions. |
-| Margin shortfall | Ensure total margin (cash \+ collateral) covers position requirements. Add funds or pledge additional approved securities. |
+| Margin shortfall | Ensure total margin (cash + collateral) covers position requirements. Add funds or pledge additional approved securities. |
 
 ### A6 — DPC vs MTF Interest Distinction
 
@@ -126,7 +126,7 @@ Include when escalating to human agent: client ID, date range, specific discrepa
 Route by scenario
    ├─ Why interest was charged
    │    ├─ ledger_balance < 0 → Rule 1 (Debit balance)
-   │    ├─ ledger_balance > 0 \+ excess_collateral_interest > 0 → Rule 2 (Excess collateral)
+   │    ├─ ledger_balance > 0 + excess_collateral_interest > 0 → Rule 2 (Excess collateral)
    │    └─ margin_shortfall_interest > 0 → Rule 3 (Margin shortfall)
    ├─ Detailed calculation / amount doesn't match → Rule 4
    ├─ Weekend/holiday interest → Rule 5

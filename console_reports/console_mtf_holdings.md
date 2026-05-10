@@ -31,8 +31,8 @@ TAGS: margins, holdings
 
 ### A1 — Fundamentals
 
-- MTF allows clients to buy shares by paying only initial margin (\~20–50% depending on stock); Zerodha funds the rest.
-- Console P&L does not calculate separately for MTF — it uses FIFO across all holdings (CNC \+ MTF combined).
+- MTF allows clients to buy shares by paying only initial margin (~20–50% depending on stock); Zerodha funds the rest.
+- Console P&L does not calculate separately for MTF — it uses FIFO across all holdings (CNC + MTF combined).
 - Kite's MTF filter shows buy average calculated only from MTF product type trades, which differs from Console's FIFO average. Both are correct for their purpose: Console = tax reporting (FIFO); Kite MTF filter = MTF-specific cost tracking.
 - Back dated MTM is available on Console MTF holdings — client can select a date to view historical MTM.
 - Tool data for market holidays and weekends may return nil/empty — this does not mean holdings don't exist. Use the most recent trading day for date-specific queries.
@@ -68,9 +68,9 @@ TAGS: margins, holdings
 |---|---|---|
 | Interest | 0.04%/day (₹40 per lakh) on funded amount | Applied from T+1 day until stocks are sold. On total funded balance, not per scrip. Per-stock breakdown not available. Includes weekends/holidays. |
 | Brokerage | ₹20 or 0.3% per order, whichever is lower | Applies to both intraday and delivery MTF trades |
-| Square-off | ₹50 \+ GST per order | Charged when squared off by Zerodha |
-| Auto-pledge (on buy) | ₹15 \+ GST per ISIN | Automatic on MTF purchase. Once per ISIN per day. |
-| Unpledge (on sell) | ₹15 \+ GST per ISIN | Triggered on sell or MTF-to-CNC conversion. Once per ISIN per day. |
+| Square-off | ₹50 + GST per order | Charged when squared off by Zerodha |
+| Auto-pledge (on buy) | ₹15 + GST per ISIN | Automatic on MTF purchase. Once per ISIN per day. |
+| Unpledge (on sell) | ₹15 + GST per ISIN | Triggered on sell or MTF-to-CNC conversion. Once per ISIN per day. |
 
 ---
 
@@ -148,7 +148,7 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 
 ### Rule 1 — Buy Average Mismatch (Console vs Kite MTF Filter)
 
-1. Explain per **A1**: Console uses FIFO across all holdings (CNC \+ MTF combined) for tax reporting. Kite's MTF filter uses only MTF trades. Both are correct for their respective purposes.
+1. Explain per **A1**: Console uses FIFO across all holdings (CNC + MTF combined) for tax reporting. Kite's MTF filter uses only MTF trades. Both are correct for their respective purposes.
 
 ---
 
@@ -197,13 +197,13 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 
 ### Rule 6 — MTF P&L Not Matching
 
-1. Explain per **A1**: Console uses FIFO across all holdings (CNC \+ MTF combined). If client held CNC shares before MTF purchase, FIFO uses oldest shares first on sell, affecting realized P&L. Ledger P&L reflects net settlement for the specific MTF position; Console P&L reflects FIFO accounting — both are correct.
+1. Explain per **A1**: Console uses FIFO across all holdings (CNC + MTF combined). If client held CNC shares before MTF purchase, FIFO uses oldest shares first on sell, affecting realized P&L. Ledger P&L reflects net settlement for the specific MTF position; Console P&L reflects FIFO accounting — both are correct.
 
 ---
 
 ### Rule 7 — Contract Note Shows Full Obligation
 
-1. Contract note records gross obligation (full purchase value) — standard format. Initial margin paid by client \+ funded amount from Zerodha = total. MTF ledger shows the breakup: initial margin in equity ledger, funded portion as debit in MTF ledger.
+1. Contract note records gross obligation (full purchase value) — standard format. Initial margin paid by client + funded amount from Zerodha = total. MTF ledger shows the breakup: initial margin in equity ledger, funded portion as debit in MTF ledger.
 
 ---
 

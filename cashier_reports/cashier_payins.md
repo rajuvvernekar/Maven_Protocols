@@ -30,7 +30,7 @@ TAGS: funds
 | Method | Charge | Credit Timeline | Refund Timeline | Limits / Notes |
 |---|---|---|---|---|
 | UPI | ₹0 | Instant | 72 working hours | Max ₹5,00,000/txn (NPCI/gateway limit, not Zerodha) · Max 35 txn/day · Must use "Add Funds" in Kite — direct UPI transfers fail |
-| Netbanking | ₹10.62 (₹9 \+ 18% GST) | By 2:00 PM on T+1 banking working day (or instant) | By 5:00 PM on T+2 banking working day | Min ₹50 · Up to 25 transfers/day · No amount limit |
+| Netbanking | ₹10.62 (₹9 + 18% GST) | By 2:00 PM on T+1 banking working day (or instant) | By 5:00 PM on T+2 banking working day | Min ₹50 · Up to 25 transfers/day · No amount limit |
 | IMPS | ₹0 | 10 min | — | No Zerodha-imposed limits (banks typically cap ₹2L/txn) |
 | NEFT | ₹0 | 2 hours | — | No Zerodha-imposed limits |
 | RTGS | ₹0 | 2 hours | — | No Zerodha-imposed limits |
@@ -230,7 +230,7 @@ Applies when `transfer_mode` = netbanking.
 | Credit deadline PASSED, refund deadline NOT passed | Payment not credited within the processing window. If debited from source bank, refund by 5:00 PM on T+2 banking working day (per **A1**). If not debited, no action needed. |
 | Both deadlines PASSED | Payment unsuccessful. If debited and not yet refunded, request bank statement screenshot (debit proof) to investigate. If not debited, no action needed. |
 
-**Customer confirms debit or provides bank statement:** State both deadlines (credit \+ refund). If both deadlines already passed → escalate to a human agent with proof.
+**Customer confirms debit or provides bank statement:** State both deadlines (credit + refund). If both deadlines already passed → escalate to a human agent with proof.
 
 ---
 

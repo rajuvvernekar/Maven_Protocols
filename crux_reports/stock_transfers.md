@@ -32,7 +32,7 @@ TAGS: demat
 
 ### A2 — Charges
 
-- Transfer charge: ₹13 \+ 18% GST = ₹15.34 per transfer transaction.
+- Transfer charge: ₹13 + 18% GST = ₹15.34 per transfer transaction.
 - Applies per transaction regardless of the number of shares or stock value being transferred.
 
 ### A3 — Timelines
@@ -151,7 +151,7 @@ If no root cause is identified after checking all relevant rules → ESCALATE TO
 
 ### Rule 5 — Transfer Charges
 
-1. Transfer charge is ₹13 \+ 18% GST = ₹15.34 per transaction, regardless of number of shares or stock value (per **A2**).
+1. Transfer charge is ₹13 + 18% GST = ₹15.34 per transaction, regardless of number of shares or stock value (per **A2**).
 
 ### Rule 6 — Escalation
 

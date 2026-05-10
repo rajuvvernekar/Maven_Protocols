@@ -228,7 +228,7 @@ Route by scenario
 
 ### Rule 10 — P&L Wrong Due to Missing External Entry
 
-1. P&L is calculated using FIFO from all available trade entries (tradebook \+ external). Without a buy entry for the discrepant shares, the system cannot compute the correct cost of acquisition, resulting in incorrect P&L.
+1. P&L is calculated using FIFO from all available trade entries (tradebook + external). Without a buy entry for the discrepant shares, the system cannot compute the correct cost of acquisition, resulting in incorrect P&L.
 2. Direct client to the self-resolution path (A5): Console → Portfolio → Holdings → View discrepancy → Add trade. Once the entry is processed, P&L recalculates automatically.
 3. Invoke `console_eq_pnl` to confirm the impact and verify once the entry is processed.
 

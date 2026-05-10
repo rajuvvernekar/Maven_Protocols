@@ -28,7 +28,7 @@ TAGS: investments, holdings
 
 ### A2 — Coin-Only Purchase Rule
 
-If all purchases for a fund were made through Coin (no transfer from another platform), external trade entries should not exist for that fund. If found, they were incorrectly entered and need deletion via backend \+ data rerun.
+If all purchases for a fund were made through Coin (no transfer from another platform), external trade entries should not exist for that fund. If found, they were incorrectly entered and need deletion via backend + data rerun.
 
 ### A3 — Recalculation Status
 

@@ -27,7 +27,7 @@ TAGS: charges
 
 - AMC charged quarterly — every 91 days from account opening date.
 - Advance payment option: Clients can prepay AMC for 1-5 years. This does not change the quarterly billing cycle or BSDA eligibility assessment.
-- Standard AMC: ₹75/quarter \+ 18% GST = ₹88.50/quarter (₹354/year).
+- Standard AMC: ₹75/quarter + 18% GST = ₹88.50/quarter (₹354/year).
 - AMC based on the highest holdings value recorded during the billing quarter. `client_holdings` = this peak value for the quarter.
 - AMC charged regardless of trading activity or holdings — as long as demat account is active.
 - AMC debited from trading account — may create debit balance if insufficient funds.
@@ -35,7 +35,7 @@ TAGS: charges
 
 ### A2 — AMC Slabs
 
-**BSDA accounts only.** Non-BSDA accounts are charged a flat ₹75/quarter \+ 18% GST = ₹88.50 regardless of holdings.
+**BSDA accounts only.** Non-BSDA accounts are charged a flat ₹75/quarter + 18% GST = ₹88.50 regardless of holdings.
 
 | Slab | Holdings Condition (highest value in billing quarter) | AMC (quarterly) | AMC with 18% GST |
 |---|---|---|---|

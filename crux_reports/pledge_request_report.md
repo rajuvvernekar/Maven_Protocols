@@ -28,7 +28,7 @@ TAGS: margins
 
 ### A1 — Pledge Fundamentals
 
-- Pledge charges: ₹30 \+ 18% GST = ₹35.4 standard. A Journal Entry may appear on the ledger for specific pledge types (some instruments).
+- Pledge charges: ₹30 + 18% GST = ₹35.4 standard. A Journal Entry may appear on the ledger for specific pledge types (some instruments).
 - Collateral margin = market value × (1 − haircut%). Haircut varies by security.
 - Collateral value changes daily based on market price and haircut updates.
 - MF pledge/unpledge requests are initiated via Coin (Zerodha's MF platform) and appear in this report alongside equity, with the same `pledge_type` values, statuses, and process.
@@ -49,8 +49,8 @@ TAGS: margins
 
 | Security Type | Typical Haircut | Collateral Margin Example (₹1,00,000 market value) |
 |---|---|---|
-| Liquid ETFs (LIQUIDBEES, LIQUIDCASE etc.) | \~10% | \~₹90,000 |
-| Large-cap equity | \~50% (varies) | \~₹50,000 |
+| Liquid ETFs (LIQUIDBEES, LIQUIDCASE etc.) | ~10% | ~₹90,000 |
+| Large-cap equity | ~50% (varies) | ~₹50,000 |
 | Mid/small-cap equity | Higher than 50% (varies) | Less than ₹50,000 |
 
 Haircut percentages are set by the exchange and can change. The collateral margin shown when using `pledge_type = Pledge Holdings` reflects the current applied haircut.

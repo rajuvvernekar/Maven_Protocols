@@ -21,7 +21,7 @@ TAGS: investments
 
 ### A1 — STP Fundamentals
 
-- STP = SWP (redeem from source fund) \+ SIP (invest in target fund via mandate).
+- STP = SWP (redeem from source fund) + SIP (invest in target fund via mandate).
 - Up to 5 target funds per STP.
 - STP target fund must already be in client's holdings. Cannot create STP if target fund is not currently held — client must make a lumpsum purchase in the target fund first.
 - Scheme name: source fund from `view_swp`, target funds from `view_sips`.

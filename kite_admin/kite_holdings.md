@@ -76,7 +76,7 @@ TAGS: holdings, demat, corporate-actions
 |---|---|
 | Equity settlement | T+1 — bought Monday, in demat by Tuesday evening |
 | F&O physical delivery (ITM options/futures expiry) | T+1 delivery. Short delivery: up to T+2 |
-| Bonus shares | \~T+2 from record date; initially under temp ISIN, trading approved in 4–5 days |
+| Bonus shares | ~T+2 from record date; initially under temp ISIN, trading approved in 4–5 days |
 | Split shares | Up to 2 working days from ex-date |
 | IPO allotment | Visible after listing; may take a day to reflect on Kite |
 
@@ -94,7 +94,7 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 
 | CA Type | Impact |
 |---|---|
-| Bonus | Credited \~T+2 from record date under temp ISIN. P&L shows artificial drop until credited. Trading approval 4–5 days. Buy avg auto-adjusted (\~2 weeks). |
+| Bonus | Credited ~T+2 from record date under temp ISIN. P&L shows artificial drop until credited. Trading approval 4–5 days. Buy avg auto-adjusted (~2 weeks). |
 | Split | New shares credited within 2 working days from ex-date. P&L temporarily distorted. |
 | Demerger | New entity shares credited post-record date. Timelines vary by company/RTA. Buy avg updated manually by Zerodha. |
 | Eligibility | Must hold on or before day before ex-date/record date (T+1 settlement). Pledged shares still eligible. |
@@ -118,8 +118,8 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 | Scenario | Cause & Resolution |
 |---|---|
 | avg_cost = N/A or 0 | Transferred shares (update manually on Console), CA pending adjustment, ESOP/off-market. Update path link per **A9**. |
-| Incorrect after CA | Auto-adjusted within \~2 weeks from record date. If longer → raise a ticket. |
-| Sell \+ rebuy same day = avg unchanged | Intraday = speculative, not delivery — shares don't physically move in/out of demat. Exception: T2T stocks (avg updates to latest buy). |
+| Incorrect after CA | Auto-adjusted within ~2 weeks from record date. If longer → raise a ticket. |
+| Sell + rebuy same day = avg unchanged | Intraday = speculative, not delivery — shares don't physically move in/out of demat. Exception: T2T stocks (avg updates to latest buy). |
 
 ### A8 — P&L Calculations
 
@@ -185,10 +185,10 @@ If no route matches, investigate using Section A reference data. If no root caus
 1. If client reports incorrect portfolio value or invested amount: invoke `console_eq_pseudo_holdings` and `console_eq_holdings`. Compare breakdown quantities and buy averages with `kite_holdings`. Calculate expected invested value (sum of qty × avg_cost) and compare. If discrepancies found, proceed to step 2 for those holdings.
 2. `avg_cost` = N/A or 0 → investigate per **Rule 12** first. If `discrepant` > 0 and quantity mismatch confirmed, follow **Rule 12** through to resolution or escalation. If **Rule 12** does not apply, diagnose:
    a. Transferred shares → buy average shows N/A; update manually on Console per **A7**, link in **A9**.
-   b. CA pending adjustment → buy average being adjusted; auto-updates within \~2 weeks per **A5**, **A7**.
+   b. CA pending adjustment → buy average being adjusted; auto-updates within ~2 weeks per **A5**, **A7**.
    c. ESOP/off-market → update manually on Console per **A7**.
-3. Incorrect after CA → adjusted within \~2 weeks; if longer, raise a ticket per **A5**, **A7**.
-4. Sell \+ rebuy same day, avg unchanged → intraday — shares don't physically move; buy average stays unchanged. Exception: T2T stocks (avg updates to latest buy) per **A7**.
+3. Incorrect after CA → adjusted within ~2 weeks; if longer, raise a ticket per **A5**, **A7**.
+4. Sell + rebuy same day, avg unchanged → intraday — shares don't physically move; buy average stays unchanged. Exception: T2T stocks (avg updates to latest buy) per **A7**.
 5. If client wants to verify original purchase → invoke `kite_order_history`.
 
 ### Rule 3 — Shares Sold — Funds Not Credited

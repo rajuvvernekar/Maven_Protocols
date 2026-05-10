@@ -128,7 +128,7 @@ TAGS: orders
 | Equity F&O | 3:26 PM |
 | MCX | 10 min before market close |
 
-- Charge: ₹50 \+ 18% GST per order. Failure: MIS converts to CNC/NRML, client must close next day. CO positions cannot be converted.
+- Charge: ₹50 + 18% GST per order. Failure: MIS converts to CNC/NRML, client must close next day. CO positions cannot be converted.
 
 ### A7 — Unmatched Order Cancellation Times
 
@@ -144,7 +144,7 @@ TAGS: orders
 |---|---|
 | Client ID (6-char) | Normal client-placed order |
 | ADMINSQF | Auto square-off by Zerodha RMS |
-| Starts with "rms" \+ number | Squared off by Zerodha RMS |
+| Starts with "rms" + number | Squared off by Zerodha RMS |
 
 ### A9 — Common Rejections
 
@@ -182,7 +182,7 @@ TAGS: orders
 
 | Field | Value | Meaning |
 |---|---|---|
-| `sip` | "Yes" | SIP order — must use Regular CNC \+ market/limit |
+| `sip` | "Yes" | SIP order — must use Regular CNC + market/limit |
 | `ato` | "Yes" | ATO (alert-triggered) — order slicing not supported, qty within freeze limit |
 | `basket` | basket name | Part of a basket — each order validated independently |
 | `gtt` | trigger ID | GTT trigger ID — order was placed by a GTT trigger |
@@ -194,14 +194,14 @@ TAGS: orders
 |---|---|
 | MIS or CO product | Intraday trade |
 | CNC with only BUY (no same-day SELL) | Delivery / long-term |
-| CNC with BUY \+ SELL same instrument same qty same day | Intraday round-trip (speculative, not delivery) |
+| CNC with BUY + SELL same instrument same qty same day | Intraday round-trip (speculative, not delivery) |
 | NRML | Overnight F&O position |
 | MTF | Margin Trading Facility (delivery with leverage) |
-| BUY (MIS) \+ SELL by ADMINSQF/rms | Intraday auto squared off |
+| BUY (MIS) + SELL by ADMINSQF/rms | Intraday auto squared off |
 
 - Exception: T2T stocks — same-day buy+sell treated as delivery, buy average updates to latest buy price.
-- F&O buy average: FIFO across product types (MIS \+ NRML combined). Earliest buy matches first sell.
-- Equity CNC sell \+ rebuy same day: Original buy average unchanged. Same-day round-trip = speculative per income tax rules.
+- F&O buy average: FIFO across product types (MIS + NRML combined). Earliest buy matches first sell.
+- Equity CNC sell + rebuy same day: Original buy average unchanged. Same-day round-trip = speculative per income tax rules.
 
 ### A13 — Links
 
@@ -247,7 +247,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 ### Rule 1 — Order Status Check
 
-1. Locate by instrument \+ date.
+1. Locate by instrument + date.
 2. Share: `instrument`, `type`, `order_type`, `order_status`, `total_quantity`, `filled_quantity`, `average_price` (if COMPLETE), `exchange_timestamp`.
 3. Check `placed_by` internally → ADMINSQF/rms → Rule 4.
 4. Check `gtt` internally → GTT ID present → invoke `kite_gtt` or `kite_gtt_archived` scoped to the trigger date.
@@ -277,7 +277,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 1. `placed_by` = ADMINSQF or starts with "rms" per **A8**.
 2. Invoke `kite_margins` to check margin shortfall.
-3. Check if MIS \+ near auto square-off time per **A6**.
+3. Check if MIS + near auto square-off time per **A6**.
 4. Check for negative cash balance.
 5. Order was executed by Zerodha's risk management system on `exchange_timestamp`. Typical reasons: insufficient margin to maintain position; intraday (MIS) auto squared off at scheduled time per **A6**; negative cash balance requiring closure.
 6. If MIS carried forward after square-off failure → failure can occur due to circuit limits, system failures, or connectivity. MIS converts to CNC/NRML per **A6** — client must close next trading day.
@@ -292,7 +292,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 1. Cancelled near session end → auto-cancelled at session end per **A7**. Suggest re-placing next session, or use GTT for orders valid up to 1 year. Invoke `kite_gtt` if client wants persistent order.
 2. LPP/price range → exchange cancelled order — price was outside the allowed range. Retry closer to market price.
-3. Partial fill \+ cancelled remainder → partially filled, share `filled_quantity` of `total_quantity` at `average_price`. Remaining `cancelled_quantity` was cancelled.
+3. Partial fill + cancelled remainder → partially filled, share `filled_quantity` of `total_quantity` at `average_price`. Remaining `cancelled_quantity` was cancelled.
 4. IOC → IOC orders auto-cancel any unfilled portion immediately.
 
 ### Rule 7 — Unauthorized ("I Didn't Place This")
@@ -329,8 +329,8 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 ### Rule 13 — F&O Buy Average / Intraday Identification
 
-1. F&O buy average: FIFO across MIS \+ NRML combined per **A12**.
-2. Equity CNC sell \+ rebuy same day: per **A12**.
+1. F&O buy average: FIFO across MIS + NRML combined per **A12**.
+2. Equity CNC sell + rebuy same day: per **A12**.
 3. Identifying intraday: use patterns from **A12**.
 4. MIS sell instead of CNC: if client sold under MIS while holding CNC shares → MIS sell created a fresh short intraday position, not a delivery exit. CNC holdings remain. MIS auto-squared off per **A6**. To sell delivery holdings, use CNC.
 5. If client asks about current buy average → invoke `kite_holdings`. Current positions → invoke `kite_positions`.

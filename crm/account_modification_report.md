@@ -57,10 +57,10 @@ TAGS: account, nri, non-individual
 
 | Action | Charge |
 |---|---|
-| Standard modification | ₹25 \+ 18% GST |
-| DDPI activation (online and offline) | ₹100 \+ 18% GST |
-| Secondary demat transfer | ₹13 \+ 18% GST per transaction |
-| Secondary demat AMC | ₹300 \+ 18% GST per account |
+| Standard modification | ₹25 + 18% GST |
+| DDPI activation (online and offline) | ₹100 + 18% GST |
+| Secondary demat transfer | ₹13 + 18% GST per transaction |
+| Secondary demat AMC | ₹300 + 18% GST per account |
 
 ---
 
@@ -163,7 +163,7 @@ Context extracted from `get_all_client_data`:
 - Share the contact details change article per **A14**.
 - **Indian mobile:** A number is Indian if it has exactly 10 digits and starts with 6, 7, 8, or 9. Any other format is international.
 - **Online:** Platform: Kite app/web. Eligibility: Indian mobile, Aadhaar-linked mobile (see **A3**), IPV, e-sign. Timeline: **A1** contact detail changes. Ineligible: international mobile, non-individual, joint accounts.
-- **Offline:** Courier to **A3** address. Documents: modification form \+ IPV. Timeline: **A1** contact detail changes. No charges. Mandatory for non-individual; optional for individual.
+- **Offline:** Courier to **A3** address. Documents: modification form + IPV. Timeline: **A1** contact detail changes. No charges. Mandatory for non-individual; optional for individual.
 - **International mobile / NRI:** eSign and attach to ticket, or courier.
 - **No access to registered mobile AND email:** Refer to the reset password article per **A14**.
 - **Mobile/email already linked to another account:** escalate to human agent without addressing the query.
@@ -171,7 +171,7 @@ Context extracted from `get_all_client_data`:
 
 #### DOB / Gender / Marital / Occupation / PEP Update
 
-- **Online:** Condition: correct on Aadhaar \+ ITD. Process: account portal per **A14** → ReKYC → Update profile → IPV → e-sign.
+- **Online:** Condition: correct on Aadhaar + ITD. Process: account portal per **A14** → ReKYC → Update profile → IPV → e-sign.
 - **Offline:** Condition: Aadhaar not linked OR joint account. Documents: account modification form per **A14**, self-attested PAN, address proof (see **A3**). Charges: **A2** standard. Timeline: **A1** general processing. Courier: **A3** address.
 
 #### Financial Proof Update
@@ -190,7 +190,7 @@ Process: signup.zerodha.com/rekyc. Timeline: **A1** general processing. Acceptab
 
 ### A7: Bank Account Processes
 
-- **Limits:** Max 3 accounts: 1 primary (payin \+ withdrawal) \+ 2 secondary (payin \+ withdrawal). All linked bank accounts support both deposits and withdrawals once verified.
+- **Limits:** Max 3 accounts: 1 primary (payin + withdrawal) + 2 secondary (payin + withdrawal). All linked bank accounts support both deposits and withdrawals once verified.
 - **Pending verification:** If a secondary/tertiary bank account is pending penny drop verification, withdrawals to that account will be available once verification completes (typically within 2 working days of approval). No charges apply for penny drop verification.
 - **Allowed account types:** Savings, Current, Cash Credit. Overdraft (OD) accounts are not allowed. PayTM Payments Bank cannot be linked.
 - **Relative's bank account:** Not allowed. SEBI mandates bank in client's name only.
@@ -199,7 +199,7 @@ Process: signup.zerodha.com/rekyc. Timeline: **A1** general processing. Acceptab
 
 Eligibility: Individual accounts, NRO Non-PIS. Process: Console → Account → Bank → Modify → Details → E-sign. Verification: test transfer. Charges: **A2** standard. Timeline: **A1** general processing. Support article: primary bank change per **A14**.
 
-- **Joint bank account:** Primary holder of bank and demat must match. If different: offline with account modification form per **A14** \+ bank proof (see **A3**).
+- **Joint bank account:** Primary holder of bank and demat must match. If different: offline with account modification form per **A14** + bank proof (see **A3**).
 - **Minor accounts:** Online; guardian e-signs. Bank details must be for minor.
 
 #### Secondary Bank Add
@@ -278,7 +278,7 @@ Definition: Document allowing broker to debit securities. Benefit: no CDSL TPIN/
 
 Availability: free, online. Eligibility: Aadhaar-linked mobile (see **A3**), resident individual only. Process: Kite → User ID → Profile → Demat → Secondary → Nominee → IPV → E-sign. Timeline: **A1** secondary demat. Visibility: Console only (not Kite). Closure: offline only.
 
-- **Pending eSign troubleshooting:** eSign link may require a hard refresh (Ctrl \+ Refresh or F5) to appear.
+- **Pending eSign troubleshooting:** eSign link may require a hard refresh (Ctrl + Refresh or F5) to appear.
 
 ---
 
@@ -324,8 +324,8 @@ Kite app: Client ID → Profile. Kite web: Client ID → Name. Click segment →
 
 - **Verification:** Console → Account → Nominees | CMR copy.
 - **Minor nominees:** The minor's PAN is mandatory for the online nomination process. If the minor does not have a PAN, the offline process must be used. Refer to nomination update article per **A14**.
-- **Modification online:** Modify name, DOB, address (with nominee ID proof — Aadhaar or Driving Licence), relationship, email, mobile. Process: download \+ print nominee form (PDF) \+ account modification form (PDF) → wet sign both → eSign both → attach to ticket. Charges: **A2** standard.
-- **Modification offline:** Delete/opt-out of nominee only. Forms: account modification form \+ annexure 1B → sign → courier to **A3** address.
+- **Modification online:** Modify name, DOB, address (with nominee ID proof — Aadhaar or Driving Licence), relationship, email, mobile. Process: download + print nominee form (PDF) + account modification form (PDF) → wet sign both → eSign both → attach to ticket. Charges: **A2** standard.
+- **Modification offline:** Delete/opt-out of nominee only. Forms: account modification form + annexure 1B → sign → courier to **A3** address.
 - **Online scope limitation:** Delete or opt-out of nominee requires the offline process.
 - **Joint accounts:** Offline only.
 - **Charges:** **A2** standard.
@@ -340,7 +340,7 @@ Kite app: Client ID → Profile. Kite web: Client ID → Name. Click segment →
 #### ReKYC Process Details
 
 - **ReKYC authentication:**
-  - Address update selected ("Update as per Aadhaar"): Aadhaar OTP \+ IPV required. eSign not required.
+  - Address update selected ("Update as per Aadhaar"): Aadhaar OTP + IPV required. eSign not required.
   - Profile-only ReKYC (no address change): eSign required. Aadhaar OTP not required.
 
 - **Support article:** ReKYC / account reactivation per **A14**.
@@ -560,7 +560,7 @@ When a client queries about commodity trading (MCX, CRUDEOILM, commodity options
 | `Reactivation_pending` | Check timestamp against current time. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate to human agent. |
 | `Request_pending` | Same as Reactivation_pending. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
 | `Blocked` | Communicate the `remarks` field content for this status. |
-| `Activated` | Confirm segment is active. If client reports inability to place orders or shows 0 available funds → check activation timestamp. Calculate: activation time \+ 1 working day. If that time is still in the future → inform client of the activation date and that orders will be possible from activation date \+ 1 working day. If 1 working day has already passed → escalate to human agent. Always give the specific date, not a generic window. |
+| `Activated` | Confirm segment is active. If client reports inability to place orders or shows 0 available funds → check activation timestamp. Calculate: activation time + 1 working day. If that time is still in the future → inform client of the activation date and that orders will be possible from activation date + 1 working day. If 1 working day has already passed → escalate to human agent. Always give the specific date, not a generic window. |
 | Coin segment = `Generated` | Escalate to human agent. |
 | `Dormant` | Apply Rule 6. |
 | `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 7.1 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
@@ -635,7 +635,7 @@ When the client reports an error message in the app or web platform (e.g., "acco
 ### Rule 12: RTA / Unpaid Dividend
 
 1. Check `bank_details` in `get_all_client_data` — verify `bank_1_dividend` = YES.
-2. If bank details are correct and dividend enabled: communicate that Zerodha shares updated CML data with CDSL; CDSL forwards it to RTAs in their regular update cycle, typically within a few business days. If not credited within 10 business days, follow up with RTA directly. Share the primary bank change article per **A14** only if bank details need updating. Charge of ₹25 \+ GST applies for primary bank change.
+2. If bank details are correct and dividend enabled: communicate that Zerodha shares updated CML data with CDSL; CDSL forwards it to RTAs in their regular update cycle, typically within a few business days. If not credited within 10 business days, follow up with RTA directly. Share the primary bank change article per **A14** only if bank details need updating. Charge of ₹25 + GST applies for primary bank change.
 3. If bank details missing, incorrect, or dividend ≠ YES: guide client to update bank details per **A7** Primary Bank Change. Confirm that the updated CML will be shared with CDSL after the change is processed.
 
 ---

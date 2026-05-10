@@ -135,7 +135,7 @@ When checking `mandate_report`, only `status` = `success` indicates a usable, ac
 
 | Topic | URL |
 |---|---|
-| Mandate creation and SIP linkage | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin#:\~:text=Linking%20a%20mandate%20to%20an%20existing%20SIP |
+| Mandate creation and SIP linkage | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin#:~:text=Linking%20a%20mandate%20to%20an%20existing%20SIP |
 | Modify, pause, or delete SIP | https://support.zerodha.com/category/mutual-funds/features-on-coin/systematic-investment-plan/articles/modify-cancel-sip-coin-app |
 | NRI PIS NEFT/RTGS payments on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/neft-rtgs-coin |
 

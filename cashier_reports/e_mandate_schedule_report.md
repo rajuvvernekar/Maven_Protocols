@@ -86,9 +86,9 @@ When escalating, always include: client ID, schedule details, and specific issue
 
 ```
 Route by scenario
-   ├─ Auto-debit not happening \+ mandate active \+ no active schedule → Rule 1
+   ├─ Auto-debit not happening + mandate active + no active schedule → Rule 1
    ├─ Schedule status check (active / deleted) → Rule 2
-   ├─ SIP failed despite active mandate \+ active schedule → Rule 3
+   ├─ SIP failed despite active mandate + active schedule → Rule 3
    ├─ Error deleting schedule → Rule 4
    └─ Cancelled schedule but bank still debited → Rule 5
 ```

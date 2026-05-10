@@ -79,7 +79,7 @@ Apply layered detection in this order:
 
 1. `ledger_report` text contains "quarterly settlement (inactive)" → Inactivity QS.
 2. Payout date does not match **A2** settlement dates (first Friday of Jan/Apr/Jul/Oct, or any date listed in the **A2** operational note) → Inactivity QS.
-3. If still ambiguous (payout date matches **A2** \+ no "(inactive)" marker): call `kite_order_history` for the 30 calendar days before the payout date. No trades found → Inactivity QS. Trades found → Regular QS.
+3. If still ambiguous (payout date matches **A2** + no "(inactive)" marker): call `kite_order_history` for the 30 calendar days before the payout date. No trades found → Inactivity QS. Trades found → Regular QS.
 4. Fallback: if `kite_order_history` is unavailable or inconclusive → default to Regular QS, use general language accurate for both types.
 
 If both conditions apply (inactive during regular QS period), mention inactivity first.

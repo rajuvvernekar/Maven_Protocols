@@ -31,9 +31,9 @@ TAGS: reports, holdings
 
 - Realized P&L = sell_value − buy_value (per FIFO matching of sell qty against oldest buys). Only shows P&L for stocks that have been sold — no P&L for holdings still held.
 
-- **FIFO:** When a client sells, the oldest buy is consumed first — this affects which cost price is used. FIFO applies across all product types combined (CNC \+ MTF); Console P&L does not separate MTF and CNC.
+- **FIFO:** When a client sells, the oldest buy is consumed first — this affects which cost price is used. FIFO applies across all product types combined (CNC + MTF); Console P&L does not separate MTF and CNC.
 
-- **Intraday trades** (buy \+ sell same stock same day) are classified as speculative — separate from delivery P&L. Product type (CNC/MIS) does not determine classification — what matters is whether offsetting trades exist on the same day in EQ series. **Exception:** T2T stocks (series BE/BT/BZ) — same-day buy \+ sell treated as delivery, not speculative.
+- **Intraday trades** (buy + sell same stock same day) are classified as speculative — separate from delivery P&L. Product type (CNC/MIS) does not determine classification — what matters is whether offsetting trades exist on the same day in EQ series. **Exception:** T2T stocks (series BE/BT/BZ) — same-day buy + sell treated as delivery, not speculative.
 
 - **P&L affected by missing/wrong external trade entries:** If discrepant shares are sold without a buy entry, cost = ₹0 → inflated profit.
 
@@ -91,7 +91,7 @@ Verified P&L report for ITR filing: see A8.
 | CA Type | P&L Impact |
 |---|---|
 | Bonus | Bonus shares credited at ₹0 cost. Selling bonus shares shows full sell value as profit (correct per FIFO). When all originally purchased shares are sold via FIFO and only bonus shares remain, buy price in Tax P&L shows ₹0 — this is correct because bonus shares have zero cost of acquisition. The trade date for bonus shares is recorded as the ex-date. |
-| Split | Adjusts qty \+ price proportionally → P&L unchanged. |
+| Split | Adjusts qty + price proportionally → P&L unchanged. |
 | Demerger | Cost split per COA ratio announced by company. P&L may appear incorrect temporarily until ratio is applied. |
 | Merger | Shares swapped at defined ratio. P&L uses original acquisition cost carried over to new shares. |
 | Fractional shares (any CA) | Settled in cash → appears as a realized P&L entry for the fractional quantity. |
@@ -173,7 +173,7 @@ Query relates to equity P&L →
 ├─ Unexpectedly high profit (discrepant shares, ₹0 cost) → Rule 3
 ├─ P&L differs between Console and Kite → Rule 4
 ├─ MTF-specific P&L query → Rule 5
-├─ Same-day buy \+ sell classification (intraday vs delivery) → Rule 6
+├─ Same-day buy + sell classification (intraday vs delivery) → Rule 6
 ├─ P&L after bonus / split / demerger / merger / fractional shares → Rule 7
 ├─ Tax P&L vs Console P&L values differ → Rule 8
 └─ Stock in unrealized P&L despite all shares sold → Rule 9
@@ -225,11 +225,11 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 
 ### Rule 6 — Intraday vs Delivery Classification
 
-Product type (CNC, MIS, Long-term, etc.) does not determine tax classification. Even if a client used CNC, same-day buy \+ sell of the same stock in EQ series is treated as intraday (speculative). What matters is whether offsetting trades exist on the same day — not the product type label. See A8 for the CNC/MIS/NRML explainer link.
+Product type (CNC, MIS, Long-term, etc.) does not determine tax classification. Even if a client used CNC, same-day buy + sell of the same stock in EQ series is treated as intraday (speculative). What matters is whether offsetting trades exist on the same day — not the product type label. See A8 for the CNC/MIS/NRML explainer link.
 
 1. Invoke `console_eq_tradebook` to check the `series` field.
-2. **Series EQ \+ same-day buy and sell** → classified as intraday (speculative), not delivery, regardless of product type used. See A7-S4.
-3. **Series BE / BT / BZ (T2T)** → same-day buy \+ sell in T2T is always delivery. See A7-S5.
+2. **Series EQ + same-day buy and sell** → classified as intraday (speculative), not delivery, regardless of product type used. See A7-S4.
+3. **Series BE / BT / BZ (T2T)** → same-day buy + sell in T2T is always delivery. See A7-S5.
 
 Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shares of CDSL using CNC on 30 March → intraday trade, classified as speculative, not delivery.
 

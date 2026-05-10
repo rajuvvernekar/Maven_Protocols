@@ -39,10 +39,10 @@ TAGS: orders
 - **Validity:** Equity GTT = 1 year from creation. F&O GTT = until contract expiry.
 - **Trigger behavior:** Valid only once. If the triggered order is placed but not executed, the client must create a new GTT. Triggered GTT becomes a CNC limit order with DAY validity — cancelled by exchange at end of day if unfilled.
 - **Single trigger:** One trigger price → one order placed when LTP hits/breaches trigger.
-- **OCO (two-leg):** Stoploss \+ target triggers. When one triggers, the other is cancelled. Buy OCO available only for F&O contracts. OCO uses NRML only for index F&O.
+- **OCO (two-leg):** Stoploss + target triggers. When one triggers, the other is cancelled. Buy OCO available only for F&O contracts. OCO uses NRML only for index F&O.
 - **Trigger price vs LTP at trigger moment:** The trigger price is the threshold; the price shown in the trigger email/notification is the LTP at the moment the tick was captured. Due to gaps or volatility, the LTP at trigger can be higher or lower than the trigger price (e.g., sell trigger at ₹95, stock gaps down to ₹90 → trigger fires at ₹90).
 - GTT triggers based on ticks recorded by the system — if a tick is not captured, GTT may not trigger even if price briefly touched the level.
-- Max 500 active GTTs per account. Notifications: email \+ Kite push notification on trigger and order placement.
+- Max 500 active GTTs per account. Notifications: email + Kite push notification on trigger and order placement.
 
 ### A2 — Field Rules
 

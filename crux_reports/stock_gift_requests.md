@@ -37,10 +37,10 @@ TAGS: general
 
 ### A2 — Charges
 
-- Gift charges: ₹25 per security per transaction \+ 18% GST.
+- Gift charges: ₹25 per security per transaction + 18% GST.
 - Charges debited from the sender's trading account.
 - Gift won't process if sender has a negative balance.
-- Example: gifting 3 different stocks in one transaction = ₹75 \+ 18% GST.
+- Example: gifting 3 different stocks in one transaction = ₹75 + 18% GST.
 
 ### A3 — Timelines
 

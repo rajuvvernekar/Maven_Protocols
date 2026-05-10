@@ -90,11 +90,11 @@ Reference: NAV difference link from **A8**.
 
 ### A5 — MF Unit Transfer (Inward and Outward)
 
-**Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 \+ 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: up to 4 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
+**Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 + 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: up to 4 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
 
 **Inward — demat (CDSL Easiest):** For MF units held in demat with another broker. CDSL Easiest for CDSL-to-CDSL transfers. ELSS locked units: closure cum transfer process only (same account holder). Free (unlocked) ELSS units transferable without restriction. Timeline: up to 4 days after submitting documents. Link: transfer shares article from **A8**.
 
-**Outward:** Three destination methods — another CDSL demat account (CDSL Easiest online), NSDL demat (off-market transfer), non-demat (rematerialisation required). ELSS lock-in: NSDL destination requires rematerialisation first; CDSL destination via closure cum transfer (same PAN only). Check `margin` > 0 before initiating — pledged units must be unpledged first: Console → Portfolio → Holdings → [fund] → Unpledge. Charges: ₹25 per security \+ 18% GST; 0.015% stamp duty on considered amount; rematerialisation ₹150 \+ 18% GST per scheme (₹150 per investment for ELSS); DIS booklet: first 10 slips free; additional booklets ₹100 \+ 18% GST \+ ₹100 \+ 18% GST courier. Link: outward transfer article from **A8**.
+**Outward:** Three destination methods — another CDSL demat account (CDSL Easiest online), NSDL demat (off-market transfer), non-demat (rematerialisation required). ELSS lock-in: NSDL destination requires rematerialisation first; CDSL destination via closure cum transfer (same PAN only). Check `margin` > 0 before initiating — pledged units must be unpledged first: Console → Portfolio → Holdings → [fund] → Unpledge. Charges: ₹25 per security + 18% GST; 0.015% stamp duty on considered amount; rematerialisation ₹150 + 18% GST per scheme (₹150 per investment for ELSS); DIS booklet: first 10 slips free; additional booklets ₹100 + 18% GST + ₹100 + 18% GST courier. Link: outward transfer article from **A8**.
 
 ---
 

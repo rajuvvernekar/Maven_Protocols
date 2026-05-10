@@ -88,10 +88,10 @@ Confirmed non-blockers: GTT orders, pending regular withdrawals.
 |---|---|---|
 | Saturday | 16:30 | Within 24h |
 | Sunday / settlement holiday | Next working day cutoff | Within 24h of processing |
-| Weekday \+ ZBL_MCX active | 23:59 | Within 24h |
-| Weekday \+ before 17:00 \+ no trades/positions/instant \+ sufficient balance | \~17:00 same day | Same-day bank credit |
-| Weekday \+ before 17:00 \+ has trades/positions/instant | 22:00 | Within 24h |
-| Weekday \+ after 17:00 (no ZBL_MCX) | 22:00 | Within 24h |
+| Weekday + ZBL_MCX active | 23:59 | Within 24h |
+| Weekday + before 17:00 + no trades/positions/instant + sufficient balance | ~17:00 same day | Same-day bank credit |
+| Weekday + before 17:00 + has trades/positions/instant | 22:00 | Within 24h |
+| Weekday + after 17:00 (no ZBL_MCX) | 22:00 | Within 24h |
 
 ---
 
@@ -127,7 +127,7 @@ The official settlement holiday list is the authoritative source for confirmed s
 | `bank_response_status` = failed | Transaction rejected by the bank; funds to be reversed to the trading account |
 | Ledger entry: remarks contain "Transfer rejected by bank" | Reversal complete; funds are back in the trading account |
 | `bank_response_remarks` contains "NPCI" | Rejection originated from the client's bank payment network (NPCI), not from Zerodha |
-| `bank_response_status` = failed \+ no "Transfer rejected by bank" ledger entry | Reversal in progress; funds expected back within 24–48 working hours |
+| `bank_response_status` = failed + no "Transfer rejected by bank" ledger entry | Reversal in progress; funds expected back within 24–48 working hours |
 
 - **Post-rejection — instant:** An instant withdrawal counts as the day's single attempt whether it succeeds or fails. Regular withdrawal remains available for the rest of the day.
 
@@ -343,8 +343,8 @@ If client traded with the credited/deposited funds during the same period, ident
 | Scenario | Action |
 |---|---|
 | Within timeline (Instant: < 10 min; Regular: before T+1 14:00) | Processing within expected window — no action |
-| Past timeline \+ bank_ref_no present \+ < 3 days since modified | Share bank_ref_no; refer client to their bank |
-| Past timeline \+ bank_ref_no present \+ ≥ 3 days since modified | Share bank_ref_no; client to request bank statement from payout_date to today |
+| Past timeline + bank_ref_no present + < 3 days since modified | Share bank_ref_no; refer client to their bank |
+| Past timeline + bank_ref_no present + ≥ 3 days since modified | Share bank_ref_no; client to request bank statement from payout_date to today |
 
 ---
 
@@ -371,7 +371,7 @@ If client traded with the credited/deposited funds during the same period, ident
 | Both instant and regular pending or processed | Handle instant per Rule 2; handle regular per Rule 8 |
 | Second instant attempt same day | Once-per-day limit per A1; regular available per A4 |
 | Second regular while one is pending | Wait for completion or cancel per A1; place new request after |
-| Instant rejected \+ retry query | Attempt consumed per A12; identify rejection reason per A12; only regular available |
+| Instant rejected + retry query | Attempt consumed per A12; identify rejection reason per A12; only regular available |
 | Remaining balance after instant | Balance updates after EOD per A9 |
 
 ---

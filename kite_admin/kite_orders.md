@@ -135,7 +135,7 @@ TAGS: orders, margins
 | F&O | 3:26 PM |
 | MCX | 10 min before market close |
 
-- Auto square-off charge: ₹50 \+ 18% GST per order.
+- Auto square-off charge: ₹50 + 18% GST per order.
 - If auto square-off fails (system failure, circuit hit, connectivity), MIS converts to CNC/NRML and carries forward — client must close next day.
 
 ### A10 — Market Order Blocks
@@ -191,7 +191,7 @@ TAGS: orders, margins
 |---|---|
 | Client ID (6-char) | Normal client-placed order |
 | ADMINSQF | Auto square-off by Zerodha RMS |
-| Starts with "rms" \+ number (rms1, rms2...) | Squared off by Zerodha RMS |
+| Starts with "rms" + number (rms1, rms2...) | Squared off by Zerodha RMS |
 
 ### A14 — AMO (After Market Orders)
 
@@ -276,7 +276,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 1. Check Order History sub-view for cancellation timing and context:
    a. Cancelled near market close → unmatched pending orders auto-cancelled at session end per **A8**. Suggest re-placing next session, or use GTT for orders valid up to 1 year. Invoke `kite_gtt`.
    b. LPP range cancellation → exchange cancelled because price was outside the allowed Limit Price Protection range. Retry closer to current market price.
-   c. IOC partial fill \+ cancel → IOC order partially filled; unfilled portion auto-cancelled.
+   c. IOC partial fill + cancel → IOC order partially filled; unfilled portion auto-cancelled.
    d. Cancelled by user → no action needed.
 
 ### Rule 4 — Order Rejected
@@ -286,8 +286,8 @@ If no root cause found after completing all diagnostic steps → escalate to hum
    a. Check if client has multiple pending sell orders for same instrument. Excess orders treated as fresh short positions requiring full margin. Direct client to cancel excess pending sells and place a single sell matching position quantity.
    b. Invoke `kite_margins`. Check `opening_balance` first. Per **A18**, negative opening balance blocks all fresh positions — direct client to add funds. If `option_premium` is also negative, include option premium context per **A18**.
    c. If `opening_balance` is not negative, identify specific shortfall from `available_margin`, `used_margin`, `available_cash`.
-3. For market order blocks → match against **A10**, respond with reason \+ resolution.
-4. For MIS blocks → match against **A11**, respond with reason \+ resolution.
+3. For market order blocks → match against **A10**, respond with reason + resolution.
+4. For MIS blocks → match against **A11**, respond with reason + resolution.
 5. For quantity/value limits → refer to **A7**.
 6. For trigger price errors, ban period, OI restrictions, BSE SL-M, exchange restricted, MTF conflicts → use matching row in **A12**.
 7. For CO on ETF or other restricted instruments → use matching row in **A12**.

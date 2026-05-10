@@ -90,7 +90,7 @@ TAGS: account
 
 **Online process:** Re-KYC [A7 — Re-KYC] [A7 — Name change process] (requires Aadhaar linked to mobile number).
 
-**Offline process:** Courier documents to Zerodha. Charges: ₹25 \+ GST. Updated within 72 working hours. Resolution may take up to 7 working days after documents received. [A7 — Name change process] [A7 — Courier address]
+**Offline process:** Courier documents to Zerodha. Charges: ₹25 + GST. Updated within 72 working hours. Resolution may take up to 7 working days after documents received. [A7 — Name change process] [A7 — Courier address]
 
 ---
 

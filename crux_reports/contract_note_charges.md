@@ -38,7 +38,7 @@ TAGS: charges, reports
 | SEBI Turnover Fees | SEBI turnover fee | SEBI regulatory fee based on turnover |
 | Brokerage | Brokerage | Zerodha's brokerage charges for executing trades |
 | Clearing Charges | Clearing charges | Charges for clearing and settlement of trades (separate from exchange charges) |
-| IGST | GST | Total GST charge for the period (CGST \+ SGST consolidated into this field in the report) |
+| IGST | GST | Total GST charge for the period (CGST + SGST consolidated into this field in the report) |
 | IPFT | Investor Protection Fund Trust | Contribution towards investor protection mechanisms — small amount per trade |
 
 ### A3 — Field Rules
