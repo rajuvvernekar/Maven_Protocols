@@ -15,219 +15,298 @@ When clients:
 
 TRIGGER KEYWORDS: "SIP", "SIP not triggered", "SIP cancelled", "SIP paused", "SIP amount", "step-up", "AMC SIP", "next SIP date", "coin"
 
+TAGS: investments
+
 ## Protocol
 
+# SIP REPORT PROTOCOL
+
+---
+
+## Section A: Reference Data
+
+---
 
 ### A1 — SIP Fundamentals
 
-- This report contains all SIPs: active, paused, cancelled, completed, and failed.
-- SIP types: `sip` (Zerodha — modifiable), `amc_sip` (BSE — delete-only), `stp`.
-- Zerodha SIP triggers at 1:30 AM; AMC SIP triggers at 3:15 AM.
-- SIPs trigger 2 days prior to the `preferred_date`. This is the standard trigger timeline. For UPI mandate-based SIPs (`fund_source` = `upi-mandates`), the actual trigger date may be T-1 rather than T-2. Always verify against `order_timestamp` and `last_sip_at` in sip_report — use the actual data over the general rule when explaining trigger timing to the client.
-- Scheme name field is `name` (not `fund`).
-- `last_sip_at` is the date of the last SIP order execution — not the pause/modify date. Always use sip_modification_log for pause/modify dates.
-- `public_id` is needed as input for sip_modification_log (mapped to `sip_id` there).
+- SIP types: `sip` (Zerodha — modifiable), `amc_sip` (BSE — delete-only),   
+- Zerodha SIP triggers at 1:30 AM. AMC SIP triggers at 3:15 AM.  
+- Standard SIP trigger: 2 days prior to `preferred_date`. UPI mandate SIPs (`fund_source` = `upi-mandates`): trigger on T-1 instead of T-2.
+
+---
 
 ### A2 — SIP Type Comparison
 
-| Feature | Zerodha SIP (`sip`) | AMC SIP (`amc_sip`) |
-|---|---|---|
-| Modify | Yes (amount, date, step-up, frequency) | Cannot modify |
-| Pause | Yes | Cannot pause |
-| Delete | Yes | Yes (only option for changes) |
-| To change amount/date/fund | Modify directly | Delete existing, create new |
-| Deletion timing | Any time | Must be ≥2 days before next instalment date |
-| Auto-cancel | — | After 3 consecutive payment failures (SEBI circular Apr 2024) |
-| Initial investment | Required — lumpsum must be allotted (T+1) and updated (T+2) before SIP triggers | — |
-| Setup timing | — | Must be ≥2 days before preferred_date to trigger in current month |
+| Feature | Zerodha SIP (`sip`) | AMC SIP (`amc_sip`) |  
+|---|---|---|  
+| Modify | Yes (amount, date, step-up, frequency) | Cannot modify |  
+| Pause | Yes | Cannot pause |  
+| Delete | Yes | Yes — deletion is the only way to change an AMC SIP |  
+| To change amount/date/fund | Modify directly | Delete existing, create new |  
+| Deletion timing | Any time | Must be ≥2 days before next instalment date |  
+| Auto-cancel | Does not auto-cancel | After 3 consecutive payment failures (SEBI circular Apr 2024) |  
+| Initial investment | Required — lumpsum must be allotted (T+1) and updated (T+2) before SIP triggers | Not required |  
+| Setup timing | — | Must be ≥2 days before `preferred_date` to trigger in current month |  
 | Trigger time | 1:30 AM | 3:15 AM |
+
+---
 
 ### A3 — SIP Status Values
 
-| Status | Meaning |
-|---|---|
-| Active | Currently active, will trigger on next_sip_date |
-| Paused | Stopped by client or AMC (scheme suspended lumpsum) |
-| Cancelled | Deleted by client |
-| Completed | All instalments completed |
-| Failed | SIP creation failed, never activated |
+| Status | Meaning |  
+|---|---|  
+| Active | SIP is currently active |  
+| Paused | Stopped by client or AMC (scheme suspended lumpsum) |  
+| Cancelled | Deleted by the client |  
+| Completed | All instalments completed |  
+| Failed | SIP creation failed |
+
+---
 
 ### A4 — Mandate / Fund Source Rules
 
-| `fund_source` Value | Meaning |
-|---|---|
-| `digio-mandates` | eNACH mandate linked |
-| `upi-mandates` | UPI autopay mandate linked |
-| `rp-pg` | Payment gateway (no mandate linked) |
+| `fund_source` value | Meaning |  
+|---|---|  
+| `digio-mandates` | eNACH mandate linked |  
+| `upi-mandates` | UPI autopay mandate linked |  
+| `rp-pg` | Payment gateway — no mandate linked |  
 | `pool` or blank | No mandate linked to this SIP |
 
-Auto-debit is confirmed only when `fund_source` = `digio-mandates` or `upi-mandates` on the specific SIP record. A mandate existing in mandate_report does not mean it is linked to this SIP — the `fund_source` field on the individual SIP record is the only authoritative source for linkage.
+Authoritative source for SIP-mandate linkage is `fund_source` on the SIP record.
 
-### A5 — SIP Not Triggered: Diagnostic Sequence
+**NRI PIS mandate restriction:** Mandates for SIPs cannot be created on NRI PIS (NRE PIS) accounts. For SIP payments on these accounts, each instalment must be paid manually via NEFT or RTGS to the ICCL account unique to the client's Zerodha account.
 
-Run these checks in order — each step may resolve the issue or lead to the next:
+---
 
-| Step | Check | Condition | Action |
-|---|---|---|---|
-| 0 | Account type | `client_acc_type` ≠ Individual AND `account_statuses` = deactivated | Escalate to support agent. Account type conversion may require fresh SIP setup. |
-| 1 | Initial investment (Zerodha SIP only) | Check console_mf_pseudo_holdings for units in the specific fund | See **A6** for full initial investment diagnostic |
-| 1.5 | Initial allotment timing (Zerodha SIP) | FRESH order allotted on/after `preferred_date`, or `preferred_date` within 2 days of FRESH order allotment | "Your initial investment was allotted too close to the SIP date. The current instalment was skipped. Please pause and resume the SIP to reset the trigger date." |
-| 2 | Recent modification | Get `public_id` → check sip_modification_log for recent pause/modify/delete. Check for any modification within T-2 of the expected trigger date. | If modification found within T-2 of trigger → "Your SIP was [modified/paused] on [date], within 2 days of the execution date. The current instalment was skipped. It will trigger from the next SIP date." |
-| 3 | SIP status | `sip_status` ≠ Active | That's the answer — SIP is not active |
-| 4 | AMC auto-cancel | `sip_type` = amc_sip AND cancelled | Check `remarks` for consecutive rejection (3-failure rule per **A2**) |
-| 5 | Future trigger date | `next_sip_date` is in the future | Hasn't reached trigger date yet |
-| 6 | Mandate linkage | `fund_source` = blank, pool, or rp-pg | No mandate linked — see **A4** and Rule 5 for full mandate check |
-| 6.5 | AMC SIP pending mandate | Mandate-linked AMC SIP showing "Pending mandate verification" | Check mandate_debit_report for debit status AND fund_allocation_report for payment mapping |
-| 7 | AMC SIP setup timing | `sip_type` = amc_sip AND `created_at` < 2 days before `preferred_date` | "AMC SIP must be set up ≥2 days before execution date." |
-| 7.5 | Upcoming SIP check | `next_sip_date` within 5 days | Check mf_order_history for already-placed order (triggers 2 days prior). Report actual status. |
-| 7.6 | Stale next_sip_date | `sip_status` = Active AND `next_sip_date` before today | SIP has stalled. "Pause and resume your SIP on Coin to re-sync the trigger date." Share link: [How to modify, pause or delete a SIP](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/modify-pause-delete-sip-coin) |
-| 8 | Order exists, payment issue | All checks above normal — check mf_order_history for SIP order on trigger date | If order exists: check `fund_source` on this SIP per **A4**. If `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked, check mandate_debit_report for debit status. If debit status = Created (SIP date passed) or Failed → the SIP order has failed for this cycle. Advise the client to place a manual lumpsum order (Zerodha SIP only — per mandate_debit_report A3, AMC SIP clients cannot place manual orders). If `fund_source` = blank, pool, or rp-pg → mandate is not linked to this SIP, even if an active mandate exists in mandate_report. Advise linking per Rule 5. |
+### A5 — Mandate Debit Status Values
 
-### A6 — Zerodha SIP Initial Investment Diagnostic
+When checking `mandate_debit_report` for a SIP's debit attempt:
 
-Perform for each affected Zerodha SIP (`sip_type` = sip):
+| Status | Meaning |  
+|---|---|  
+| draft | Debit request created, to be debited on the scheduled date |  
+| success | Bank debited successfully — payment will be mapped to the order |  
+| pending | Debit pending or has an issue — check `remark` |  
+| failed | Bank rejected the debit — order will not process this cycle |
 
-1. Check console_mf_pseudo_holdings for the specific fund.
-2. **Units found** → initial investment is confirmed. Proceed to Step 1.5 in **A5** (check if allotment was too close to SIP date). If allotment timing is fine, proceed to Step 2 in **A5**. No further initial investment checks are needed regardless of what mf_order_history shows.
-3. **No units found** → check mf_order_history for a FRESH order (purchase_type = FRESH) for that fund:
-   - FRESH Processing/Placed → "Initial investment is still being processed. SIP will trigger once units are allotted and settled." If the next SIP date (`next_sip_date` from sip_report) falls before the expected allotment and settlement date (T+2 from `exchange_timestamp` or `payment_updated_at`), the upcoming instalment will be skipped. State: "Your initial investment is still being processed and will not be settled before your next SIP date. The upcoming SIP instalment will be skipped. Once the initial investment is allotted and settled, please pause and resume the SIP on Coin to reset the trigger date for the next cycle."
-   - FRESH Failed/Cancelled → "Initial investment was not completed. Place a fresh lumpsum order. Once allotted, pause and resume the SIP to reset the trigger date."
-   - No FRESH order in mf_order_history → mf_order_history covers only the last 180 days. Check console_mf_tradebook for an allotment entry (trade_type = BUY, purchase_type = FRESH) for this fund. If an allotment entry exists → initial investment was completed but is older than 180 days. Proceed to Step 1.5 in **A5**. If no entry in console_mf_tradebook either → initial investment was never placed. "Please place a lumpsum order for [fund name]. Once allotted and settled (T+2), the SIP will begin triggering."
-4. Name the fund explicitly in the response.
-5. If multiple SIPs affected: perform this check for each fund separately. List every fund missing initial investment by name: "We checked your SIPs and found that the following funds are missing an initial investment: [fund 1], [fund 2], [fund 3]. Please place a lumpsum order for each of these funds. Once the units are allotted and settled (T+2), the respective SIPs will begin triggering automatically."
-6. **Mandate linkage check (always perform after initial investment diagnostic):** After diagnosing the initial investment issue, also check `fund_source` per **A4** for mandate linkage on each affected SIP. If `fund_source` = `rp-pg`, `pool`, or blank → inform the client that no mandate is linked to this SIP and advise creating and linking one. Share link from **A8**. Communicate both issues together — the client needs to resolve both the initial investment and mandate linkage for the SIP to trigger automatically.
+---
+
+### A6 — Mandate Status Check
+
+When checking `mandate_report`, only `status` = `success` indicates a usable, active mandate. Any other status means the mandate is not currently usable for SIP debits.
+
+---              
 
 ### A7 — Field Rules
 
-**Shareable with client:** `name` (fund name), `amount`, `sip_status`, `frequency`, `preferred_date`, `next_sip_date`, `last_sip_at`, `created_at`.
+**Shareable with client:**
 
-**Internal reasoning only (use for analysis, never share):** `sip_type`, `fund_source` (mandate check per **A4**), `public_id` (input for sip_modification_log), `remarks`.
+| Field | Interpretation |  
+|---|---|  
+| `name` | Fund/scheme name — scheme name lives in `name`, not in any field called `fund` |  
+| `amount` | SIP instalment amount |  
+| `sip_status` | Current SIP status — see A3 |  
+| `frequency` | Instalment frequency |  
+| `preferred_date` | Client's chosen execution date |  
+| `next_sip_date` | Next scheduled trigger date |  
+| `last_sip_at` | Date of last SIP order execution — not pause/modify date; for those, invoke `sip_modification_log` |  
+| `created_at` | SIP creation date |  
+| `sip_type` | See A2 for type comparison |
 
-**Suppress (no client use and only reasoning purpose): id, client_id, transaction_mode, nav, intervals, pending_intervals, status (deprecated), tag, sip_reg_num, mandate_details.
+**Non-shareable:**
+
+| Field | Interpretation |  
+|---|---|  
+| `id` | Internal SIP record identifier |  
+| `client_id` | Internal client identifier |  
+| `transaction_mode` | Internal transaction mode classification |  
+| `nav` | NAV at time of order — internal pricing reference |  
+| `intervals` | Total number of SIP instalments configured |  
+| `pending_intervals` | Number of remaining instalments |  
+| `status` | Deprecated status field — use `sip_status` instead |  
+| `tag` | Internal tag |  
+| `sip_reg_num` | SIP registration number assigned by the exchange/AMC |  
+| `mandate_details` | Raw mandate data linked to the SIP |  
+| `fund_source` | Mandate linkage check per A4 |  
+| `public_id` | Input for `sip_modification_log` (mapped to `sip_id` there) |  
+| `remarks` | Cancellation cause and other system notes |
+
+---
 
 ### A8 — Links
 
-| Topic | URL |
-|---|---|
-| Mandate creation and SIP linkage | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin#:~:text=Linking%20a%20mandate%20to%20an%20existing%20SIP |
-| Modify, pause, or delete SIP | https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/modify-pause-delete-sip-coin |
+| Topic | URL |  
+|---|---|  
+| Mandate creation and SIP linkage | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin#:\~:text=Linking%20a%20mandate%20to%20an%20existing%20SIP |  
+| Modify, pause, or delete SIP | https://support.zerodha.com/category/mutual-funds/features-on-coin/systematic-investment-plan/articles/modify-cancel-sip-coin-app |  
 | NRI PIS NEFT/RTGS payments on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/neft-rtgs-coin |
 
-### A9 — Cross-Reference Protocols
+---
 
-| Topic | Refer to |
-|---|---|
-| SIP order status, allotment confirmation | mf_order_history |
-| SIP pause/modify/delete history | sip_modification_log (use `public_id` as input) |
-| Mandate status and details | mandate_report |
-| Mandate debit attempts | mandate_debit_report |
-| Payment mapping for AMC SIP | fund_allocation_report |
-| Holdings verification (initial investment) | console_mf_pseudo_holdings |
-| STP as alternative to stopping/starting SIPs | stp_report |
+### A9 — Escalation Triggers
 
-### A10 — Escalation Triggers
+Escalate to human agent when any of the following apply:
 
-Escalate when:
-- Account type conversion detected (Step 0 in **A5**): `client_acc_type` ≠ Individual AND deactivated → escalate to support agent.
-- AMC SIP deletion technically failing (client followed correct steps but deletion not succeeding) → escalate to support agent immediately. Do not ask for screenshots or troubleshoot further.
-- SIP deletion failing for any SIP type → escalate to support agent immediately.
-- Any unresolvable SIP trigger issue after completing all diagnostic steps in **A5**.
+- Account type conversion in progress (per Rule 7 check).  
+- Client reports SIP deletion is not succeeding from their end.  
+- SIP trigger issue remains unresolved after completing all checks in Rule 1.
 
-### Preflight (run on every query)
+Include in escalation: client ID, SIP fund name (`name`), `sip_status`, and the specific issue.
 
-1. Fetch the SIP report for the client.
-2. Apply field protection per **A7** — identify shareable, internal, and banned fields.
-3. Identify `sip_type` for the relevant SIP(s) — this determines available actions per **A2**.
-4. Check `fund_source` for mandate linkage status per **A4**.
-5. Format amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
+---
 
-### Routing Tree
+## Section B: Decision Flow
 
+### Routing
+
+```  
+Route by scenario  
+   ├─ SIP didn't trigger / missed instalment → Rule 1  
+   ├─ AMC SIP cancelled (client didn't cancel) → Rule 2  
+   ├─ Client wants to modify or delete AMC SIP → Rule 3  
+   ├─ NRI PIS account: cannot create mandate → Rule 4  
+   ├─ SIP mandate linkage / auto-debit / "pending mandate verification" → Rule 5  
+   ├─ SIP deletion failing → Rule 6  
+   └─ Account type conversion suspected → Rule 7  
 ```
-Query relates to SIP →
-│
-├─ SIP didn't trigger / missed instalment
-│  → Rule 1 (Sequential diagnostic per A5)
-│
-├─ AMC SIP auto-cancelled (client didn't cancel)
-│  → Rule 2
-│
-├─ Client confused about SIP type / asks to modify AMC SIP
-│  → Rule 3
-│
-├─ NRI PIS account — mandate not available
-│  → Rule 4
-│
-├─ Mandate linkage / auto-debit / "pending mandate verification"
-│  → Rule 5
-│
-├─ SIP deletion failing
-│  → Rule 6 (Escalate)
-│
-└─ General SIP status query
-   → Check data, translate status per A3, respond
-```
-
-### Scope
-
-- Address: SIP trigger issues, mandate linkage, AMC vs Zerodha SIP differences, initial investment verification, and SIP modification/deletion guidance.
 
 ### Fallback
 
-If no root cause is identified after completing all diagnostic steps → escalate per **A10**.
+If no rule matches and no root cause is identified after checks → escalate to human agent per A9.
 
+---
 
-### Rule 1 — SIP Not Triggered: Sequential Diagnostic
+## Section C: Rules
 
-1. Run through the diagnostic sequence in **A5** in order.
-2. For Step 1 (Zerodha SIP initial investment): follow the full diagnostic in **A6** for each affected fund. Name every fund explicitly. After diagnosing the initial investment issue, also check mandate linkage per **A6** Step 6 and communicate both issues together.
-3. For Step 1.5 (initial allotment timing): if FRESH order allotted on/after `preferred_date` or within 2 days → advise to pause and resume.
-4. For Step 2 (recent modification): get `public_id` from sip_report → check sip_modification_log. If any modification is found within T-2 of the expected trigger date → "Your SIP was [modified/paused] on [date], within 2 days of the execution date. The current instalment was skipped. It will trigger from the next SIP date."
-5. For Step 6 (mandate linkage): follow the full mandate verification in Rule 5.
-6. For Step 7.6 (stale next_sip_date): if Active and `next_sip_date` is past → advise pause and resume to re-sync. Share link from **A8**.
-7. For Step 8 (order exists, payment issue): check `fund_source` per **A4** to determine mandate linkage before diagnosing payment. If `fund_source` = `digio-mandates` or `upi-mandates` → check mandate_debit_report. If `fund_source` = blank, pool, or rp-pg → mandate is not linked, advise linking per Rule 5.
+---
+
+### Rule 1 — SIP Not Triggered
+
+**Account conversion check:**
+
+If status from ‘get_all_client_data’  ≠ "approved" → account type conversion is in progress. Escalate per A9. Stop.
+
+**SIP status check:**
+
+If `sip_status` ≠ Active → communicate the status per A3 and stop. The SIP will not trigger while in a non-active state.
+
+**AMC SIP — auto-cancel check:**
+
+If `sip_type` = `amc_sip` AND `sip_status` = Cancelled → invoke `mf_order_history` and check for 3 consecutive failed/rejected orders for this SIP. If confirmed, route to Rule 2.
+
+**AMC SIP — setup timing check:**
+
+If `sip_type` = `amc_sip` AND `created_at` is less than 2 days before `preferred_date` → AMC SIP setup was too close to the execution date. Communicate the gap (state both `created_at` and `preferred_date`) and advise deleting and creating a new SIP at least 2 days before the next preferred date.
+
+**Future trigger date:**
+
+Compare `next_sip_date` to today. SIPs trigger 2 days prior to `next_sip_date` (1 day prior for UPI mandates per A1). If today is still before the trigger day (i.e., `next_sip_date` is more than 2 days away, or more than 1 day away for UPI mandates) → the SIP has not reached its trigger date yet. Communicate the next trigger date and stop.
+
+**Stale `next_sip_date`:**
+
+If `sip_status` = Active AND `next_sip_date` is before today → the SIP has stalled. Advice depends on `sip_type`:  
+- Zerodha SIP (`sip_type` = `sip`) → advise the client to pause and resume the SIP on Coin to re-sync the trigger date. Share the modify/pause/delete link from A8.  
+- AMC SIP (`sip_type` = `amc_sip`) → AMC SIPs cannot be paused (per A2). Advise the client to delete the existing AMC SIP and create a new one to re-sync the trigger. Share the modify/pause/delete link from A8.
+
+**Recent modification check:**
+
+Use `public_id` from this SIP's record. Invoke `sip_modification_log`. Check for any pause, modify, or delete action within T-2 of the expected trigger date. If a recent modification is found, the SIP behavior is explained by that modification — communicate accordingly.
+
+**Initial investment check (Zerodha SIPs only, `sip_type` = `sip`):**
+
+Zerodha SIP will not trigger until the initial lumpsum is allotted and settled. (AMC SIPs do not require initial investment per A2 — skip this check for AMC SIPs.)
+
+Invoke `console_mf_pseudo_holdings` for the specific fund:
+
+- **Units found** → initial investment is confirmed. Invoke `mf_order_history` to verify the FRESH order timing. If the FRESH order was allotted on or after the SIP's `preferred_date`, or `preferred_date` is within 2 days of FRESH allotment, the current cycle was skipped due to allotment timing. Check `next_sip_date`: if it has updated to the next month's expected date → SIP is reset and will trigger next cycle. If `next_sip_date` has not updated → advise the client to pause and resume the Zerodha SIP to reset the trigger date.
+
+- **No units found** → invoke `mf_order_history` for a FRESH order (`purchase_type` = FRESH) for that fund:  
+  - **FRESH Processing/Placed** → the initial investment is still being processed. Communicate that the SIP will trigger once units are allotted and settled. If `next_sip_date` falls before the expected allotment+settlement date (T+2 from `exchange_timestamp` or `payment_updated_at`), the upcoming instalment will be skipped — communicate this and advise the client to pause and resume the Zerodha SIP once settlement completes.  
+  - **FRESH Failed/Cancelled** → initial investment was not completed. Advise placing a fresh lumpsum order; once allotted, pause and resume the Zerodha SIP to reset the trigger date.  
+  - **No FRESH order found** → invoke `console_mf_tradebook` for an allotment entry (`trade_type` = BUY, `purchase_type` = FRESH) for this fund. If found → initial investment is confirmed; proceed to the mandate linkage check below. If not found → initial investment was never placed. Advise placing a lumpsum order; once allotted and settled (T+2), pause and resume the Zerodha SIP on Coin to reset the trigger date.
+
+If multiple SIPs are affected, check each fund separately and name every fund explicitly in the response.
+
+**Mandate linkage check:**
+
+Check `fund_source` per A4. If `fund_source` = `rp-pg`, `pool`, or blank → no mandate is linked to this SIP. Route to Rule 5.
+
+**Order placed but payment issue:**
+
+If the SIP order exists in `mf_order_history` for the trigger date, check `fund_source`:  
+- `fund_source` = `digio-mandates` or `upi-mandates` → mandate linked. Invoke `mandate_debit_report` and apply A5 status interpretation. If status = `failed` or `pending` (with execution issue), the SIP order has failed for this cycle. For Zerodha SIPs, advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs, communicate the failure cause from the debit `remark`; the next AMC SIP cycle will retry automatically.  
+- `fund_source` = `rp-pg`, `pool`, or blank → mandate not linked. Route to Rule 5.
+
+**Fallback:** If none of the above resolves the issue → escalate per A9.
+
+---
 
 ### Rule 2 — AMC SIP Auto-Cancelled
 
-1. Confirm: `sip_type` = amc_sip AND `sip_status` = Cancelled AND customer didn't cancel.
-2. Cross-check mf_order_history (per **A9**) for 3 consecutive failed/rejected orders for this SIP.
-3. If confirmed: "Your AMC SIP was cancelled due to 3 consecutive payment rejections. The status will update within 24–48 hours. Please create a new AMC SIP."
-4. Do not suggest creating a Zerodha SIP for AMC SIP funds.
+1. Confirm: `sip_type` = `amc_sip` AND `sip_status` = Cancelled.
 
-### Rule 3 — AMC vs Zerodha SIP
+2. Verify the client did not cancel: invoke `sip_modification_log` using `public_id`. If `type` = `sip_delete` exists → the client deleted the SIP; this is not auto-cancellation. Communicate the deletion accordingly and stop.
 
-1. Check `sip_type` and respond using the comparison in **A2**.
-2. For AMC SIP modification/pause requests: "AMC SIPs cannot be modified or paused. They can only be deleted. To change the amount, date, or fund, delete the existing AMC SIP and create a new one with the desired values. Deletion must be done at least 2 days before the next instalment date."
-3. If AMC SIP deletion is technically failing (client followed correct steps) → escalate to support agent immediately per **A10**. "We are unable to process this deletion from our end and are escalating this to our team. You can expect a resolution within 24–48 hours."
-4. `last_sip_at` is the date of the last SIP order — not the pause/modify date. For pause/modify dates, check sip_modification_log using the SIP's `public_id` (per **A1** and **A9**).
-5. If client wants to switch funds → suggest Systematic Transfer Plan (STP) via stp_report (per **A9**) as an alternative to stopping one SIP and starting another.
+3. If no `sip_delete` action is found, invoke `mf_order_history` and check for 3 consecutive failed/rejected orders for this SIP.
 
-### Rule 4 — NRI PIS Account: Mandate Not Available
+4. If confirmed: communicate that the AMC SIP was auto-cancelled per the SEBI 3-failure rule (per A2). The status will reflect within 24–48 hours. The client can create a new AMC SIP.
 
-1. Confirm: account type is NRI PIS (NRE account) and client reports they cannot create a mandate.
-2. Respond: "Mandates for SIPs cannot be created for NRI PIS accounts. For SIP payments, each instalment will need to be paid manually using NEFT or RTGS. The payment must be made to the ICCL account unique to your Zerodha account."
-3. Share link from **A8**: NRI PIS NEFT/RTGS payments.
+---
+
+### Rule 3 — AMC SIP Modification or Deletion Request
+
+1. Communicate the relevant facts from A2: AMC SIPs cannot be modified or paused. The only option is deletion. To change the amount, date, or fund, the client must delete the existing AMC SIP and create a new one. Deletion must be done at least 2 days before the next instalment date.
+
+2. If the client reports deletion is technically failing → route to Rule 6.
+
+---
+
+### Rule 4 — NRI PIS Account: Mandate Restriction
+
+1. If all three conditions match in ‘get_all_client_data’ → NRI PIS account confirmed:                                                                                                       
+  - client_acc_type is one of NRO, NRE, or NRI                                       
+  - bo_sub_status contains "RepatriableWith" (NRE)  
+  - pis_bank_1_name or pis_bank_2_name is populated (PIS)                                                                                                                                 
+    
+Communicate the NRI PIS mandate restriction per A4. Share the NRI PIS NEFT/RTGS link from A8.  
+
+2. If the client has an NRI account but is not PIS, mandates can be created normally — proceed with standard SIP mandate handling per Rule 5.
+
+---
 
 ### Rule 5 — SIP Mandate Linkage Check
 
-**Step 1 — Verify mandate linkage on each SIP individually:**
-Check `fund_source` per **A4** on each SIP record first. This is the only authoritative source for linkage — check this before consulting mandate_report or mandate_debit_report. Report linkage status per SIP — a mandate linked to one SIP does not mean it is linked to others.
+For each SIP in scope, check `fund_source`:
 
-For each SIP, check `fund_source`:
-- `digio-mandates` or `upi-mandates` → mandate is linked to this SIP. Check mandate_report (per **A9**) for current status:
-  - success/register_success → active. Check mandate_debit_report for debit attempt and mf_order_history for allotment status.
-  - created/pending → "Your mandate is currently being verified. eNACH takes up to 3 working days; UPI autopay is typically immediate. Auto-debit will begin once verification is complete."
-  - failed/register_failed → "Your mandate registration failed. Please create a new mandate. UPI autopay activates within minutes."
-- `rp-pg`, blank, or pool → mandate is not linked to this SIP. Check mandate_report for whether an active mandate exists elsewhere:
-  - Mandate active → "Your mandate is active but not yet linked to your [fund name] SIP. Please link it." Share link from **A8**.
-  - No active mandate → "No mandate linked. Please create and link a mandate for auto-debit." Share link from **A8**.
+**`fund_source` = `digio-mandates` or `upi-mandates` (mandate linked to this SIP):**
 
-**Example:** mandate_report shows status = success for mandate ZERODHA1349031599. Client has three SIPs. sip_report shows: SIP 1 (ICICI Multi Asset Fund) → fund_source = pool. SIP 2 (Axis Bluechip) → fund_source = upi-mandates. SIP 3 (HDFC Flexi Cap) → fund_source = pool. Correct diagnosis: mandate is linked only to SIP 2. SIPs 1 and 3 require mandate linking.
+The mandate is linked. To check what happened with the debit:
 
-**Step 2 — Daily SIPs specifically:**
-Orders for daily SIPs are placed on T-1 day in the system. Before concluding a daily SIP instalment is missing, check mf_order_history for T-1 day.
+- Invoke `mandate_debit_report` for the SIP date. Apply A5 status interpretation.  
+- If `success` → debit succeeded. Invoke `mf_order_history` for the order status.  
+- If `draft` → scheduled, not yet executed.  
+- If `pending` → check `remark` for the cause (e.g., insufficient balance, mandate notification issue).  
+- If `failed` → bank rejected the debit. Communicate the rejection cause from `remark`. For Zerodha SIPs, advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs, communicate the cause; the next AMC SIP cycle will retry automatically.
 
-### Rule 6 — SIP Deletion Failures
+**`fund_source` = `rp-pg`, `pool`, or blank (no mandate linked to this SIP):**
 
-1. If client reports they cannot delete a SIP → escalate to support agent immediately per **A10**.
-2. Respond: "We are escalating this to our team for resolution. You can expect an update within 24–48 hours."
+The SIP has no mandate linked. To advise the client correctly, check whether they have any active mandate:
+
+- Invoke `mandate_report`. Apply A6 status interpretation.  
+- If a mandate exists with `status` = `success` → the client has an active mandate but it is not linked to this SIP. Advise linking it. Share the mandate-linkage link from A8.  
+- If no mandate exists with `status` = `success` → the client has no usable mandate. Advise creating one and linking it. Share the link from A8.
+
+If the client has multiple SIPs, check each one separately. A mandate linked to one SIP does not automatically link to others.
+
+---
+
+### Rule 6 — SIP Deletion Failing
+
+1. Confirm: the client reports they followed the deletion steps but deletion is not succeeding.  
+2. Escalate to human agent per A9.
+
+---
+
+### Rule 7 — Account Type Conversion Check
+
+If status from ‘get_all_client_data’ ≠ "approved" → account type conversion is in progress. SIP-related actions may not work correctly until conversion completes. Escalate to human agent per A9.

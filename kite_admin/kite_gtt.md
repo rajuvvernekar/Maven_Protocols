@@ -23,236 +23,214 @@ When clients:
 
 TRIGGER KEYWORDS: "GTT", "good till triggered", "trigger order", "GTT triggered", "GTT not triggered", "GTT rejected", "GTT expired", "GTT cancelled", "GTT disabled", "GTT deleted", "OCO", "two-leg", "single trigger", "GTT stoploss", "GTT target", "GTT email", "GTT validity", "GTT order status", "triggered but not executed", "GTT creation error", "GTT limit", "500 GTT"
 
+TAGS: orders
+
 ## Protocol
 
-# KITE GTT PROTOCOL 
-
+# KITE GTT PROTOCOL
 
 ---
+
+## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-This tool shows a client's **GTT (Good Till Triggered) orders** — orders that stay active until the trigger condition is met or validity expires. GTT is free — no additional charges.
+- GTT (Good Till Triggered) orders stay active until the trigger condition is met or validity expires. GTT is free — no additional charges.  
+- **Validity:** Equity GTT = 1 year from creation. F&O GTT = until contract expiry.  
+- **Trigger behavior:** Valid only once. If the triggered order is placed but not executed, the client must create a new GTT. Triggered GTT becomes a CNC limit order with DAY validity — cancelled by exchange at end of day if unfilled.  
+- **Single trigger:** One trigger price → one order placed when LTP hits/breaches trigger.  
+- **OCO (two-leg):** Stoploss \+ target triggers. When one triggers, the other is cancelled. Buy OCO available only for F&O contracts. OCO uses NRML only for index F&O.  
+- **Trigger price vs LTP at trigger moment:** The trigger price is the threshold; the price shown in the trigger email/notification is the LTP at the moment the tick was captured. Due to gaps or volatility, the LTP at trigger can be higher or lower than the trigger price (e.g., sell trigger at ₹95, stock gaps down to ₹90 → trigger fires at ₹90).  
+- GTT triggers based on ticks recorded by the system — if a tick is not captured, GTT may not trigger even if price briefly touched the level.  
+- Max 500 active GTTs per account. Notifications: email \+ Kite push notification on trigger and order placement.
 
-**Validity:** Equity GTT = 1 year from creation. F&O GTT = until contract expiry.
+### A2 — Field Rules
 
-**Trigger behavior:** Valid only once. If the triggered order is placed but not executed, the client must create a new GTT. Triggered GTT becomes a CNC limit order with DAY validity — cancelled by exchange at end of day if unfilled.
+**Shareable with client:**
 
-**Single trigger:** One trigger price → one order placed when LTP hits/breaches trigger.
+| Field | Interpretation |  
+|---|---|  
+| `id` | GTT id |  
+| `tradingsymbol` | Stock symbol |  
+| `transaction_type` | Buy or sell |  
+| `status` | GTT status; translate per A3 |  
+| `type` | Single or OCO |  
+| `quantity` | Order quantity |  
+| `trigger_values` | Trigger price(s) |  
+| `price` | Limit price |  
+| `product` | Product type (CNC, etc.) |  
+| `order_type` | Order type (limit, etc.) |  
+| `trigger_percentage` | Trigger percentage |  
+| `order_result_status` | Outcome of triggered order |  
+| `order_result_rejection_reason` | Rejection reason if triggered order was rejected |  
+| `created_at` | GTT creation timestamp |  
+| `updated_at` | Last update timestamp |  
+| `rejection_reason` | Cancellation reason (when present) |
 
-**OCO (two-leg):** Stoploss + target triggers. When one triggers, the other is cancelled. Buy OCO available only for F&O contracts. OCO uses NRML only for index F&O.
+**Non-shareable:**
 
-GTT triggers based on ticks recorded by the system — if a tick is not captured, GTT may not trigger even if price briefly touched the level.
-
-Max 500 active GTTs per account. Notifications: email + Kite push notification on trigger and order placement.
-
-
-### A2 — Field Usage Rules
-
-**Shareable fields:**
-
-`id` | `tradingsymbol` | `transaction_type` | `status` | `type` | `quantity` | `trigger_values` | `price` | `product` | `order_type` | `trigger_percentage` | `order_result_status` | `order_result_rejection_reason` | `created_at` | `updated_at` | `rejection_reason`
-
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
-
-`order_result_id` | `ltp` | `exchange` | `expires_at`
-
-**Client-facing terminology:**
-
-| Internal Term | Client-Facing Alternative |
-|---|---|
-| `ltp` | (omit — LTP at GTT creation time, not current price) |
-| `exchange` | (omit — internal routing) |
-| `expires_at` | Describe as "valid for 1 year" (equity) or "until contract expiry" (F&O) |
-
+| Field | Interpretation |  
+|---|---|  
+| `order_result_id` | Internal order reference |  
+| `ltp` | LTP at GTT creation time (not current price) |  
+| `exchange` | Internal exchange routing |  
+| `expires_at` | Internal expiry timestamp; use A1 validity rules to communicate |
 
 ### A3 — Status Values
 
-| Status | Meaning |
-|---|---|
-| Active | Pending trigger — GTT is live and monitoring price |
-| Triggered | Trigger hit — order placed on exchange. Check `order_result_status` for outcome. |
-| Cancelled | Cancelled due to corporate action (series change, delisting, suspension, extraordinary dividend, rights issue, consolidation, capital reduction), or lot size change for index F&O |
-| Expired | Equity: 1 year lapsed. F&O: contract expired. |
-| Disabled | Trigger set too close to LTP (< 0.25% for stocks > ₹50), or CA like bonus/stock split affected instrument |
+| Status | Meaning |  
+|---|---|  
+| Active | Pending trigger — GTT is live and monitoring price |  
+| Triggered | Trigger hit — order placed on exchange. Check `order_result_status` for outcome. |  
+| Cancelled | Cancelled due to corporate action (series change, delisting, suspension, extraordinary dividend, rights issue, consolidation, capital reduction), or lot size change for index F&O |  
+| Expired | Equity: 1 year lapsed. F&O: contract expired. |  
+| Disabled | Trigger set too close to LTP (< 0.25% for stocks > ₹50), or CA like bonus/stock split affected instrument |  
 | Deleted | Removed by user |
-
 
 ### A4 — Trigger Distance Rules
 
-| Stock Price | Minimum Trigger Distance |
-|---|---|
-| Above ₹50 | At least 0.25% away from LTP |
+| Stock Price | Minimum Trigger Distance |  
+|---|---|  
+| Above ₹50 | At least 0.25% away from LTP |  
 | Below ₹50 | At least 9 paise away from LTP |
-
 
 ### A5 — Buy GTT Rejections
 
-| Reason | Explanation |
-|---|---|
-| Insufficient margin | No funds at trigger time — GTT can be created without funds, but needs funds when triggered |
-| Trigger too close | Trigger < 0.25% from LTP (stocks > ₹50) or < 9 paise (stocks < ₹50) |
-| Price band | Limit price outside exchange circuit limit on trigger day |
-| Contract not allowed | F&O contract not allowed by Zerodha at trigger time |
+| Reason | Explanation |  
+|---|---|  
+| Insufficient margin | No funds at trigger time — GTT can be created without funds, but needs funds when triggered |  
+| Trigger too close | Trigger < 0.25% from LTP (stocks > ₹50) or < 9 paise (stocks < ₹50) |  
+| Price band | Limit price outside exchange circuit limit on trigger day |  
+| Contract not allowed | F&O contract not allowed by Zerodha at trigger time |  
 | Segment killed | Segment disabled via Kill Switch at trigger time |
-
 
 ### A6 — Sell GTT Rejections
 
-| Reason | Explanation |
-|---|---|
-| TPIN not authorised | Holdings not authorised via CDSL TPIN — must authorise daily after 7 AM if no POA/DDPI |
-| Insufficient holdings | Not enough shares in demat at trigger time |
-| Series change | Instrument underwent series change or suspension |
+| Reason | Explanation |  
+|---|---|  
+| TPIN not authorised | Holdings not authorised via CDSL TPIN — must authorise daily after 7 AM if no POA/DDPI |  
+| Insufficient holdings | Not enough shares in demat at trigger time |  
+| Series change | Instrument underwent series change or suspension |  
 | Segment killed | Segment disabled via Kill Switch |
-
 
 ### A7 — F&O GTT Rules
 
-| Rule | Detail |
-|---|---|
-| Validity | Until contract expiry — not 1 year |
-| Physical delivery | Stock F&O GTT may lead to physical delivery if contract expires ITM |
-| Hedge risk | GTT closing one leg of hedge → margin increases → Zerodha may square off |
-| Corporate action | Equity F&O GTTs cancelled if CA affects lot size/price |
-| Index lot change | Index F&O GTTs cancelled when lot size changes |
-| Currency | GTT not available for Currency segment |
+| Rule | Detail |  
+|---|---|  
+| Validity | Until contract expiry — not 1 year |  
+| Physical delivery | Stock F&O GTT may lead to physical delivery if contract expires ITM |  
+| Hedge risk | GTT closing one leg of hedge → margin increases → Zerodha may square off |  
+| Corporate action | Equity F&O GTTs cancelled if CA affects lot size/price |  
+| Index lot change | Index F&O GTTs cancelled when lot size changes |  
+| Currency | GTT not available for Currency segment |  
 | OCO restriction | Buy OCO available only for F&O. NRML only for index F&O OCO. |
-
 
 ### A8 — Links
 
-| Topic | URL / Reference |
-|---|---|
-| GTT Terms of Service | zerodha.com/tos/gtt |
-| Generate CDSL TPIN | support.zerodha.com — How to generate CDSL TPIN |
-| Activate DDPI | support.zerodha.com — How to activate DDPI |
+| Topic | URL |  
+|---|---|  
+| GTT Terms of Service | https://zerodha.com/tos/gtt |  
+| Generate CDSL TPIN | https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/tpin-preauthorisation |  
+| Activate DDPI | https://support.zerodha.com/category/your-zerodha-account/your-profile/ddpi/articles/activate-ddpi |  
+| GTT stoploss option | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/gtt/articles/gtt-stoploss-option |
 
+### A9 — Escalation Triggers
 
-### A9 — Escalation Data Template
+Escalate to human agent when any of the following occur:  
+- GTT report data appears inconsistent or missing.  
+- Client provides evidence (screenshot/email) showing different GTT details than the report.  
+- Client requests compensation or reversal for GTT non-execution.
 
-When escalating, always include: **client ID, tradingsymbol, GTT type, status, trigger values, and specific issue.**
-
+Include when escalating to human agent: client ID, tradingsymbol, GTT type, status, trigger values, and the specific issue.
 
 ---
 
-### Preflight (run on every query)
+## Section B: Decision Flow
 
+### Routing
+
+```  
+Route by scenario  
+   ├─ GTT status check (any status) → Rule 1  
+   ├─ Status = Active → Rule 2  
+   ├─ Status = Triggered → Rule 3  
+   ├─ Price reached but GTT didn't fire → Rule 4  
+   ├─ Status = Cancelled → Rule 5  
+   ├─ Status = Expired → Rule 6  
+   ├─ Status = Disabled → Rule 7  
+   ├─ GTT email price differs from trigger → Rule 8  
+   ├─ F&O GTT specifics → Rule 9  
+   ├─ GTT creation error → Rule 10  
+   └─ GTT stoploss prompt (index options) → Rule 11  
 ```
-1. Locate GTT by tradingsymbol.
-2. If not found → check if it's an old/expired/deleted GTT
-   → invoke kite_gtt_archived.
-```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-GTT status check (any status)                               → Rule 1
-Status = Active                                             → Rule 2
-Status = Triggered                                          → Rule 3
-Price reached but GTT didn't fire                           → Rule 4
-Status = Cancelled                                          → Rule 5
-Status = Expired                                            → Rule 6
-Status = Disabled                                           → Rule 7
-GTT email price differs from trigger                        → Rule 8
-F&O GTT specifics                                           → Rule 9
-GTT creation error                                          → Rule 10
-GTT stoploss prompt (index options)                         → Rule 11
-```
-
-### Scope
-
-- Address the client's query about their GTT orders — status, triggers, rejections, and F&O specifics.
-- Use **A2** field rules and client-facing terminology in all client communication.
-- For triggered GTT execution details → invoke `kite_orders` (today) or `kite_order_history` (past).
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A9**.
-
+If no rule matches, escalate to human agent per A9.
 
 ---
 
+## Section C: Rules
+
 ### Rule 1 — GTT Status Check
 
-1. Locate by `tradingsymbol`. Share: tradingsymbol, transaction_type, type (single/OCO), status, trigger_values, price, quantity, product, created_at.
-2. Route by status: active → Rule 2, triggered → Rule 3, cancelled → Rule 5, expired → Rule 6, disabled → Rule 7, deleted → This GTT was deleted from your account [on updated_at]..
+1. Locate by `tradingsymbol`. Share: tradingsymbol, transaction_type, type (single/OCO), status, trigger_values, price, quantity, product, created_at.  
+2. If status = deleted → confirm deletion using `updated_at`.  
 3. If GTT not found → invoke `kite_gtt_archived`.
-
 
 ### Rule 2 — Status: Active
 
-1. Your [transaction_type] GTT for [tradingsymbol] is active. Trigger price: ₹[trigger_values], limit price: ₹[price], quantity: [quantity]. Equity GTTs are valid for 1 year from creation; F&O GTTs until contract expiry..
-2. If client asks when it will trigger → Your GTT will trigger when the LTP of [tradingsymbol] hits or breaches ₹[trigger_values]. Once triggered, a [order_type] order at ₹[price] will be placed on the exchange..
-3. If OCO → Your OCO GTT has two triggers — stoploss at ₹[lower_trigger] and target at ₹[upper_trigger]. When one triggers, the other is automatically cancelled..
-
+1. Confirm GTT is active. Share `transaction_type`, `tradingsymbol`, `trigger_values`, `price`, `quantity`. Explain validity per A1.  
+2. If client asks when it will trigger → explain trigger mechanics per A1 (single or OCO as applicable).
 
 ### Rule 3 — Status: Triggered
 
-1. Check `order_result_status`:
-   a. COMPLETE → Your GTT for [tradingsymbol] was triggered and the order was executed.. Invoke `kite_orders` (today) or `kite_order_history` (past) for execution details.
-   b. REJECTED → match `order_result_rejection_reason` against **A5** (buy) or **A6** (sell) and respond with the matching template (**A10-R5** through **A10-R10**). Cross-reference `kite_margins` (margin) or `kite_holdings` (holdings) as needed.
-   c. CANCELLED → invoke `kite_order_history` filtered to the GTT trigger date only. Use the `gtt` field internally to confirm the order is linked to this GTT. Do not look at orders on subsequent dates.
-      - Cancelled during market hours → Your GTT for [tradingsymbol] was triggered on [trigger date] and a [order_type] order was placed on the exchange. However, this order was cancelled from your end during the trading session. The GTT trigger is a one-time event — you'll need to create a new GTT if you still want this order. (user cancelled).
-      - Cancelled after market hours → Your GTT for [tradingsymbol] triggered on [trigger date] and an order was placed, but it wasn't filled by end of day. Triggered GTT orders become limit orders with DAY validity — if unfilled, the exchange cancels them at session end. You'll need to create a new GTT. (EOD unfilled).
-2. If triggered GTT not visible in order book → Once triggered, the GTT order is a regular limit order with DAY validity. If it wasn't filled, the exchange cancelled it at end of day. From the next day, it won't appear in the order book. Check your email for the trigger and order details..
-
+1. Check `order_result_status`:  
+   a. COMPLETE → triggered and executed. Invoke `kite_orders` (today) or `kite_order_history` (past) for execution details.  
+   b. REJECTED → match `order_result_rejection_reason` against A5 (buy) or A6 (sell). Cross-reference `kite_margins` (margin) or `kite_holdings` (holdings) as needed.  
+   c. CANCELLED → invoke `kite_order_history` filtered to the GTT trigger date. Use `gtt` field internally to confirm linkage.  
+      - Cancelled during market hours → user cancelled during the session. Trigger is one-time per A1; advise creating a new GTT.  
+      - Cancelled after market hours → triggered but unfilled by EOD per A1; advise creating a new GTT.  
+2. If triggered GTT not visible in order book → reference DAY-validity behaviour per A1; direct client to email for trigger and order details.
 
 ### Rule 4 — Price Reached but GTT Didn't Fire
 
-1. GTT triggers based on ticks recorded by the system. Hundreds of transactions occur per second on the exchange, and each is represented by a tick. If the system didn't capture the tick at your trigger price of ₹[trigger_values], the GTT may not trigger. It will remain active until the price reaches the trigger again..
-2. Additional checks:
-   - Price briefly touched and bounced — tick may not have been recorded.
-   - GTT was modified — check `updated_at` to confirm latest trigger value.
+1. Explain tick-based trigger behaviour per A1.  
+2. Additional checks:  
+   - Price briefly touched and bounced — tick may not have been recorded.  
+   - GTT was modified — check `updated_at` to confirm latest trigger value.  
    - GTT was disabled due to CA or trigger too close to LTP.
-
 
 ### Rule 5 — Status: Cancelled
 
-1. Check `rejection_reason` if available.
-2. Match cause and respond:
-   a. Series change / delisting / suspension → **A10-R15**.
-   b. F&O CA or lot size change → **A10-R16**.
-   c. Extraordinary CA (dividend >2%, rights, consolidation, capital reduction) → **A10-R17**.
-
+1. Check `rejection_reason` if available; match cause per A3 (Cancelled row).
 
 ### Rule 6 — Status: Expired
 
-1. Equity → Your GTT expired because it wasn't triggered within 1 year of creation (created on [created_at]). Create a new GTT if needed..
-2. F&O → Your GTT expired because the F&O contract expired. GTTs for derivatives are valid only until contract expiry..
-
+1. Equity: explain validity per A1; reference `created_at`.  
+2. F&O: explain expiry per A7.
 
 ### Rule 7 — Status: Disabled
 
-1. Your GTT was disabled because the trigger price was set too close to LTP (less than 0.25% for stocks above ₹50, or less than 9 paise for stocks below ₹50) after validation, or the instrument underwent a corporate action like a bonus issue or stock split. You'll need to create a new GTT with a valid trigger price.. Trigger distance rules per **A4**.
-
+1. Explain disable cause per A3 (Disabled row) and trigger distance rules per A4. Advise client to create a new GTT with a valid trigger price.
 
 ### Rule 8 — GTT Email Price Mismatch
 
-1. The price in the email is the actual LTP at the moment the GTT triggered — not your trigger price. Due to market volatility or gaps (opening gap up/down), the LTP at trigger time may be higher or lower than your set trigger price. Example: if you set a sell trigger at ₹95 but the stock opened at ₹90 (gap down), the trigger fires at ₹90 and the email shows ₹90..
-
+1. Explain trigger price vs LTP-at-trigger-moment behaviour per A1.
 
 ### Rule 9 — F&O GTT Specifics
 
-1. Respond with applicable rules from **A7**:
-   - Validity until contract expiry, not 1 year.
-   - Physical delivery risk for stock F&O.
-   - Hedge risk: closing one leg increases margin. Invoke `kite_margins` to check. If client asks about affected position → invoke `kite_positions`.
-   - CA/lot change cancellation.
-   - Currency: GTT not available.
-   - OCO restriction: buy OCO for F&O only, NRML for index F&O OCO.
-
+1. Apply rules per A7.  
+2. Hedge risk check: invoke `kite_margins` to check margin impact. If client asks about affected position → invoke `kite_positions`.
 
 ### Rule 10 — GTT Creation Errors
 
-1. Trigger too close → For stocks above ₹50, the trigger must be at least 0.25% away from the current market price. For stocks below ₹50, the trigger must be at least 9 paise away.. Distance rules per **A4**.
-2. No LTP (illiquid) → GTTs require an LTP to validate the trigger. If the instrument has no LTP due to illiquidity, GTT creation is not possible..
-3. Max 500 active GTTs reached → You can have a maximum of 500 active GTTs. Delete existing GTTs to create new ones..
-
+1. Trigger too close → distance rules per A4.  
+2. No LTP (illiquid) → GTTs require an LTP to validate the trigger; creation not possible if instrument has no LTP.  
+3. Max 500 active GTTs reached → max active GTTs per A1; advise client to delete existing GTTs.
 
 ### Rule 11 — GTT Stoploss Prompt (Index Options)
 
-1. This prompt encourages setting a stoploss when buying options to manage risk. You can proceed without setting one, but Zerodha recommends a GTT stoploss (5–10% is a reasonable starting point). Remember to cancel open GTT stoploss orders when you directly exit the position to avoid unintended positions..
-
+1. Explain that the prompt encourages a stoploss when buying options. Client can proceed without setting one, but Zerodha recommends a GTT stoploss (5–10% is a reasonable starting point).  
+2. Remind client to cancel open GTT stoploss orders when directly exiting the position to avoid unintended positions.  
+3. Share GTT stoploss article from A8 for more details.

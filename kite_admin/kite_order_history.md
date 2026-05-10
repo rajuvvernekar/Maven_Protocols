@@ -26,369 +26,330 @@ When clients:
 
 TRIGGER KEYWORDS: "order history", "past order", "previous order", "old order", "trade history", "order on [date]", "last week order", "order rejected yesterday", "why was my order", "SIP order history", "ATO order", "basket order history", "GTT triggered order", "auto squared off", "squared off order", "execution time", "filled quantity", "rejection reason", "order status", "AMO order history", "iceberg order history", "intraday or delivery", "buy average FIFO", "who placed this order"
 
+TAGS: orders
+
 ## Protocol
 
-# KITE ORDER HISTORY PROTOCOL 
+# KITE ORDER HISTORY PROTOCOL
 
-
----
+## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-This tool returns **orders for a date range** (from_date to to_date). For today's live orders, use `kite_orders`.
-
-Orders follow price-time priority: first come, first served at same price.
-
-Zerodha pre-validates orders — some rejections won't appear in order book (shown in status notification only).
-
-Execution time beyond market hours = exchange reconciliation after connectivity issues, not actual execution beyond hours.
-
+- For today's live orders, invoke `kite_orders`.  
+- Orders follow price-time priority: first come, first served at same price.  
+- Zerodha pre-validates orders — some rejections won't appear in order book (shown in status notification only).  
+- Execution time beyond market hours = exchange reconciliation after connectivity issues, not actual execution beyond hours.
 
 ### A2 — Field Usage Rules
 
-**Shareable fields:**
+**Shareable with client:**
 
-`client_id` | `created_at` | `instrument` | `type` | `product` | `exchange` | `total_quantity` | `filled_quantity` | `price` | `average_price` | `trigger_price` | `order_type` | `order_status` | `order_timestamp` | `exchange_timestamp` | `order_timestamp_date` | `rejection_reason` | `disclosed_quantity` | `cancelled_quantity` | `basket` | `sip` | `ato` | `gttp_sl_percentage` | `gttp_trgt_percentage`
+| Field | Interpretation |  
+|---|---|  
+| `created_at` | Order creation timestamp |  
+| `instrument` | Tradingsymbol |  
+| `type` | BUY/SELL |  
+| `product` | CNC/MIS/NRML/MTF/CO |  
+| `exchange` | Exchange |  
+| `total_quantity` | Total quantity |  
+| `filled_quantity` | Executed quantity |  
+| `price` | Price |  
+| `average_price` | Average execution price |  
+| `trigger_price` | SL trigger price |  
+| `order_type` | MARKET/LIMIT/SL/SL-M |  
+| `order_status` | Status |  
+| `order_timestamp` | Order time |  
+| `exchange_timestamp` | Exchange time |  
+| `order_timestamp_date` | Order date |  
+| `rejection_reason` | Rejection reason |  
+| `disclosed_quantity` | Disclosed qty |  
+| `cancelled_quantity` | Cancelled qty |  
+| `basket` | Basket name |  
+| `sip` | SIP indicator |  
+| `ato` | ATO indicator |  
+| `gttp_sl_percentage` | GTT SL % |  
+| `gttp_trgt_percentage` | GTT target % |
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+**Non-shareable:**
 
-`placed_by` | `variety` | `gtt` | `app_id`
-
-**Client-facing terminology:**
-
-| Internal Term | Client-Facing Alternative |
-|---|---|
-| `placed_by` = ADMINSQF or starts with "rms" | "executed by Zerodha's risk management system" |
-| `placed_by` = client ID | (normal client order — do not mention the field) |
-| `gtt` field with trigger ID | "this order was triggered by your GTT" (cross-verify via kite_gtt / kite_gtt_archived) |
-| `app_id` = "GTT Orders" | (secondary GTT confirmation — do not expose) |
-| `variety` | (use to identify AMO, CO, iceberg internally — do not expose field name) |
-
-**Additional internal-only fields** (not for client communication):
-
-`validity` | `parent_order_id` | `order_id` | `exchange_id` | `validity_ttl` | `silo` | `basket_id` | `tags` | `gttp` | `order_result_id`
-
+| Field | Interpretation |  
+|---|---|  
+| `client_id` | Internal client identifier |  
+| `placed_by` | Interpret per **A8** |  
+| `variety` | Identifies order subtype (AMO, CO, iceberg) — for internal routing only |  
+| `gtt` | GTT trigger ID — order was placed by a GTT trigger |  
+| `app_id` | GTT Orders or third-party API app identifier — for internal routing only |  
+| `validity` | Internal validity |  
+| `parent_order_id` | Internal — iceberg parent reference |  
+| `order_id` | Internal reference |  
+| `exchange_id` | Internal reference |  
+| `validity_ttl` | Internal TTL |  
+| `silo` | Internal |  
+| `basket_id` | Internal |  
+| `tags` | Internal tags |  
+| `gttp` | Internal |  
+| `order_result_id` | Internal |
 
 ### A3 — Order Statuses
 
-| Status | Meaning |
-|---|---|
-| Complete | Fully executed — all quantity filled |
-| Open | Pending execution — limit not hit, in queue, or circuit hit |
-| Cancelled | By user, exchange end-of-session, IOC unfilled, or LPP range violation |
+| Status | Meaning |  
+|---|---|  
+| Complete | Fully executed — all quantity filled |  
+| Open | Pending execution — limit not hit, in queue, or circuit hit |  
+| Cancelled | By user, exchange end-of-session, IOC unfilled, or LPP range violation |  
 | Rejected | Failed validation — check `rejection_reason` |
-
 
 ### A4 — Product Types
 
-| Product | Description |
-|---|---|
-| CNC | Delivery — equity only, no leverage, no auto square-off |
-| MIS | Intraday — leveraged, auto squared off |
-| NRML | Overnight — F&O carry till expiry, full margin |
-| MTF | Margin Trading Facility — delivery with leverage |
+| Product | Description |  
+|---|---|  
+| CNC | Delivery — equity only, no leverage, no auto square-off |  
+| MIS | Intraday — leveraged, auto squared off per **A6** |  
+| NRML | Overnight — F&O carry till expiry, full margin |  
+| MTF | Margin Trading Facility — delivery with leverage |  
 | CO | Cover Order — intraday with compulsory SL, cannot convert |
-
 
 ### A5 — Order Limits
 
-| Limit | Value |
-|---|---|
-| Max orders per day | 5,000 across all segments |
-| Max orders per minute | 400 |
-| Max modifications per order | 25 |
-| Max order value (equity) | ₹10 Crore |
+| Limit | Value |  
+|---|---|  
+| Max orders per day | 5,000 across all segments |  
+| Max orders per minute | 400 |  
+| Max modifications per order | 25 |  
+| Max order value (equity) | ₹10 Crore |  
 | Max quantity (equity) | 1,00,000 |
-
 
 ### A6 — Auto Square-Off
 
-| Segment | Time |
-|---|---|
-| Equity | 3:25 PM |
-| Equity F&O | 3:26 PM |
+| Segment | Time |  
+|---|---|  
+| Equity | 3:25 PM |  
+| Equity F&O | 3:26 PM |  
 | MCX | 10 min before market close |
 
-**Charge:** ₹50 + 18% GST per order. **Failure:** MIS converts to CNC/NRML, client must close next day. CO positions cannot be converted.
-
+- Charge: ₹50 \+ 18% GST per order. Failure: MIS converts to CNC/NRML, client must close next day. CO positions cannot be converted.
 
 ### A7 — Unmatched Order Cancellation Times
 
-| Segment | Auto-Cancel Time |
-|---|---|
-| Equity | 4:00 PM |
-| Currency | 5:00 PM |
+| Segment | Auto-Cancel Time |  
+|---|---|  
+| Equity | 4:00 PM |  
+| Currency | 5:00 PM |  
 | MCX | Market close (Nov–Mar 11:55 PM, Mar–Nov 11:30 PM — DST shift) |
-
 
 ### A8 — `placed_by` Values
 
-| Value | Meaning |
-|---|---|
-| Client ID (6-char) | Normal client-placed order |
-| ADMINSQF | Auto square-off by Zerodha RMS |
-| Starts with "rms" + number | Squared off by Zerodha RMS |
-
+| Value | Meaning |  
+|---|---|  
+| Client ID (6-char) | Normal client-placed order |  
+| ADMINSQF | Auto square-off by Zerodha RMS |  
+| Starts with "rms" \+ number | Squared off by Zerodha RMS |
 
 ### A9 — Common Rejections
 
-| Rejection | Meaning | Resolution |
-|---|---|---|
-| Insufficient margin | Not enough margin | Cross-check `kite_margins`. Add funds. Can still exit. |
-| Negative cash | MTM losses | Add cash. Can still exit existing positions. |
-| Max order value | Exceeds ₹10 Crore | Split, use iceberg or basket. |
-| Max quantity | Exceeds 1,00,000 | Reduce qty, use iceberg or basket. |
-| Trigger price invalid | SL buy: trigger ≤ limit. SL sell: trigger ≥ limit. | Correct and retry. |
-| SL trigger-limit gap | Exceeds exchange range | Narrow the gap. |
-| LPP range | Price outside protection range | Retry closer to market price. |
-| Theoretical price | Option too far from theoretical | Place closer to theoretical. |
-| Ban period | F&O in ban | Exit only, no new positions/intraday. |
-| Exchange restricted | Account restricted | New account (3 days), KRA pending, NRI status. |
-| SL-M on BSE | Discontinued | Use SL-L instead. |
-| OI restriction | Broker OI cap (NRML blocked) | MIS allowed. Consider Orbis custodial. |
-| Currency position limit | Client limit exceeded | USDINR 85K, EURINR/GBPINR 5K, JPYINR 2K. |
-| MTF sell conflict | Open CNC/MTF sell for same stock | Buy via CNC instead. |
-| Market order blocked | Stock options, T2T, debt, illiquid/deep ITM, zero-volume | Use limit order. |
+| Rejection | Meaning | Resolution |  
+|---|---|---|  
+| Insufficient margin | Not enough margin | Invoke `kite_margins`. Add funds. Can still exit. |  
+| Negative cash | MTM losses | Add cash. Can still exit existing positions. |  
+| Max order value | Exceeds ₹10 Crore | Split, use iceberg or basket. |  
+| Max quantity | Exceeds 1,00,000 | Reduce qty, use iceberg or basket. |  
+| Trigger price invalid | SL buy: trigger ≤ limit. SL sell: trigger ≥ limit. | Correct and retry. |  
+| SL trigger-limit gap | Exceeds exchange range | Narrow the gap. |  
+| LPP range | Price outside protection range | Retry closer to market price. |  
+| Theoretical price | Option too far from theoretical | Place closer to theoretical. |  
+| Ban period | F&O in ban | Exit only, no new positions/intraday. |  
+| Exchange restricted | Account restricted | New account (3 days), KRA pending, NRI status. |  
+| SL-M on BSE | Discontinued | Use SL-L instead. |  
+| OI restriction | Broker OI cap (NRML blocked) | MIS allowed. Consider Orbis custodial. |  
+| Currency position limit | Client limit exceeded | USDINR 85K, EURINR/GBPINR 5K, JPYINR 2K. |  
+| MTF sell conflict | Open CNC/MTF sell for same stock | Buy via CNC instead. |  
+| Market order blocked | Stock options, T2T, debt, illiquid/deep ITM, zero-volume | Use limit order. |  
 | MIS blocked | T2T, ASM/GSM, low-liquidity, high-VAR, ban period | Use CNC or NRML. |
-
 
 ### A10 — AMO Rules
 
-| Rule | Detail |
-|---|---|
-| NSE/BSE equity window | 4:00 PM – 8:58 AM |
-| F&O window | 3:45 PM – 9:10 AM |
-| MCX window | 5:00 PM – 9:10 AM |
-| AMO market for index options | Blocked — use limit |
-| Pre-open AMO market | Converts to limit at equilibrium/previous close |
+| Rule | Detail |  
+|---|---|  
+| NSE/BSE equity window | 4:00 PM – 8:58 AM |  
+| F&O window | 3:45 PM – 9:10 AM |  
+| MCX window | 5:00 PM – 9:10 AM |  
+| AMO market for index options | Blocked — use limit |  
+| Pre-open AMO market | Converts to limit at equilibrium/previous close |  
 | Sell AMO without DDPI/POA | T-day stocks: only after 6:30 AM next day. Delivered stocks: after 5 PM. |
-
 
 ### A11 — Special Order Types
 
-| Field | Value | Meaning |
-|---|---|---|
-| `sip` | "Yes" | SIP order — must use Regular CNC + market/limit |
-| `ato` | "Yes" | ATO (alert-triggered) — order slicing not supported, qty within freeze limit |
-| `basket` | basket name | Part of a basket — each order validated independently |
-| `gtt` | trigger ID | GTT-triggered order — cross-verify via kite_gtt / kite_gtt_archived |
+| Field | Value | Meaning |  
+|---|---|---|  
+| `sip` | "Yes" | SIP order — must use Regular CNC \+ market/limit |  
+| `ato` | "Yes" | ATO (alert-triggered) — order slicing not supported, qty within freeze limit |  
+| `basket` | basket name | Part of a basket — each order validated independently |  
+| `gtt` | trigger ID | GTT trigger ID — order was placed by a GTT trigger |  
 | `variety` = "iceberg" | — | Iceberg — `parent_order_id` links child orders to parent |
-
 
 ### A12 — Intraday Identification Logic
 
-| Pattern | Classification |
-|---|---|
-| MIS or CO product | Intraday trade |
-| CNC with only BUY (no same-day SELL) | Delivery / long-term |
-| CNC with BUY + SELL same instrument same qty same day | Intraday round-trip (speculative, not delivery) |
-| NRML | Overnight F&O position |
-| MTF | Margin Trading Facility (delivery with leverage) |
-| BUY (MIS) + SELL by ADMINSQF/rms | Intraday auto squared off |
+| Pattern | Classification |  
+|---|---|  
+| MIS or CO product | Intraday trade |  
+| CNC with only BUY (no same-day SELL) | Delivery / long-term |  
+| CNC with BUY \+ SELL same instrument same qty same day | Intraday round-trip (speculative, not delivery) |  
+| NRML | Overnight F&O position |  
+| MTF | Margin Trading Facility (delivery with leverage) |  
+| BUY (MIS) \+ SELL by ADMINSQF/rms | Intraday auto squared off |
 
-**Exception:** T2T stocks — same-day buy+sell treated as delivery, buy average updates to latest buy price.
-
-**F&O buy average:** FIFO across product types (MIS + NRML combined). Earliest buy matches first sell.
-
-**Equity CNC sell + rebuy same day:** Original buy average unchanged. Same-day round-trip = speculative per income tax rules.
-
+- Exception: T2T stocks — same-day buy+sell treated as delivery, buy average updates to latest buy price.  
+- F&O buy average: FIFO across product types (MIS \+ NRML combined). Earliest buy matches first sell.  
+- Equity CNC sell \+ rebuy same day: Original buy average unchanged. Same-day round-trip = speculative per income tax rules.
 
 ### A13 — Links
 
-| Topic | URL |
-|---|---|
-| Margin calculator | zerodha.com/margin-calculator |
-| Market intelligence bulletin | zerodha.com/marketintel/bulletin |
+| Topic | URL |  
+|---|---|  
+| Margin calculator | zerodha.com/margin-calculator |  
+| Market intelligence bulletin | zerodha.com/marketintel/bulletin |  
 | SEBI retail algo compliance | https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest |
 
+### A14 — Escalation Data
 
-### A14 — Escalation Data Template
+Include when escalating to human agent: client ID, instrument, date, order details, and specific issue.
 
-When escalating, always include: **client ID, instrument, date, order details, and specific issue.**
+## Section B: Decision Flow
 
+### Routing
 
----
-
-### Preflight (run on every query)
-
+```  
+Route by scenario  
+   ├─ Order status check (any) → Rule 1  
+   ├─ Order complete — execution / price questions → Rule 2  
+   ├─ Order rejected → Rule 3  
+   ├─ placed_by = ADMINSQF or "rms" prefix → Rule 4  
+   ├─ Order open in history (unusual) → Rule 5  
+   ├─ Order cancelled → Rule 6  
+   ├─ "I didn't place this order" → Rule 7  
+   ├─ SIP order investigation → Rule 8  
+   ├─ ATO order investigation → Rule 9  
+   ├─ AMO order behavior → Rule 10  
+   ├─ Basket order investigation → Rule 11  
+   ├─ Execution time beyond market hours → Rule 12  
+   ├─ F&O buy average / intraday identification → Rule 13  
+   ├─ Multiple orders for same instrument → Rule 14  
+   ├─ No matching orders found → Rule 15  
+   └─ app_id is numerical (third-party API) and rejection/rate limit query → Rule 16  
 ```
-1. Locate order(s) by instrument + date range.
-2. Check placed_by internally:
-   └─ ADMINSQF or starts with "rms" → route to Rule 4 (RMS square-off).
-3. Check gtt internally:
-   └─ If GTT trigger ID present → cross-verify via kite_gtt / kite_gtt_archived.
-      Scope investigation to GTT trigger date only — subsequent orders
-      are independent client actions.
-4. If customer asks about today's live orders → invoke kite_orders.
-5. Check app_id internally:
-   └─ If app_id is a numerical value (not "Kite Web", "Kite iOS",
-      or other named Kite apps) → order was placed via a third-party
-      API application. If query relates to rejection or rate limiting,
-      route to Rule 16.
-```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Order status check (complete/open/cancelled/rejected)       → Rule 1
-Order complete — execution details / price questions        → Rule 2
-Order rejected                                              → Rule 3
-RMS / admin square-off                                      → Rule 4
-Order open in history (unusual)                             → Rule 5
-Order cancelled                                             → Rule 6
-"I didn't place this order"                                 → Rule 7
-SIP order investigation                                     → Rule 8
-ATO order investigation                                     → Rule 9
-AMO order behavior                                          → Rule 10
-Basket order investigation                                  → Rule 11
-Execution time beyond market hours                          → Rule 12
-F&O buy average / intraday identification                   → Rule 13
-Multiple orders for same instrument                         → Rule 14
-No matching orders found                                    → Rule 15
-API order rejection or rate limiting (app_id = numerical)   → Rule 16
-```
-
-### Scope
-
-- Address the client's query about historical orders — status, execution, rejections, special order types, and buy average.
-- Use **A2** field rules and client-facing terminology in all client communication.
-- For today's live orders, redirect to `kite_orders`.
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A14**.
+If no root cause found after completing all diagnostic steps → escalate to human agent per **A14**.
 
-
----
+## Section C: Rules
 
 ### Rule 1 — Order Status Check
 
-1. Locate by instrument + date.
-2. Share: instrument, type, order_type, order_status, total_quantity, filled_quantity, average_price (if COMPLETE), exchange_timestamp.
-3. Check `placed_by` internally → ADMINSQF/rms → Rule 4.
-4. Check `gtt` internally → GTT ID present → cross-verify via `kite_gtt` / `kite_gtt_archived`. Scope to trigger date only.
-5. Check `app_id` internally → numerical value → if rejection or rate limit query, route to Rule 16.
+1. Locate by instrument \+ date.  
+2. Share: `instrument`, `type`, `order_type`, `order_status`, `total_quantity`, `filled_quantity`, `average_price` (if COMPLETE), `exchange_timestamp`.  
+3. Check `placed_by` internally → ADMINSQF/rms → Rule 4.  
+4. Check `gtt` internally → GTT ID present → invoke `kite_gtt` or `kite_gtt_archived` scoped to the trigger date.  
+5. Check `app_id` internally → numerical value → if rejection or rate limit query, route to Rule 16.  
 6. Route by status: COMPLETE → Rule 2, REJECTED → Rule 3, OPEN → Rule 5, CANCELLED → Rule 6.
-
 
 ### Rule 2 — Order Complete
 
-1. Your [type] order for [total_quantity] qty of [instrument] was executed at ₹[average_price] on [exchange_timestamp]..
-2. Price discrepancy:
-   a. Market order → **A15-R2**.
-   b. Limit at better price → **A15-R3**.
-   c. Client wanted breakout → **A15-R4**. Invoke `kite_gtt` if interested.
-   d. SL trigger dispute → **A15-R5**.
-3. Partial fill → **A15-R6**.
+1. Confirm: `type` order for `total_quantity` of `instrument` was executed at `average_price` on `exchange_timestamp`.  
+2. Price discrepancy:  
+   a. Market order → market orders fill at the best available price.  
+   b. Limit at better price → limit orders guarantee the price as the worst, not the exact price.  
+   c. Client wanted breakout → use SL or GTT instead. Invoke `kite_gtt` if interested.  
+   d. SL trigger dispute → charts show snapshots; actual market price determines execution.  
+3. Partial fill → check `filled_quantity` < `total_quantity`; share `cancelled_quantity`.  
 4. Where are bought shares? → invoke `kite_holdings` (settled) or `kite_positions` (same day / F&O).
-
 
 ### Rule 3 — Order Rejected
 
-1. Read `rejection_reason`, match against **A9**.
-2. For margin rejections → invoke `kite_margins`.
-3. For ban period → if client asks about current position → invoke `kite_positions`.
-4. If `app_id` is a numerical value and rejection relates to market protection, rate limit, or IOC on MCX → route to Rule 16.
+1. Read `rejection_reason`, match against **A9**.  
+2. For margin rejections → invoke `kite_margins`.  
+3. For ban period → if client asks about current position → invoke `kite_positions`.  
+4. If `app_id` is numerical and rejection relates to market protection, rate limit, or IOC on MCX → route to Rule 16.  
 5. For unmatched rejection → share `rejection_reason` verbatim.
-
 
 ### Rule 4 — RMS / Admin Square-Off
 
-1. `placed_by` = ADMINSQF or starts with "rms" (per **A8**).
-2. Invoke `kite_margins` to check margin shortfall.
-3. Check if MIS + near auto square-off time (per **A6**).
-4. Check for negative cash balance.
-5. This [type] order for [instrument] was executed by Zerodha's risk management system on [exchange_timestamp]. This typically happens when:
-- Your account had insufficient margin to maintain the position
-- It was an intraday (MIS) position auto squared off at the scheduled time (Equity 3:25 PM, F&O 3:26 PM, MCX 10 min before close)
-- Your account had a negative cash balance requiring position closure
-
-Auto square-off charge: ₹50 + 18% GST per order..
-6. If MIS carried forward (square-off failed) → Auto square-off may fail due to circuit limits, system failures, or connectivity issues. When this happens, MIS converts to CNC (equity) or NRML (F&O) and carries forward. You must close the position on the next trading day..
-
+1. `placed_by` = ADMINSQF or starts with "rms" per **A8**.  
+2. Invoke `kite_margins` to check margin shortfall.  
+3. Check if MIS \+ near auto square-off time per **A6**.  
+4. Check for negative cash balance.  
+5. Order was executed by Zerodha's risk management system on `exchange_timestamp`. Typical reasons: insufficient margin to maintain position; intraday (MIS) auto squared off at scheduled time per **A6**; negative cash balance requiring closure.  
+6. If MIS carried forward after square-off failure → failure can occur due to circuit limits, system failures, or connectivity. MIS converts to CNC/NRML per **A6** — client must close next trading day.
 
 ### Rule 5 — Order Open in History
 
-1. Unusual in history — likely later cancelled at session end.
-2. Check for corresponding CANCELLED entry for same instrument/date. If found → apply Rule 6.
-3. If genuinely open → Unmatched pending orders are auto-cancelled by the exchange at session end.. Times per **A7**.
-
+1. Unusual in history — likely later cancelled at session end.  
+2. Check for corresponding CANCELLED entry for same instrument/date. If found → Rule 6.  
+3. If genuinely open → auto-cancelled at session end per **A7**.
 
 ### Rule 6 — Order Cancelled
 
-1. Cancelled near session end → Unmatched pending orders are auto-cancelled by the exchange at session end. Place again next session, or use GTT for orders valid up to 1 year.. Times per **A7**. Invoke `kite_gtt` if client wants persistent order.
-2. LPP/price range → Exchange cancelled your order — price was outside the allowed range. Retry closer to market price..
-3. Partial fill + cancelled remainder → Partially filled: [filled_quantity] of [total_quantity] executed at ₹[average_price]. Remaining [cancelled_quantity] was cancelled..
-4. IOC → IOC orders auto-cancel any unfilled portion immediately..
-
+1. Cancelled near session end → auto-cancelled at session end per **A7**. Suggest re-placing next session, or use GTT for orders valid up to 1 year. Invoke `kite_gtt` if client wants persistent order.  
+2. LPP/price range → exchange cancelled order — price was outside the allowed range. Retry closer to market price.  
+3. Partial fill \+ cancelled remainder → partially filled, share `filled_quantity` of `total_quantity` at `average_price`. Remaining `cancelled_quantity` was cancelled.  
+4. IOC → IOC orders auto-cancel any unfilled portion immediately.
 
 ### Rule 7 — Unauthorized ("I Didn't Place This")
 
-1. Check `placed_by`:
-   a. ADMINSQF/rms → apply Rule 4.
-   b. Client's own ID → This order appears to have been placed from your account. For security, we're escalating this for investigation. Please also check if any third-party apps have Kite Connect API access, and consider blocking your account if you suspect unauthorized activity.. Escalate to support agent, investigation required.
-
+1. Check `placed_by`:  
+   a. ADMINSQF/rms → apply Rule 4.  
+   b. Client's own ID → order appears placed from client's account. Escalate to human agent per **A14** for investigation. Suggest checking third-party Kite Connect API access; consider blocking account if unauthorized.
 
 ### Rule 8 — SIP Order Investigation
 
-1. `sip` = "Yes" or client asks about SIP failure.
-2. If REJECTED → share reason. Common: wrong product (must be Regular CNC), insufficient margin, instrument blocked, qty exceeded.
-3. If COMPLETE → share execution details per Rule 2.
-4. If no order found → SIP may not have triggered. Check that: basket is linked to SIP, product type is Regular CNC, order type is market or limit. Also check your registered email — Zerodha sends a SIP summary email with rejection reasons if the order failed..
-
+1. `sip` = "Yes" or client asks about SIP failure.  
+2. If REJECTED → share reason. Common: wrong product (must be Regular CNC), insufficient margin, instrument blocked, qty exceeded.  
+3. If COMPLETE → share execution details per Rule 2.  
+4. If no order found → SIP may not have triggered. Verify: basket linked to SIP, product type Regular CNC, order type market or limit. Check registered email — Zerodha sends a SIP summary email with rejection reasons.
 
 ### Rule 9 — ATO Order Investigation
 
-1. `ato` = "Yes" or client asks about ATO.
-2. If REJECTED → share reason + ATO orders place automatically when your Kite alert triggers. Order slicing is not available — quantity must be within the exchange freeze limit..
-
+1. `ato` = "Yes" or client asks about ATO.  
+2. If REJECTED → share reason. ATO orders place automatically when Kite alert triggers. Order slicing not supported — quantity must be within exchange freeze limit.
 
 ### Rule 10 — AMO Order Behavior
 
-1. Use `variety` internally to confirm AMO. Rules per **A10**.
-2. AMO market for index options → blocked, use limit.
-3. Pre-open AMO market → converts to limit at equilibrium/previous close.
-4. Sell AMO without DDPI/POA: T-day stocks → after 6:30 AM next day; delivered → after 5 PM.
-
+1. AMO market for index options → blocked per **A10**, use limit.  
+2. Pre-open AMO market → converts to limit at equilibrium/previous close per **A10**.  
+3. Sell AMO without DDPI/POA → per **A10**: T-day stocks after 6:30 AM next day; delivered after 5 PM.
 
 ### Rule 11 — Basket Order Investigation
 
-1. `basket` field has a value → This order was part of basket '[basket]'. Basket orders execute individually — each is subject to its own margin and exchange validation. Some may succeed while others fail..
-
+1. `basket` field has a value → order was part of a basket. Basket orders execute individually — each subject to its own margin and exchange validation. Some may succeed while others fail.
 
 ### Rule 12 — Execution Time Beyond Market Hours
 
-1. The displayed time reflects exchange reconciliation after a connectivity disruption. Your order was executed within market hours. Check the tradebook for actual execution time..
-
+1. Displayed time reflects exchange reconciliation after a connectivity disruption per **A1**. Order was executed within market hours. Direct client to tradebook for actual execution time.
 
 ### Rule 13 — F&O Buy Average / Intraday Identification
 
-1. **F&O buy average:** FIFO across MIS + NRML combined. Per **A12**.
-2. **Equity CNC sell + rebuy same day:** Original avg unchanged — speculative per income tax rules. Exception: T2T stocks. Per **A12**.
-3. **Identifying intraday:** Use patterns from **A12**.
-4. **MIS sell instead of CNC:** If client sold under MIS while holding CNC shares → the MIS sell created a fresh short intraday position, not a delivery exit. CNC holdings remain. MIS position auto-squared off at 3:25 PM. Your sell order for [instrument] was placed under MIS (intraday) instead of CNC (delivery). An MIS sell does not exit your CNC delivery holdings — it creates a fresh short intraday position. Your CNC holdings of [instrument] remain intact. The MIS short position was auto-squared off at 3:25 PM by buying back the shares, so you still hold your original shares. To sell delivery holdings, use CNC as the product type when placing the sell order..
+1. F&O buy average: FIFO across MIS \+ NRML combined per **A12**.  
+2. Equity CNC sell \+ rebuy same day: per **A12**.  
+3. Identifying intraday: use patterns from **A12**.  
+4. MIS sell instead of CNC: if client sold under MIS while holding CNC shares → MIS sell created a fresh short intraday position, not a delivery exit. CNC holdings remain. MIS auto-squared off per **A6**. To sell delivery holdings, use CNC.  
 5. If client asks about current buy average → invoke `kite_holdings`. Current positions → invoke `kite_positions`.
-
 
 ### Rule 14 — Multiple Orders for Same Instrument
 
-1. [N] orders found for [instrument] on [date]. — summarize count, list each with type/order_type/product/status/quantity/price.
+1. Summarize count and list each with `type`, `order_type`, `product`, `order_status`, `quantity`, `price`.  
 2. Use **A12** to identify trade type from product and buy/sell pairing.
-
 
 ### Rule 15 — No Matching Orders Found
 
-1. No orders found for [instrument] between [from_date] and [to_date]. Please verify the instrument name, exchange, and date range. Orders rejected pre-exchange (before reaching exchange) may not appear in history..
-
+1. No orders found for instrument between `from_date` and `to_date`. Direct client to verify instrument name, exchange, and date range. Orders rejected pre-exchange may not appear in history.
 
 ### Rule 16 — API Order Issues (SEBI Retail Algo Rules)
 
-Applies when `app_id` is a numerical value (indicating a third-party Kite Connect API application — not "Kite Web", "Kite iOS", or other named Kite apps).
+1. Rate limit (429 response): API application exceeded the 10 orders-per-second rate limit. Per SEBI retail algo regulations. To place more than 10 orders per second, the trading strategy must be registered with the stock exchange. Link per **A13**.  
+2. Market protection rejection: market and SL-M orders placed via API with market protection set to 0 are rejected. Mandated by exchanges for all algo orders. Use limit order or set an appropriate market protection value. Link per **A13**.  
+3. MCX IOC rejection: MCX does not support IOC validity in the algo segment. Orders via third-party API on MCX with IOC validity will be rejected. Use DAY validity instead.  
+4. Order slicing: API order slicing should be capped at a maximum of 10 slices to stay within the 10 orders-per-second rate limit.  
+5. For details on all SEBI retail algo compliance, share link from **A13**.
 
-1. **Rate limit (429 response):** The client's API application exceeded the 10 orders-per-second rate limit. Orders placed via third-party API applications are subject to a rate limit of 10 orders per second as per SEBI's retail algo regulations. Your order received a 429 response because it exceeded this limit. To place more than 10 orders per second, the trading strategy must be registered with the stock exchange. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest). To place more than 10 orders per second, the strategy must be registered with the stock exchange.
-2. **Market protection rejection:** Market orders and SL-M orders placed via API with market protection set to 0 are rejected. Orders placed via third-party API applications require market protection to be enabled. Orders with market protection set to 0 are rejected — this includes SL-M orders. This is mandated by the exchanges for all algo orders. Use a limit order or set an appropriate market protection value. For details: [SEBI retail algo compliance](https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest). The client must set an appropriate market protection value, or use limit orders.
-3. **MCX IOC rejection:** MCX does not support IOC validity in the algo segment. MCX does not support IOC (Immediate-or-Cancel) orders in the algo segment. Orders placed via third-party API applications on MCX with IOC validity will be rejected. Use DAY validity instead.. The client must use DAY validity for MCX orders via API.
-4. **Order slicing:** API order slicing should be capped at a maximum of 10 slices to stay within the 10 orders-per-second rate limit.
-5. For details on all SEBI retail algo compliance requirements, share the link from **A13**.
+# # ACCOUNT MODIFICATION REPORT

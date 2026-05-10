@@ -1,5 +1,7 @@
 # console_eq_tradebook
 
+> **DEPRECATED (2026-05-10).** Maven now uses `console_eq_tradebook_prepared` for all date ranges. This tool is no longer wired into Maven and has been removed from `tool_registry.md`. File retained in repo for git history.
+
 ## Description
 
 WHEN TO USE:

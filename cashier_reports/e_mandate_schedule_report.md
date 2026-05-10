@@ -15,149 +15,115 @@ When clients:
 
 TRIGGER KEYWORDS: "schedule", "auto debit not happening", "debit date", "credit date", "delete schedule", "cancel schedule", "schedule error", "no debit", "SIP failed mandate active", "schedule not created", "stop auto debit"
 
+TAGS: funds, investments
+
 ## Protocol
 
-# E MANDATE SCHEDULE REPORT PROTOCOL 
+# E MANDATE SCHEDULE REPORT PROTOCOL
 
-
----
+## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-This tool shows **eMandate schedule configuration** — the amount, date, frequency, and status of auto-debit schedules that transfer funds from the client's bank to their Kite trading account.
-
-Bank debits 1 working day before the scheduled credit date. If the credit date falls on a non-business day (weekend/holiday), the debit shifts to 1 day before the non-business day.
-
-Failed debits are not retried — client must add funds manually. Mandate must be active before creating schedules.
-
+- Bank debits 1 working day before the scheduled credit date. If the credit date falls on a non-business day (weekend/holiday), the debit shifts to 1 day before the non-business day.  
+- Failed debits are not retried — client must add funds manually. Mandate must be active before creating schedules.  
+- Stock SIPs deduct from Kite balance, not directly from bank — eMandate funds the Kite account in advance.
 
 ### A2 — Field Usage Rules
 
-**Shareable fields:**
+**Shareable with client:**
 
-`next_date` (communicate as "next credit date")
+| Field | Interpretation |  
+|---|---|  
+| `next_date` | Next credit date — communicate as "next credit date" or "next scheduled date" |  
+| `next_debit_date` | Internal — explain to client as "your bank debits 1 working day before the credit date" |  
+| `active` | Use for routing only — describe outcome, not the raw value |
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+**Non-shareable:**
 
-`name` | `creation` | `tag` | `start_date` | `schedule_date` | `next_debit_date` | `deactivation_date` | `active`
-
-**Client-facing terminology:**
-
-| Internal Term | Client-Facing Alternative |
-|---|---|
-| `next_date` | "next credit date" or "next scheduled date" |
-| `next_debit_date` | (omit — internal; explain as "your bank debits 1 working day before the credit date") |
-| `active` field value | (use for routing only — describe outcome, not the raw value) |
-
+| Field | Interpretation |  
+|---|---|  
+| `name` | Internal schedule name |  
+| `creation` | Schedule creation timestamp |  
+| `tag` | Schedule tag |  
+| `start_date` | Internal start date |  
+| `schedule_date` | Internal schedule date |  
+| `deactivation_date` | Internal deactivation date |
 
 ### A3 — Status Values
 
-| Status | Meaning |
-|---|---|
-| Active | Schedule active — will trigger on `next_date` |
-| Deleted | Deleted — no further debits |
-
+| Status | Meaning |  
+|---|---|  
+| Active | Schedule active — will trigger on `next_date` |  
+| Deleted | Deleted — no further debits |  
+| Other | Deletion or state change in progress |
 
 ### A4 — Key Limits & Rules
 
-| Item | Detail |
-|---|---|
-| Max per schedule | ₹1 lakh |
-| Max cumulative per day | ₹1 crore across multiple schedules |
-| Cancellation advance notice | 3+ working days before next credit date (4 for SBI) |
-| Post-cancel confirmed debit | Already-confirmed debit still executes; future ones stop. Funds can be withdrawn. |
-| Failed debit | Not retried — add funds manually |
-
+| Item | Detail |  
+|---|---|  
+| Max per schedule | ₹1 lakh |  
+| Max cumulative per day | ₹1 crore across multiple schedules |  
+| Cancellation advance notice | 3+ working days before ‘next_date’ (4 for SBI) |  
+| Post-cancel confirmed debit | Already-confirmed debit still executes; future ones stop. Funds can be withdrawn. |  
+| Failed debit | Not retried — add funds manually |  
+| Recommended eMandate credit date before SIP | 2–3 days before SIP date |
 
 ### A5 — Links
 
-| Topic | URL |
-|---|---|
-| Mandate & schedule management | console.zerodha.com/funds/mandates |
+| Topic | URL |  
+|---|---|  
+| Mandate & schedule management | console.zerodha.com/funds/mandates |  
+| How to create an eMandate schedule | https://support.zerodha.com/category/funds/mandate/how-to-set-up-emandates/articles/schedule-emandate-transactions |
 
+### A6 — Escalation Triggers
 
-### A6 — Escalation Data Template
+When escalating, always include: client ID, schedule details, and specific issue.
 
-When escalating, always include: **client ID, schedule details, and specific issue.**
+## Section B: Decision Flow
 
+### Routing
 
----
-
-### Preflight (run on every query)
-
+```  
+Route by scenario  
+   ├─ Auto-debit not happening \+ mandate active \+ no active schedule → Rule 1  
+   ├─ Schedule status check (active / deleted) → Rule 2  
+   ├─ SIP failed despite active mandate \+ active schedule → Rule 3  
+   ├─ Error deleting schedule → Rule 4  
+   └─ Cancelled schedule but bank still debited → Rule 5  
 ```
-1. Verify mandate is active first (via e_mandate_report)
-   └─ If mandate not active → mandate issue, not schedule issue.
-      Use e_mandate_report protocol.
-
-2. Check if any active schedule exists for this client.
-```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Auto-debit not happening + mandate active + no schedule     → Rule 1
-Schedule status check (active / deleted)                    → Rule 2
-Why was debit before scheduled date (date confusion)        → Rule 3
-Scheduled date changed / shifted unexpectedly               → Rule 4
-SIP failed despite active mandate + active schedule         → Rule 5
-Error deleting schedule                                     → Rule 6
-Cancelled schedule but bank still debited                   → Rule 7
-```
-
-### Scope
-
-- Address the client's query about eMandate schedule configuration, timing, and deletion.
-- Use **A2** field rules and client-facing terminology in all client communication.
-- For mandate-level issues (activation, creation, cancellation), use `e_mandate_report` protocol. For debit transaction issues, use `auto_debit_payins` protocol.
 
 ### Fallback
 
-If no route matches, check `e_mandate_report` and `auto_debit_payins` for additional context. If no root cause is found, escalate per **A6**.
+If no route matches, escalate to human agent per **A6**.
 
-
----
+## Section C: Rules
 
 ### Rule 1 — No Schedule Exists
 
-1. Client says auto-debit not happening AND mandate is active (verified via `e_mandate_report`).
-2. No active schedule found in this tool.
-3. Your eMandate is active, but no schedule has been created. To set up auto-debit, create a schedule at console.zerodha.com/funds/mandates — specify the tag name, credit date, frequency, and amount..
-
+1. If no records exist (count = 0) → no schedule has been created. Direct client to create a schedule per **A5**.  
+2. If `active` = "Deleted" → schedule has been cancelled and is no longer active. Direct to **A5** to create a new schedule.
 
 ### Rule 2 — Schedule Status Check
 
-1. Determine status (per **A3**):
-   a. Active → Your schedule is active. The next fund credit to your Kite account is on [next_date]. Your bank will debit the amount 1 working day before this date..
-   b. Deleted → This schedule has been cancelled. No further auto-debits will occur for this schedule. If you'd like to resume, create a new schedule at console.zerodha.com/funds/mandates..
+1. Determine status per **A3**:  
+   a. Active → confirm next credit to Kite is on `next_date`. Bank debits 1 working day before this date per **A1**.  
+   b. Deleted → schedule cancelled; no further auto-debits. Direct to **A5** to create a new schedule if needed.
 
+### Rule 3 — SIP Failed (Insufficient Kite Balance)
 
-### Rule 3 — Debit vs Credit Date Confusion
+1. Stock SIPs deduct from Kite balance per **A1**. If the eMandate debit was delayed or failed, the Kite balance may be insufficient when the SIP triggers.  
+2. Invoke `kite_order_history`, filter for SIP orders. If order status is rejected with reason "Insufficient funds," the SIP failed due to low Kite balance.  
+3. Invoke `auto_debit_payins` to check the latest auto-debit status.  
+4. Recommend scheduling eMandate credit date 2–3 days before SIP date per **A4**.
 
-1. The date you set is the account credit date — when funds appear in your Kite account. Your bank debits the amount 1 working day before this date to allow processing time..
+### Rule 4 — Error Deleting Schedule
 
+1. Check `active`. If value is other than "Active" or "Deleted" per **A3** → deletion is in progress; inform client to wait.  
+2. If `active` = "Active" → deletion may have failed because a debit is already being processed. Suggest retry after the current processing cycle completes, or from a different browser/device.  
+3. If error persists → escalate to human agent per **A6**.
 
-### Rule 4 — Schedule on Non-Business Day
+### Rule 5 — Cancelled Schedule But Still Debited
 
-1. If your scheduled credit date falls on a non-business day (weekend or holiday), the debit is triggered 1 day before the non-business day to ensure funds are available on the next working day..
-
-
-### Rule 5 — SIP Failed (Schedule Timing Issue)
-
-1. Check if `next_date` is after the SIP execution date.
-2. If yes → Your eMandate schedule credit date is after your SIP date. The funds were not available in time. Schedule the eMandate credit date 2–3 days before your SIP date..
-3. If `next_date` is before SIP date → check `auto_debit_payins` for the debit status. Apply that tool's protocol.
-
-
-### Rule 6 — Error Deleting Schedule
-
-1. Schedule deletions may fail if a debit is already being processed. Try again after the current processing cycle completes. If the error persists, try from a different browser or device..
-2. If error persists → escalate per **A6**.
-
-
-### Rule 7 — Cancelled Schedule But Still Debited
-
-1. If you cancelled the schedule after an upcoming debit was already confirmed with your bank, that debit will still be processed. However, all future debits are cancelled. The debited funds will be credited to your Kite account and you can withdraw them if needed.. Post-cancel confirmed debit rules per **A4**.
-
+1. Check `deactivation_date` against `next_debit_date`. If the schedule was cancelled after the bank had already initiated the debit, that debit will still execute per **A4**.  
+2. Future debits are cancelled. Debited funds will be credited to Kite and can be withdrawn.

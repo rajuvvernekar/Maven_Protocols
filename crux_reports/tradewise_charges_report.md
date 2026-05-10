@@ -15,229 +15,194 @@ When clients:
 
 TRIGGER KEYWORDS: "tradewise charges", "trade charges", "charges breakdown", "brokerage calculation", "brokerage per trade", "STT charges", "stamp duty", "exchange transaction charges", "SEBI charges", "GST on brokerage", "order charges", "charges for my trade", "why brokerage higher", "total charges for order", "charges per order"
 
+TAGS: charges, reports
+
 ## Protocol
 
+# TRADEWISE CHARGES PROTOCOL
+
+---
+
+## Section A: Reference Data
+
+---
 
 ### A1 — Report Fundamentals
 
-- Report shows per-trade breakdown of all charges: brokerage, exchange transaction charges, SEBI fees, STT, stamp duty, CGST, SGST, IGST.
-- Required inputs: Client ID, From/To Date. Optional: Exchange, Segment. Select "View orderwise" checkbox for order-level grouping.
-- Multiple rows with the same `order_no` = multiple fills for one order. Sum charges by `order_no` for total per order.
-- Trade value = quantity × price (from tradebook). Charges are calculated on this value.
+- With "View orderwise" selected, each row represents one complete order with charges already consolidated across all fills — no manual summing needed.  
+- Trade value = quantity × price (from tradebook). Charges are calculated on this value.  
 - CN (Contract Note) charges may not include later adjustments posted directly to ledger.
 
-### A2 — Charge Components
+---
 
-| Charge | Rate / Basis | Notes |
-|---|---|---|
-| Brokerage | Delivery (CNC): ₹0 for Individual accounts only. Non-Individual and NRI accounts are charged — see A6. Intraday/F&O: ₹20 per executed order OR 0.03% of trade value, whichever is lower. Collateral debit additional brokerage: an additional ₹20 per executed F&O order applies when the client's cash collateral is negative and the cash shortfall exceeds ₹5,00,000, resulting in ₹40 per order. This additional brokerage does not replace delayed payment charges — DPC continues to apply separately. To avoid the additional brokerage, maintain at least 50% of margin in cash or cash equivalents, or ensure the cash shortfall does not exceed ₹5,00,000. | Can be null/0 for some trades. |
-| Exchange transaction charges | Charged by exchange on turnover. Rate varies by exchange and segment — NSE equity ~0.00297%, BSE equity varies, NSE F&O varies by contract type. | SENSEX options have specific rates different from NIFTY options. Rates updated periodically — recent changes may cause different charges for the same trade type on different dates. |
-| STT (Securities Transaction Tax) | Equity delivery: 0.1% on both buy and sell value. Equity intraday: 0.025% on sell-side only. Futures: 0.02% on sell-side. Options: 0.1% on sell-side (on premium value). | Government tax on securities transactions. |
-| Stamp duty | Buy-side transactions. Typically 0.015% for delivery, 0.003% for intraday/F&O. | Varies by state. |
-| SEBI turnover fee | ₹10 per crore of turnover (0.0001%). | — |
-| GST (CGST + SGST) | 18% (9% CGST + 9% SGST) on brokerage + exchange transaction charges. | IGST is typically null (only for inter-state; standard is CGST + SGST). |
+### A2 — Account Type Detection
 
-### A3 — Field Rules
-
-**Shareable with client (use these client-facing names):**
-
-| Internal Field | Client-Facing Name |
-|---|---|
-| `trading_symbol` | trading symbol / stock name |
-| `order_time` | date/time of trade |
-| `brokerage` | brokerage |
-| `turnover` | exchange transaction charges |
-| `sebi` | SEBI turnover fee |
-| `stamp_duty` | stamp duty |
-| `stt` | STT |
-| `sgst` | SGST |
-| `cgst` | CGST |
-
-**Internal reasoning only (never share with client):** `trade_process_type` (ignore this field), `order_no` (use internally to group fills), `exchange` (use internally for segment identification), `igst` (typically null).
-
-Use client-facing names in all responses — never use internal field names.
-
-### A4 — Cross-Reference Protocols
-
-| Topic | Refer to |
-|---|---|
-| Summary of total charges per contract note period (aggregate view) | Contract Note Charges protocol |
-| Charge debits as ledger entries (when charges were debited) | Ledger Report protocol |
-
-### A5 — Escalation Triggers (Consolidated)
-
-Escalate when any of the following occur:
-- Brokerage exceeds the applicable cap per order after summing all fills by `order_no` and accounting for the collateral debit additional brokerage per **A2** (Individual: ₹20 for F&O/intraday, or ₹40 if additional brokerage applies; Non-Individual: verify per A6; NRI: verify per A6).
-- Exchange transaction charge rate significantly differs from published rate for that exchange/segment.
-- Contract note charges differ from tradewise charges sum for the same date/exchange/segment, and no ledger adjustment entry is found.
-- Auction trade requiring detailed charge calculation (manual handling required).
-
-Include in escalation: client ID, trading_symbol, order_time, specific charge values, and the discrepancy.
-
-### A6 — Non-Standard Account Brokerage
-
-Call `get_all_client_data` and resolve account type using the detection logic below before applying any brokerage rates.
-
-**Account Type Detection:**
-
-| Account Type | Detection Logic |
-|---|---|
-| Individual | `category` = "Individual" AND `client_acc_type` = "Individual" |
-| Non-Individual (HUF, Corporate, LLP, Partnership, Trust) | `category` = "Non-Individual" |
-| NRI | `client_acc_type` IN ("NRO", "NRE", "NRI") → resolve PIS/Non-PIS via `pis_bank_*` fields |
-| NRI PIS | `client_acc_type` IN ("NRO", "NRE", "NRI") AND `pis_bank_1_name` OR `pis_bank_2_name` NOT None |
+| Account Type | Detection Logic |  
+|---|---|  
+| Individual | `category` = "Individual" AND `client_acc_type` = "Individual" |  
+| Non-Individual (HUF, Corporate, LLP, Partnership, Trust) | `category` = "Non-Individual" |  
+| NRI | `client_acc_type` IN ("NRO", "NRE", "NRI") → resolve PIS/Non-PIS via `pis_bank_*` fields |  
+| NRI PIS | `client_acc_type` IN ("NRO", "NRE", "NRI") AND `pis_bank_1_name` OR `pis_bank_2_name` NOT None |  
 | NRI Non-PIS | `client_acc_type` IN ("NRO", "NRE", "NRI") AND both `pis_bank_*_name` = None |
+
+---
+
+### A3 — Charge Components
+
+| Charge | Rate / Basis | Notes |  
+|---|---|---|  
+| Brokerage | Delivery (CNC): varies by account type — see table below. Intraday/F&O: ₹20 per executed order OR 0.03% of trade value, whichever is lower. | Can be null/0 for some trades. |  
+| Exchange transaction charges | Charged by exchange on turnover. Rate varies by exchange and segment — NSE equity \~0.00297%, BSE equity varies, NSE F&O varies by contract type. | SENSEX options have specific rates different from NIFTY options. Rates updated periodically — recent changes may cause different charges for the same trade type on different dates. |  
+| STT (Securities Transaction Tax) | Equity delivery: 0.1% on both buy and sell value. Equity intraday: 0.025% on sell-side only. Futures: 0.02% on sell-side. Options: 0.1% on sell-side (on premium value). | Government tax on securities transactions. |  
+| Stamp duty | Buy-side transactions. Typically 0.015% for delivery, 0.003% for intraday/F&O. | Varies by state. |  
+| SEBI turnover fee | ₹10 per crore of turnover (0.0001%). | — |  
+| GST (CGST \+ SGST) | 18% (9% CGST \+ 9% SGST) on brokerage \+ exchange transaction charges. | IGST is typically null (only for inter-state; standard is CGST \+ SGST). |
 
 **Delivery Brokerage by Account Type:**
 
-| Account Type | Delivery (CNC) Brokerage | Intraday / F&O Brokerage |
-|---|---|---|
-| Individual | ₹0 (per A2) | ₹20 per executed order OR 0.03% of trade value, whichever is lower |
-| Non-Individual (HUF, Corporate, LLP, Partnership, Trust) | 0.1% or ₹20 per executed order, whichever is lower | Same as Individual |
-| NRI PIS | 0.5% or ₹200 per executed order, whichever is lower | Same as Individual |
-| NRI Non-PIS | 0.5% or ₹50 per executed order, whichever is lower | Same as Individual |
+| Account Type | Delivery (CNC) Brokerage | Intraday / F&O Brokerage |  
+|---|---|---|  
+| Individual | ₹0 | ₹20 per executed order OR 0.03% of trade value, whichever is lower |  
+| Non-Individual (HUF, Corporate, LLP, Partnership, Trust) | 0.1% of trade value OR ₹20 per executed order, whichever is lower | Same as Individual |  
+| NRI PIS | 0.5% of trade value OR ₹200 per executed order, whichever is lower | Same as Individual |  
+| NRI Non-PIS | 0.5% of trade value OR ₹50 per executed order, whichever is lower | Same as Individual |
 
-**Collateral debit additional brokerage (all account types):** An additional ₹20 per executed F&O order applies when the client's cash collateral is negative and the cash shortfall exceeds ₹5,00,000. This stacks on top of the standard F&O brokerage — e.g., ₹20 base + ₹20 additional brokerage = ₹40 per order. Applies to all account types (Individual, Non-Individual, NRI). This additional brokerage is independent of DPC — delayed payment charges continue to apply separately on any end-of-day debit balance.
+---
 
+### A4 — Field Rules
 
-### Preflight (run on every query)
+**Shareable with client:**
 
-1. Fetch the tradewise charges report for the client's relevant date range.
-1A. Call `get_all_client_data` and resolve account type per **A6**. Store the result — all brokerage logic depends on it.
-2. Apply field protection per **A3** — identify shareable vs internal-only fields.
-3. If multiple rows share the same `order_no`, sum all charge fields to get the per-order total before responding.
-4. Format all amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
-5. Translate all internal field names to client-facing names per **A3**.
+| Field | Interpretation |  
+|---|---|  
+| `trading_symbol` | Share as "trading symbol" or stock name |  
+| `order_time` | Share as "date/time of trade" |  
+| `brokerage` | Brokerage charge |  
+| `turnover` | Share as "exchange transaction charges" |  
+| `sebi` | Share as "SEBI turnover fee" |  
+| `stamp_duty` | Stamp duty charge |  
+| `stt` | Securities Transaction Tax (STT) |  
+| `sgst` | SGST |  
+| `cgst` | CGST |
 
-### Routing Tree
+**Non-shareable:**
 
+| Field | Interpretation |  
+|---|---|  
+| `trade_process_type` | Trade process type — "auction" for auction trades; used for Rule 8 routing |  
+| `order_no` | Internal order number |  
+| `exchange` | Exchange and segment identifier — used for charge rate lookup per A3 |  
+| `igst` | Inter-state GST — typically null; only applicable for inter-state transactions |
+
+---
+
+### A5 — Escalation Data
+
+Required fields when escalating: **client ID**, **trading_symbol**, **order_time**, **specific charge values**, **discrepancy description**.
+
+---
+
+## Section B: Decision Flow
+
+### Routing
+
+```  
+Query relates to tradewise charges →  
+│  
+├─ Client asks about charges for a specific trade             → Rule 1  
+├─ Client questions brokerage amount                          → Rule 2  
+├─ Client disputes exchange transaction charges               → Rule 3  
+├─ Client asks about STT                                      → Rule 4  
+├─ Client asks about GST / CGST / SGST                       → Rule 5  
+├─ Client says charges differ from Zerodha calculator         → Rule 6  
+├─ Client reports contract note vs tradewise mismatch         → Rule 7  
+├─ Auction trade charges                                      → Rule 8  
+└─ Data mismatch / no root cause found                        → Rule 9  
 ```
-Query relates to trade charges →
-│
-├─ Client asks about charges for a specific trade
-│  ├─ Single fill → Rule 1
-│  └─ Multiple fills (same order_no) → Rule 2
-│
-├─ Client questions brokerage amount
-│  → Rule 3
-│
-├─ Client disputes exchange transaction charges
-│  → Rule 4
-│
-├─ Client asks about STT
-│  → Rule 5
-│
-├─ Client asks about GST / CGST / SGST
-│  → Rule 6
-│
-├─ Client says charges differ from Zerodha calculator
-│  → Rule 7
-│
-├─ Client reports contract note vs tradewise mismatch
-│  → Rule 8
-│
-├─ Auction trade charges
-│  → Rule 9 (Escalate)
-│
-└─ Data mismatch / no root cause found
-   → Rule 10 (Escalation)
-```
-
-### Scope
-
-- Address: per-trade and per-order charge breakdowns, charge component explanations, brokerage verification, and charge discrepancies.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per Rule 10.
+If no rule matches, ESCALATE TO HUMAN AGENT.
 
+---
 
-### Rule 1 — Single Trade Charges Breakdown
+## Section C: Rules
 
-1. Find the trade by `trading_symbol` and `order_time`. If multiple rows share the same `order_no` → use Rule 2 instead.
-2. Respond:
-   "Here's the charges breakdown for your [trading_symbol] trade on [order_time]:
-   - Brokerage: ₹[brokerage]
-   - Exchange transaction charges: ₹[turnover]
-   - STT: ₹[stt]
-   - SEBI turnover fee: ₹[sebi]
-   - Stamp duty: ₹[stamp_duty]
-   - GST (CGST + SGST): ₹[cgst + sgst]
-   - Total charges: ₹[sum of all]"
+---
 
-### Rule 2 — Multiple Fills Per Order
+### Rule 1 — Trade Charges Breakdown
 
-1. Confirm: multiple rows exist with the same `order_no`. Sum all charge fields across fills.
-2. Respond: "Your order for [trading_symbol] was executed in [N] parts (fills). The charges are calculated per fill. Here's the combined total for the entire order:"
-3. Present the combined charges using the same format as Rule 1.
-4. Do not expose `order_no` — describe it as "your order was executed in multiple parts."
+1. Locate the trade by `trading_symbol` and `order_time`.  
+2. Present the charges breakdown across all charge components per A3.
 
-### Rule 3 — Brokerage Calculation Verification
+---
 
-1. Check account type per **A6** (resolved in Preflight Step 1A).
-2. Apply the correct delivery brokerage rate:
-   - Individual: brokerage should be ₹0.
-   - Non-Individual (HUF, Corporate, LLP, Partnership, Trust): brokerage should be 0.1% of trade value or ₹20, whichever is lower.
-   - NRI PIS: brokerage should be 0.5% of trade value or ₹200, whichever is lower.
-   - NRI Non-PIS: brokerage should be 0.5% of trade value or ₹50, whichever is lower.
-   - If brokerage = null/0 for a Non-Individual or NRI delivery trade → escalate per Rule 10 (brokerage may have been incorrectly waived).
-3. For Intraday/F&O (all account types): ₹20 per executed order OR 0.03% of trade value, whichever is lower.
-4. If brokerage exceeds the applicable cap for a single executed order → first check whether the collateral debit additional brokerage applies (per **A2**): if the trade is F&O and brokerage = ₹40, verify that the client's cash collateral was negative with a shortfall exceeding ₹5,00,000. If so, the ₹40 charge is the standard ₹20 + ₹20 additional brokerage and is correct. If the additional brokerage condition does not apply, check if multiple fills exist (sum by `order_no`). If brokerage still exceeds the cap after both checks → escalate per Rule 10.
-5. When explaining brokerage to the client, state the applicable rate for their account type: "Since you hold a [account type] account, the applicable delivery brokerage is [rate]."
+### Rule 2 — Brokerage Verification
 
-### Rule 4 — Exchange Transaction Charges Dispute
+1. From `get_all_client_data`, confirm account type per A2.  
+2. Verify delivery brokerage against the applicable rate per A3 for the client's account type:  
+   - If Individual account \+ delivery trade \+ brokerage ≠ ₹0 → flag discrepancy, escalate to human agent.  
+   - If Non-Individual or NRI account \+ delivery trade \+ brokerage = null/0 → brokerage may have been incorrectly waived, escalate to human agent.  
+   - For all other Non-Individual and NRI delivery trades → verify brokerage against rates per A3.  
+3. For Intraday/F&O trades (all account types): verify brokerage cap per A3. If brokerage exceeds the cap → escalate to human agent.
 
-1. Respond: "Exchange transaction charges are set by the exchange and vary by segment and instrument type. The rates are updated periodically. For your [segment] trade, the applicable rate was applied on the trade value."
-2. Use `exchange` field internally to identify the segment, but do not share it with the client.
-3. Note: SENSEX options have specific rates different from NIFTY options. BSE equity rates may differ from NSE (per **A2**).
-4. If the rate significantly differs from known published rates → escalate per Rule 10.
+---
 
-### Rule 5 — STT Explanation
+### Rule 3 — Exchange Transaction Charges Dispute
 
-1. Respond using the STT rates from **A2** (STT row):
-   "Securities Transaction Tax (STT) is a government tax on securities transactions:
-   - Equity delivery: 0.1% on both buy and sell value
-   - Equity intraday: 0.025% on sell-side only
-   - Futures: 0.02% on sell-side
-   - Options: 0.1% on sell-side (on premium value)
+1. Use `exchange` field internally to identify the segment.  
+2. Verify the applied rate against published rates per A3 for the identified segment.  
+3. Note: SENSEX options have specific rates different from NIFTY options; BSE equity rates may differ from NSE (per A3).  
+4. If the applied rate significantly differs from the published rate for that segment → escalate to human agent.
 
-   STT for your trade: ₹[stt] on [trading_symbol]."
+---
 
-### Rule 6 — GST Calculation
+### Rule 4 — STT Explanation
 
-1. Calculate the GST base: brokerage + exchange transaction charges.
-2. Respond:
-   "GST at 18% is charged on the total of brokerage + exchange transaction charges.
-   - CGST (9%): ₹[cgst]
-   - SGST (9%): ₹[sgst]
-   - Total GST: ₹[cgst + sgst]
+1. Identify the trade type (equity delivery, equity intraday, futures, or options) using `exchange` and trade details internally.  
+2. Apply STT rates per A3 for the identified trade type.
 
-   GST base = brokerage (₹[brokerage]) + exchange charges (₹[turnover]) = ₹[sum]. GST = 18% of ₹[sum] = ₹[result]."
+---
 
-### Rule 7 — Calculator vs Actual Charges Difference
+### Rule 5 — GST Calculation
 
-1. Respond: "The Zerodha brokerage calculator provides an estimate. Slight differences can occur due to:
-   - Rounding at trade level vs order level
-   - Exchange rate updates not yet reflected in the calculator
-   - Multiple fills for a single order being charged separately
+1. GST base = `brokerage` \+ `turnover` (per A3).
 
-   The tradewise charges report shows the actual charges applied to your trades."
-2. If the difference is significant (>10% or >₹5 for a single order) → verify charges against **A2** and **A6** rates and escalate per Rule 10 if discrepancy remains.
+---
 
-### Rule 8 — Contract Note vs Tradewise Charges Mismatch
+### Rule 6 — Calculator vs Actual Charges Difference
 
-1. Respond: "The contract note shows charges as of the trade date. In some cases, exchange transaction charges are updated after the trade date and the difference is posted directly to your ledger. This means the contract note may show the original charges while your ledger reflects the updated amount."
-2. Direct client to check the ledger: "Check your ledger for any adjustment entries posted after the trade date." (Per **A4**, Ledger Report protocol.)
-3. If no adjustment found and mismatch persists → escalate per Rule 10.
+1. Differences can occur due to rounding at trade level vs order level, exchange rate updates not yet reflected in the calculator, or fill-level charge application.  
+2. The tradewise charges report reflects the actual charges applied.  
+3. If the difference is significant (greater than 10% or greater than ₹5 for a single order) → verify charges against A3 and A2. If discrepancy remains → escalate to human agent.
 
-### Rule 9 — Auction Trade Charges
+---
 
-1. If `trade_process_type` = "auction" or client asks about auction charges:
-   "Auction trades have different charge structures. Auction charges are applied when a trade goes to exchange auction (e.g., short delivery). The charges for auction trades may include additional penalties beyond standard trade charges."
-2. Escalate immediately for detailed auction charge calculations — manual handling required (per **A5**).
+### Rule 7 — Contract Note vs Tradewise Charges Mismatch
 
-### Rule 10 — Escalation
+1. Exchange transaction charges may be revised after the trade date and the difference posted directly to the ledger as an adjustment entry. The contract note may show the original amount while the ledger reflects the updated total.  
+2. Direct the client to check their ledger for adjustment entries posted after the trade date — invoke `ledger_report`.  
+3. If no adjustment entry is found and the mismatch persists → escalate to human agent.
 
-Escalate when any trigger in **A5** is met.
+---
 
-Include in escalation: client ID, trading_symbol, order_time, specific charge values, and the discrepancy.
+### Rule 8 — Auction Trade Charges
+
+1. If `trade_process_type` = "auction" OR client asks about auction charges: auction trades have a different charge structure arising when a trade goes to exchange auction (for example, due to short delivery) and may include additional penalties beyond standard trade charges.  
+2. Escalate to human agent immediately — auction charge calculations require manual handling (per A5).
+
+---
+
+### Rule 9 — Escalation
+
+Escalate to human agent when any of the following apply:
+
+- Brokerage exceeds the applicable cap per order (per A3 and A2).  
+- Individual account is charged delivery brokerage that is not ₹0.  
+- Non-Individual or NRI delivery trade shows null/0 brokerage (possible incorrect waiver).  
+- Exchange transaction charge rate significantly differs from the published rate for that segment (per A3).  
+- Contract note charges differ from the tradewise charges sum for the same date/exchange/segment and no ledger adjustment entry is found.  
+- Auction trade requiring detailed charge calculation — manual handling required.  
+- Data mismatch with no root cause found after checking all applicable rules.
+
+Include all fields per A5 when escalating.

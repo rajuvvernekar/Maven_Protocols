@@ -31,10 +31,80 @@ WHEN TO USE:
 TRIGGER KEYWORDS: [keywords]
 
 ## Protocol
-[Full protocol with knowledge_base XML, business rules, etc.]
+[Full protocol body — must follow the Protocol structure standard below.]
 ```
 
 The Description and Protocol sections must stay clean — no version history, no changelogs inside them. These get copy-pasted directly into the Maven tool configuration.
+
+## Protocol structure standard
+
+The body of every `## Protocol` section follows the canonical Section A/B/C structure below. The 30 cleaned tools across `console_reports/`, `mf_reports/`, `crux_reports/`, `kite_admin/`, `crm/`, `cashier_reports/`, `miscellaneous/` are the live reference — when in doubt, mirror a similar tool.
+
+### Canonical layout
+
+```
+# <TOOL NAME> PROTOCOL              <- H1, uppercase, singular, "PROTOCOL" suffix
+
+## Section A: Reference Data
+### A1 — <Title>
+### A2 — <Title>
+...
+
+## Section B: Decision Flow
+### Routing
+[ASCII tree inside a code block, mapping intent / condition → Rule N or → invoke <tool>]
+
+### Fallback
+[One short paragraph — what to do if no route matches.]
+
+## Section C: Rules
+### Rule 1 — <Title>
+1. <step>
+2. <step>
+
+### Rule 2 — <Title>
+...
+```
+
+### Header rules
+
+- H1 title: `# <TOOL NAME> PROTOCOL` — uppercase, singular, "PROTOCOL" suffix mandatory.
+- H2 sections: exact wording — `## Section A: Reference Data`, `## Section B: Decision Flow`, `## Section C: Rules`. Colon separator, never em-dash on H2.
+- H3 sub-sections: em-dash separator (` — `), never colon. Examples: `### A1 — Field Usage Rules`, `### Rule 1 — Segment Status`.
+- Section B H3s are exactly `### Routing` and `### Fallback`. Not "Routing Tree", not "Route".
+- Numbering is sequential within each section: A1, A2, A3, ..., Rule 1, Rule 2, Rule 3, ...
+
+### Reference data conventions (Section A)
+
+- **Field usage** is two markdown tables: `**Shareable with client:**` and `**Non-shareable:**`. Format: `| Field | Interpretation |`.
+- **Statuses, mappings, scenarios** use markdown tables when structured.
+- **Inline reference** (single fact + qualifier) uses bullet lists or short paragraphs.
+- **Links** are typically the last A-sub-section, as a `| Topic | URL |` table.
+- **Escalation requirements** sit in their own A-sub-section (e.g. `### AN — Escalation Triggers`); rules reference them by section number.
+- Cross-references between sub-sections use bold: `per **A3**`.
+
+### Routing conventions (Section B)
+
+- Routing tree lives inside a triple-backtick fenced code block (no language tag).
+- Branches use `├─` and `└─` (Unicode box-drawing characters).
+- Each leaf maps to a Rule (`→ Rule 3`) or to a downstream tool (`→ invoke account_modification_report`).
+- Fallback is one paragraph, no headers, no bullets.
+
+### Forbidden patterns
+
+- **Escaped markdown** (`\#`, `\*\*`, `\---`, `\&`) — file must render correctly on GitHub. Common after Google Docs / Notion exports.
+- **Response templates** inside `## Protocol` — the system prompt handles tone and sentence formation. Move unique facts into Section A; drop the templates.
+- **"Tool Purpose" prose preamble** — fold the substance into A1 if necessary.
+- **`Input: Client ID` lines** — pre-injected by every tool, redundant.
+- **XML `<knowledge_base>` wrappers** — use markdown tables instead.
+- **Mixed separator styles** within a single protocol — pick em-dash (already canonical) and apply throughout.
+
+### When editing a protocol
+
+1. Preserve the Description block (everything from `# tool_name` through `## Protocol` line itself).
+2. Apply changes only to the body of `## Protocol`.
+3. Final pass: `grep '\\\\' <file>` must return nothing — no escaped markdown leaked in.
+4. The structural rules above are absolute; the content rules in "Protocol optimization" further down are guidance for trimming bloat without losing precision.
 
 ## Your Workflow
 
@@ -130,9 +200,9 @@ If feedback says "Maven should have checked [Tool B] instead of [Tool A]", consi
 
 ### Protocol token efficiency
 - Keep protocols under 7,500 tokens where possible
-- Use XML for structured lookup data
+- Use Markdown tables for structured lookup data (per "Protocol structure standard")
 - Use concise business rules (if/then format)
-- Don't repeat information already in `<facts>` inside business rules
+- Don't repeat information already in Section A inside Section C rules — reference by section number
 - Merge related rules rather than creating new ones
 
 ### Protocol optimization (lean rewrite) rules

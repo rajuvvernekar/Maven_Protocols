@@ -17,499 +17,491 @@ When clients:
 
 TRIGGER KEYWORDS: "order", "status", "processing", "allotted", "failed", "cancelled", "rejected", "payment", "debited", "NAV", "refund", "NFO", "lumpsum", "buy", "when will", "units not showing", "conditional order", "UNRID", "coin"
 
+TAGS: investments
+
 ## Protocol
 
+# MF ORDER HISTORY PROTOCOL
 
 ---
 
-### A1: Order Lifecycle
+## Section A: Reference Data
 
+---
+
+### A1 — Order Lifecycle and Status Values
+
+```  
+New → Placed → Processing → Allotted / Redeemed / Cancel / Failed  
+                    ↘ TPV Pending (auto-revalidates next working day)  
 ```
-New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
-                    ↘ TPV Pending (auto-revalidates next business day)
-```
 
-| Internal Status | Client-Facing Language |
-|---|---|
-| Placed | "Your order has been placed and is pending processing at the exchange." |
-| Processing | "Your order for [fund] of ₹[amount] is being processed by the AMC." |
-| Allotted | "Your order has been allotted. Units credited to your demat." |
-| Redeemed | "Redemption processed." + credit date per **A6**. |
-| Cancel + payment_confirmed = true | "Your order was cancelled. The debited amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)." A cancelled order with confirmed payment means a refund is due — this is a refund scenario only. |
-| Cancel + payment_confirmed = false | "Your order was cancelled. No payment was debited." |
-| Failed | "Your order was not processed. Reason: [status_message in plain language]" |
-| TPV Pending | "Your order is pending third-party bank account validation at the exchange. The exchange automatically re-validates pending orders on the next business day." |
+| Status | What it means |  
+|---|---|  
+| Placed | Order is placed |  
+| Processing | Order is being processed |  
+| Allotted | Order is successfully allotted |  
+| Redeemed | Redemption order is placed |  
+| Cancel \+ `payment_confirmed` = true | Order is placed, payment is made, order is cancelled. Refund is due. |  
+| Cancel \+ `payment_confirmed` = false | Order is placed and cancelled without payment. No refund applies. |  
+| Failed | Order did not go through. See A5 for specific failure causes. |  
+| TPV Pending | Pending third-party bank account validation at the exchange. |
 
+---
 
-### A2: Payment & NAV Rules
+### A2 — Payment & NAV Rules
 
-**MF payment flow:** Purchases are debited directly from client's bank account via ICCL — Kite balance is not involved. Redemption proceeds are credited directly to client's primary registered bank account. When discussing redemption credits, always direct client to check their primary bank account.
+**Entities:**  
+- ICCL: receives client payments for MF orders.  
+- BSE STAR MF: order aggregator that sends orders to the AMC once ICCL confirms the payment.
 
-**T-day determination:** Governed by `payment_updated_at` (when payment was confirmed at ICCL). If not yet available, use `payment_initiated_at` as reference only and state that the applicable NAV depends on exchange confirmation.
+**Payment flow:** Purchases are debited directly from client's bank account via ICCL — Kite balance is not involved. Redemption proceeds are credited directly to client's primary registered bank account. For redemption credit queries, direct client to check their primary bank account.
 
-**Working day check (apply first, before cutoff logic):** Before applying any cutoff logic, check whether `payment_updated_at` falls on a working day. If `payment_updated_at` falls on a weekend or trading/settlement holiday → T = next working day. If that next day is also a non-working day, shift further until a working day is reached. State: "Your payment was confirmed on [date], which was a [weekend/holiday — name it and state reason]. The order was processed on the next working day [date]." Only apply cutoff logic after confirming the payment date is a working day.
+**T-day (Trading day):** The date on which the order is processed at the exchange. T-day is determined by when the payment is confirmed at ICCL, captured in `payment_updated_at`. If `payment_updated_at` is not yet populated, use `payment_initiated_at` as reference — the applicable NAV depends on when the payment is updated at ICCL.
 
-**Holiday shift scope:** The holiday shift rule applies only to the `payment_updated_at` date itself. If `payment_updated_at` falls on a working day and is before cutoff, T = that day regardless of whether the next day is a holiday. Holidays after T-day affect the settlement/allotment timeline (when units are allotted and appear in holdings), not the T-day or NAV date.
+**Working-day check:** If `payment_updated_at` falls on a weekend or trading/settlement holiday, T = the next working day. If that day is also non-working, shift further until a working day is reached.
 
-**Naming holidays:** When a weekend or holiday shifts the T-day or extends the settlement timeline, state each non-working day and whether it was a weekend or a trading/settlement holiday.
+**Holiday shift scope:** The holiday shift applies only to the date on which `payment_updated_at` falls (or the order placement date for redemptions). Holidays after T-day affect the settlement/allotment timeline (when units appear in holdings), not T-day or the NAV date.
 
-**NAV cutoffs (apply after T-day is established):**
+**Naming holidays:** When a weekend or holiday shifts T-day or extends a settlement timeline, state each non-working day and whether it was a weekend or a trading/settlement holiday.
 
-| Fund Type | Payment Method | Before Cutoff | After Cutoff |
-|---|---|---|---|
-| Liquid | UPI / Netbanking (direct) | Before 12:30 PM → T-1 NAV | T = next working day |
-| Liquid | Netbanking (non-direct) | Any time → T day NAV | — |
-| Other | UPI / Netbanking (direct) | Before 2:00 PM → T day NAV | T = next working day |
-| Other | Netbanking (non-direct) | Any time → T+1 NAV | — |
-| Any | NEFT/RTGS/IMPS | NAV depends on ICCL settlement time (up to T+5) | — |
-| Redemption | Any | Before 3:00 PM → T day NAV | T = next working day |
+**NAV cutoffs:**
+
+| Fund type | Payment method | NAV rule |  
+|---|---|---|  
+| Liquid | UPI / Netbanking (direct) | Before 12:30 PM → T-1 NAV. After 12:30 PM → T-day NAV. |  
+| Liquid | Netbanking (non-direct) | T-day NAV. |  
+| Other | UPI / Netbanking (direct) | Before 2:00 PM → T-day NAV. After 2:00 PM → T = next working day. |  
+| Other | Netbanking (non-direct) | T+1 NAV. |  
+| Any | NEFT/RTGS/IMPS | NAV depends on ICCL settlement time (up to T+5). |  
+| Redemption | Any | Before 3:00 PM → T-day NAV. After 3:00 PM → T = next working day. |
 
 **Payment source mapping:**
 
-| `fund_source` value | Meaning |
-|---|---|
-| rp_pg | Netbanking (payment gateway) |
-| neft-rtgs | NEFT/RTGS/IMPS |
-| digio_mandates | eNACH mandate |
-| inapp_upi | In-app UPI |
+| `fund_source` value | Meaning |  
+|---|---|  
+| rp_pg | Netbanking (payment gateway) |  
+| neft-rtgs | NEFT/RTGS/IMPS |  
+| digio_mandates | eNACH mandate |  
+| inapp_upi | In-app UPI |  
 | upi_mandates | UPI autopay |
-
-
-### A3: Order Variety Mapping
-
-| `variety` value | Meaning |
-|---|---|
-| NRM / empty | Lumpsum |
-| SIP | SIP instalment (or STP purchase leg) |
-| SWP | SWP redemption (or STP redemption leg) |
-| XSP | Step-up / external SIP |
-| GTT | Conditional order |
-
-STP shows as two orders: SWP (redemption leg) + SIP (purchase leg).
-
-`purchase_type`: FRESH = first-ever order in a fund; ADDITIONAL = subsequent order (SIP instalments, top-ups, repeat lumpsum).
-
-
-### A4: Refund Rules
-
-**Standard refund language (use this exact phrasing every time):**
-> "The debited amount will be refunded by BSE STAR MF to your source bank account within 5–7 working days (excluding weekends and holidays)."
-
-**Refund communication rules:**
-- Always use only the standard language above.
-- Refund status and real-time settlement details are internal processes managed by BSE STAR MF. Communicate only the standard timeline.
-- Specific refund dates depend on BSE STAR MF processing — use the standard timeline range only.
-- When trading/settlement holidays fall within the 5–7 working day refund window, mention them in the response so the client understands the extended calendar duration: "Due to [holiday name(s)] falling within the refund processing period, the working day count excludes these days, which may extend the calendar duration. Your refund is expected within the standard 5–7 working day window."
-
-**Determining if payment was debited:**
-- Always check `payment_confirmed` in mf_order_history first — this is the authoritative source. The trading ledger reflects trading account transactions, not MF payment confirmations.
-- `payment_confirmed` = true → payment was debited, refund applies.
-- `payment_confirmed` = false → no payment was debited.
-
-
-### A5: Common Rejections
-
-| `status_message` pattern | Cause | Action |
-|---|---|---|
-| INVALID BANK ACCOUNT DETAILS | Bank mismatch (typically after modification) | Escalate to support agent |
-| SCHEME CLOSED | Scheme suspended | Use AMC SIP instead |
-| REGISTER WITH AMC | Re-KYC required | Escalate to support agent |
-| PAN/PEKRN MISMATCH | PAN issue | Verify PAN, submit copy. Escalate to support agent |
-| DOB DIFFERS WITH PAN | DOB mismatch | Update DOB in Zerodha |
-| E-KYC limit ₹50K/AMC | Incomplete KYC | Complete full KYC |
-| NON ELIGIBLE SCHEME | Suspended/restricted | Inform client |
-| FOLIO LOCKED KRA | KRA lock | Contact AMC directly. Escalate to support agent |
-| INVALID MODE OF HOLDING | Minor account issue | Escalate to support agent |
-| MINIMUM AMOUNT FAILED | Below scheme minimum | Inform client of minimum |
-| UNITS NOT AUTHORISED | CDSL T-PIN missed | Must be completed same day before 3 PM. Place fresh order. Suggest DDPI. |
-| UNITS NOT AUTHORISED — settlement holiday | CDSL authorization date did not match order process date due to a settlement holiday | "Your redemption request has been rejected due to a mismatch between the sell date and the order processed date due to the settlement holiday. The sell date for which the units were authorised on CDSL must match the order process date on which the order was processed and placed. Please place a fresh redemption order." |
-| UNITS NOT AUTHORISED — near cutoff (non-holiday) | CDSL authorization date did not match order process date due to order placement near the 3:00 PM cutoff | "Your recent redemption order has been rejected. The order placement was near the cutoff time, and as a result, there was a mismatch between the CDSL authorisation and order process date. The sell date for which the units were authorised on CDSL must match the order process date on which the order was processed and placed. Please place a fresh redemption request." |
-| UNRID | CDSL T-PIN authorization not completed | Same as UNITS NOT AUTHORISED. For SWP/STP orders: T-PIN authorization window is 10:00 AM (when SWP triggers) to 3:00 PM on trigger day. If missed → order cancelled. Suggest DDPI to avoid repeated authorizations. |
-| UNRID — settlement holiday | Same date mismatch as UNITS NOT AUTHORISED — settlement holiday | Use the settlement holiday response above. |
-| UNRID — near cutoff (non-holiday) | Same date mismatch as UNITS NOT AUTHORISED — near cutoff | Use the near-cutoff response above. |
-| FREE QTY LESS | Insufficient unlocked units | Check pseudo_holdings for margin/pledged |
-| UNIT NOT RECEIVED IN DEPOSITORY | Units not available in demat | Check console_mf_pseudo_holdings for pledged units (`margin`) and console_mf_tradebook for ELSS lock-in (FIFO from `trade_date`). If pledged → advise unpledging: Console → Portfolio → Holdings → [fund] → Unpledge. If ELSS locked → advise waiting for lock-in expiry per console_mf_tradebook Rule 1. |
-| BANK ACCOUNT MISMATCH WITH UCC | Bank details not updated on BSE Star MF | escalate — agent review needed. |
-| ER[XX] prefixed | AMC-level restriction | Share status_message verbatim |
-| TPV INVALID | Bank validation failed | See Rule 3 (TPV Pending) |
-| BSE infrastructure/database errors (e.g., "network-related or instance-specific error", "BSEMFDB", "Connection Timeout", "DUPLICATE UNIQUE REF NO", "CLIENT DOES NOT EXISTS", "PASSWORD EXPIRED", "login failed") | BSE STAR MF system-side failure — order failed due to exchange infrastructure issue | "As per the reverse feed received from BSE, there was a technical issue at the exchange level. Your payment will be refunded to your bank account within 7 working days. We apologize for the inconvenience." Apply **A4** refund language if `payment_confirmed` = true. |
-
-
-### A6: Redemption Settlement Computation
-
-1. **Determine T:** Order before 3:00 PM on a working day → T = that day. After 3:00 PM, or on weekend/settlement holiday → T = next working day. If that day is also a holiday, shift further. Refer to unconfirmed dates as "a holiday" — only name a holiday if explicitly confirmed in the data.
-2. **Credit date:** Add `redemption_time` working days (Mon–Fri, excluding trading/settlement holidays) to T. `redemption_time` applies only to redemption (SELL) orders — it is the settlement period for redemption proceeds. If `redemption_time` is blank or null in the order data, do not assume a default settlement period. State: "The settlement timeline for this fund is being updated and will be available shortly."
-3. **Response:** "Your redemption was processed on [T]. Based on [redemption_time] working days settlement, funds should be credited to your primary bank account by [date]."
-
-
-### A7: Field Rules
-
-**Shareable with client:** fund, amount, average_price (if asked), quantity (if asked), order_timestamp, exchange_timestamp, status_message, folio (if asked), redemption_time, transaction_type
-
-**Internal reasoning only (use for analysis, communicate findings in plain language):** status, payment_confirmed, fund_source, variety, payment_initiated_at, payment_updated_at, payment_method, payment_remarks, purchase_type, exchange_order_id, unique_payment_id, payment_error_description, payment_error_code, tag (use for NFO detection: if `tag` contains `"product": "nfo"`, the order is an NFO order)
-
-**Banned (internal infrastructure fields with no client relevance):** tradingsymbol, settlement_id, sip_id, payment_details, last_price, last_price_date
-
-**Communication style:**
-- Use customer-friendly language: "Your order was placed on [date]" rather than referencing system fields or tool names.
-- Translate fund_allocation_report findings into plain language.
-- `order_timestamp` records when the order was created. Cancellation time is not captured — communicate only that the order was cancelled after it was placed.
-- Financial figures: Always display to 2 decimal places.
-- Communicate payment failures in plain language: state that the payment failed and where in the process it failed (gateway, bank, exchange). Technical details such as error codes and system error descriptions are for internal diagnosis only — translate them into the cause before responding.
-
-
-### A8: Key Facts
-
-- Order history has a backend limitation of 180 days. For orders older than 180 days, use **console_mf_tradebook** — it has no time limitation. Always use console_mf_tradebook for verifying older allotments, historical trade entries, and XIRR-related checks that require complete buy/sell history.
-- Stamp duty: 0.005% deducted from allotted units.
-- Cancelled/failed order refunds: per **A4**.
-- Zerodha fund house WhatsApp orders are processed separately and appear in AMC records, not in Coin order history.
-- Console shows T-2 NAV; Coin shows T-1 NAV (P&L values may differ).
-- NEFT/RTGS/IMPS payments go directly to ICCL and are tracked at the exchange level, not on Coin.
-- Minor account MF purchases must use the minor's linked bank account. The guardian's bank account cannot be used. Kite balance is not used for MF purchases.
-- When redeeming via CDSL portal, all MF holdings in demat are displayed. Only the selected fund's units will be redeemed. Recommend Coin app for a cleaner experience.
-- ETF NFO allotment verification: check console_eq_external_trades for an "IPO" entry matching the fund. Order status in mf_order_history may remain "Processing" even after ETF NFO allotment is complete.
-- MF units not in CDSL statement: "Units are held in demat with CDSL. Delays may be due to reporting cycles or PAN/email mismatches. Check monthly CAS email or view on Coin/Console."
-- Client cannot view fund on Coin: Check console_mf_pseudo_holdings first. If holdings exist → escalate. If no holdings → ask for screenshot.
-- Allotment timeline: Units are typically allotted within T+3 working days (excluding weekends and trading/settlement holidays) from `exchange_timestamp`. When explaining allotment timelines, compute T+3 from `exchange_timestamp` accounting for holidays. Once `exchange_timestamp` is established, it is the processing date. Holidays falling after that date are skipped when counting the T+3 working days, extending the allotment window. State the `exchange_timestamp` date as the processing date and count forward from it.
-
-
-### A9: Links
-
-| Purpose | URL |
-|---|---|
-| MF cutoff times | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/buying/articles/cut-off-time-for-mutual-fund-transactions-on-coin |
-| Payments on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/complete-payments-purchase-orders-coin |
-| NEFT/RTGS on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/neft-rtgs-coin |
-| Console NAV difference | https://support.zerodha.com/category/mutual-funds/coin-general/coin-reports/articles/mf-nav-of-t-2-days-on-console |
-| How to redeem on Coin | https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/redeem-sell-mutual-fund-investments |
-| Reactivate account | https://support.zerodha.com/category/your-zerodha-account/your-profile/kyc-re-activation/articles/re-activate-my-account |
-| MF units settlement timeline | https://support.zerodha.com/category/mutual-funds/features-on-coin/others-coin/articles/how-long-will-it-take-for-the-mutual-fund-units-to-show-up-in-my-demat-account |
-| Convert resident account to NRI | https://support.zerodha.com/category/account-opening/nri-account-opening/process-nri/articles/convert-resident-account-to-nri-account |
-| Delay allotment / NA units | https://support.zerodha.com/category/mutual-funds/payments-and-orders/orders-on-coin/articles/coin-app-na-new-units |
-
-
-### A10: Direct vs Non-Direct Settlement Banks
-
-Non-direct settlement banks report payments to the exchange on the next business day. This means the client receives T+1 NAV regardless of when the payment was made or confirmed before cutoff.
-
-**Identifying the client's bank for a specific order:**
-1. Check `payment_method` in the order. If `payment_method` = netbanking → proceed to identify the bank.
-2. Extract `acc_number` from `payment_details`.
-3. Match `acc_number` against `bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number` from get_all_client_data.
-4. Use the matching `bank_1_name` / `bank_2_name` / `bank_3_name` to identify the bank.
-5. Check the bank against the classification below.
-
-| Direct Settlement Banks | Non-Direct Settlement Banks |
-|---|---|
-| HDFC Bank | Allahabad Bank |
-| ICICI Bank | Andhra Bank |
-| State Bank of India (SBI) | AU Small Finance Bank |
-| Axis Bank | Bank Of Baroda |
-| Kotak Bank | Bank Of India |
-| | Bank of Maharashtra |
-| | Canara Bank |
-| | Catholic Syrian Bank |
-| | Central Bank of India |
-| | City Union Bank |
-| | Corporation Bank |
-| | DCB |
-| | Deutsche Bank AG |
-| | Dhanalaxmi Bank |
-| | Equitas Small Finance Bank |
-| | Federal Bank |
-| | IDBI Bank |
-| | Indian Bank |
-| | Indian Overseas Bank |
-| | Jammu & Kashmir Bank |
-| | Karnataka Bank |
-| | Karur Vysya Bank |
-| | Punjab National Bank |
-| | South Indian Bank |
-| | Standard Chartered |
-| | SVC Co-operative Bank |
-| | Tamilnad Mercantile Bank |
-| | The Lakshmi Vilas Bank Limited |
-| | The Ratnakar Bank Limited (RBL) |
-| | The Saraswat Co-Operative Bank |
-| | UCO Bank |
-| | Union Bank of India |
-| | IDFC Bank |
-| | IndusInd Bank |
-| | Yes Bank |
-
-
-### A11: NRI MF Investment Eligibility
-
-**Account requirement:** NRI clients must have an NRO or NRE type account to invest in MFs on Coin. Resident accounts cannot be used. Clients needing to convert from a resident account to NRI can follow the conversion process — KYC details are collected during the conversion itself.
-
-**US/Canada restriction:** US/Canada-based NRIs currently cannot invest in any MF schemes on Coin due to technical restrictions.
-
-**Dormant account:** If the account is dormant, it must be reactivated before investing.
-
-**Support article:** [Convert resident account to NRI account](https://support.zerodha.com/category/account-opening/nri-account-opening/process-nri/articles/convert-resident-account-to-nri-account)
-
-
-On every MF order query, execute in order:
-
-```
-1. PREFLIGHT
-   ├─ get_all_client_data → check account status
-   │   └─ If dormant → answer query normally, then append reactivation note (A9 link)
-   ├─ Check transaction_type to determine BUY vs SELL
-   ├─ If client mentions "withdrawal" + "Coin" or "mutual fund" → treat as redemption, check SELL orders
-   ├─ MULTI-ORDER CHECK (run before any individual order diagnosis):
-   │   Before diagnosing any individual order, list all orders for the queried fund
-   │   within the relevant date range. If more than one order exists, diagnose each
-   │   order independently — report the status of every order to the client. One order
-   │   succeeding does not mean all orders succeeded.
-   │   Map each order to its fund_allocation_report entry using exchange_order_id
-   │   (mf_order_history) = order_number (fund_allocation_report). This is the only
-   │   reliable way to match payment and settlement data to each individual order.
-   │   Check payment_confirmed and status for EACH order individually.
-   └─ Check if client is NRI → if query is about MF investment eligibility, route to Rule 10
-
-2. ROUTE by status / intent
-   ├─ Status = Processing → Rule 1
-   ├─ Status = Failed → Rule 2
-   ├─ Status = Cancel or TPV Pending → Rule 3
-   ├─ Redemption issue (transaction_type = SELL) → Rule 4
-   ├─ NAV dispute → Rule 5
-   ├─ SIP query → Rule 6
-   ├─ NEFT/RTGS/IMPS payment → Rule 7
-   ├─ Payment gateway failures → Rule 8
-   ├─ NRI MF investment eligibility / account conversion → Rule 10
-   ├─ Duplicate/extra payment claims → Rule 11
-   ├─ Order older than 180 days → "Check console_mf_tradebook for older records."
-   └─ Escalation trigger → Rule 9
-
-3. SCOPE
-   Only address what the customer asked. Volunteer NAV details,
-   cutoff explanations, SIP auto-debit behavior, or status of unrelated
-   orders only when directly relevant to the reported issue.
-```
-
 
 ---
 
-### Rule 1: Processing Orders
+### A3 — Order Variety Mapping
+
+| `variety` value | Meaning |  
+|---|---|  
+| regular | Lumpsum order |  
+| SIP | SIP instalment |
+
+`purchase_type`: FRESH = first-ever order in a fund. ADDITIONAL = subsequent order (SIP instalments, top-ups, repeat lumpsum).
+
+---
+
+### A4 — Refund Statement
+
+- Standard refund statement: "The debited amount will be refunded by BSE STAR MF to your source bank account within 5–7 working days (excluding weekends and holidays)."  
+- When trading/settlement holidays fall within the 5–7 working day window, name the holidays in the response so the client understands the working-day count.
+
+---
+
+### A5 — Common Rejections
+
+| `status_message` pattern | Cause category | Action |  
+|---|---|---|  
+| INVALID BANK ACCOUNT DETAILS, PAN/PEKRN MISMATCH, DOB DIFFERS WITH PAN, FOLIO LOCKED KRA, INVALID MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC, REGISTER WITH AMC | Account-level KYC or registration issue | Escalate to a human agent |  
+| E-KYC limit ₹50K/AMC | Incomplete KYC — investment limit hit | Escalate to a human agent |  
+| SCHEME CLOSED | Scheme suspended | Communicate the closure and suggest AMC SIP as an alternative |  
+| NON ELIGIBLE SCHEME | Scheme suspended or restricted | Communicate that the scheme is unavailable |  
+| MINIMUM AMOUNT FAILED | Order below scheme minimum | Communicate the scheme's minimum amount |  
+| UNITS NOT AUTHORISED / UNRID | CDSL T-PIN authorisation not completed | T-PIN must be completed on the same day before 3 PM. Advise placing a fresh order and suggest enabling DDPI. For SWP/STP orders: T-PIN window is 10:00 AM (trigger) to 3:00 PM on trigger day; if missed, the order is cancelled. |  
+| UNITS NOT AUTHORISED / UNRID — settlement holiday | Sell date authorised on CDSL did not match order process date due to a settlement holiday | Communicate that the sell date authorised on CDSL must match the order process date, and the mismatch was caused by the settlement holiday. Advise placing a fresh redemption order. |  
+| UNITS NOT AUTHORISED / UNRID — near cutoff (non-holiday) | CDSL authorisation date did not match order process date due to order placement near the 3:00 PM cutoff | Communicate the same mismatch reason (sell date / order process date). Advise placing a fresh redemption order. |  
+| FREE QTY LESS | Insufficient unlocked units | Invoke `console_mf_pseudo_holdings` for pledged units (`margin`). Communicate the actual available quantity. |  
+| UNIT NOT RECEIVED IN DEPOSITORY | Units not in demat — pledged or ELSS locked | Invoke `console_mf_pseudo_holdings` for pledged units (`margin`) and invoke `console_mf_tradebook` for ELSS lock-in (FIFO from `trade_date`). If pledged → advise unpledging via Console → Portfolio → Holdings → [fund] → Unpledge. If ELSS locked → advise waiting for lock-in expiry. |  
+| TPV INVALID | Bank validation failed on re-validation | See Rule 4 (TPV Pending) |  
+| BSE STAR MF system-side errors (network-related or instance-specific error, BSEMFDB, Connection Timeout, DUPLICATE UNIQUE REF NO, CLIENT DOES NOT EXISTS, PASSWORD EXPIRED, login failed) | Exchange infrastructure issue | Communicate that there was a technical issue at the exchange. If `payment_confirmed` = true, apply A4 refund language. |  
+| Buy/lumpsum option not available, only AMC SIP visible | AMC has suspended lumpsum investments due to valuation/size constraints; Zerodha SIPs (placed as lumpsum) are also affected | Communicate the AMC restriction. AMC SIP is available as an alternative. Share link from A9. |
+
+---
+
+### A6 — Redemption Settlement Computation
+
+- **T-day:** Order placed before 3:00 PM on a working day → T = that day. After 3:00 PM, or on a weekend/settlement holiday → T = next working day. Holiday shift scope per A2.  
+- **Credit date:** Add `redemption_time` working days (Monday–Friday, excluding trading/settlement holidays) to T. `redemption_time` applies only to redemption (SELL) orders — it is the settlement period for redemption proceeds.  
+- **If `redemption_time` is blank or null:** Communicate that the settlement timeline for this fund is being updated and will be available shortly.
+
+---
+
+### A7 — Field Rules
+
+**Shareable with client:**
+
+| Field | Interpretation |  
+|---|---|  
+| `fund` | Name of the fund |  
+| `amount` | Order amount in rupees |  
+| `average_price` | Average allotment price per unit (share if asked) |  
+| `quantity` | Number of units (share if asked) |  
+| `order_timestamp` | When the order was placed (records order creation time only — cancellation time is not captured) |  
+| `exchange_timestamp` | When the exchange processed the order |  
+| `status_message` | Status description from the exchange |  
+| `folio` | Folio number associated with the order (share if asked) |  
+| `redemption_time` | Time of redemption processing |  
+| `transaction_type` | Transaction type (purchase, redemption, SIP, etc.) |  
+| `status` | Order status — translate per A1 status interpretation |  
+| `payment_updated_at` | When payment was confirmed at ICCL; primary reference for T-day per A2 |  
+| `payment_initiated_at` | When payment was initiated; fallback when `payment_updated_at` is not yet populated |
+
+**Non-shareable:**
+
+| Field | Interpretation |  
+|---|---|  
+| `tradingsymbol` | Internal trading symbol identifier for the instrument |  
+| `sip_id` | Links the order to the associated SIP record |  
+| `payment_details` | Raw payment data — internal use only |  
+| `last_price` | Last NAV price at time of order |  
+| `last_price_date` | Date of the last NAV used |  
+| `payment_confirmed` | true = payment was debited; false = no payment debited |  
+| `payment_error_code`, `payment_error_description` | Indicate payment failure reason |  
+| `exchange_order_id`, `settlement_id` | Map the order to `fund_allocation_report` (by `order_number` or `settlement_number`) |  
+| `unique_payment_id` | Internal payment reference |  
+| `tag` | Detect NFO orders (value contains `"product": "nfo"`) |  
+| `purchase_type` | See A3 |  
+| `variety` | See A3 |  
+| `payment_method` | Used to identify the bank per A10 for netbanking orders |  
+| `fund_source` | Payment source — see A2 mapping |
+
+---
+
+### A8 — Key Facts
+
+- Stamp duty: 0.005% deducted from allotted units.  
+- Zerodha fund house WhatsApp orders are processed separately and appear in AMC records, not in Coin order history.  
+- NAV display differs between platforms: Coin shows the NAV as of T-1 (previous working day); Console shows the NAV as of T-2 (two working days prior). P&L values on the two platforms may differ for this reason; both are correct for their respective display dates.  
+- NEFT/RTGS/IMPS payments are credited directly to ICCL and cannot be tracked on Coin.  
+- Minor account MF purchases must use the minor's linked bank account. The guardian's bank account cannot be used. Kite balance is not used for MF purchases.  
+- Minor account initial investment: if the minor does not have access to NetBanking or UPI, NEFT/RTGS from the minor's linked bank account is the only available payment option for the initial investment. Subsequent SIP instalments can then be debited from the linked mandate.  
+- CDSL redemption redirect: when a client places a redemption order and DDPI/POA is not enabled, they are redirected to the CDSL authorisation page. This page displays all the client's MF holdings in demat. The client can authorise any of the funds shown, but only the units selected for the specific redemption order will be redeemed.  
+- CDSL authorisation loop (repeated OTP redirect): occurs when recently allotted units haven't synced with CDSL. Units are credited by 8 PM on the settlement date. If delayed at RTA/CDSL, units become available for authorisation on the second working day after settlement (T+3). Enabling DDPI avoids this loop in future.  
+- ETF NFO allotment verification: invoke `console_eq_external_trades` and check for an 'IPO' entry matching the fund. Order status in `mf_order_history` may remain "Processing" even after ETF NFO allotment is complete.  
+- MF units not in CDSL statement: units are held in demat with CDSL. Delays may be due to reporting cycles or PAN/email mismatches. Advise checking the monthly CAS email or viewing on Coin/Console.  
+- Client cannot view a fund on Coin: invoke `console_mf_pseudo_holdings` first. If holdings exist → escalate. If no holdings → ask for a screenshot.  
+- **Allotment timeline:** Units are expected to be allotted on T+1 (the next working day after `exchange_timestamp`). In some cases, late delivery of units to the demat account causes allotment to take longer than T+1 — up to T+3 working days (excluding weekends and trading/settlement holidays). When units are delivered late, NA is shown on Coin on T+2 (the day after the expected allotment) for one day only, and is rectified on T+3. Communicate this as late delivery of units, not as an allotment duration of T+3.  
+- **Multi-order principle:** When the client's query involves multiple orders for the same fund, diagnose each order independently. One order succeeding does not mean all orders succeeded.  
+- **SIP mechanics:**  
+  - SIPs trigger 2 days prior to the preferred date.  
+  - Zerodha SIP unpaid → auto-deleted at T+4 calendar days. AMC SIP unpaid → auto-deleted at T+5 working days.  
+  - AMC SIP supports deletion only — modification and pause are not supported. Deletion must be at least 2 days before the next instalment. To change amount or date, delete and create a new SIP.  
+  - For daily SIPs with a linked mandate, orders are placed on T-1.  
+  - Fortnightly SIP contribution counts depend on actual allotment dates, not fixed monthly triggers.
+
+---
+
+### A9 — Links
+
+| Purpose | URL |  
+|---|---|  
+| MF cutoff times | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/buying/articles/cut-off-time-for-mutual-fund-transactions-on-coin |  
+| How to make payments on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/add-funds-coin-new |  
+| How to pay via NEFT/RTGS on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/neft-rtgs-coin |  
+| Why NAV on Console differs from Coin (T-2 vs T-1) | https://support.zerodha.com/category/mutual-funds/coin-general/coin-reports/articles/mf-nav-of-t-2-days-on-console |  
+| How to redeem on Coin app | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeem-on-coin-app |  
+| How to redeem on Coin web | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/how-do-i-redeem-my-mutual-fund-units-on-coin |  
+| Reactivate account | https://support.zerodha.com/category/your-zerodha-account/your-profile/kyc-re-activation/articles/re-activate-my-account |  
+| MF units settlement timeline | https://support.zerodha.com/category/mutual-funds/features-on-coin/others-coin/articles/how-long-will-it-take-for-the-mutual-fund-units-to-show-up-in-my-demat-account |  
+| Delay allotment / NA units | https://support.zerodha.com/category/mutual-funds/payments-and-orders/orders-on-coin/articles/coin-app-na-new-units |  
+| Buy option not available | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/buying/articles/unable-to-place-buy-order-in-mutual-funds |  
+| Convert resident account to NRI | https://support.zerodha.com/category/account-opening/nri-account-opening/process-nri/articles/convert-resident-account-to-nri-account |
+
+---
+
+### A10 — Direct vs Non-Direct Settlement Banks
+
+Non-direct settlement banks report payments to the exchange on the next working day. Because the exchange only registers the payment on the next working day, that next day becomes T-day for the order. This shift happens regardless of when the client made the payment or whether it was made before the cutoff.
+
+**Direct Settlement Banks:**
+
+| Bank |  
+|---|  
+| HDFC Bank |  
+| ICICI Bank |  
+| State Bank of India (SBI) |  
+| Axis Bank |  
+| Kotak Bank |
+
+**Non-Direct Settlement Banks:**
+
+| Bank |  
+|---|  
+| Allahabad Bank |  
+| Andhra Bank |  
+| AU Small Finance Bank |  
+| Bank of Baroda |  
+| Bank of India |  
+| Bank of Maharashtra |  
+| Canara Bank |  
+| Catholic Syrian Bank |  
+| Central Bank of India |  
+| City Union Bank |  
+| Corporation Bank |  
+| DCB |  
+| Deutsche Bank AG |  
+| Dhanalaxmi Bank |  
+| Equitas Small Finance Bank |  
+| Federal Bank |  
+| IDBI Bank |  
+| Indian Bank |  
+| Indian Overseas Bank |  
+| Jammu & Kashmir Bank |  
+| Karnataka Bank |  
+| Karur Vysya Bank |  
+| Punjab National Bank |  
+| South Indian Bank |  
+| Standard Chartered |  
+| SVC Co-operative Bank |  
+| Tamilnad Mercantile Bank |  
+| The Lakshmi Vilas Bank Limited |  
+| The Ratnakar Bank Limited (RBL) |  
+| The Saraswat Co-Operative Bank |  
+| UCO Bank |  
+| Union Bank of India |  
+| IDFC Bank |  
+| IndusInd Bank |  
+| Yes Bank |
+
+---
+
+### A11 — NRI MF Investment Eligibility
+
+- **Account requirement:** NRI clients must have an NRO or NRE account to invest in MFs on Coin. KYC details are collected during the conversion process.  
+- **US/Canada restriction:** US/Canada-based NRIs cannot invest in MF schemes on Coin due to technical restrictions.  
+- **Dormant account:** If the account is dormant, it must be reactivated before investing. See A9 for the reactivation link.  
+- Conversion support article: see A9.
+
+---
+
+## Section B: Decision Flow
+
+### Routing
+
+```  
+Query relates to an MF order →  
+├─ Order stuck in Processing / payment confirmed but units not allotted → Rule 1  
+├─ Order failed (status = Failed or rejection message received) → Rule 2  
+├─ Order cancelled — refund or status query → Rule 3  
+├─ Order in TPV Pending status → Rule 4  
+├─ Redemption — credit delay, CDSL auth issues, unit availability → Rule 5  
+├─ NAV applied is incorrect or wrong NAV date → Rule 6  
+├─ SIP — missed instalment, initial investment, schedule question → Rule 7  
+├─ NEFT/RTGS/IMPS payment not reflecting on Coin → Rule 8  
+├─ Repeated UPI or netbanking payment failures → Rule 9  
+├─ NRI MF eligibility or resident-to-NRI account conversion → Rule 10  
+├─ Duplicate or extra payment debited → Rule 11  
+└─ Out-of-scope (children's/gift plans, scheme not on Coin) or miscellaneous escalation → Rule 12  
+```
+
+### Fallback
+
+If no rule matches and no root cause is identified → escalate to a human agent.
+
+---
+
+## Section C: Rules
+
+---
+
+### Rule 1 — Processing Orders
+
+**NEFT/RTGS payment:**
+
+If `status_message` contains "Pending payment via NEFT/RTGS" → go to Rule 8.
+
+**NFO order:**
+
+If `tag` contains `"product": "nfo"`, the order follows NFO logic:
+
+- **Allotted** → Communicate that units have been allotted. For MF/FOF NFO: units appear in Coin only after the fund is listed — typically within 5 working days of allotment; after listing, units are visible on Coin within T+2 working days. Share the listing date if known from order data. For ETF NFO: units appear in Kite/Console equity holdings, not Coin — invoke `console_eq_external_trades` and check for an 'ipo' entry matching the fund per A8.  
+- **Still Processing — ETF NFO:** Invoke `console_eq_external_trades`. If an 'IPO' entry exists → communicate that units are in Kite holdings under the scrip name, even though order status on Coin shows Processing.  
+- **Still Processing — non-ETF NFO:** Communicate that the NFO order is being processed and status updates within T+2 after listing. Rejection remarks for NFO orders update only after the allotment window closes. Share allotment quantities only if `mf_order_history` shows order status as 'Allotted'. Invoke `console_mf_pseudo_holdings` to check quantities — for NFO orders, these may be preliminary until allotment is officially confirmed.  
+- **Cannot determine** → Escalate to a human agent.
+
+**Payment not yet confirmed (`payment_confirmed` = false):**
+
+For non-SIP orders:
+
+1. Check `payment_error_code` and `payment_error_description`. If either is populated → payment failed. Communicate that the payment was not confirmed and advise placing a new order. Apply A4 refund language.  
+2. If no error code is present, invoke `fund_allocation_report` using the order mapping per A7. If an entry exists, use its data to confirm what happened to the payment.  
+3. If `fund_allocation_report` has no matching entry, the data is inconclusive. Apply A4 refund language conditionally (if the client's bank was debited, the refund will apply).
+
+For SIP orders (`variety` = sip):
+
+Invoke `sip_report` and check `fund_source`:  
+- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the order date. Apply the debit status per Mandate Debit Report A4 translations.  
+- Otherwise → no mandate linked.
+
+**Determine T-day (when `payment_confirmed` = true):**
+
+- Apply the working-day check from A2. If `payment_updated_at` falls on a weekend or trading/settlement holiday → T = next working day. State the non-working day(s) and reason.  
+- For netbanking orders, identify the client's bank per A10. If the bank is a non-direct settlement bank → T shifts per A10. Communicate that the payment was made via a non-direct settlement bank, the payment was reported to the exchange on the next working day, and that became T-day; allotment is expected by T+1.  
+- For UPI orders or netbanking with a direct settlement bank, apply NAV cutoff logic per A2:  
+  - `payment_updated_at` is populated, before cutoff → T = that day. Allotment expected by T+1.  
+  - `payment_updated_at` is populated, after cutoff → T shifts per A2 (for liquid funds, NAV moves from T-1 to T-day; for other funds, T = next working day). Further shift if that day is non-working.  
+  - `payment_updated_at` is not yet populated → use `payment_initiated_at` as reference. Share the cutoff link from A9. Communicate that the applicable NAV depends on when the payment is updated at ICCL.  
+- Cross-check T-day against `exchange_timestamp`. If they differ, use `exchange_timestamp` as the actual T-day (this confirms when the exchange processed the order). Invoke `fund_allocation_report` and verify against `payment_date` as well.  
+- Allotment is expected on T+1 per A8. Name any holidays that fall within the window.
+
+**Invoke `fund_allocation_report`:**
+
+Map the order per A7.
+
+Check flags:
+
+- `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted. Within T+3 working days from `exchange_timestamp` → late delivery of units per A8. Communicate that the payment has been settled and units have been allotted by the AMC, and holdings may take up to T+3 working days to be credited due to late delivery. Share the MF units settlement timeline link from A9. Beyond T+3 → escalate to a human agent.  
+- `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status = "Allotted" → allotment is finalised; units will be credited.  
+- `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status ≠ "Allotted" → Communicate: "Payment settled. Allotment expected by [date]." — date = T+1 working day from `exchange_timestamp` per A8.  
+- `settled_flag` = N → check the mapping columns first. If both `order_number` AND `settlement_number` are null or empty, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply A4 refund language. If either column is populated, the payment is mapped. Count working days from `payment_date` in `fund_allocation_report`:  
+  - Within T+1 → Communicate: "Payment pending settlement. Allow one working day."  
+  - Beyond T+2 → order has failed. Check `refund_utr`:  
+    - Populated → Communicate that the refund of ₹[amount] has been processed; share the reference to track with the bank.  
+    - Empty → Apply A4 refund language.
 
-**Step 0 — NEFT/RTGS check:**
-If `status_message` contains "Pending payment via NEFT/RTGS" → **stop**, go to Rule 7.
+---
 
-**Step 1 — NFO check:**
-Check the `tag` field for `"product": "nfo"` to identify NFO orders. If the order is an NFO → check mf_order_history for any NFO order for this fund within last 30 days:
-- Allotted → "Your units have been allotted. NFO units appear in holdings only after the fund is listed, typically within 5 working days of allotment, then T+2 from listing date." If listing date is known from order data → share it. If not → use the standard 5 working days timeline. MF/FOF NFO → appears in Coin. The depository is not involved in this timeline.
-- **ETF NFO — allotment verification:** ETF NFO units appear in Kite/Console equity holdings, not Coin. The order `status` may remain "Processing" even after allotment is complete. To confirm allotment, check console_eq_external_trades for an "IPO" entry matching the ETF NFO fund. If an IPO entry exists → allotment is complete. Inform: "Your ETF NFO units have been allotted and are available in your Kite holdings under [scrip name]. The order status on Coin may still show as Processing — this is expected for ETF NFOs."
-- Still Processing (non-ETF NFO) → "Your NFO order is being processed. Status updates within T+2 after listing." Rejection remarks for NFO orders update only after the allotment window closes.
-- Cannot determine → Escalate to support agent.
+### Rule 2 — Failed Orders
 
-**Step 2 — Payment error check (run before any other status interpretation):**
-Check `payment_error_code` and `payment_error_description` fields. If either field is present AND `payment_confirmed` = false → payment failed, regardless of what `status_message` shows. The order may display "Payment received" or "order sent to AMC" in status_message, but the error fields are authoritative. Respond: "Your order shows a processing status, but the payment was not successfully confirmed. Please place a new order and complete the payment. If your bank account was debited for the previous order, the amount will be refunded to your source bank account within 5–7 working days (excluding weekends and holidays)."
+- Match `status_message` against A5 and apply the Action column.  
+- If `payment_confirmed` = true → apply A4 refund language alongside the failure cause.  
+- If the client has multiple recent failed orders → invoke `fund_allocation_report` and check `error_remarks` for "INVALID BANK ACCOUNT DETAIL". If found → escalate to a human agent.
 
-**Step 3 — Payment check:**
-`payment_confirmed` = false (and no payment error from Step 2) → "Payment not confirmed. Allow 24 hours for gateway update."
+---
 
-For SIP orders (`variety` = sip): also check sip_report for the SIP's `fund_source`. If `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked, check mandate_debit_report for a debit entry on the order date. If a debit entry exists, apply the debit status per Mandate Debit Report **A2** translations to determine whether the debit succeeded, is pending, or failed. If `fund_source` = `rp-pg`, `pool`, or blank → no mandate-based debit occurred.
+### Rule 3 — Cancelled Orders
 
-**Step 3a — Fast-track for confirmed payment beyond T+2:**
-If `payment_confirmed` = true AND the order is beyond T+2 from `payment_updated_at` → proceed directly to Step 5 (fund_allocation_report cross-check). This order requires immediate investigation — payment was received but allotment has not completed within the expected window.
+For cancelled orders, apply A1 status interpretation based on `payment_confirmed`:  
+- `payment_confirmed` = true → apply A4 refund language.  
+- `payment_confirmed` = false → proceed to the SIP check below before concluding no payment was debited.
 
-**Step 4 — Determine T-day:**
+**SIP cancelled with `payment_confirmed` = false:** For SIP orders (`variety` = sip) cancelled after placement, invoke `sip_report` and check `fund_source`:  
+- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the same date. If debit status = Success or Created and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply A4 refund language.  
+- Otherwise → no mandate linked. No payment was debited.
 
-First check whether `payment_updated_at` falls on a working day per **A2**. If it falls on a weekend or trading/settlement holiday → set T = next working day and state which day(s) were non-working and why. If the next day is also a non-working day, shift further.
+---
 
-Then check `payment_method`. If `payment_method` = netbanking → identify the client's bank per **A10**. If the bank is a non-direct settlement bank → T-day shifts to the next business day regardless of cutoff. State: "Your payment was made via [bank name], which is a non-direct settlement bank. The payment was reported to the exchange on the next business day [date], so your order was placed on that date. Allotment is expected by [T+1]."
+### Rule 4 — TPV Pending
 
-If `payment_method` is not netbanking, or the bank is a direct settlement bank, proceed with standard cutoff logic:
-- Available + before cutoff → T = that day. "Allotment expected within T+1 business day."
-- Available + after cutoff → T = next working day per **A2**. If that day is also a weekend or holiday, shift further until a working day is reached.
-- Not yet available → use `payment_initiated_at` as reference. Share cutoff link from **A9**. State that the applicable NAV depends on exchange confirmation.
+- Check `order_timestamp` to determine working days elapsed.  
+- Within T+3 working days from `order_timestamp` → Communicate that the order is pending third-party bank account validation. The exchange automatically re-validates pending orders on the next working day. If the order is rejected due to TPV pending status, the exchange performs a penny drop test on the bank account used for payment. If the account passes, the order status updates to allotted within 2 working days.  
+- Beyond T+3 working days from `order_timestamp`, status unchanged → Ask the client to share their bank statement from the order date to present. Escalate to a human agent with the bank statement.  
+- Rejected after re-validation (`status_message` contains TPV INVALID, per A5) → Escalate to a human agent.
 
-After determining T-day (whether from cutoff or holiday shift), cross-check using `exchange_timestamp` in mf_order_history. If `exchange_timestamp` date differs from the computed T-day, use `exchange_timestamp` date as the actual T-day — this confirms when the exchange processed the order. State the exact time and date from `payment_updated_at` in the response when explaining cutoff determination. If fund_allocation_report is available, verify against `payment_date` as well.
+---
 
-Allotment is expected within T+3 working days from `exchange_timestamp` (excluding weekends and trading/settlement holidays per **A8**). When explaining the timeline, name any holidays that fall within the T+3 window per **A2**.
+### Rule 5 — Redemption Issues
 
-**Step 5 — Within T+2, payment confirmed:**
-Check **fund_allocation_report**. Map the order using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report).
+**Redemption order check:**  
+Check `transaction_type` = SELL. If no SELL order is found → ask the client for the fund name and when the order was placed.
 
-Check `error_remarks` first:
-- "INVALID BANK ACCOUNT DETAIL" → Escalate to support agent immediately.
+- Compute expected credit date per A6 using `redemption_time` from order data.  
+- Apply A6 cutoff logic first: if the order was placed after 3:00 PM on a working day, or on a weekend/settlement holiday, T shifts to the next working day. State the adjusted T-day and compute credit per A6.
 
-Then check flags:
-- `settled_flag` = Y, `allotment_flag` = Y, but still Processing → check whether `exchange_timestamp` is within T+3 working days (excluding weekends and trading/settlement holidays). If within T+3 → file sync delay is expected. "Your payment has been settled and units have been allotted by the AMC. Holdings typically update within T+3 working days from the exchange timestamp. Your holdings will update automatically." Share MF units settlement timeline link from **A9**. If beyond T+3 → escalate to support agent: "Order settled and allotted but holdings not updated beyond T+3."
-- `settled_flag` = Y, `allotment_flag` = N → "Payment settled. Allotment expected by [date]."
-- `settled_flag` = N → first check `order_number`: if `order_number` is null or empty in fund_allocation_report, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply **A4** refund language. If `order_number` is present, count working days from `payment_date` in fund_allocation_report (not from `order_timestamp` in mf_order_history):
-  - Within T+1 → "Payment pending settlement. Allow one business day."
-  - Beyond T+2 → order has failed. Check `refund_utr`:
-    - Populated → "Payment could not be settled. Refund of ₹[amount] processed — use reference [refund_utr] to track with your bank."
-    - Empty → apply **A4** refund language.
+Match the client's scenario:
 
-**Step 6 — Beyond T+3:**
-Cross-check fund_allocation_report. No entry → escalate.
+| Scenario | What to do |  
+|---|---|  
+| Order after cutoff | Communicate the adjusted T-day and expected credit date per A6. |  
+| UNITS NOT AUTHORISED / UNRID | Per A5. |  
+| FREE QTY LESS | Invoke `console_mf_pseudo_holdings` for pledged units (`margin`) and `console_mf_holdings` for available units. Communicate the actual available quantity and the reason for the difference (margin or pledge reduces free qty). |  
+| Redeemed, no bank credit | Compute expected credit date per A6. Within the window → communicate the expected date. Beyond → escalate to a human agent. |  
+| ELSS lock-in | Invoke `console_mf_tradebook` and follow FIFO from `trade_date`. Communicate which units are under lock-in and when eligible units become available. |  
+| UI error, no order found | Advise clearing cache, retrying with fewer units, retrying the next day. If persistent → escalate to a human agent with screenshot. |  
+| TPV failed on redemption | Escalate to a human agent. |  
+| CDSL portal showing all funds | Apply A8 CDSL redemption redirect explanation. Share redemption links from A9. |  
+| NRI account \+ exit load/TDS dispute | Escalate to a human agent. |  
+| Non-NRI exit load dispute | Escalate to a human agent. |  
+| Client disputes redemption NAV (lower than published NAV for that date) | Escalate to a human agent. |  
+| Repeated OTP redirect on CDSL authorisation | Apply A8 CDSL authorisation loop context. Advise the client of the two options: place a fresh redemption for remaining units (excluding recently allotted ones), or wait until the next working day for holdings to sync. Suggest enabling DDPI via Console → Settings → Account Authorization (using the Aadhaar-linked mobile number) to avoid this in future. |
 
-**Step 6.5 — payment_confirmed = true, settled_flag = N, beyond T+2:**
-"Your order is likely to fail. Place a lumpsum order for the current cycle." + **A4** refund language.
+---
 
+### Rule 6 — NAV Disputes
 
-### Rule 2: Failed Orders
+- Check `payment_method`:  
+  - `status_message` contains "Pending payment via NEFT/RTGS" → NAV depends on ICCL settlement time only. Share the NEFT/RTGS link from A9. Go to Rule 8.  
+  - `payment_method` = netbanking → identify the bank per A10. If non-direct settlement bank → communicate that the bank is non-direct, the payment was reported to the exchange on the next working day, and T-day shifted accordingly with the corresponding NAV applying per A2. Share the MF cutoff times link from A9. If direct settlement bank → proceed to cutoff check.  
+  - `payment_method` = UPI → proceed to cutoff check.
 
-Match `status_message` against **A5**. Communicate the cause in plain language — state what failed and why, translated from the technical status into a clear explanation for the client.
+- **Cutoff check:** Compare `payment_updated_at` against A2 cutoffs for the fund type. State the exact time and date from `payment_updated_at`.  
+- Invoke `fund_allocation_report` and cross-check `payment_date`. This verification applies to UPI and netbanking orders only — NEFT/RTGS/IMPS payments do not appear in `fund_allocation_report` (see Rule 8).  
+  - `payment_updated_at` after cutoff → communicate the confirmation time and applicable NAV per A2.  
+  - `payment_updated_at` before cutoff → NAV should match T-day per A2.
 
-If `payment_confirmed` = true → apply **A4** refund language.
+---
 
-If multiple recent orders failing → check fund_allocation_report `error_remarks` for "INVALID BANK ACCOUNT DETAIL" → escalate if found.
+### Rule 7 — SIP Queries
 
-Escalate if: INVALID BANK ACCOUNT, PAN/PEKRN MISMATCH, KRA LOCKED, MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC.
+Invoke `sip_report`.
 
+**Initial investment check (Zerodha SIPs only, `sip_type` = sip):**
 
-### Rule 3: Cancelled Orders & TPV Pending
+The SIP will not trigger until the initial lumpsum is allotted and settled. Invoke `console_mf_pseudo_holdings` for the specific fund:
 
-**Cancelled:**
+- **Units found** → initial investment confirmed. Proceed to the trigger check below.  
+- **No units** → check for a FRESH order (`purchase_type` = FRESH):  
+  - **No FRESH order** → Communicate that no initial investment was found for the fund, advise placing a lumpsum order, and state that the next SIP instalment is scheduled for `next_sip_date`. The SIP will trigger only after the initial lumpsum is allotted and settled.  
+  - **FRESH Processing/Placed** → Check `preferred_date` against initial order date. If `preferred_date` is within 2 days of the initial order, the SIP skips the current month and moves to the next cycle. Communicate that the initial investment is being processed, the SIP will trigger once units are allotted and settled, and state the next SIP date. If the cycle-skip applies, state it.  
+  - **FRESH Failed/Cancelled** → Communicate that the initial investment was not completed. Advise placing a fresh lumpsum order and, once units are allotted, pausing and resuming the SIP to reset the trigger date. State the current `next_sip_date`.  
+- If multiple SIPs are affected → check each fund separately and name each explicitly.
 
-When multiple orders exist for the same fund (some successful, some cancelled), address every order the client asks about individually. For successful orders, confirm units were allotted. For cancelled orders, check `payment_confirmed` independently per **A4** and include the refund information in the response for each cancelled order where `payment_confirmed` = true. For cancelled orders with `payment_confirmed` = false, check further per the SIP mandate check below before concluding no payment was debited. A wrong refund determination directly contradicts the client's bank statement.
+**Upcoming or recent trigger:** If `next_sip_date` is within 5 days, or the client asks about a missed/recent instalment → check order history for the SIP order around that date. Report the actual status and apply the relevant rule (Rule 1/2/3/4) for the status found.
 
-For SIP orders (`variety` = sip) cancelled after placement: if `payment_confirmed` = false, check sip_report for the SIP's `fund_source`. If `fund_source` = `digio-mandates` or `upi-mandates` → check mandate_debit_report for a debit entry on the same date. If debit status = Success or Created and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply **A4** refund language. If `fund_source` = `rp-pg`, `pool`, or blank → no mandate-based debit occurred, no payment was debited.
+---
 
-Cancellation time is not recorded — communicate only: "Your order was cancelled after it was placed."
+### Rule 8 — NEFT/RTGS/IMPS Payments
 
-**TPV Pending:**
+- Communicate that payments via NEFT/RTGS/IMPS are credited directly to ICCL and are tracked at the exchange level, not on Coin. Units will be allotted as per the settlement cycle. Share the NEFT/RTGS link from A9.
 
-1. Check `order_timestamp` to determine how many business days have elapsed.
-2. "Your order is pending third-party bank account validation. The exchange automatically re-validates pending orders on the next business day."
-3. "If the order is rejected due to the TPV pending status, the exchange performs a penny drop test on the bank account used for payment. If the bank account passes this test, the order status will be updated to allotted within 2 business days."
-4. If the order status remains unchanged beyond T+3 (3 business days from `order_timestamp`) → ask the client to share their bank statement from the order date to present for further investigation.
+**Payment mapping mechanics:**  
+- NAV is based on ICCL settlement time (up to 24 hours from transfer).  
+- Payments are mapped to orders on a FIFO basis. Each incoming transfer is matched against open orders in order of placement. If a transfer amount meets or exceeds an order amount, that order is fulfilled. Remaining funds carry forward to the next order.  
+- **Partial/split transfers:** If a client sends multiple smaller transfers intended for a single larger order, each transfer is mapped independently on FIFO. If no single transfer matches or exceeds the order amount, the order will fail and the unmatched amount will be reversed (apply A4 refund language). Example: a ₹40L order with two ₹20L transfers — ₹20L maps to the ₹40L order but does not fulfil it, so the order fails. Conversely, a ₹20L order with a ₹40L transfer fulfils the ₹20L order, and the remaining ₹20L carries forward.  
+- Common issue: the client transferred without selecting NEFT mode on Coin first → payment not received.
 
-If rejected after re-validation → check `status_message` for TPV INVALID per **A5**. Escalate to support agent.
+- Order still Processing beyond T+4 → communicate that the order is unlikely to go through and advise placing a fresh order if needed.
 
+---
 
-### Rule 4: Redemption Issues
+### Rule 9 — Payment Gateway Failures
 
-Redemption proceeds are credited directly to the client's primary registered bank account via the AMC. Always direct the client to check their primary bank account for redemption credits. Compute the expected credit date per **A6** using the actual `redemption_time` from order data. If `redemption_time` is blank or null, follow the fallback in **A6**.
+- UPI failing repeatedly → suggest netbanking or NEFT/RTGS.  
+- Netbanking failing repeatedly → suggest UPI or NEFT/RTGS.  
+- All methods failing → escalate to a human agent.
 
-**Step 0 — Cutoff check (run first for every redemption query):**
-Check order time against the 3:00 PM cutoff per **A6** Step 1. If the order was placed after 3:00 PM on a working day, or on a weekend/settlement holiday → T shifts to the next working day. State this explicitly: "Your redemption was placed after the 3:00 PM cutoff, so it will be processed on the next working day [date]." Then compute credit date per **A6** from the adjusted T-day.
+Share Payments on Coin and NEFT/RTGS on Coin links from A9 where relevant.
 
-| Scenario | Response |
-|---|---|
-| Order after 3:00 PM | Next working day processing. Compute credit per **A6**. |
-| UNITS NOT AUTHORISED | Per **A5**. CDSL T-PIN must be same day before 3 PM. Suggest DDPI. |
-| FREE QTY LESS | Verify via console_mf_pseudo_holdings (margin/pledged) and console_mf_holdings for available units. |
-| Redeemed, no bank credit | Compute expected date per **A6**. If beyond → escalate. |
-| ELSS lock-in | Verify via console_mf_tradebook (FIFO from trade_date). |
-| UI error, no order found | Clear cache, retry with fewer units, retry next day. If persists → escalate with screenshot. |
-| TPV failed on redemption | Escalate to support agent. |
-| CDSL portal showing all funds | "All MF holdings show during CDSL redemption — only selected units will be redeemed. Recommend using Coin app." Link: **A9**. |
-| Units not visible post-allotment | Check console_mf_pseudo_holdings + console_mf_tradebook. Always use Coin MF tools for MF holdings verification. |
-| NRI account + exit load/TDS dispute | Escalate to support agent. "For NRI accounts, TDS is deducted by the AMC per applicable tax rules." |
-| Non-NRI exit load dispute | "Exit load is per the AMC's fund factsheet." → Escalate to support agent. |
-| Client disputes redemption NAV (lower than published NAV for that date) | Escalate to support agent. "We are escalating this to our team for a detailed review of the redemption NAV applied to your order." |
+---
 
-**CDSL authorization loop (repeated OTP redirect):**
-Occurs when recently allotted units haven't synced with CDSL. Units credited by 8 PM on settlement date; if delayed at RTA/CDSL, available for authorization on T+3 (second business day after settlement).
+### Rule 10 — NRI MF Investment Eligibility
 
-Response: "This occurs due to a delay in crediting recently purchased units to your CDSL demat account. Units are normally credited by 8 PM on the settlement date. If delayed, they will be available on the second business day after settlement (T+3). You can place a fresh redemption for your remaining units (excluding recently allotted ones) now, or wait until the next business day for holdings to sync. To avoid this in future, enable DDPI: Console → Settings → Account Authorization → complete DDPI activation using your Aadhaar-linked mobile number."
+- From ‘get_all_client_data’, check account type details and then apply A11 based on the following fields:  
+  - `account_type` indicates a resident account (for a client who has become an NRI) → advise conversion to NRO or NRE. Share the conversion support article from A9.  
+  - `starmf_status` = "MF inactive" → advise reactivation first. Share the reactivation link from A9.  
+  - `communication_country` = USA or Canada → communicate the technical restriction per A11.  
+  - Conversion query (client intent, no data check needed) → share the conversion support article from A9. KYC details are collected as part of the conversion.
 
+---
 
-### Rule 5: NAV Disputes
+### Rule 11 — Duplicate/Extra Payment Claims
 
-**Step 1 — Identify payment method:**
-Check `payment_method` in the order.
-- If `status_message` contains "Pending payment via NEFT/RTGS" → NAV depends on ICCL settlement time only. Share NEFT/RTGS link from **A9**. Stop here.
-- If `payment_method` = netbanking → proceed to Step 2.
-- If UPI → proceed to Step 3.
+- Invoke `fund_allocation_report` for all entries on the order date. An unmapped payment is a row where both `order_number` AND `settlement_number` are null or empty — the payment was received but never mapped to any `mf_order_history` order.  
+  - Unmapped payment found → apply A4 refund language.  
+  - No unmapped payment found → ask the client to share a bank statement showing the debit(s) with UTR numbers for further investigation.
 
-**Step 2 — Netbanking: determine direct vs non-direct settlement bank:**
-Identify the client's bank using the process in **A10** (extract `acc_number` from `payment_details` → match against bank account numbers in get_all_client_data → get bank name → check classification in **A10**).
+---
 
-If the client's bank is a non-direct settlement bank → "Your payment was made via [bank name], which is a non-direct settlement bank. For non-direct settlement banks, the payment is reported to the exchange on the next business day, so the next day's NAV applies regardless of when the payment was completed." Share MF cutoff times link from **A9**.
-If direct settlement bank → proceed to Step 3.
+### Rule 12 — Out-of-scope and Miscellaneous Escalations
 
-**Step 3 — Check payment confirmation time against cutoffs:**
-Use `payment_updated_at` vs **A2** cutoffs for the fund type. State the exact time and date from `payment_updated_at` in the response. To verify, map the order using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) and cross-check with `payment_date` from fund_allocation_report.
-- If `payment_updated_at` is after cutoff → "Your payment was confirmed at [time] on [date], which was after the [cutoff time] cutoff. The next working day's NAV was applied."
-- If before cutoff → NAV should match T-day. Cross-check `payment_date` in fund_allocation_report.
-
-Payment mapping: Match `exchange_order_id` = `settlement_number` in fund_allocation_report. This mapping applies to UPI and netbanking orders only.
-
-
-### Rule 6: SIP Queries
-
-**Step 0 — Fetch SIP details:**
-Check **sip_report** for the fund → get `sip_type`, `next_sip_date`, `public_id`.
-
-**Step 1 — Check initial investment (Zerodha SIPs only, `sip_type` = sip):**
-SIP will not trigger until initial lumpsum is allotted and settled. Check **console_mf_pseudo_holdings** for the specific fund:
-- Units found → initial investment confirmed. Go to Step 2.
-- No units → check mf_order_history for FRESH order (`purchase_type` = FRESH):
-  - No FRESH order → "No initial investment found for [fund]. Please place a lumpsum order first. Once allotted and settled (T+2), the SIP will begin triggering."
-  - FRESH Processing/Placed → "Initial investment is still being processed. SIP will trigger once units are allotted and settled."
-  - FRESH Failed/Cancelled → "Initial investment was not completed. Place a fresh lumpsum order. Once allotted, pause and resume the SIP to reset the trigger date."
-- If multiple SIPs affected → check each fund separately. Name each fund explicitly.
-
-**Step 2 — Check upcoming trigger:**
-If `next_sip_date` within 5 days → check MF Order History for already-placed SIP order. Report actual status.
-
-**SIP-specific facts:**
-- SIPs trigger 2 days prior to preferred date.
-- Zerodha SIP unpaid → auto-deleted T+4 calendar days. AMC SIP unpaid → T+5 business days.
-- If `preferred_date` is within 2 days of initial order, SIP skips current month.
-- AMC SIP can only be deleted (modification and pause are not supported). Deletion must be ≥2 days before next instalment. To change amount/date, delete and create new.
-- For daily SIPs with linked mandate, orders are placed on T-1. Always check T-1 in order history before concluding an instalment is missing.
-- Fortnightly SIP contribution counts depend on actual allotment dates. Always verify actual executed orders rather than assuming fixed triggers per month.
-- AMC SIP allotment: always check full MF Order History by fund and date range, not just SIP order book.
-
-
-### Rule 7: NEFT/RTGS/IMPS Payments
-
-"Payments via NEFT/RTGS/IMPS are credited directly to ICCL and are tracked at the exchange level, not on Coin. Units will be allotted as per the settlement cycle." Link: **A9**.
-
-- NAV based on ICCL settlement time (up to 24h from transfer).
-- Payments mapped to orders on FIFO basis. Each incoming transfer is matched against open orders in order of placement. If a transfer amount meets or exceeds an order amount, that order is fulfilled. Remaining funds from the transfer carry forward to the next order.
-- **Partial/split transfers:** If a client sends multiple smaller transfers intended for a single larger order, each transfer is mapped independently on FIFO. If no single transfer matches or exceeds the order amount, the order will fail. The unmatched amount will be reversed within 5–7 working days (excluding weekends and holidays). Example: a ₹40L order with two ₹20L transfers — ₹20L maps to the ₹40L order but does not fulfil it, so the order fails. However, if there were a ₹20L order and a ₹40L transfer, ₹20L would map to the order and the remaining ₹20L would carry forward.
-- Common issue: transferred without selecting NEFT mode on Coin first → payment not received.
-- Order still Processing beyond T+4 → "Your order is likely to fail. Please place a fresh order if needed."
-
-
-### Rule 8: Payment Gateway Failures
-
-If client reports repeated UPI or netbanking failures → suggest alternate method:
-- UPI failing → try netbanking or NEFT/RTGS.
-- Netbanking failing → try UPI or NEFT/RTGS.
-
-Links: Payments on Coin and NEFT/RTGS on Coin from **A9**.
-
-If all methods fail → escalate.
-
-
-### Rule 9: Escalation Triggers
-
-**Escalate to support agent with fund, amount, order_timestamp, and status_message when:**
-- `status_message` contains: KRA, REGISTER WITH AMC, MODE OF HOLDING, TRANSMISSION, DESIGNATED PERSON, TAX STATUS, BANK ACCOUNT MISMATCH WITH UCC
-- Client cannot find a scheme on Coin → "The scheme may be suspended or restricted."
-- Client asks about transferring MF to/from another platform → "Demat transfer query requiring manual assistance."
-- Client asks about children's fund / gift plans → these schemes are not available on Coin.
-- INVALID BANK ACCOUNT DETAILS in any context.
-
-
-### Rule 10: NRI MF Investment Eligibility
-
-1. Check account type from get_all_client_data.
-
-**Investment eligibility:**
-- Account must be NRO or NRE type to invest in MFs on Coin (per **A11**).
-- If account is a resident account → "To invest in mutual funds on Coin as an NRI, your account needs to be converted to an NRO or NRE account." Share the conversion support article from **A11**. KYC details are collected during the conversion process itself.
-- If account is dormant → advise reactivation first. Share reactivation link from **A9**.
-
-**US/Canada restriction:**
-- If client is based in the US or Canada → "US/Canada-based NRIs currently cannot invest in MF schemes on Coin due to technical restrictions." (Per **A11**.)
-
-**Account conversion queries:**
-- If client asks how to convert their resident account to NRI → share the conversion support article from **A11**: "You can initiate the conversion from your Zerodha account. KYC details are collected as part of the conversion process."
-
-
-### Rule 11: Duplicate/Extra Payment Claims
-
-1. When a client claims extra or duplicate debits for MF orders: check fund_allocation_report for all entries on the order date. Look for entries without a matching `exchange_order_id` from mf_order_history (unmapped payments).
-2. If an unmapped payment is found → apply **A4** refund language: "The debited amount will be refunded by BSE STAR MF to your source bank account within 5–7 working days (excluding weekends and holidays)."
-3. If no unmapped payment is found → ask the client to share a bank statement showing the debit(s) with UTR numbers for further investigation.
+- Client cannot find a scheme on Coin → communicate that the scheme may be suspended or restricted.  
+- Client asks about children's fund or gift plans → communicate that these schemes are not available on Coin.  
+- `status_message` contains TRANSMISSION, DESIGNATED PERSON, or TAX STATUS → escalate to a human agent with fund, amount, `order_timestamp`, and `status_message`.

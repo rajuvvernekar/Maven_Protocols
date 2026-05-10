@@ -12,134 +12,220 @@ When clients:
 
 TRIGGER KEYWORDS: "mandate status", "mandate pending", "mandate failed", "eNACH", "autopay setup", "coin"
 
+TAGS: investments, funds
+
 ## Protocol
 
 # MANDATE REPORT PROTOCOL
 
+---
 
-### A1 — Tool Purpose & Scope
+## Section A: Reference Data
 
-- This report shows all MF/Coin mandates with current status.
-- This report is for MF/Coin mandates only. Console/equity mandates are a separate report and not interchangeable. If a client asks about a mandate for SIP/Coin, always use this tool — not Console eMandate.
-- `mandate_id` prefix identifies type: `ZERODHA*` = UPI autopay; `ENA*` = Digio eNACH.
-- Mandate must be linked to SIP for auto-debit to work.
-- The e-mandate limit (typically ₹1,00,000) is the maximum permissible debit per transaction — not the actual debit amount. The actual debit equals the sum of linked SIP instalments for that cycle. The maximum daily limit for each mandate is ₹1 crore per day. Clients can create mandates through their bank's netbanking portal or UPI app during the SIP setup process on Coin.
-- To delete a mandate: unlink all active/paused SIPs first (see Mandate Debit Report protocol — A5 for full deletion process).
+---
 
-### A2 — Mandate Type Comparison
+### A1 — Mandate Fundamentals
 
-| Feature | UPI Autopay (`ZERODHA*`) | eNACH (`ENA*`) |
-|---|---|---|
-| Activation time | Within 2 minutes of UPI PIN confirmation | Up to 3 working days (may take up to 5) |
-| Activation requirement | Client must complete UPI PIN confirmation | Bank approval |
-| If not activated | Auto-cancelled by 11 PM same day if PIN not completed | Pending until bank approves or rejects |
-| Escalation | — | If pending > 5 working days → escalate |
+-A Coin mandate must be linked to a SIP for auto-debit to work. The mandate limit (typically ₹1,00,000 for UPI autopay, ₹1,00,00,000 for eNACH) is the maximum permissible debit per transaction — not the actual debit amount. The actual debit equals the sum of linked SIP instalments for that cycle.
 
-### A3 — Tool Routing
+-To delete a Coin mandate, all active or paused SIPs linked to it must be unlinked first. See A5 for the full deletion process.
 
-| Client Asks About | Use This Tool | Do NOT Use |
-|---|---|---|
-| Mandate for SIP, Coin, or mutual fund | **This tool** (MF Mandate Report) | Console eMandate report |
-| Mandate for equity, F&O, or Console trading | Console eMandate report | This tool |
-| Unclear context | Default to this tool; verify using `mandate_id` prefix | — |
+---
 
-Prefix identification: `ZERODHA*` or `ENA*` = Coin/MF mandate. Other prefixes = Console mandate.
+### A2 — Field Usage Rules
 
-### A4 — Status Translations
+**Shareable with client:**
 
-| Internal Status | Meaning | Client-Facing Communication |
-|---|---|---|
-| created | Creation initiated, pending verification | See Rule 1 for type-specific guidance |
-| pending | Awaiting bank approval | See Rule 1 for type-specific guidance |
-| success | Active — ready for auto-debit | "Your mandate is active." |
-| register_success | Registered at bank | "Your mandate is active." |
-| failed | Creation/registration failed | "Your mandate registration failed. Please create a new one." |
-| register_failed | Registration failed at bank | "Your mandate registration failed. Please create a new one." |
-| pending_cancellation | Cancellation in progress | "Your mandate cancellation is being processed." |
-| waiting_confirm_cancellation | Awaiting bank cancellation confirmation | "Your mandate cancellation is awaiting bank confirmation." |
-| cancelled | Cancelled | "Your mandate has been cancelled." |
-| paused | Paused | "Your mandate is paused." |
+| Field | Interpretation |  
+|---|---|  
+| `status` | Mandate status — translate per A3 |  
+| `created_at` | Mandate creation date |  
+| `name` | Mandate name |  
+| `amount` | Maximum debit limit per transaction |  
+| `bank_name` | Name of the linked bank |  
+| `bank_account_number` | Linked bank account number |
 
-### A5 — NRI Account Mandate Rules
+**Non-shareable:**
 
-- Mandate setup restrictions apply to NRI PIS accounts only (NRE PIS).
-- NRO Non-PIS account holders can set up mandates for SIPs. Do not inform NRO Non-PIS clients that they cannot set up a mandate.
+| Field | Interpretation |  
+|---|---|  
+| `client_id` | Internal client identifier |  
+| `id` | Internal mandate identifier |  
+| `umrn` | Bank-assigned registration number for the mandate |  
+| `merchant` | Mandate issuer entity (Coin/Zerodha) |  
+| `type` | Mandate type — `autopay` (UPI) or `enach`; used with `provider` for type identification per A4 |  
+| `provider` | Mandate provider — `ybl` (UPI autopay) or `digio` (eNACH); used with `type` for type identification per A4 |  
+| `provider_id` | Provider-assigned mandate identifier |  
+| `bank_ifsc` | IFSC code of the linked bank account |  
+| `bank_account_type` | Account type (savings, current); used for current account restriction check per A6 |  
+| `cancellation_requested_at` | When cancellation was requested |  
+| `verified_at` | Timestamp when the mandate was activated |  
+| `valid_until` | Mandate expiry date |  
+| `cancelled_at` | Timestamp when cancellation completed |
 
-### A6 — Field Rules
+---
 
-**Shareable with client:** `status` (translated per **A4** — use friendly phrases only), `time_created`.
+### A3 — Status Values
 
-**Internal reasoning only (use for analysis, not client language):** `mandate_id` (type identification: ZERODHA*/ENA*), `time_updated`, `bank_name`.
+| Status | Meaning |  
+|---|---|  
+| success | Mandate is active and ready for scheduled debits |  
+| pending | Awaiting bank approval or activation |  
+| failed | Creation or registration failed |  
+| cancelled | Cancelled |
 
-Suppress (no client use, only internal reasoning use): client_id, umrn, merchant_name, bank_account_number, bank_ifsc_code, verification_date, cancellation_date.
+---
 
-### A7 — Cross-Reference Protocols
+### A4 — Mandate Type Comparison
 
-| Topic | Refer to |
-|---|---|
-| SIP mandate linkage (fund_source check) | sip_report |
-| Debit attempts and status | mandate_debit_report |
-| Mandate deletion process (unlink SIPs first) | Mandate Debit Report protocol — A5 |
+Identify type using the `type` and `provider` fields:
 
-### Preflight (run on every query)
+| Feature | UPI Autopay (`type` = `autopay`, `provider` = `ybl`) | eNACH (`type` = `enach`, `provider` = `digio`) |  
+|---|---|---|  
+| Activation time | Within 2 minutes of UPI PIN confirmation | Up to 3 working days (may take up to 5) |  
+| Activation requirement | Client must complete UPI PIN confirmation | Bank approval |  
+| If not activated | Auto-cancelled by 11 PM same day if PIN not completed | Pending until bank approves or rejects |  
+| Escalation timeline | — | If pending more than 5 working days, escalate |
 
-1. **Tool routing check:** Determine if this is an MF/Coin mandate or Console/equity mandate per **A3**. If Console/equity → route to Console eMandate report.
-2. Fetch the mandate report for the client.
-3. Apply field protection per **A6** — identify shareable, internal, and banned fields.
-4. Identify mandate type from `mandate_id` prefix per **A1**.
-5. Translate status per **A4**.
+---
 
-### Routing Tree
+### A5 — Mandate Deletion Process (Coin)
 
+-Before deleting a Coin mandate, all active or paused SIPs linked to it must be unlinked. Deleting a mandate with linked SIPs will cause those SIPs to fail in future cycles.
+
+-To unlink and delete the mandate: Coin → Account → Mandates → Select the Mandate → Unlink the SIPs linked (Click on “Unlink” mentioned below the fund name) → Delete the mandate once the SIPs are unlinked by choosing the “Delete Mandate”. 
+
+-If no SIPs are linked: delete directly from Coin → Mandates.
+
+-Deleting a mandate does not cancel the SIPs themselves. The SIPs remain active but will require a new mandate or manual payment going forward.
+
+-For full reference, share the Coin mandate management link from A8.
+
+---
+
+### A6 — Account Restrictions
+
+| Account type | Restriction | Alternative for SIP payments |  
+|---|---|---|  
+| Current account | Most banks do not permit eNACH or UPI autopay mandates from current accounts | Place manual lumpsum orders per SIP cycle |  
+| Joint account | Some banks do not support mandates for joint accounts | Place manual lumpsum orders per SIP cycle |  
+| NRE-PIS | Cannot create mandate | NEFT/RTGS to the ICCL account unique to the client per SIP cycle |
+
+Other NRI account types (NRO PIS, NRO non-PIS, NRE non-PIS) can create mandates normally.
+
+---
+
+### A7 — Timelines
+
+| Event | Timeline |  
+|---|---|  
+| eNACH bank activation | Up to 3 working days (may take up to 5) |  
+| UPI autopay activation | Within 2 minutes of PIN confirmation |  
+| Mandate deletion | Up to 5 working days |
+
+---
+
+### A8 — Links
+
+| Topic | URL |  
+|---|---|  
+| Coin mandate management (creation, linkage, deletion) | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin |
+
+---
+
+### A9 — Escalation Triggers
+
+Escalate to human agent when any of the following apply:
+
+- eNACH mandate pending more than 5 working days.  
+- Old mandate stuck in pending or being-cancelled state for more than 5 working days, blocking new mandate creation.  
+- Mandate deletion not completing within the timeline in A7.
+
+Include in escalation: client ID, mandate type (UPI autopay or eNACH), bank, creation date, and the specific issue.
+
+---
+
+## Section B: Decision Flow
+
+### Routing
+
+```  
+Route by scenario  
+   ├─ Mandate status check (active / pending / failed / cancelled) → Rule 1  
+   ├─ Cannot create mandate — account type restriction → Rule 2  
+   ├─ Old pending mandate blocking new creation → Rule 3  
+   ├─ Active mandate but SIP not debiting → Rule 4  
+   └─ How to delete a mandate → Rule 5  
 ```
-Query relates to MF/Coin mandate →
-│
-├─ Preflight: Is this an MF/Coin or Console/equity mandate?
-│  ├─ Console/equity → Route to Console eMandate report (STOP)
-│  └─ MF/Coin → Continue
-│
-├─ Client asks when mandate activates / activation status
-│  → Rule 1
-│
-├─ Mandate active but SIP not debiting
-│  → Rule 2
-│
-└─ General mandate status query
-   → Translate status per A4, respond
-```
-
-### Scope
-
-- Address: MF/Coin mandate status, activation timelines, and SIP linkage issues.
-- Not part of client-facing responses: internal field values (per **A6**), mandate IDs, bank account details, or information the client hasn't asked about.
 
 ### Fallback
 
-If mandate status doesn't match any expected value or activation is stuck beyond expected timelines → escalate with mandate type, time_created, and current status.
+If no rule matches and no root cause is identified after checks → escalate to human agent per A9.
 
+---
 
-### Rule 1 — Activation Status
+## Section C: Rules
 
-1. Check `status` and identify mandate type from `mandate_id` prefix (per **A2**).
+---
 
-**Created/Pending + eNACH (`ENA*`):**
-"Your eNACH mandate was created on [time_created]. eNACH activation takes up to 3 working days."
-If pending > 5 working days → escalate.
+### Rule 1 — Mandate Status Check
 
-**Created/Pending + UPI (`ZERODHA*`):**
-Check `time_created`:
-- Created within last 2 minutes: "Your UPI mandate is being activated. Please wait a moment and check again."
-- Created more than 2 minutes ago: "UPI mandate activation requires completing the UPI PIN confirmation. If you did not complete the PIN step, the mandate will be auto-cancelled by 11 PM today. Please create a new mandate and ensure you complete the UPI PIN confirmation to activate it." (Per **A2**.)
+Apply the status meaning per A3. Communicate the current state to the client.
 
-**Success / Register_success:**
-"Your mandate is active." (Per **A4**.)
+For pending status, branch by mandate type per A4:
 
-**Failed / Register_failed:**
-"Your mandate registration failed. Please create a new one. Try UPI autopay for faster activation — it activates within 2 minutes of PIN confirmation." (Per **A2**.)
+- **eNACH** (`type` = `enach`): calculate working days since `created_at`. If 5 working days or fewer → communicate that eNACH activation takes up to 3 working days. If more than 5 working days → communicate that the mandate has been pending beyond the normal window; banks sometimes delay confirmation. Escalate per A9.  
+- **UPI autopay** (`type` = `autopay`): check time elapsed since `created_at`. If within 2 minutes → mandate is still being activated; communicate to wait. If more than 2 minutes → the UPI PIN confirmation step was likely not completed. Communicate that the mandate will be auto-cancelled by 11 PM the same day, and advise creating a new mandate with the PIN confirmation step completed.
 
-### Rule 2 — Active Mandate But SIP Not Debiting
+-For failed status, communicate that the mandate registration could not be completed. Suggest creating a new mandate; UPI autopay activates within 2 minutes if the client wants faster activation.
 
-1. Confirm: mandate status = success or register_success.
-2. Check sip_report (per **A7**) for `fund_source` on the affected SIP:
-   - `fund_source` = blank or pool → mandate is not linked to the SIP. "Your mandate is active but not linked to your SIP. Please link it on Coin."
-   - `fund_source` = digio-mandates or upi-mandates → mandate is linked. Check mandate_debit_report (per **A7**) for debit attempt status.
+-For cancelled status, communicate the cancellation. Share the Coin mandate management link from A8.
+
+---
+
+### Rule 2 — Cannot Create Mandate (Account Restrictions)
+
+Determine the restriction type using account data:
+
+**Current account check:**
+
+The `bank_account_number` on this protocol's data identifies the bank account in question. From `get_all_client_data`, match it against `bank_1_account_number`, `bank_2_account_number`, or `bank_3_account_number`. If the corresponding `bank_*_account_type` = "Current" → current account restriction applies (per A6). Communicate the restriction and the alternative (standing instructions via netbanking).
+
+**Joint account check:**
+
+From `get_all_client_data`, if `primary_dp_joint_account` = "YES" → joint account. Some banks do not support mandates for joint accounts (per A6). Communicate the restriction and the alternative.
+
+**NRI PIS check:**
+
+From `get_all_client_data`, confirm NRI PIS account. All three conditions must match:  
+- `client_acc_type` is one of NRO, NRE, or NRI  
+- `bo_sub_status` contains "RepatriableWith" (NRE)  
+- `pis_bank_1_name` or `pis_bank_2_name` is populated (PIS)
+
+If all three match → NRE-PIS account confirmed. Communicate the restriction per A6.
+
+If the client has an NRI account but is not NRE-PIS → mandates can be created normally per A6. Proceed with standard mandate handling.
+
+---
+
+### Rule 3 — Old Pending Mandate Blocking New Creation
+
+A new mandate cannot be created while an existing one is still pending or being cancelled. Communicate this and the deletion timeline per A7 (up to 5 working days).
+
+If the old mandate has been pending for more than 5 working days → escalate per A9.
+
+---
+
+### Rule 4 — Active Mandate But SIP Not Debiting
+
+Confirm: mandate `status` = `success`.
+
+The SIP-mandate linkage check is handled by `sip_report` — the `fund_source` field on each SIP record is the authoritative source for linkage. Route to `sip_report` for the linkage check and downstream diagnosis.
+
+---
+
+### Rule 5 — Mandate Deletion
+
+Apply the deletion process per A5. If the client has linked SIPs, walk them through the unlink-then-delete sequence. If they have no linked SIPs, direct them to Coin → Mandates → Delete.
+
+Share the Coin mandate management link from A8.

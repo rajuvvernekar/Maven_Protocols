@@ -15,16 +15,15 @@ When clients:
 
 TRIGGER KEYWORDS: "old GTT", "past GTT", "expired GTT", "deleted GTT", "previous GTT", "GTT from last month", "GTT from last year", "GTT history", "archived GTT", "GTT not found", "can't find my GTT", "GTT disappeared", "where is my GTT"
 
+TAGS: orders
+
 ## Protocol
 
 # KITE GTT ARCHIVED PROTOCOL
 
-
----
+## Section A: Reference Data
 
 ### A1 — Fundamentals
-
-This tool returns **historical/old GTT orders** — expired, deleted, cancelled, or triggered GTTs that are no longer in the active GTT list. For current/recent GTTs, use `kite_gtt`.
 
 Same GTT mechanics apply: single trigger, OCO (two-leg), 1-year equity validity, F&O until contract expiry. Trigger is one-time only — if triggered order was placed but not executed, a new GTT must have been created.
 
@@ -32,156 +31,136 @@ Triggered GTT becomes CNC limit order with DAY validity — cancelled by exchang
 
 GTT triggers based on ticks recorded by the system — missed ticks mean GTT may not have triggered.
 
-
 ### A2 — Field Usage Rules
 
-**Shareable fields:**
+**Shareable with client:**
 
-`id` | `tradingsymbol` | `transaction_type` | `status` | `type` | `quantity` | `trigger_values` | `price` | `product` | `order_type` | `trigger_percentage` | `order_result_status` | `order_result_rejection_reason` | `created_at` | `updated_at` | `rejection_reason`
+| Field | Interpretation |  
+|---|---|  
+| `id` | GTT id |  
+| `tradingsymbol` | Stock symbol |  
+| `transaction_type` | Buy/sell |  
+| `status` | GTT status |  
+| `type` | Single / OCO |  
+| `quantity` | Quantity |  
+| `trigger_values` | Trigger price(s) |  
+| `price` | Limit price |  
+| `product` | CNC etc. |  
+| `order_type` | Limit etc. |  
+| `trigger_percentage` | Trigger percentage |  
+| `order_result_status` | Outcome of triggered order |  
+| `order_result_rejection_reason` | Rejection reason if rejected |  
+| `created_at` | Creation timestamp |  
+| `updated_at` | Last update timestamp |  
+| `rejection_reason` | Cancellation reason (when present) |
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+**Non-shareable:**
 
-`order_result_id` | `ltp` | `exchange` | `expires_at`
-
-**Client-facing terminology:**
-
-| Internal Term | Client-Facing Alternative |
-|---|---|
-| `ltp` | (omit — LTP at GTT creation time, not available for archived) |
-| `exchange` | (omit — not available for archived GTTs) |
-| `expires_at` | (omit — describe as "1 year validity" for equity or "until contract expiry" for F&O) |
-
+| Field | Interpretation |  
+|---|---|  
+| `order_result_id` | Internal order reference |  
+| `ltp` | LTP at GTT creation time; not available for archived GTTs |  
+| `exchange` | Not available for archived GTTs |  
+| `expires_at` | Internal — equity validity is 1 year; F&O validity is until contract expiry |
 
 ### A3 — Status Values
 
-| Status | Meaning |
-|---|---|
-| Active (archived) | Was pending trigger — now archived, likely superseded or system-moved |
-| Triggered | Trigger hit — order placed on exchange. Check `order_result_status` for outcome. |
-| Cancelled | CA, series change, delisting, suspension, lot size change |
-| Expired | Equity: 1 year lapsed. F&O: contract expired. |
-| Disabled | Trigger too close to LTP, or CA like bonus/stock split |
+| Status | Meaning |  
+|---|---|  
+| Active (archived) | Was pending trigger — now archived, likely superseded or system-moved |  
+| Triggered | Trigger hit — order placed on exchange |  
+| Cancelled | CA, series change, delisting, suspension, lot size change |  
+| Expired | Equity: 1 year lapsed. F&O: contract expired |  
+| Disabled | Trigger too close to LTP (< 0.25% for stocks > ₹50), or a CA like bonus/stock split |  
 | Deleted | Removed by user |
-
 
 ### A4 — Common Rejection Reasons (Triggered but Failed)
 
-| Reason | Explanation |
-|---|---|
-| Insufficient margin (buy) | No funds at trigger time |
-| TPIN not authorised (sell) | Holdings not authorised via CDSL TPIN |
-| Insufficient holdings (sell) | Not enough shares in demat at trigger time |
-| Price band | Limit price outside circuit limit on trigger day |
-| Series change | Instrument underwent series change or suspension |
-| Segment killed | Segment disabled via Kill Switch |
+| Reason | Explanation |  
+|---|---|  
+| Insufficient margin (buy) | No funds at trigger time |  
+| TPIN not authorised (sell) | Holdings not authorised via CDSL TPIN |  
+| Insufficient holdings (sell) | Not enough shares in demat at trigger time |  
+| Price band | Limit price outside circuit limit on trigger day |  
+| Series change | Instrument underwent series change or suspension |  
+| Segment killed | Segment disabled via Kill Switch |  
 | Contract not allowed | F&O contract not allowed by Zerodha at trigger time |
-
 
 ### A5 — Links
 
-| Topic | URL |
-|---|---|
+| Topic | URL |  
+|---|---|  
 | GTT Terms of Service | zerodha.com/tos/gtt |
 
+### A6 — Escalation Required Data
 
-### A6 — Escalation Data Template
+Include when escalating to human agent: client ID, GTT id, tradingsymbol, status, created_at, and specific issue.
 
-When escalating, always include: **client ID, GTT id, tradingsymbol, status, created_at, and specific issue.**
+## Section B: Decision Flow
 
+### Routing
 
----
-
-### Preflight (run on every query)
-
+```  
+Route by scenario  
+   ├─ Looking for current/active GTT → invoke ‘kite_gtt’  
+   ├─ Old/missing GTT — initial lookup before status is known → Rule 1  
+   ├─ Status = Triggered → Rule 2  
+   ├─ Status = Cancelled → Rule 3  
+   ├─ Status = Expired → Rule 4  
+   ├─ Status = Disabled → Rule 5  
+   ├─ Expiry/exchange/LTP details → Rule 6  
+   └─ GTT not found in either tool → Rule 7  
 ```
-1. Locate GTT by tradingsymbol or browse archived list.
-2. If customer is looking for a current/active GTT
-   → invoke kite_gtt instead.
-```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Archived GTT status check                                   → Rule 1
-Status = Triggered                                          → Rule 2
-Status = Cancelled                                          → Rule 3
-Status = Expired                                            → Rule 4
-Status = Disabled                                           → Rule 5
-Client asks for expiry/exchange/LTP details                 → Rule 6
-GTT not found in either tool                                → Rule 7
-```
-
-### Scope
-
-- Address the client's query about historical/archived GTT orders — past triggers, rejections, cancellations, and expirations.
-- Use **A2** field rules and client-facing terminology in all client communication.
-- For current GTTs, redirect to `kite_gtt`.
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A6**.
+If no route matches, escalate to human agent per **A6**.
 
-
----
+## Section C: Rules
 
 ### Rule 1 — Archived GTT Status Check
 
-1. Locate by tradingsymbol. Share: tradingsymbol, transaction_type, type (single/OCO), status, price, quantity, product, created_at, updated_at.
-2. Route by status:
-   a. Triggered → Rule 2.
-   b. Cancelled → Rule 3.
-   c. Expired → Rule 4.
-   d. Disabled → Rule 5.
-   e. Deleted → This GTT was deleted from your account on [updated_at]..
-   f. Active (archived) → This GTT was active but has been archived. It may have been superseded. Create a new GTT if needed..
+1. Locate by `tradingsymbol`. Share: `tradingsymbol`, `transaction_type`, `type` (single/OCO), `status`, `price`, `quantity`, `product`, `created_at`, `updated_at`.  
+2. Route by status:  
+   a. Triggered → Rule 2.  
+   b. Cancelled → Rule 3.  
+   c. Expired → Rule 4.  
+   d. Disabled → Rule 5.  
+   e. Deleted → confirm deletion on `updated_at`.  
+   f. Active (archived) → was active but archived; may have been superseded; create a new GTT if needed.  
 3. If looking for current GTT → invoke `kite_gtt`.
-
 
 ### Rule 2 — Status: Triggered
 
-1. Check `order_result_status`:
-   a. COMPLETE → Your GTT for [tradingsymbol] was triggered and the order was executed on [updated_at].. Invoke `kite_order_history` with date from `updated_at` for execution details.
-   b. REJECTED → match `order_result_rejection_reason` against **A4**:
-      - Insufficient margin → **A7-R2**. If client asks about current balance → invoke `kite_margins`.
-      - TPIN → **A7-R3**.
-      - Insufficient holdings → **A7-R4**. If client asks about current holdings → invoke `kite_holdings`.
-      - Price band → **A7-R5**.
-      - Series change → **A7-R6**.
-      - Unmatched → share `order_result_rejection_reason` verbatim.
-   c. CANCELLED → invoke `kite_order_history` with date from `updated_at`.
-      - Cancelled during market hours → **A7-R7** (user cancelled).
-      - Cancelled after market hours → **A7-R8** (EOD unfilled).
-
+1. Check `order_result_status`:  
+   a. COMPLETE → triggered and executed on `updated_at`. Invoke `kite_order_history` with date from `updated_at` for execution details.  
+   b. REJECTED → match `order_result_rejection_reason` against **A4**. Additionally:  
+      - Insufficient margin: if asked about current balance, invoke `kite_margins`.  
+      - Insufficient holdings: if asked about current holdings, invoke `kite_holdings`.  
+      - If reason is unmatched in A4: share `order_result_rejection_reason` as-is.  
+   c. CANCELLED → invoke `kite_order_history` with date from `updated_at`:  
+      - Cancelled during market hours → user cancelled.  
+      - Cancelled after market hours → EOD unfilled.
 
 ### Rule 3 — Status: Cancelled
 
-1. Check `rejection_reason` if available.
-2. Your GTT for [tradingsymbol] was cancelled. Common reasons: the instrument was delisted, suspended, underwent a series change, or a corporate action affected the contract. For F&O, lot size changes also cause cancellation..
-
+1. Check `rejection_reason` if available.  
+2. Match against cancellation causes per **A3** (Cancelled row).
 
 ### Rule 4 — Status: Expired
 
-1. Equity → Your GTT for [tradingsymbol] expired because it wasn't triggered within 1 year of creation (created [created_at])..
-2. F&O → Your GTT expired because the F&O contract expired. F&O GTTs are valid only until contract expiry..
-
+1. Equity → 1-year validity lapsed since `created_at` per **A3**.  
+2. F&O → contract expired per **A3**.
 
 ### Rule 5 — Status: Disabled
 
-1. Your GTT for [tradingsymbol] was disabled. This happens when: the trigger was set too close to LTP (< 0.25% for stocks > ₹50), or a corporate action like bonus/stock split affected the instrument..
-
+1. Match the disable cause against **A3** (Disabled row): trigger too close to LTP, or a CA like bonus/stock split.
 
 ### Rule 6 — Client Asks for Unavailable Fields
 
-1. Client asks for expiry date, exchange, or LTP at creation → The expiry date and exchange details are not available for archived GTT orders. Here's what can be confirmed: your [transaction_type] GTT for [tradingsymbol] had a trigger at ₹[trigger_values] with a limit price of ₹[price] for [quantity] qty, created on [created_at]. Status: [status]..
-2. If client needs these details for dispute resolution → escalate per **A6** with GTT `id` and `created_at`.
-
+1. Expiry date, exchange, and LTP at creation are not available for archived GTTs per **A2**. Confirm what is available per **A2** Shareable list.  
+2. If client needs these for dispute resolution → escalate to human agent per **A6** with GTT `id` and `created_at`.
 
 ### Rule 7 — GTT Not Found in Either Tool
 
-1. No matching GTT found for [tradingsymbol]. Possible reasons:
-- The GTT may have been created with a different instrument name (check exact trading symbol).
-- Very old GTTs may not be available in the system. Check your email for GTT trigger/creation notifications.
-- If you need details for a specific GTT from a long time ago, please raise a support ticket with the approximate date and instrument..
-
+1. Possible reasons: created with a different instrument name (verify exact tradingsymbol); very old GTTs may not be available; suggest checking email for GTT trigger/creation notifications. For details on a very old GTT, escalate to human agent per **A6** with approximate date and instrument.

@@ -17,169 +17,174 @@ TRIGGER KEYWORDS: "PAN verification failed", "name mismatch", "DOB mismatch", "n
 
 PREREQUISITE: Always run get_all_client_data FIRST to obtain client_name, pan, dob before checking pan_status.
 
+TAGS: account
+
 ## Protocol
 
 # PAN STATUS PROTOCOL
 
+---
+
+## Section A: Reference Data
 
 ---
 
 ### A1 — Fundamentals
 
-This tool checks **PAN verification status** — validity + name/DOB match across ITD, Exchange, Depository, and KRA. All intermediary records must match for trading — this is a SEBI requirement.
+-PAN verification checks name/DOB validity across ITD, Exchange, Depository, and KRA. All intermediary records must match for trading — SEBI requirement.
 
-Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
+-Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
 
+- **pan_status inputs:** `client_name`, `pan`, `dob` — must be sourced from `get_all_client_data`. The client's self-reported name must not be used as input; the client may reference an updated name not yet reflected in Zerodha's system.
+
+---
 
 ### A2 — Field Usage Rules
 
-**Shareable fields:** None — all fields are for reference only.
+**Non-shareable:**
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+| Field | Interpretation |    
+|---|---|    
+| `pan_valid_status` | PAN validation result from IT department records — use to determine if PAN is valid |    
+| `name_match` | Whether the name on PAN matches KYC records |    
+| `dob_match` | Whether the date of birth on PAN matches KYC records |    
+| `aadhaar_pan_seeding` | Whether Aadhaar is linked with PAN in IT department records |
 
-All raw field values: `pan_valid_status` | `name_match` | `dob_match` | `aadhaar_pan_seeding`
-
-All raw values are for internal decision-making only. Communicate the outcome and resolution steps, not the field values or status codes.
-
+---
 
 ### A3 — PAN Validity Status
 
-| Value | Meaning | Action |
-|---|---|---|
-| E | Valid | Proceed to check name/DOB match |
-| Any other value | Invalid / deactivated / blocked | Escalate immediately |
+| Value | Meaning |    
+|---|---|    
+| E | The PAN is valid. |    
+| Any other value | The PAN is invalid, deactivated, or blocked for regulatory reasons. |
 
+---
 
-### A4 — Name / DOB Match Status
+### A4 — Name and DOB Status
 
-| Value | Meaning |
-|---|---|
-| Y | Matches ITD records |
-| N | Mismatch — resolution required |
+| Value | Meaning |    
+|---|---|    
+| Y | The entered name and DOB match the ITD records. |    
+| N | The entered name and DOB do not match the ITD records. |
 
+---
 
 ### A5 — Aadhaar-PAN Seeding Status
 
-| Value | Meaning |
-|---|---|
-| Y | Linked |
-| R or N | Not linked |
-| NA | Exempt (NRI, non-citizen, age > 80, Assam/Meghalaya/J&K resident) |
+| Value | Meaning |    
+|---|---|    
+| Y | The PAN is linked to Aadhaar. |    
+| R or N | The PAN is not linked to Aadhaar. |    
+| NA | Applicable for non-individuals and clients in the exempt category. (NRIs, not a citizen of India, age > 80 years as of date, state of residence is Assam, Meghalaya or Jammu & Kashmir.) |
 
-All routing and action decisions in this protocol are driven by PAN validity (**A3**) and Name/DOB match (**A4**). Aadhaar-PAN seeding status is retained as informational context only.
-
+---
 
 ### A6 — Name Change Categories & Process
 
-| Category | Online | Offline |
-|---|---|---|
-| Spelling correction, interchange, middle name, initials | Yes | Yes |
-| Father's / mother's name change | Yes | Yes |
-| Marriage / divorce name change | No | Yes |
-| Personal preference | No | Yes |
+| Category | Online | Offline |    
+|---|---|---|    
+| Spelling correction, interchange, middle name, initials | Yes | Yes |    
+| Father's / mother's name change | Yes | Yes |    
+| Marriage / divorce name change | No | Yes |    
+| Personal preference | No | Yes |    
 | Removing middle / last name | No | Yes |
 
-**Online fix:** Re-KYC at account.zerodha.com (requires Aadhaar linked to mobile).
+**Online process:** Re-KYC [A7 — Re-KYC] [A7 — Name change process] (requires Aadhaar linked to mobile number).
 
-**Offline fix:** Courier documents to Zerodha. Charges: ₹25 + GST. Updated within 72 working hours. Resolution may take up to 7 working days after documents received.
+**Offline process:** Courier documents to Zerodha. Charges: ₹25 \+ GST. Updated within 72 working hours. Resolution may take up to 7 working days after documents received. [A7 — Name change process] [A7 — Courier address]
 
+---
 
 ### A7 — Links
 
-| Topic | URL / Reference |
-|---|---|
-| Re-KYC (online fix) | account.zerodha.com |
-| ITD portal (verify name/DOB) | incometax.gov.in |
-| Name change process | How to change the name in my Zerodha account? |
+| Topic | URL / Reference |    
+|---|---|    
+| Re-KYC (online fix) | https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/how-do-i-change-the-registered-address-on-my-account-online |    
+| ITD portal (verify name/DOB) | incometax.gov.in |    
+| Name change process | https://support.zerodha.com/category/your-zerodha-account/your-profile/general-profile-questions/articles/why-is-the-name-on-my-zerodha-account-different-than-on-the-documents-i-ve-submitted |
 
 **Courier address:** Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
 
+---
 
-### A8 — Escalation Data Template
+### A8 — Escalation Data
 
-When escalating, always include: **client ID, PAN, and specific issue (invalid PAN, persistent mismatch, etc.).**
-
+-Include when escalating to human agent: **client ID**, **PAN**, **specific issue** (e.g., invalid PAN, persistent name/DOB mismatch).
 
 ---
 
-### Preflight (run on every query)
+### A9 — Scenarios & Interpretations
 
+| Scenario | Interpretation |    
+|---|---|    
+| S1 — PAN invalid | PAN is invalid, deactivated, or blocked. |    
+| S2 — Name and/or DOB mismatch (ITD not yet updated) | Records mismatch between ITD, Exchange, and Depository. Client must first update ITD, then update Zerodha records before transactions can proceed. |    
+| S3 — All clear | PAN verification successful. Name and DOB match ITD records. No action needed. |    
+| S4 — Minor PAN verification failed | Minor's PAN or DOB does not match ITD records. Client should verify details on ITD portal and retry. |    
+| S5 — Name mismatch, ITD already updated | Zerodha records still reflect the earlier name. Client must update Zerodha records via online (re-KYC) or offline process. |
+
+---
+
+---
+
+## Section B: Decision Flow
+
+### Routing
+
+```    
+Route by scenario    
+├─ PAN validity ≠ "E" (invalid / deactivated / blocked) → Rule 1    
+├─ Name match = "N" OR DOB match = "N" → Rule 2    
+├─ Name match = "Y" AND DOB match = "Y" AND PAN valid = "E" → Rule 3    
+├─ Minor account — PAN verification failed → Rule 4    
+└─ Single ledger activation error (name/DOB mismatch) → Rule 5    
 ```
-1. Retrieve client_name, pan, dob from get_all_client_data.
-   These represent Zerodha's current registered records.
-   Use these values as PAN status input — not the name the client
-   provides in their query, which may be a different (updated) name.
-   The purpose of PAN status is to check Zerodha's registered name
-   against ITD for mismatch detection.
-
-2. Call pan_status with those fields.
-
-3. Check PAN validity (per A3):
-   └─ Not "E" → respond per A9-R1. Escalate to support agent per A8. STOP.
-```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Name and/or DOB mismatch                                    → Rule 1
-Name and DOB both match + PAN valid                         → Rule 2
-Minor account PAN verification failed                       → Rule 3
-Single ledger activation error (name/DOB mismatch)          → Rule 4
-```
-
-### Scope
-
-- Address the client's PAN verification status, name/DOB mismatch resolution, and related activation errors.
-- Use **A2** field rules — all fields are internal-only. Communicate outcomes and resolution steps only.
-- Do not share specific PAN status codes or raw field values with the client.
 
 ### Fallback
 
-If the client still faces issues despite all-clear PAN status, check `get_all_client_data` for other remarks or blocks. If no root cause found, escalate per **A8**.
-
+If no rule matches, check `get_all_client_data` for other account remarks or blocks, If `account_blocks` is non-empty, escalate to human agent per A8.
 
 ---
 
-### Rule 1 — Name and/or DOB Mismatch
+## Section C: Rules
 
-1. Name match = "N" OR DOB match = "N".
-2. If the client has explicitly stated that their name has already been updated at ITD, Your Zerodha records still reflect the earlier name. To update your name with Zerodha:
+---
 
-**Online:** Visit account.zerodha.com and complete the re-KYC process (Aadhaar must be linked to your mobile number). This is available for: spelling corrections, interchange of names, middle name or initial changes, and father's/mother's name changes.
+### Rule 1 — PAN Invalid
 
-**Offline:** For marriage/divorce name changes, personal preference changes, or removing a middle/last name — courier the required documents to Zerodha. Charges: ₹25 + GST. Processing time: up to 7 working days after documents are received.
+1. PAN validity ≠ "E" (per A3).    
+2. Escalate to human agent per A8.
 
-Courier address: Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
+---
 
-For details on the process and documents required, visit: How to change the name in my Zerodha account?. Name change categories per **A6**, links per **A7**.
-3. Otherwise, As per regulations, the name and date of birth on the Income Tax Department (ITD), Exchange, and Depository records must match to carry out transactions. Your records currently show a mismatch.
+### Rule 2 — Name and/or DOB Mismatch
 
-To resolve this:
-1. Check your name and DOB as per ITD by logging into the Income Tax Department portal at incometax.gov.in
-2. Check your name as per Zerodha records by downloading the CMR copy from Console
-3. If your name needs to be updated, first update it with the ITD, then follow the name change process — visit: How to change the name in my Zerodha account?
+1. Name match = "N" OR DOB match = "N" (per A4).    
+2. If client states their name has already been updated at ITD:    
+   - Direct client to update Zerodha records via online or offline process per A6. Links per A7.    
+3. If client has not yet updated at ITD:    
+   - Direct client to first update ITD via [A7 — ITD portal], then update Zerodha records per A6. Links per A7.
 
-For an online fix, visit account.zerodha.com and complete the re-KYC process (Aadhaar must be linked to your mobile number).
+---
 
-Please note: It may take up to 7 working days after documents are received for the update to take effect. Transactions will be enabled once records are updated.. Name change options per **A6**. Links per **A7**.
+### Rule 3 — Name and DOB Both Match
 
+1. Name match = "Y" AND DOB match = "Y" AND PAN valid = "E" (per A3, A4).    
+2. If client still faces issues after all-clear (e.g., segment rejection, account block):    
+   - Check `get_all_client_data` for other remarks or blocks on the account.    
+   - If no root cause found, escalate to human agent per A8.
 
-### Rule 2 — Name and DOB Both Match
+---
 
-1. Name match = "Y" AND DOB match = "Y" AND PAN valid = "E".
-2. Your PAN verification is successful — your name and date of birth match the Income Tax Department records..
-3. If client still faces issues (segment rejection, block) → check `get_all_client_data` for other remarks or blocks.
+### Rule 4 — Minor Account PAN Verification Failed
 
+1. Query is about minor account opening with PAN verification failure.    
+2. Direct client to verify the minor's PAN and DOB on [A7 — ITD portal] and retry. If the PAN was recently issued, advise it may take a few days to reflect in the ITD database.
 
-### Rule 3 — Minor Account PAN Verification Failed
+---
 
-1. Query is about minor account opening + PAN verification failed.
-2. The minor's PAN verification has failed. This means the PAN number or date of birth entered does not match the Income Tax Department records. Please verify the minor's PAN details and date of birth on the ITD portal at incometax.gov.in, and retry. If the PAN was recently issued, it may take a few days to reflect in the ITD database..
+### Rule 5 — Single Ledger Activation Error
 
-
-### Rule 4 — Single Ledger Activation Error
-
-1. Client reports "name and/or date of birth do not match" error during single ledger activation.
-2. Apply Rule 1 (**A9-R2** or **A9-R5** depending on client context). The mismatch must be resolved before single ledger can be enabled.
+1. Client reports "name and/or date of birth do not match" error during single ledger activation.    
+2. Apply Rule 2 in full. The name/DOB mismatch must be resolved before single ledger activation can proceed.
