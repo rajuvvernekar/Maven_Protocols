@@ -15,210 +15,267 @@ When clients:
 
 TRIGGER KEYWORDS: "external trade", "discrepancy entry", "discrepant entry", "add trade", "fix discrepancy", "buyback entry", "IPO entry", "gift entry", "ESOP entry", "internal transfer entry", "off-market entry", "wrong discrepancy price", "wrong entry", "pending recalc", "external trade type"
 
+TAGS: holdings, demat
+
 ## Protocol
 
---
+# CONSOLE EQ EXTERNAL TRADES PROTOCOL
 
+---
+
+## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-This tool looks up external trade entries for a client. External trades are entries recorded outside normal exchange trading (manual or system-generated). They directly affect buy average and P&L via FIFO. Missing external trade entries are a primary cause of holdings and P&L discrepancies.
+- External trades directly affect buy average and P&L via FIFO.
 
+---
 
 ### A2 — Field Usage Rules
 
-**Shareable fields** (share when relevant):
+**Shareable with client:**
 
-`trade_date` | `tradingsymbol` | `isin` | `quantity` | `price` | `trade_type` | `external_trade_type` | `exchange` | `series` | `order_execution_time`
+| Field | Interpretation |
+|---|---|
+| `trade_date` | Date on which the trade was executed/purchased |
+| `tradingsymbol` | Exchange trading symbol of the instrument |
+| `isin` | ISIN code of the instrument |
+| `quantity` | Number of shares in the entry |
+| `price` | Entry price per share |
+| `trade_type` | Buy or Sell |
+| `order_execution_time` | Timestamp of the entry |
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+**Non-shareable:**
 
-`pk` | `instrument_id` | `client_id` | `settlement_type` | `creation` | `pending_recalc`
+| Field | Interpretation |
+|---|---|
+| `pk` | Internal primary key identifier |
+| `instrument_id` | Internal instrument mapping identifier |
+| `client_id` | Internal client identifier |
+| `settlement_type` | Internal settlement classification |
+| `creation` | Internal record creation timestamp |
+| `pending_recalc` | true = holdings/P&L recalculation still in progress; false = processed |
+| `external_trade_type` | Category of external trade — use client-facing label from A3, not the raw value |
+| `exchange` | Exchange associated with the entry (PHY for devolved; UNKNOWN for some IPO entries) |
+| `series` | Series of the instrument (AF for devolved entries) |
 
-`pending_recalc` is an internal processing flag — use it to diagnose recalculation state. Communicate the outcome to the client (e.g., "your entry is being processed") rather than the field name.
+---
 
-
-### A3 — External Trade Types & Client-Friendly Labels
+### A3 — External Trade Types and Client-Facing Labels
 
 | Raw `external_trade_type` | Client-Facing Label | Description |
 |---|---|---|
-| discrepant | manual entry | Client-added entry for transferred/gifted/ESOP/off-market shares with no matching tradebook record |
-| buyback | buyback entry | System-posted SELL entry for accepted buyback quantities — `trade_type` always SELL, `order_id` = BUYBACK |
-| devolved | physical settlement | System-posted BUY entry for shares received under physical delivery settlement — `exchange` = PHY, `series` = AF |
-| ipo | IPO allotment | Entry for IPO allotment shares credited to demat — `tradingsymbol` may be temporary until listing, `exchange` may be UNKNOWN |
-| internal_transfer | account transfer | Entry for shares moved between client's own demat accounts (primary ↔ secondary) |
-| gift | gift transfer | Entry for shares received or sent as gift; entry price = closing price on transfer date by default |
-| esop | ESOP entry | Entry for ESOP exercised shares; client enters exercise price |
-| ofs | OFS allotment | Entry for trades related to Offer for Sale (OFS) transactions |
-| reversal | short delivery reversal | System-posted reversal trade against short deliveries |
-| rightsissue | rights allotment | Entry for shares allotted under a rights issue |
-| takeover | open offer/takeover | Entry for shares tendered or received under an open offer/takeover |
-| transferout | transfer out | System-posted gift-out and transfer-out entries when client provides transfer details via ticket or call |
+| `discrepant` | manual entry | Client-added entry for transferred / gifted / ESOP / off-market shares with no matching tradebook record |
+| `buyback` | buyback entry | System-posted SELL entry for accepted buyback quantities — `trade_type` always SELL; `order_id` = BUYBACK |
+| `devolved` | physical settlement | System-posted BUY entry for shares received under physical delivery settlement — `exchange` = PHY; `series` = AF |
+| `ipo` | IPO allotment | Entry for IPO allotment shares credited to demat — `tradingsymbol` may be temporary until listing; `exchange` may be UNKNOWN |
+| `internal_transfer` | account transfer | Entry for shares moved between client's own demat accounts (primary ↔ secondary) |
+| `gift` | gift transfer | Entry for shares received or sent as gift; entry price = closing price on transfer date by default |
+| `esop` | ESOP entry | Entry for ESOP exercised shares; client enters the exercise price |
+| `ofs` | OFS allotment | Entry for shares allotted under an Offer for Sale (OFS) transaction |
+| `reversal` | short delivery reversal | System-posted reversal trade against short deliveries |
+| `rightsissue` | rights allotment | Entry for shares allotted under a rights issue |
+| `takeover` | open offer / takeover | Entry for shares tendered or received under an open offer or takeover |
+| `transferout` | transfer out | System-posted gift-out and transfer-out entries when client provides transfer details via ticket or call |
 
-Always translate the raw `external_trade_type` value to the client-facing label when communicating with the client.
+---
 
-
-### A4 — Cross-Reference Tools
-
-| Tool | When to Use |
-|---|---|
-| `console_eq_holdings` | Check `discrepant` field — if > 0, external entry may be missing or pending. Discrepancy resolution steps are in that tool's protocol (Rule 5). |
-| `console_eq_tradebook` | Regular exchange-executed trades. If trade not found there, check external trades. |
-| `console_eq_holdings_breakdown` | Transaction-level view showing both tradebook and external entries combined. Use to verify if an external entry is reflected in the breakdown. |
-| `console_eq_pnl` | P&L computed from all trades (tradebook + external). Missing external entries cause wrong P&L. |
-
-
-### A5 — Key Timelines
+### A4 — Key Timelines
 
 | Event | Expected Timeline |
 |---|---|
-| `pending_recalc` = true → holdings/P&L update | Up to 24 hours |
+| `pending_recalc` = true → holdings / P&L update | Up to 24 hours |
 | IPO allotment entry posting | Up to 3 trading days from listing date |
-| Buyback entry posting | Posted on the day the "Net settlement for buyback with settlement number" entry appears in `ledger_report`; escalate if >5 trading days after confirmed acceptance |
-| Gift transfer buy average update | Up to 72 working hours from transfer date |
-
-
-### A6 — Discrepancy Self-Resolution Path
-
-Clients add missing entries via: **Console → Portfolio → Holdings → View discrepancy → Add trade**
-
-Once added and processed (`pending_recalc` = false), entries are locked and cannot be edited by the client. Wrong entries can only be corrected by the Console team (backend fix).
-
-
-### A7 — Entry Price Defaults
-
-| Share Source | Default Entry Price | Notes |
-|---|---|---|
-| Gift shares (Console gifting) | Closing price on transfer date | Auto-posted by system. Buy average updates within 72 working hours of transfer. Client does not need to add a manual discrepancy entry. |
-| Gift shares (off-market) | N/A — no automatic entry | Client must add purchase details manually via discrepancy flow (**A6**) |
-| ESOP shares | Exercise price (client-entered) | If ISIN not listed on exchange, entry cannot be added until listed |
-
-
-### A8 — Escalation Data Template
-
-When escalating, always include: **client ID, tradingsymbol, ISIN, specific issue description, and current entry details (if applicable).**
-
-For wrong-entry corrections, also include: the correct values the client wants.
-
-For gift price corrections, also include: the requested price.
-
+| Buyback entry posting | Posted on the day the "Net settlement for buyback with settlement number" entry appears in `ledger_report`; escalate to human agent if > 5 trading days after confirmed acceptance |
 
 ---
 
-### Preflight (run on every query)
+### A5 — Discrepancy Self-Resolution Path
+
+- Clients add missing entries via: **Console → Portfolio → Holdings → View discrepancy → Add trade**
+
+- Once added and processed (`pending_recalc` = false), entries are locked and cannot be edited by the client. Wrong entries can only be corrected by the Console team via backend fix.
+
+---
+
+### A6 — Entry Price Defaults and Constraints
+
+| Share Source | Default Entry Price | Constraint |
+|---|---|---|
+| Gift shares | Closing price on transfer date | Client may want actual acquisition cost instead; requires backend correction |
+| ESOP shares | Exercise price (client-entered) | If ISIN not yet listed on exchange, entry cannot be added until the stock is listed |
+
+---
+
+### A7 — Escalation Data
+
+- Include when escalating to human agent: client ID, `tradingsymbol`, ISIN, specific issue description, and current entry details (if applicable).
+
+---
+
+## Section B: Decision Flow
+
+### Routing
 
 ```
-1. Identify the stock (tradingsymbol / ISIN) and the client's concern
-   (missing entry, wrong avg, wrong P&L, buyback status, etc.)
-
-2. Determine the relevant external_trade_type to filter on
-   └─ If unclear, check the client's description against A3 definitions
-
-3. Look up entries using Client ID + external_trade_type filter
+Route by scenario
+   ├─ Verify if an external entry exists for a stock              → Rule 1
+   ├─ Entry added but buy average still wrong / N/A               → Rule 2
+   ├─ Client entered wrong details in discrepancy entry           → Rule 3
+   ├─ Gift shares — price query or price change request           → Rule 4
+   ├─ ESOP shares — error adding entry                            → Rule 5
+   ├─ Buyback — share status or entry verification                → Rule 6
+   ├─ IPO allotment — shares discrepant, check entry              → Rule 7
+   ├─ Internal transfer — entry missing or wrong                  → Rule 8
+   ├─ No external entries but shares show discrepant              → Rule 9
+   ├─ P&L wrong, suspected missing external entry                 → Rule 10
+   ├─ Devolved / physical settlement entry                        → Rule 11
+   ├─ OFS allotment entry                                         → Rule 12
+   ├─ Short delivery reversal entry                               → Rule 13
+   ├─ Rights issue allotment entry                                → Rule 14
+   ├─ Open offer / takeover entry                                 → Rule 15
+   └─ Transfer out entry                                          → Rule 16
 ```
-
-### Route
-
-```
-Intent / Condition                                            → Rule
-──────────────────────────────────────────────────────────────────────
-Verify if an external entry exists for a stock                → Rule 1
-Entry added but buy average still wrong / N/A                 → Rule 2
-Client entered wrong details in discrepancy fix               → Rule 3
-Gift shares — price query or price change request             → Rule 4
-ESOP shares — error adding discrepancy entry                  → Rule 5
-Buyback — share status or entry verification                  → Rule 6
-IPO allotment — shares discrepant, check entry                → Rule 7
-Internal transfer — entry missing or wrong                    → Rule 8
-No external entries but shares show discrepant                → Rule 9
-P&L wrong, suspected missing external entry                   → Rule 10
-```
-
-### Scope
-
-- Address the client's query about external trade entries and their impact on holdings/P&L.
-- Translate raw field values to client-friendly language (per **A3**).
 
 ### Fallback
 
-If no route matches, use **A4** to cross-reference other tools (`console_eq_holdings`, `console_eq_tradebook`, `console_eq_holdings_breakdown`, `console_eq_pnl`) for additional context. If no root cause is found, escalate per **A8**.
-
+- If no route matches, invoke `console_eq_holdings`, `console_eq_tradebook`, `console_eq_holdings_breakdown`, or `console_eq_pnl` for additional context. If no root cause is found → escalate to human agent per A7.
 
 ---
 
+## Section C: Rules
+
 ### Rule 1 — Verify External Entry Exists
 
-1. Filter by Client ID and appropriate `external_trade_type`.
-2. If entry found → Share: `trade_date`, `tradingsymbol`, `quantity`, `price`, `trade_type`. Use the client-facing label from **A3** instead of the raw `external_trade_type`. (share trade details, use client-facing label from **A3**).
-3. If no entry found → No [client-facing label] entry exists for [tradingsymbol] in your account. This may be why the shares are showing as discrepant or the buy average is not available..
+1. Invoke this report with the appropriate `external_trade_type` per A3.
+2. Entry found → share `trade_date`, `quantity`, `price`, `trade_type` using the client-facing label from A3.
+3. No entry found → route to the applicable specific rule (Rule 4–16) based on share source.
 
+---
 
 ### Rule 2 — Entry Added but Buy Average Not Updated
 
-1. Check `pending_recalc` (internal use only per **A2**).
-2. If `pending_recalc` = true → Your entry for [tradingsymbol] has been recorded and is being processed. The buy average will update within 24 hours.. Timeline per **A5**.
-3. If `pending_recalc` = false AND buy average still wrong in `console_eq_holdings`:
+1. Check `pending_recalc` for this entry (per A2).
+2. `pending_recalc` = true → entry is recorded and being processed; buy average will update within 24 hours (A4). Communicate the outcome to the client — do not mention the field name.
+3. `pending_recalc` = false AND buy average still wrong in `console_eq_holdings`:
    a. Verify the entry details (price, qty, date) match the client's expected values.
-   b. If entry details are correct but buy average remains wrong → escalate per **A8**. This is a backend recalculation failure.
-   c. If entry details are wrong (client entered incorrect values) → Once a discrepancy entry is processed, it cannot be edited from your end. We'll need to correct this on the backend.. Entry is locked; backend correction needed per **A6**.
+   b. Entry details are correct but buy average remains wrong → escalate to human agent per A7. This is a backend recalculation failure.
 
+---
 
 ### Rule 3 — Wrong Entry (Client Mistake)
 
-1. Once a discrepancy entry is processed, it cannot be edited from your end. We'll need to correct this on the backend..
-2. Entry is locked after processing (per **A6**).
-3. escalate per **A8** — include current wrong entry details from this tool and the correct values the client wants.
+1. Once a discrepancy entry is processed, it is locked and cannot be edited by the client (A5).
+2. If entry details are wrong (client entered incorrect values) → entry is locked; backend correction needed.
+3. Escalate to human agent per A7 — include the current (wrong) entry details from this tool and the correct values the client wants.
 
+---
 
 ### Rule 4 — Gift Shares Entry Price
 
-1. Filter by `external_trade_type` = gift.
-2. If entry exists:
-   a. Check `exchange` field: if `exchange` = "NSE", the entry was added by Zerodha (system-generated).
-   b. If the client has also made a separate discrepant entry for the same stock → escalate (possible duplicate entries causing wrong buy average).
-   c. Your gift shares of [tradingsymbol] were recorded at ₹[price] per share, which is the closing price on the transfer date ([trade_date]). This is the default entry price used for P&L tracking.. Default price per **A7**.
-3. If client wants actual acquisition cost instead → The default price for gifted shares is the closing price on transfer date. If you need this updated to reflect the original acquisition cost for tax purposes, we can request a backend correction.. escalate per **A8** with requested price.
-4. **Console gift transfer — buy average not yet updated:** If the client confirms shares were received via Console Gifting and the gift entry exists but the buy average still shows N/A or has not updated, check the transfer date. If the transfer was within the last 72 working hours → Your gifted shares of [tradingsymbol] were received via the Console gifting process on [trade_date]. The entry is auto-posted at the closing price on the transfer date — no manual discrepancy entry is needed from your side. The buy average updates within 72 working hours of the transfer. If it has been more than 72 working hours and the buy average still shows N/A, we'll investigate further.. The buy average auto-updates within 72 working hours — no manual discrepancy entry is needed. Do not route to the manual discrepancy path for Console gift transfers. If more than 72 working hours have passed and buy average still shows N/A → escalate per **A8**.
+1. Invoke this report with `external_trade_type` = gift.
+2. Entry exists:
+   a. Check `exchange` field: `exchange` = "NSE" indicates the entry was system-generated by Zerodha.
+   b. If client also has a separate discrepant entry for the same stock → escalate to human agent per A7 (possible duplicate entries causing wrong buy average).
+   c. Entry price is the closing price on the transfer date — this is the default for all gift entries and is used for P&L tracking (A6).
+3. Client wants actual acquisition cost instead of the default closing price → this requires a backend correction. Escalate to human agent per A7 with the requested price.
 
+---
 
-### Rule 5 — ESOP Shares (Cannot Add Entry)
+### Rule 5 — ESOP Shares
 
-Escalate to support agent.
+1. Invoke `console_eq_external_trades` with `external_trade_type` = esop.
+2. Entry found → share entry details per Rule 1 using client-facing label "ESOP entry".
+3. Client reports error when trying to add an ESOP discrepancy entry:
+   - Verify whether the ISIN is currently listed on NSE or BSE.
+   - ISIN not yet listed → entries cannot be added until the stock is active on the exchange (A6). Client should retry after listing.
+4. Any other ESOP issue → escalate to human agent per A7.
 
+---
 
 ### Rule 6 — Buyback Entry Verification
 
-1. Filter by `external_trade_type` = buyback.
-2. If sell entry found → Your [quantity] shares of [tradingsymbol] were tendered in the buyback at ₹[price] per share on [trade_date]. The buyback proceeds will be credited to your primary bank account by the company..
-3. If no entry found → The buyback entry has not been posted yet. Buyback entries are posted on the day the 'Net settlement for buyback with settlement number' entry appears in your ledger, after the company processes and confirms acceptance. If the buyback acceptance was confirmed more than 5 trading days ago, we'll investigate further.. Timeline per **A5**.
-4. Escalate if client confirms acceptance was completed and no entry exists after 5 trading days.
+1. Invoke `console_eq_external_trades` with `external_trade_type` = buyback.
+2. Entry found → `trade_type` will always be SELL. Share `trade_date`, `quantity`, `price`. Buyback proceeds are credited to the client's primary bank account directly by the company — not through Zerodha.
+3. No entry found → invoke `ledger_report`; buyback entries are posted on the day the "Net settlement for buyback with settlement number" entry appears there, after the company processes and confirms acceptance (A4).
+4. No entry AND client confirms acceptance was completed more than 5 trading days ago → escalate to human agent per A7.
 
+---
 
 ### Rule 7 — IPO Allotment Entry
 
-1. Filter by `external_trade_type` = ipo.
-2. If entry found → Your IPO allotment of [quantity] shares of [tradingsymbol] at ₹[price] has been recorded. If the buy average still shows N/A, the entry may be pending processing (up to 24 hours).. Recalculation timeline per **A5**.
-3. If no entry found AND IPO was within last 3 days → IPO allotment entries take up to 3 days to be posted in the system. Please check back after 3 trading days from the listing date.. Timeline per **A5**.
-4. If no entry found AND IPO was more than 3 days ago → escalate per **A8**.
+1. Invoke `console_eq_external_trades` with `external_trade_type` = ipo.
+2. Entry found → share entry details per Rule 1 using client-facing label "IPO allotment". Note: `tradingsymbol` may be temporary until listing; `exchange` may show as UNKNOWN — both are expected. If buy average still shows N/A, `pending_recalc` may still be true; update within 24 hours (A4).
+3. No entry found AND IPO listing was within the last 3 trading days → entries take up to 3 trading days to post (A4). Client should check back after 3 trading days from listing date.
+4. No entry found AND IPO listing was more than 3 trading days ago → escalate to human agent per A7.
 
+---
 
 ### Rule 8 — Internal Transfer Entry
 
-1. Filter by `external_trade_type` = internal_transfer.
-2. If entry found → share details per **A9-R1**.
-3. If no entry found → The transfer entry between your accounts has not been posted yet. We'll raise this for investigation.. escalate per **A8**.
+1. Invoke `console_eq_external_trades` with `external_trade_type` = internal_transfer.
+2. Entry found → share entry details per Rule 1 using client-facing label "account transfer" (transfer between client's own primary and secondary demat accounts).
+3. No entry found → escalate to human agent per A7 to raise investigation.
 
+---
 
 ### Rule 9 — No External Entries but Shares Show Discrepant
 
-1. Client needs to add the entry manually — direct them to the self-resolution path in **A6**.
-2. If the shares were credited via corporate action (convertible debenture, rearrangement, unclaimed shares) and the source is not obvious to the client → escalate per **A8** for Console team to investigate and post the correct entry.
+1. No entry exists and client has not added one → direct client to the self-resolution path (A5): Console → Portfolio → Holdings → View discrepancy → Add trade.
+2. Shares credited via corporate action (convertible debenture, rearrangement, unclaimed shares) where the source is unclear → escalate to human agent per A7.
 
+---
 
 ### Rule 10 — P&L Wrong Due to Missing External Entry
 
-1. The P&L for [tradingsymbol] appears incorrect because there is no purchase entry in the system for the [discrepant] shares you hold. P&L is calculated using FIFO from all available trade entries. Without a buy entry, the system cannot compute the correct cost of acquisition.
+1. P&L is calculated using FIFO from all available trade entries (tradebook + external). Without a buy entry for the discrepant shares, the system cannot compute the correct cost of acquisition, resulting in incorrect P&L.
+2. Direct client to the self-resolution path (A5): Console → Portfolio → Holdings → View discrepancy → Add trade. Once the entry is processed, P&L recalculates automatically.
+3. Invoke `console_eq_pnl` to confirm the impact and verify once the entry is processed.
 
-To fix this, you need to add the purchase details via Console → Portfolio → Holdings → View discrepancy → Add trade. Once the entry is processed, the P&L will recalculate automatically. — explain FIFO dependency and direct client to self-resolution path in **A6**.
+---
 
-console_eq_holdings
+### Rule 11 — Devolved / Physical Settlement Entry
+
+1. Invoke `console_eq_external_trades` with `external_trade_type` = devolved.
+2. Entry found → `exchange` = PHY and `series` = AF are expected for devolved entries. Share `trade_date`, `quantity`, `price` using client-facing label "physical settlement".
+3. No entry found → devolved entries are system-posted and should appear automatically. Escalate to human agent per A7 — include client ID, `tradingsymbol`, ISIN, and settlement date.
+
+---
+
+### Rule 12 — OFS Allotment Entry
+
+1. Invoke `console_eq_external_trades` with `external_trade_type` = ofs.
+2. Entry found → share entry details per Rule 1 using client-facing label "OFS allotment".
+3. No entry found → OFS allotment entries are system-posted. Escalate to human agent per A7 — include client ID, `tradingsymbol`, ISIN, and OFS date.
+
+---
+
+### Rule 13 — Short Delivery Reversal Entry
+
+1. Invoke `console_eq_external_trades` with `external_trade_type` = reversal.
+2. Entry found → this is a system-posted reversal trade against a short delivery. Share `trade_date`, `quantity`, `price`, `trade_type` using client-facing label "short delivery reversal".
+3. No entry found AND client reports an unresolved short delivery → escalate to human agent per A7 — include client ID, `tradingsymbol`, ISIN, and short delivery trade details. Cross-reference with `console_eq_holdings` protocol Rule 8 (Short delivery handling).
+
+---
+
+### Rule 14 — Rights Issue Allotment Entry
+
+1. Invoke `console_eq_external_trades` with `external_trade_type` = rightsissue.
+2. Entry found → share entry details per Rule 1 using client-facing label "rights allotment".
+3. No entry found → rights issue entries are system-posted. Escalate to human agent per A7 — include client ID, `tradingsymbol`, ISIN, and rights issue record date.
+
+---
+
+### Rule 15 — Open Offer / Takeover Entry
+
+1. Invoke `console_eq_external_trades` with `external_trade_type` = takeover.
+2. Entry found → share `trade_date`, `quantity`, `price`, `trade_type` using client-facing label "open offer / takeover".
+3. No entry found AND client confirms tendering was completed → escalate to human agent per A7 — include client ID, `tradingsymbol`, ISIN, and open offer / takeover details.
+
+---
+
+### Rule 16 — Transfer Out Entry
+
+1. Invoke `console_eq_external_trades` with `external_trade_type` = transferout.
+2. Entry found → share entry details per Rule 1 using client-facing label "transfer out". These entries are system-posted after the client provides transfer details via a ticket or call.
+3. No entry found → escalate to human agent per A7.

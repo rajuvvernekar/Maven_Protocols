@@ -12,161 +12,182 @@ When clients:
 
 TRIGGER KEYWORDS: "auto-debit failed", "bank not debited", "SIP not deducted from bank", "mandate debit failed", "coin"
 
+TAGS: investments, funds
+
 ## Protocol
 
 # MANDATE DEBIT REPORT PROTOCOL
 
+---
 
-### A1 — Tool Purpose & Scope
+## Section A: Reference Data
 
-- This report shows the mandate debit schedule with transaction status for SIP auto-debits.
-- `cashier_reference` links to `cfppg_bank_ref_no` in fund_allocation_report — use for cross-referencing payment mapping.
+### A1 — Fundamentals
 
-### A2 — Debit Status Translations
+-Failed debits are not retried automatically — the client must add funds manually for that cycle. The mandate must be active before debits can be processed.
 
-| Internal Status | Meaning | Client-Facing Communication |
-|---|---|---|
-| Created | Debit instruction sent to bank — pending bank confirmation. Bank has NOT debited yet. | If SIP date not passed: "The debit instruction has been sent to your bank. Your funds will be debited on your SIP date. Once debited, the order will be processed automatically." If SIP date passed: "Your auto-debit was not processed for this SIP cycle." |
-| Success | Bank debited successfully — payment will be mapped to order | "Your bank has been debited successfully." → Route to Rule 3 for order status. |
-| Failed | Bank rejected debit — order will not process this cycle | "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date." |
+-`order_id` on this protocol's data maps to `cashier_reference` in `fund_allocation_report`.
 
-### A2a — Juspay Mandate Detection
+-For Zerodha SIPs, a missed or failed debit can be covered by placing a manual lumpsum order. AMC SIPs cannot have manual lumpsum orders placed against them.
 
-**How to identify:** If `transaction_id` is null/empty in the mandate debit record, the mandate is serviced by Juspay (UPI autopay via Juspay).
+---
 
-**Behavior:** Juspay-based mandates do not auto-debit. Instead, a payment approval request is sent to the client's UPI application on the SIP date. The client must manually approve the payment on the UPI app.
+### A2 — Field Usage Rules
 
-**Applies when status = Created (SIP date passed) or Failed:**
-- "Your SIP mandate is processed via UPI autopay (Juspay). Unlike eNACH, this does not auto-debit your bank account. A payment approval request is sent to your UPI app on the SIP date — you need to manually approve it. If you missed the approval, the debit will not be processed for this cycle. You may also consider creating an eNACH mandate instead of UPI autopay to enable fully automatic debits."
+**Shareable with client:**
 
-### A3 — AMC SIP Manual Order Restriction
-
-When debit status = Created (SIP date passed) or Failed, check `sip_type` in sip_report before suggesting any action. Do not suggest placing a manual lumpsum order for AMC SIPs (`sip_type` = amc_sip). AMC SIP orders are placed by the AMC — the client cannot place manual orders for these.
-
-For Zerodha SIPs (`sip_type` = sip): "To invest for this month, please place a manual lumpsum order."
-
-### A4 — Field Rules
-
-**Shareable with client:** `amount`, `status` (translated per **A2** — use friendly phrases only).
-
-**Internal reasoning only (use for analysis, never share):** `cashier_reference` (cross-reference with fund_allocation_report `cfppg_bank_ref_no`), `transaction_date`, `updated_at`, `created_at`.
-
-**No client use and only reasoning purpose:** `mandate_id`, `transaction_id`, all other fields.
-
-### A5 — Mandate Deletion Process
-
-1. Before deleting a mandate, unlink it from all active or paused SIPs. Deleting a mandate with linked SIPs will cause those SIPs to fail for future cycles.
-2. Steps to unlink: Coin → SIPs → [each SIP] → Unlink mandate.
-3. Once all SIPs are unlinked: Coin → Mandates → [mandate] → Delete.
-4. If client has no SIPs linked → they can delete directly from Coin → Mandates.
-5. Deleting a mandate does not cancel SIPs — SIPs remain active but will require a new mandate or manual payment going forward.
-
-### A6 — Cross-Reference Protocols
-
-| Topic | Refer to |
+| Field | Interpretation |
 |---|---|
-| Payment mapping (cashier_reference → cfppg_bank_ref_no) | fund_allocation_report |
-| Order status after debit success | mf_order_history |
-| SIP type, mandate linkage, SIP status | sip_report |
-| SIP modification near trigger date | sip_modification_log (via public_id from sip_report) |
+| `amount` | Debit amount |
+| `status` | Debit status — translate per A3 |
+| `remark` | Debit remark — communicate in plain language per A4 |
 
-### A7 — Bank Penalty Charges
+**Non-shareable:**
 
-Zerodha does not charge for Coin mandate registrations at present. However, the client's bank may charge penalties for failed transactions due to insufficient funds and mandate verification charges. These charges are applied by the bank — not by Zerodha or BSE STAR MF.
+| Field | Interpretation |
+|---|---|
+| `created_at` | Record creation timestamp |
+| `transaction_timestamp` | Timestamp of the actual debit attempt |
+| `order_id` | Maps to `cashier_reference` in `fund_allocation_report` per A1 |
+| `order_type` | Type of SIP order associated with the debit |
+| `mandate_id` | Internal identifier linking to the associated mandate record |
+| `umrn` | Bank-assigned mandate registration number |
+| `transaction_id` | Internal transaction identifier |
+| `provider_transaction_id` | Payment provider's transaction identifier |
+| `bank_reference` | Bank-assigned reference for the debit transaction |
+| `tag` | Internal tag |
+| `merchant` | Mandate issuer entity (Coin/Zerodha) |
+| `type` | Mandate type — `autopay` (UPI) or `enach` |
+| `provider` | Mandate provider — `ybl` (UPI autopay) or `digio` (eNACH) |
 
-Reference: [What are the charges for Coin mandates?](https://support.zerodha.com/category/mutual-funds/coin-web-app/articles/charges-for-coin-mandates)
+### A3 — Debit Status Values
 
-### Preflight (run on every query)
+| Status | Meaning |
+|---|---|
+| draft | Debit request created, scheduled for debit on the scheduled date |
+| success | Bank debited successfully — payment will be mapped to the order |
+| pending | Debit request has an issue or execution is pending — `remark` carries the cause |
+| failed | Bank rejected the debit — order will not process this cycle |
 
-1. Fetch the mandate debit report for the client and relevant SIP/date.
-2. Apply field protection per **A4** — identify shareable, internal, and banned fields.
-3. Identify the debit status and translate per **A2**.
-4. If debit status requires suggesting manual order → check `sip_type` in sip_report per **A3** before responding.
-5. Format amounts with ₹ and Indian comma notation.
+---
 
-### Routing Tree
+### A4 — Remark Meanings
+
+When `status` = `pending` or `failed`, the `remark` field carries the cause:
+
+| Remark value | Meaning |
+|---|---|
+| Insufficient balance / Balance Insufficient | Insufficient funds in the client's bank account at debit time |
+| Maximum limit exceeded | UPI transaction limit was exceeded |
+| KYC-related issue | KYC issue with the client's bank account |
+| A/c closed | Linked bank account is closed |
+| Unable to Notify the Customer / Mandate notification pending / Mandate notification failed | Network error at the client's bank blocked the debit notification — temporary bank-side issue |
+| SeqNum Mismatch (Remitter) | Technical issue at the client's bank — temporary bank-side issue |
+
+---
+
+### A5 — Juspay Mandate Detection
+
+If `transaction_id` is null or empty in the debit record → the mandate is serviced by Juspay (UPI autopay via Juspay).
+
+Juspay-based mandates do not auto-debit. A payment approval request is sent to the client's UPI app on the scheduled date, and the client must manually approve it. If the approval is missed, no debit happens for that cycle.
+
+---
+
+### A6 — Links
+
+| Topic | URL |
+|---|---|
+| Coin mandate management (creation, linkage, deletion) | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin |
+
+---
+
+### A7 — Escalation Triggers
+
+Escalate to human agent when any of the following apply:
+
+- Draft status persists beyond T+2 from `created_at` and the cause is unclear after checking mandate status.
+- Any debit issue with no clear root cause after applying the relevant rules.
+
+Include in escalation: client ID, debit details (date, amount, status, remark), and the specific issue.
+
+---
+
+## Section B: Decision Flow
+
+### Routing
 
 ```
-Query relates to mandate debit →
-│
-├─ No debit record for expected SIP date
-│  → Rule 1
-│
-├─ Debit status check
-│  ├─ Created (SIP date not passed) → Rule 2a
-│  ├─ Created (SIP date passed) → Rule 2b (check A2a for Juspay first, then A3)
-│  ├─ Failed → Rule 2c (check A2a for Juspay first, then A3)
-│  └─ Success → Rule 3
-│
-├─ Success but order not processed / not allotted
-│  → Rule 3
-│
-├─ Client asks how to delete a mandate
-│  → Rule 4
-│
-├─ Client reports bank-applied charges alongside a failed/cancelled debit
-│  → Rule 5
-│
-└─ No matching scenario
-   → Check sip_report for SIP-level diagnosis
+Route by scenario
+   ├─ No debit record for expected date → Rule 1
+   ├─ Debit status = draft → Rule 2
+   ├─ Debit status = success → Rule 3
+   ├─ Debit status = pending → Rule 4
+   ├─ Debit status = failed → Rule 5
+   └─ How to delete a mandate (Coin) → Rule 6
 ```
-
-### Scope
-
-- Address: debit status, payment processing, manual order guidance (with AMC SIP check), mandate deletion, and bank-applied penalty charges.
-- Internal field values: Transaction IDs and internal field values (per **A4**) are not part of client-facing responses.
 
 ### Fallback
 
-If no debit record exists and SIP-level checks are inconclusive → advise manual order (after AMC SIP check per **A3**) and escalate if issue persists.
+If no debit record exists and SIP-level checks are inconclusive → escalate per A7.
 
+---
+
+## Section C: Rules
 
 ### Rule 1 — Debit Not Initiated
 
-1. No debit record found for the expected SIP date.
-2. Check sip_report (per **A6**): is the SIP active? Is a mandate linked (`fund_source` check)?
-3. Get `public_id` from sip_report → pass as `sip_id` to sip_modification_log (per **A6**): was the SIP modified near the trigger date?
-4. If no debit record and no modification explains it → "There was a technical issue with the auto-debit for this cycle."
-5. Check **A3** for SIP type, then advise: "Please place a manual lumpsum order to ensure your investment is not missed." (Zerodha SIP only.)
+When no debit record is found for the expected date:
 
-### Rule 2 — Debit Status Handling
-
-**2a — Created, SIP date not yet passed:**
-Respond per **A2**: "The debit instruction has been sent to your bank. Your funds will be debited on your SIP date. Once debited, the order will be processed automatically."
-
-**2b — Created, SIP date has passed:**
-First check `transaction_id` per **A2a**: if null/empty → Juspay mandate. Respond with Juspay guidance from **A2a** (manual UPI approval required, suggest eNACH alternative).
-Otherwise, check `sip_type` per **A3** before responding.
-- Zerodha SIP: "Your auto-debit was not processed for this SIP cycle. Please place a manual lumpsum order to ensure your investment is not missed."
-- AMC SIP: "Your auto-debit was not processed for this SIP cycle." (Do not suggest manual order.)
-
-**2c — Failed:**
-First check `transaction_id` per **A2a**: if null/empty → Juspay mandate. Respond with Juspay guidance from **A2a** (manual UPI approval required, suggest eNACH alternative).
-Otherwise, check `sip_type` per **A3** before responding.
-- Zerodha SIP: "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date. To invest for this month, please place a manual lumpsum order."
-- AMC SIP: "Your auto-debit was rejected by your bank for this SIP cycle, likely due to insufficient funds. Please ensure sufficient balance is available before your next SIP date." (Do not suggest manual order.)
-
-### Rule 3 — Success But Order Not Processed
-
-1. Confirm: `status` = Success but order is not yet allotted.
-2. Use `cashier_reference` → check fund_allocation_report for `cfppg_bank_ref_no` match (per **A6**).
-3. If payment mapped → check mf_order_history (per **A6**) for the corresponding order status.
-4. Respond: "Your bank has been debited. The payment is being mapped to your order. Allow T+1 to T+2 business days."
-
-### Rule 4 — Mandate Deletion
-
-1. Respond using the process from **A5**:
-   - "Before deleting a mandate, you must first unlink it from all active or paused SIPs. Deleting a mandate with linked SIPs will cause those SIPs to fail for future cycles."
-   - Steps to unlink: "Coin → SIPs → [each SIP] → Unlink mandate."
-   - Once all SIPs unlinked: "Coin → Mandates → [mandate] → Delete."
-2. If client has no SIPs linked → they can delete directly from Coin → Mandates.
-3. Add: "Deleting a mandate does not cancel your SIPs — SIPs remain active but will require a new mandate or manual payment going forward."
-
-### Rule 5 — Bank-Applied Penalty Charges
-
-1. Triggered when: client reports charges from their bank in the context of a failed or cancelled mandate debit.
-2. Confirm the charges are applied by the client's bank — not by Zerodha or BSE STAR MF (per **A7**).
-3. Respond: "Zerodha does not charge for Coin mandate registrations at present. However, your bank may charge penalties for failed transactions due to insufficient funds and mandate verification charges. For details on the specific charges, please check with your bank." Share link from **A7**.
-
+1. Invoke `sip_report` to confirm the SIP is active and check `fund_source` for mandate linkage.
+2. Use `public_id` from `sip_report` as the `sip_id` input. Invoke `sip_modification_log` to check whether the SIP was modified near the trigger date — a recent modification can explain the missing debit.
+3. If neither check explains the missing debit → communicate that there was a technical issue with the auto-debit for this cycle.
+4. For Zerodha SIPs (`sip_type` = `sip` in `sip_report`), advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs (`sip_type` = `amc_sip`), the next AMC SIP cycle will retry automatically per A1.
 
 ---
+
+### Rule 2 — Draft Status
+
+Compare today's date to the scheduled date and `created_at`:
+
+**Scheduled date not yet passed:**
+
+-Communicate that the debit instruction has been sent to the bank and funds will be debited on the scheduled date. Once debited, the order will be processed automatically.
+
+**Scheduled date passed, draft persists beyond T+2 from `created_at`:**
+
+-This typically indicates the mandate was revoked or cancelled from the client's UPI app or bank portal. Communicate this and advise checking mandate status in `mandate_report`; if no active mandate exists, advise creating a new one. Share the relevant link from A6.
+
+**Scheduled date passed, within T+2 window:**
+
+-Check `transaction_id` per A5. If null or empty → Juspay mandate. Communicate the Juspay manual-approval mechanic per A5; if the client missed the approval, no debit happened this cycle. Suggest creating an eNACH mandate as an alternative for fully automatic debits.
+
+-If `transaction_id` is populated → check `sip_type` from `sip_report`. For Zerodha SIPs, communicate that the auto-debit was not processed for this cycle and advise placing a manual lumpsum order. For AMC SIPs, communicate that the auto-debit was not processed; the next cycle will retry automatically.
+
+---
+
+### Rule 3 — Success
+
+Confirm `status` = `success`. Communicate that the bank has been debited successfully.
+
+If the client reports the order has not been allotted yet:
+
+1. Use `order_id` to look up `cashier_reference` in `fund_allocation_report` for payment mapping.
+2. If payment is mapped → invoke `mf_order_history` for the corresponding order status. Communicate the order status.
+3. If payment is not yet mapped → communicate that payment mapping takes T+1 to T+2 business days.
+
+---
+
+### Rule 4 — Pending or Failed Status
+
+-Check `transaction_id` per A5. If null or empty → Juspay mandate. Communicate the Juspay manual-approval mechanic per A5.
+
+-If `transaction_id` is populated → use the `remark` value with A4 to identify the cause. Communicate the cause to the client in plain language.
+
+-For Zerodha SIPs, advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs, the next cycle will retry automatically.
+
+---
+
+### Rule 6 — Mandate Deletion (Coin)
+
+The mandate deletion process is handled by `mandate_report`. Invoke `mandate_report` for the full deletion process and any follow-up.

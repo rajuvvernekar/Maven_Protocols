@@ -15,64 +15,66 @@ When clients:
 
 TRIGGER KEYWORDS: "breakdown", "view breakdown", "holdings breakdown", "FIFO calculation", "how average calculated", "trade entries", "dividend reinvestment", "LIQUIDBEES dividend", "bonus entry", "split entry", "breakdown missing", "breakdown not showing"
 
+TAGS: holdings, demat
+
 ## Protocol
 
 # CONSOLE EQ HOLDINGS BREAKDOWN PROTOCOL
 
-
 ---
+
+## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-This tool shows **all entries** impacting holdings for a stock: regular trades + external trades + corporate action credits/debits. Each entry shows how the holding qty was built or adjusted over time — the complete audit trail.
+- Buy average is calculated from these entries using FIFO.
+- Breakdown reflects the same data that drives buy average and P&L on Console — if breakdown is correct, avg and P&L are correct.
+- Breakdown entries may take up to 1 trading day to reflect after a trade.
 
-Buy average is calculated from these entries using FIFO —  use this to walk through entries to verify. Breakdown reflects the same data that drives buy average and P&L on Console — if breakdown is correct, avg and P&L are correct.
-
-Breakdown entries may be delayed by up to 1 day after trade execution due to file processing.
-
+---
 
 ### A2 — Field Usage Rules
 
-**Shareable fields:**
+**Shareable with client:**
 
-`tradingsymbol` | `isin` | `price` | `quantity` | `exchange` | `order_execution_time` | `external_trade_type` | `trade_type` | `trade_id` | `order_id`
-
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
-
-`client_id` | `instrument_id` | `pseudo_trade` | `corporate_action_id` | `pledged`
-
-**Client-facing terminology:**
-
-| Internal Term | Client-Facing Alternative |
+| Field | Interpretation |
 |---|---|
-| pseudo_trade = true | "system entry" or "corporate action entry" |
-| corporate_action_id | "corporate action entry" (reference the CA type, not the ID) |
-| pledged | (use internally to check pledge status; describe outcome to client) |
-| Any internal field name or system term | (describe the outcome, not the field) |
+| `tradingsymbol` | Stock symbol |
+| `isin` | ISIN identifier |
+| `price` | Entry price |
+| `quantity` | Entry quantity |
+| `exchange` | Exchange (NSE / BSE / DIVIDEND) |
+| `order_execution_time` | Execution timestamp |
+| `trade_type` | Buy or sell |
+| `trade_id` | Trade reference |
+| `order_id` | Order reference |
+| `external_trade_type` | External entry type (IPO, gift, ESOP, buyback, transfer, discrepant) |
 
+**Non-shareable:**
+
+| Field | Interpretation |
+|---|---|
+| `client_id` | Internal client identifier |
+| `instrument_id` | Internal instrument id |
+| `pseudo_trade` | True = system-generated entry (corporate action or dividend reinvestment); false = regular trade |
+| `corporate_action_id` | Internal corporate action reference |
+| `pledged` | True = holding is pledged; false = unpledged |
+
+---
 
 ### A3 — Entry Type Identification
 
 | Detection Logic | Entry Type | Description |
 |---|---|---|
-| `exchange` = NSE/BSE, `pseudo_trade` = false, `external_trade_type` = blank | Regular trade | Normal buy/sell from tradebook |
+| `exchange` = NSE/BSE, `pseudo_trade` = false, `external_trade_type` = blank | Regular trade | Shares purchased and sold on Kite |
 | `exchange` = DIVIDEND, `price` = 0, fractional qty, `pseudo_trade` = true | Dividend reinvestment | ETF/MF dividend unit credit (e.g., LIQUIDBEES, GOLDBEES). Directly impacts avg price. |
 | `price` = 0, `pseudo_trade` = true, `corporate_action_id` populated | Bonus credit | Bonus shares credited at zero cost |
 | `pseudo_trade` = true, `corporate_action_id` populated (qty/price adjusted) | Split adjustment | Qty multiplied, price divided per split ratio |
 | `external_trade_type` populated (discrepant/buyback/IPO/gift/ESOP/internal_transfer) | External entry | Came from external trades system |
 
+---
 
-### A4 — Cross-Reference Tools
-
-| Tool | When to Use |
-|---|---|
-| `console_eq_holdings` | Current holdings summary with buy avg. If avg appears wrong, use breakdown to trace FIFO entry by entry. |
-| `console_eq_tradebook` | Regular exchange trades. Breakdown should include all tradebook entries plus CA and external entries. |
-| `console_eq_external_trades` | External entries only. Breakdown includes these; use external trades tool to check if a specific entry was posted. |
-| `console_eq_pnl` | Realized P&L. Both breakdown and P&L are computed from the same FIFO logic. |
-
-
-### A5 — CA Entry Timelines
+### A4 — CA Entry Timelines
 
 | Corporate Action | Expected Entry Timeline |
 |---|---|
@@ -80,113 +82,96 @@ Breakdown entries may be delayed by up to 1 day after trade execution due to fil
 | Split | Immediate (on record date) |
 | Demerger | 30–45 days from record date |
 
-If beyond expected timeline and CA entry not found → escalate.
+---
 
+### A5 — Escalation Data
 
-### A6 — Escalation Data Template
-
-When escalating, always include: **client ID, tradingsymbol, ISIN, specific missing/wrong entries, and dates.**
-
+- Include when escalating to human agent: client ID, tradingsymbol, ISIN, specific missing or incorrect entries, and dates.
 
 ---
 
-### Preflight (run on every query)
+## Section B: Decision Flow
+
+### Routing
 
 ```
-1. Identify the stock (tradingsymbol / ISIN) and the client's concern
-   (wrong avg, unrecognized entry, missing entry, CA verification, etc.)
-
-2. Load breakdown entries for the stock
+Route by scenario
+   ├─ Buy average verification (walk through FIFO) → Rule 1
+   ├─ Entries with price = 0 or fractional qty (dividend / ETF) → Rule 2
+   ├─ "Why is there a ₹0 entry I didn't make?" (bonus/split) → Rule 3
+   ├─ Trade in tradebook but missing from breakdown → Rule 4
+   ├─ Strange / unexplained entry in holdings breakdown → Rule 5
+   ├─ Holdings breakdown won't load → Rule 6
+   ├─ Buy average dispute — prove against `console_eq_holdings` → Rule 7
+   └─ Specific corporate action verification in breakdown → Rule 8
 ```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Client questions buy average — need to verify via FIFO      → Rule 1
-Entries with price = 0 or fractional qty (dividend/ETF)     → Rule 2
-Bonus or split entries in breakdown                         → Rule 3
-Trade in tradebook but missing from breakdown               → Rule 4
-Unrecognized entries in breakdown                           → Rule 5
-Breakdown page not loading / error                          → Rule 6
-Client insists buy average is wrong — need to prove it      → Rule 7
-Verify if a specific CA was posted in breakdown             → Rule 8
-```
-
-### Scope
-
-- Address the client's query about their holdings breakdown entries, FIFO calculation, and entry verification.
-- Use **A2** field rules and client-facing terminology in all client communication.
-- Translate internal entry types using **A3** detection logic; describe entries by their purpose, not internal field names.
 
 ### Fallback
 
-If no route matches, cross-reference with **A4** tools for additional context. If no root cause is found, escalate per **A6**.
-
+- If no rule matches → escalate to human agent per A5.
 
 ---
 
+## Section C: Rules
+
 ### Rule 1 — Walk Through FIFO Calculation
 
-1. List all entries for the tradingsymbol chronologically.
-2. For each entry show: date, trade_type (buy/sell), quantity, price, and source (identify via **A3**: exchange trade / corporate action / external entry / dividend reinvestment).
-3. Here is the breakdown of your [tradingsymbol] holdings:
-[Date] — [Buy/Sell] [qty] shares at ₹[price] ([exchange/source])
-[...continue for all entries...]
+1. List all entries for the tradingsymbol chronologically. For each entry, share: date, trade_type (buy/sell), quantity, price, and source identified via A3 (regular trade / corporate action / external entry / dividend reinvestment).
+2. Buy average is calculated using FIFO — when the client sells, the oldest purchased shares are consumed first, changing the average of remaining shares.
+3. If sell entries exist → identify which buy lots each sell consumed (oldest first) and include this in the explanation.
 
-Your buy average is calculated using FIFO — when you sell, the oldest purchased shares are consumed first, changing the average of remaining shares..
-4. If sell entries exist, explain FIFO consumption per **A7-R2** — show which buy entries each sell consumed.
-
+---
 
 ### Rule 2 — Dividend Reinvestment Entries
 
-1. Identify entries via **A3** (exchange = DIVIDEND, price = 0, fractional qty, pseudo_trade = true).
-2. The entries showing ₹0 price with small/fractional quantities for [tradingsymbol] are dividend reinvestment credits. When ETFs like LIQUIDBEES distribute dividends, the dividend amount is reinvested as additional units at zero acquisition cost. These are normal entries and directly impact your buy average calculation..
+1. Identify dividend reinvestment entries per A3.
+2. Explain to client: ETFs like LIQUIDBEES reinvest dividends as additional units at zero cost, which directly impacts buy average.
 
+---
 
 ### Rule 3 — Bonus / Split Entries in Breakdown
 
-1. Identify entry type via **A3**.
-2. Bonus (price = 0, CA entry) → The entry showing [quantity] shares at ₹0 on [date] is your bonus share credit. Bonus shares are credited at zero cost, which reduces your overall buy average..
-3. Split (qty/price adjusted, CA entry) → The split adjustment on [date] changed your holding from [old qty] shares to [new qty] shares. The price per share was proportionally adjusted. Your total investment value remains unchanged..
+1. Identify entry type per A3.
+2. Bonus (price = 0, CA entry) → bonus share credit at zero cost, which reduces overall buy average.
+3. Split (qty/price adjusted, CA entry) → quantity was multiplied and price per share proportionally reduced. Total investment value remains unchanged.
 
+---
 
 ### Rule 4 — Entry Missing from Breakdown
 
-1. Check if the trade was executed within the last 1 trading day — breakdown entries may be delayed up to 1 day due to file processing (per **A1**).
-2. If trade was yesterday → Breakdown entries can take up to 1 trading day to reflect. The trade is recorded in the tradebook and will appear in the breakdown shortly. This delay does not affect your buy average or P&L..
-3. If trade was 2+ trading days ago and still not in breakdown → escalate per **A6**.
+1. If the trade was executed within the last 1 trading day → inform client per A1; trade is in the tradebook and will appear in the breakdown shortly. Buy average and P&L are not affected.
+2. If trade was 2+ trading days ago and still not in breakdown → escalate to human agent per A5.
 
+---
 
 ### Rule 5 — Unrecognized Entries in Breakdown
 
-1. Check the entry type via **A3**:
-   a. `external_trade_type` populated → This entry is a [client-facing label per A3] entry — it was recorded for shares received via [transfer/gift/IPO/ESOP/buyback]. You can verify the details in the external trades section..
-   b. `exchange` = DIVIDEND → The entries showing ₹0 price with small/fractional quantities for [tradingsymbol] are dividend reinvestment credits. When ETFs like LIQUIDBEES distribute dividends, the dividend amount is reinvested as additional units at zero acquisition cost. These are normal entries and directly impact your buy average calculation. (Rule 2).
-   c. Corporate action entry (price = 0, system entry) → This is a corporate action entry for [bonus/split/merger/demerger] of [tradingsymbol]..
-   d. None of the above explain it → escalate per **A6** as potential breakdown-tradebook mismatch.
+1. Identify the entry type per A3:
+   a. `external_trade_type` populated → external entry for shares received via transfer/gift/IPO/ESOP/buyback. Invoke `console_eq_external_trades` for details.
+   b. `exchange` = DIVIDEND → dividend reinvestment (per Rule 2).
+   c. Corporate action entry (price = 0, system entry) → bonus/split/merger/demerger.
+   d. None of the above → escalate to human agent per A5 as potential breakdown-tradebook mismatch.
 
+---
 
 ### Rule 6 — Breakdown Not Loading / Error
 
-1. Try a different stock to confirm if the issue is stock-specific or account-wide.
-2. Stock-specific → may be a data issue for that ISIN. escalate per **A6** with client ID and tradingsymbol.
-3. Account-wide → The breakdown view is experiencing a temporary issue. Please try again after some time or use a different browser. If the issue persists, we'll investigate further.. If persists beyond 24 hours → escalate per **A6**.
+1. Try a different stock to confirm whether the issue is stock-specific or account-wide.
+2. Stock-specific → escalate to human agent per A5 with client ID and tradingsymbol.
+3. Account-wide → temporary issue; suggest retrying after some time or using a different browser. If the issue persists beyond 24 hours → escalate to human agent per A5.
 
+---
 
-### Rule 7 — Verifying Buy Average is Correct
+### Rule 7 — Buy Average Cross-Check Against Holdings
 
-The breakdown contains all entries (buys, CAs, external entries) that make up the current holding. Calculate the weighted average directly from these entries:
-a. List all entries chronologically with qty and price.
-b. Weighted average = total value of all entries / total quantity.
-Respond per A7-R3.
-If the calculation does not match what console_eq_holdings shows → escalate per A6.
+1. Walk through FIFO per Rule 1 — list buy entries chronologically, consume oldest-first against any sell entries, and compute the average of remaining quantity.
+2. If the FIFO-derived average matches `console_eq_holdings` → confirm to client that buy average is correct.
+3. If the FIFO-derived average does not match `console_eq_holdings` → escalate to human agent per A5.
 
+---
 
 ### Rule 8 — Corporate Action Entry Verification
 
-1. Look for entries matching CA patterns in **A3**: price = 0 (bonus), or entries around the CA date with adjusted qty/price (split/merger/demerger).
-2. If CA entry found → confirm with date, qty, price.
-3. If CA entry not found → check expected timeline per **A5**. If beyond expected timeline → escalate per **A6**.
-
+1. Identify the CA entry per A3 (price = 0 for bonus, or adjusted qty/price around CA date for split/merger/demerger).
+2. CA entry found → share date, qty, price.
+3. CA entry not found → compare against expected timeline per A4. If beyond expected timeline → escalate to human agent per A5.

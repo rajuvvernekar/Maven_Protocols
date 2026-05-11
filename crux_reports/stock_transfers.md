@@ -14,16 +14,18 @@ When clients:
 
 TRIGGER KEYWORDS: "primary to secondary transfer", "secondary to primary transfer", "stock transfer status", "transfer failed", "transfer pending", "inter-account transfer", "secondary demat transfer", "transfer request status", "stocks transferred between accounts", "transfer not showing"
 
+TAGS: demat
+
 ## Protocol
 
 # STOCK TRANSFER PROTOCOL
 
-—
+---
+
+## Section A: Reference Data
 
 ### A1 — Transfer Fundamentals
 
-- This report tracks transfers between a client's own primary and secondary Zerodha demat accounts only.
-- Required input: Client ID. Optional: From/To Date, Transaction Type (Primary to Secondary / Secondary to Primary).
 - Transfer requires CDSL TPIN authorization and OTP verification.
 - Stocks under lock-in, pledge, or frozen status cannot be transferred.
 - Cannot transfer if trading account balance is negative or account is dormant.
@@ -41,70 +43,66 @@ TRIGGER KEYWORDS: "primary to secondary transfer", "secondary to primary transfe
 | OTP completion deadline | 8 PM same day — if missed, transfer fails |
 | Same-day processing cutoff | Submitted before 6 PM on a trading day → processed same day |
 | Next-day processing | Submitted after 6 PM → execution date is next working day |
-| Stocks visible in target account | Within 24 hours of completion |
-| Buy average auto-update | Within 3 working days of transfer |
 
 ### A4 — Status Translations
 
 | Internal Status | Client-Facing Communication |
 |---|---|
-| Pending | "Your transfer request from [creation date] is pending execution. Transfers submitted before 6 PM are processed the same trading day. If submitted after 6 PM, the execution date will be the next working day." |
-| Stocks Transferred | "Your transfer of [items] from [direction] was completed on [execution_date]. The stocks will be visible in the target account within 24 hours." |
-| Failed | "Your stock transfer request from [creation date] has failed." (See Rule 2 for diagnosis.) |
+| Pending | Transfer request is pending execution |
+| Stocks Transferred | Transfer has been completed. Stocks will be visible in the receiver's account within 24 working hours |
+| Failed | Transfer request has failed |
 
 ### A5 — Transfer Failure Reasons
 
 | Reason | Client-Facing Explanation |
 |---|---|
-| OTP not completed | "CDSL OTP verification was not completed by the 8 PM deadline." |
-| Lock-in / pledge / frozen | "The stocks are under lock-in, pledge, or frozen status and cannot be transferred." |
-| Negative / zero balance | "The trading account has a negative or zero balance." |
-| Dormant account | "The account is in dormant status." |
+| OTP not completed | CDSL OTP verification was not completed by the 8 PM deadline. The transfer process needs to be initiated again |
+| Lock-in / pledge / frozen | Stocks are under lock-in, pledge, or frozen status. Stocks need to be unpledged, or the lock-in period must be over, or the demat account must be unfrozen before the transfer can be initiated |
+| Negative / zero balance | Transfer request will not be processed if the Zerodha account balance is negative. If funds are added today, the funds statement balance will be updated the following day and the transfer request will only be processed then |
+| Dormant account | Shares cannot be transferred if the Zerodha account is dormant. Client must complete the Re-KYC process — Invoke `account_modification_report` to guide the client through the Re-KYC process |
 
 ### A6 — Buy Average & Discrepancy
 
 - Buy average is auto-updated within 3 working days for stocks transferred between primary and secondary accounts.
 - Stocks may show as discrepant (discrepancy mark or incorrect buy average) in the target account until the update completes.
-- Transfer entries appear in Console EQ External Trades for buy average calculation.
+- Invoke `console_eq_external_trades` for transfer entries related to buy average calculation.
 
 ### A7 — Field Rules
 
-**Shareable with client:** `creation` (as date), `transaction_type` (as "direction"), `status` (translated per **A4**), `execution_date`, `items` (stocks and quantities).
+**Shareable with client:**
 
-**Internal reasoning only (never share with client):** `modified`, `name` (transfer ID), `client_id`, `secondary_client_id`, `from_account`, `to_account`, `remarks`.
-tr
-### A8 — Cross-Reference Protocols
-
-| Topic | Refer to |
+| Field | Interpretation |
 |---|---|
-| Verify transferred stocks in target account (may show discrepancy initially) | Console EQ Holdings |
-| Transfer entries for buy average calculation | Console EQ External Trades |
+| `creation` | Share as date (not timestamp) |
+| `transaction_type` | Share as "direction" — do not use the raw field name |
+| `status` | Translate per A4 before sharing |
+| `execution_date` | Date the transfer was executed |
+| `items` | Stocks and quantities in the transfer |
 
-### A9 — Escalation Triggers (Consolidated)
+**Non-shareable:**
 
-Escalate when any of the following occur:
-- Status = Stocks Transferred but stocks not visible in target account after 24 hours.
-- Buy average not updated or incorrect after 3+ working days post-transfer.
-- Transfer failed despite client completing OTP verification and having sufficient balance.
+| Field | Interpretation |
+|---|---|
+| `name` | Internal transfer ID |
+| `modified` | Last update timestamp |
+| `from_account` | Source demat account |
+| `to_account` | Destination demat account |
+| `secondary_client_id` | Internal identifier for the counterpart account |
+| `remarks` | Internal remarks |
+| `client_id` | Internal client identifier |
 
-Include in escalation: client ID, creation date, direction, status, items, and the specific issue.
+---
 
+## Section B: Decision Flow
 
-### Preflight (run on every query)
-
-1. Fetch the transfer report using client ID and optional date range/transaction type.
-2. Apply field protection per **A7** — identify shareable vs internal-only fields.
-3. Translate the status using **A4**.
-4. Format amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
-
-### Routing Tree
+### Routing
 
 ```
 Query relates to demat transfer →
 │
 ├─ Client asks about transfer status
-│  ├─ Pending → Rule 1 (Pending guidance)
-│  ├─ Stocks Transferred → Rule 1 (Completion confirmation)
+│  ├─ Pending → Rule 1
+│  ├─ Stocks Transferred → Rule 1
 │  └─ Failed → Rule 2 (Diagnose)
 │
 ├─ Transferred stocks not visible in target account
@@ -120,45 +118,46 @@ Query relates to demat transfer →
    → Rule 6 (Escalation)
 ```
 
-### Scope
-
-- Address: transfer status, failure diagnosis, stock visibility, buy average updates, and transfer charges.
-
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate per Rule 6.
+If no root cause is identified after checking all relevant rules → ESCALATE TO HUMAN AGENT
 
+---
+
+## Section C: Rules
 
 ### Rule 1 — Transfer Status Check
 
 1. Look up by Client ID and optional date range.
-2. Translate the status using **A4** and respond with the appropriate client-facing communication.
+2. Translate the status using **A4** and communicate the appropriate status meaning to the client.
 3. For Failed status → route to Rule 2.
 
 ### Rule 2 — Transfer Failed: Diagnose and Retry
 
-1. Respond: "Your stock transfer request from [creation date] has failed." Present the applicable reasons from **A5**.
-2. Retry guidance: "To retry, place a new transfer request on Kite and ensure OTP verification is completed by 8 PM." (Per **A3**.)
-3. If client confirms they completed OTP and balance was sufficient → escalate per Rule 6.
+1. Status is Failed — present the applicable failure reason and its meaning from **A5**.
+2. Client can retry by placing a new transfer request on Kite and ensuring OTP verification is completed by 8 PM (per **A3**).
+3. If client confirms they completed OTP and balance was sufficient → ESCALATE TO HUMAN AGENT.
 
 ### Rule 3 — Transferred Stocks Not Visible
 
-1. Confirm: status = Stocks Transferred (per **A4**).
-2. Respond: "Transferred stocks should be visible within 24 hours of completion. If the transfer was completed today, please check again tomorrow." (Per **A3**.)
-3. If more than 24 hours since completion: "If it's been more than 24 hours and the stocks are still not visible, we'll investigate." → escalate per Rule 6.
+1. Confirm status = Stocks Transferred (per **A4**).
+2. Stocks should be visible within 24 working hours of transfer completion.
+3. If more than 24 working hours have passed since completion and stocks are still not visible → ESCALATE TO HUMAN AGENT.
 
 ### Rule 4 — Buy Average After Transfer
 
-1. Respond using **A6**: "The buy average for stocks transferred between primary and secondary accounts is automatically updated within 3 working days. During this period, the stocks may show a discrepancy mark or incorrect buy average."
-2. If more than 3 working days: "If the buy average is still incorrect after 3 working days, please let us know with the specific stocks and expected buy average." → escalate per Rule 6. Reference Console EQ External Trades (per **A8**) for entry correction.
+1. Buy average is auto-updated within 3 working days post-transfer (per **A6**). Stocks may show discrepancy or incorrect buy average during this period.
+2. If more than 3 working days have passed and buy average is still incorrect → ESCALATE TO HUMAN AGENT. Invoke `console_eq_external_trades` for entry reference.
 
 ### Rule 5 — Transfer Charges
 
-1. Respond using **A2**: "The transfer charge is ₹13 + 18% GST = ₹15.34 per transfer transaction between your primary and secondary demat accounts. This charge applies per transaction regardless of the number of shares or stock value being transferred."
+1. Transfer charge is ₹13 + 18% GST = ₹15.34 per transaction, regardless of number of shares or stock value (per **A2**).
 
 ### Rule 6 — Escalation
 
-Escalate when any trigger in **A9** is met.
-
-Include in escalation: client ID, creation date, direction, status, items, and the specific issue.
-
+1. ESCALATE TO HUMAN AGENT when any of the following occur:
+   - Status = Stocks Transferred but stocks not visible in target account after 24 working hours.
+   - Buy average not updated or incorrect after 3+ working days post-transfer.
+   - Transfer failed despite client completing OTP verification and having sufficient balance.
+   - No root cause identified after checking all relevant rules.
+2. Include in escalation: client ID, creation date, direction, status, items, and the specific issue.

@@ -10,12 +10,10 @@ Maps display names (used in feedback) to tool file paths.
 | Console EQ Pseudo Holdings | console_eq_pseudo_holdings | console_reports/console_eq_pseudo_holdings.md | Console Reports |
 | Console EQ Holdings Breakdown | console_eq_holdings_breakdown | console_reports/console_eq_holdings_breakdown.md | Console Reports |
 | Console MTF Holdings | console_mtf_holdings | console_reports/console_mtf_holdings.md | Console Reports |
-| Console EQ Tradebook | console_eq_tradebook | console_reports/console_eq_tradebook.md | Console Reports |
-| Console EQ Tradebook (> 100 days) | console_eq_tradebook_prepared | console_reports/console_eq_tradebook_prepared.md | Console Reports |
+| Console EQ Tradebook | console_eq_tradebook_prepared | console_reports/console_eq_tradebook_prepared.md | Console Reports |
 | Console FnO PnL | console_fno_pnl | console_reports/console_fno_pnl.md | Console Reports |
 | Console FnO Positions | console_fno_positions | console_reports/console_fno_positions.md | Console Reports |
-| Console FnO Tradebook | console_fno_tradebook | console_reports/console_fno_tradebook.md | Console Reports |
-| Console FnO Tradebook (> 100 days) | console_fno_tradebook_prepared | console_reports/console_fno_tradebook_prepared.md | Console Reports |
+| Console FnO Tradebook | console_fno_tradebook_prepared | console_reports/console_fno_tradebook_prepared.md | Console Reports |
 | Corporate Action Orders Report | corporate_action_orders | console_reports/corporate_action_orders.md | Console Reports |
 | Console Instant Pledge | console_instant_pledge | console_reports/console_instant_pledge.md | Console Reports |
 | Console MTF Conversion | console_mtf_conversion | console_reports/console_mtf_conversion.md | Console Reports |
@@ -35,6 +33,7 @@ Maps display names (used in feedback) to tool file paths.
 | Ledger Report / Ledger Balance | ledger_report | crux_reports/ledger_report.md | CRUX Reports |
 | Withdrawal / Crux Withdrawal Request | withdrawal_request | crux_reports/withdrawal_request.md | CRUX Reports |
 | Delayed Payment Charges | delayed_payment_charges | crux_reports/delayed_payment_charges.md | CRUX Reports |
+| Clientwise Margin Report | clientwise_margin_report | crux_reports/clientwise_margin_report.md | CRUX Reports |
 | Pledge Request Report | pledge_request_report | crux_reports/pledge_request_report.md | CRUX Reports |
 | Tradewise / Orderwise Charges Report | tradewise_charges_report | crux_reports/tradewise_charges_report.md | CRUX Reports |
 | IPO / IPO Application | ipo_application | crux_reports/ipo_application.md | CRUX Reports |

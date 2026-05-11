@@ -14,43 +14,60 @@ When clients:
 
 TRIGGER KEYWORDS: "auto debit", "mandate debit", "schedule debit", "funds not credited", "mandate debit delayed", "auto pay", "NACH debit", "emandate debit", "stock SIP funds", "mandate failed", "debit not reflecting"
 
+TAGS: funds, investments
+
 ## Protocol
 
-# AUTO DEBIT PAYINS PROTOCOL 
+# AUTO DEBIT PAYINS PROTOCOL
 
-
----
+## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-This tool shows **Console eMandate auto-debit transactions** that fund the Kite trading account. This is not for Coin/MF mandates — those are a separate system.
+-Bank debits funds from the client's account 1 working day before the scheduled Kite credit date. NPCI settles at end-of-day — funds appear in Kite on the scheduled date, not the debit date. The bank considers the opening balance on the debit date — same-day deposits may not count.
 
-Bank debits 1 working day before the scheduled credit date (NPCI settles end-of-day). The bank considers the **opening balance** on the debit date — same-day deposits may not count.
+-Failed auto-debits are not retried — client must transfer funds manually.
 
-Failed auto-debits are **not retried** — the client must transfer funds manually.
+-Max ₹1 lakh per auto-debit schedule; multiple schedules up to ₹1 crore/day cumulative.
 
+-No Zerodha charges for eMandate registration or transactions.
+
+-Bank may charge a penalty for failed debit due to insufficient funds.
+
+-Stock SIPs deduct from Kite balance, not directly from bank — eMandate funds the Kite account in advance.
 
 ### A2 — Field Usage Rules
 
-**Shareable fields:**
+**Shareable with client:**
 
-`amount`
+| Field | Interpretation |
+|---|---|
+| `amount` | Auto-debit amount |
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+**Non-shareable:**
 
-`status` | `user_id` | `time_created` | `time_updated` | `transaction_date` | `provider` | `description` | `transaction_id` | `transaction_ref_id` | `bank_name` | `mandate_id` | `failure_reason`
-
-All fields except `amount` are internal-only. Use them to diagnose and determine the correct response, but communicate the outcome in plain language without referencing field names or values.
-
+| Field | Interpretation |
+|---|---|
+| `status` | Internal debit status — drives diagnosis |
+| `user_id` | Internal client identifier |
+| `time_created` | Record creation timestamp |
+| `time_updated` | Record last update timestamp |
+| `transaction_date` | Internal transaction date |
+| `provider` | Mandate provider |
+| `description` | Internal description |
+| `transaction_id` | Internal transaction id |
+| `transaction_ref_id` | Internal reference id |
+| `bank_name` | Bank name (internal) |
+| `mandate_id` | Mandate identifier |
+| `failure_reason` | Internal failure reason |
 
 ### A3 — Status Values
 
 | Status | Meaning | Action |
 |---|---|---|
-| Success | Debited and credited to Kite | Verify via ledger: "Funds added using auto debit." If ledger entry missing, wait until end of day. |
+| Success | Debited and credited to Kite | Invoke `ledger_report` and check `remarks` for "Funds added using auto debit." If ledger entry missing, wait until end of day. |
 | Failed | Auto-debit failed — insufficient opening balance or vendor issue | Not retried. Client must add funds manually. |
 | Created | Debit request sent to bank (1 day prior) | Funds credit next working day if bank debits successfully. |
-
 
 ### A4 — Timelines
 
@@ -60,112 +77,71 @@ All fields except `amount` are internal-only. Use them to diagnose and determine
 | Created status to credit | Next working day |
 | Recommended eMandate schedule before SIP date | 2–3 days before |
 
-
-### A5 — Key Facts
-
-- Max ₹1 lakh per schedule; multiple schedules up to ₹1 crore/day cumulative.
-- No Zerodha charges for eMandate registration or transactions.
-- Bank may charge penalty for failed debit (insufficient funds).
-- Stock SIPs deduct from Kite balance, not directly from bank — eMandate funds the Kite account.
-- Successful debit appears in ledger as "Funds added using auto debit."
-
-
-### A6 — Related Tools (Out of Scope for This Tool)
-
-| Query Type | Correct Tool |
-|---|---|
-| Mandate status / creation / cancellation | `e_mandate_report` |
-| Schedule setup / deletion | `e_mandate_schedule_report` |
-| Coin / MF mandates | Separate system — not covered by this tool or the above |
-
-
-### A7 — Links
+### A5 — Links
 
 | Topic | URL |
 |---|---|
 | Active mandates on Console | console.zerodha.com/funds/mandates |
+| How to create an eMandate schedule | https://support.zerodha.com/category/funds/mandate/how-to-set-up-emandates/articles/schedule-emandate-transactions |
 
+### A6 — Escalation Triggers
 
-### A8 — Escalation Data Template
+When escalating, always include: client ID, amount, transaction date, and specific issue.
 
-When escalating, always include: **client ID, amount, transaction date, and specific issue.**
+## Section B: Decision Flow
 
-
----
-
-### Preflight (run on every query)
-
-```
-1. Determine if query is about Console eMandate auto-debits
-   └─ If about Coin/MF mandates, mandate creation/cancellation,
-      or schedule setup/deletion → redirect to correct tool per A6.
-```
-
-### Route
+### Routing
 
 ```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Auto-debit status check (success/failed/created)            → Rule 1
-Money debited from bank but not in Kite                     → Rule 2
-SIP failed + has mandate set up                             → Rule 3
-Why was money debited before scheduled date                 → Rule 4
-Receiving "mandate debit delayed" emails repeatedly         → Rule 5
-Double debit complaint                                      → Rule 6
+Route by scenario
+   ├─ Auto-debit status check / money debited but not in Kite → Rule 1
+   ├─ SIP failed + has mandate set up → Rule 2
+   ├─ Why was money debited before scheduled date → Rule 3
+   ├─ Receiving "mandate debit delayed" emails repeatedly → Rule 4
+   ├─ Double debit complaint → Rule 5
+   └─ Coin/MF mandates, mandate creation/cancellation, or schedule setup → Rule 6
 ```
-
-### Scope
-
-- Address the client's query about Console eMandate auto-debit transactions only.
-- Use **A2** field rules in all client communication — only `amount` is shareable; all other fields are for internal reasoning.
-- Redirect Coin/MF mandate and schedule queries to the correct tools per **A6**.
 
 ### Fallback
 
-If no route matches, check `e_mandate_report` and `e_mandate_schedule_report` (per **A6**) for additional context. If no root cause is found, escalate per **A8**.
+If no route matches, escalate to human agent per **A6**.
 
-
----
+## Section C: Rules
 
 ### Rule 1 — Auto-Debit Status Check
 
-1. Determine status (per **A3**):
-   a. Success → check `ledger_report` for entry "Funds added using auto debit" matching the amount.
-      - Ledger entry found → Your auto-debit of ₹[amount] has been successfully credited to your Kite account..
-      - Ledger entry not found → Your auto-debit of ₹[amount] has been processed successfully. The funds should reflect in your Kite balance by end of day..
-   b. Failed → Your scheduled auto-debit of ₹[amount] could not be completed. This usually happens when the bank account did not have sufficient opening balance at the time of debit. The bank considers the opening balance on the debit date — funds added to your bank on the same day may not be considered. Failed auto-debits are not retried. You can add funds manually via Kite's 'Add Funds' option..
-   c. Created → The debit request for ₹[amount] has been sent to your bank. Your bank will debit the amount during banking hours, and the funds will be credited to your Kite account by the next working day..
+1. Determine status per **A3**:
+   a. Success → invoke `ledger_report` and check `remarks` for "Funds added using auto debit" matching the amount. If found, confirm credit. If missing, funds reflect by end of day.
+   b. Failed → auto-debit could not be completed. Insufficient opening balance or vendor issue. Not retried — client must add funds manually.
+   c. Created → debit request sent to bank. Funds credit to Kite by next working day per **A4**.
+2. If no matching record:
+   a. Invoke `e_mandate_report` — check if an active mandate exists.
+   b. If active → invoke `e_mandate_schedule_report` — check if a schedule was created.
+   c. If mandate is active but no schedule exists → suggest creating a schedule per **A5**.
 
+### Rule 2 — SIP Failed Due to Insufficient Funds
 
-### Rule 2 — Money Debited but Not in Kite
+1. Stock SIPs deduct from Kite balance per **A1**. If the eMandate debit was delayed or failed, the Kite balance may be insufficient when the SIP triggers.
+2. Invoke `kite_order_history`, filter for SIP orders. If order status is rejected with reason "Insufficient funds," the SIP failed due to low Kite balance.
+3. Check latest auto-debit status and apply Rule 1.
+4. Recommend scheduling eMandate credit date 2–3 days before SIP date per **A4**.
 
-1. If status = Success → apply Rule 1 step 1a (check ledger). If missing, funds reflect by end of day.
-2. If status = Created → The debit request for ₹[amount] has been sent to your bank. Your bank will debit the amount during banking hours, and the funds will be credited to your Kite account by the next working day.. Timeline per **A4**.
-3. If no matching record found → I don't see a matching auto-debit record for this amount. Please confirm the debit is from the Console eMandate (not a Coin MF mandate or manual transfer). You can verify your active mandates at console.zerodha.com/funds/mandates..
+### Rule 3 — Early Debit Complaint
 
+1. Bank debits the amount 1 working day before the scheduled credit date per **A1**. NPCI confirms the transaction at end of day — funds appear in Kite on the scheduled date, not the debit date.
 
-### Rule 3 — SIP Failed Due to Insufficient Funds
+### Rule 4 — Repeated "Mandate Debit Delayed" Emails
 
-1. Stock SIPs deduct funds from your Kite account balance, not directly from your bank. The eMandate transfers funds from your bank to Kite in advance. If the eMandate debit was delayed or failed, your SIP may fail due to insufficient balance. To avoid this, schedule your eMandate credit date 2–3 days before your SIP date.. Timing recommendation per **A4**.
-2. Check latest auto-debit status and apply Rule 1 to inform client of the debit outcome.
+1. Escalate to human agent per **A6**.
 
+### Rule 5 — Double Debit Complaint
 
-### Rule 4 — Early Debit Complaint
+1. Check for multiple records with the same `transaction_id`. If the same `transaction_id` appears twice, it is a duplicate entry — escalate to human agent per **A6**.
+2. If two records with different `transaction_id` values both show Success → escalate to human agent per **A6**.
+3. If one Success + one Failed (different `transaction_id`) → only the successful debit was credited. The failed debit was not processed.
 
-1. Your bank debits the amount 1 working day before the scheduled credit date. This is because eMandate transfers take one working day to process — the NPCI confirms the transaction at end of day, and the funds appear in your Kite account on the scheduled date.. Timeline per **A4**.
+### Rule 6 — Out-of-Scope Redirect
 
-
-### Rule 5 — Repeated "Mandate Debit Delayed" Emails
-
-1. Check latest status in this tool:
-   a. Failed → apply Rule 1 step 1b (**A9-R3**).
-   b. Created → apply Rule 1 step 1c (**A9-R4**).
-   c. No record → check `e_mandate_report` for mandate status (may be inactive/pending) and `e_mandate_schedule_report` for schedule status (may be deleted/not created). Redirect per **A6**.
-
-
-### Rule 6 — Double Debit Complaint
-
-1. Check for multiple records in this tool.
-2. If two successful debits exist for the same period → escalate per **A8**.
-3. If one success + one failed → explain only the successful one was credited. The failed debit was not processed.
-
+1. For mandate status, creation, or cancellation → invoke `e_mandate_report`.
+2. For schedule setup or deletion → invoke `e_mandate_schedule_report`.
+3. For Coin/MF mandate queries → invoke `mandate_report`.

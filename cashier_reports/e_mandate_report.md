@@ -15,44 +15,52 @@ When clients:
 
 TRIGGER KEYWORDS: "emandate status", "mandate pending", "mandate failed", "mandate rejected", "cancel mandate", "delete mandate", "mandate not active", "mandate processing", "create mandate", "mandate error", "mandate registration", "pending cancellation"
 
+TAGS: funds
+
 ## Protocol
 
-# E MANDATE REPORT PROTOCOL 
+# E MANDATE REPORT PROTOCOL
 
-
----
+## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-This tool shows **Console eMandate status** — for automatic fund transfers from bank to Zerodha (Kite trading account / Stock SIPs). This does not cover Coin/MF mandates or UPI autopay mandates — those are separate systems.
-
-eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. No Zerodha charges; bank may charge verification fee + penalty for failed debits.
-
+- eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. No Zerodha charges; bank may charge verification fee + penalty for failed debits.
 
 ### A2 — Field Usage Rules
 
-**Shareable fields:**
+**Shareable with client:**
 
-`bank_account_number` (if asked) | `remark` (in customer-friendly language)
+| Field | Interpretation |
+|---|---|
+| `bank_account_number` | Share if asked |
+| `created` | Mandate creation date |
+| `remark` | Failure remark from the bank |
+| `status` | Use for routing/diagnosis only — communicate the outcome, not the raw value |
+| `cancellation_date` | Share only if client specifically asks when they cancelled |
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+**Non-shareable:**
 
-`client_id` | `name` | `destination_bank_name` | `mandate_reference_id` | `umrn` | `registered_date` | `provider` | `status` | `cancellation_date`
-
-`cancellation_date`: share only if the client specifically asks when they cancelled. `status`: use for routing/diagnosis only — communicate the outcome, not the raw value.
-
+| Field | Interpretation |
+|---|---|
+| `client_id` | Internal client identifier |
+| `name` | Internal record name |
+| `destination_bank_name` | Bank name — internal |
+| `mandate_reference_id` | Internal mandate reference |
+| `umrn` | Unique mandate reference number — internal |
+| `registered_date` | Internal registration date |
+| `provider` | Mandate provider |
 
 ### A3 — Status Values
 
 | Status | Meaning | Action |
 |---|---|---|
 | Active | Ready for scheduled debits | Confirm active, direct to Console for schedule management. |
-| Pending | Awaiting bank activation | ≤5 working days from creation → inform client to wait. >5 working days → escalate. |
-| Failed | Creation failed — bank authentication unsuccessful | Guide to retry. Share `remark` if useful. |
+| Pending | Awaiting bank activation | ≤5 working days from `creation` → inform client to wait. >5 working days → escalate to human agent per **A7**. |
+| Failed | Creation failed — bank authentication unsuccessful | Guide to retry. Share `remark`. |
 | Cancelled | Cancelled by client | Confirm cancelled, offer to create new mandate. |
-| Pending Cancellation | Cancellation in progress | ≤5 working days from cancellation → inform processing. >5 working days → escalate. |
-| Cancellation Failed | Cancellation did not go through — mandate likely not active (rare) | Guide to verify/retry. If still debiting → escalate. |
-
+| Pending Cancellation | Cancellation in progress | Check `cancellation_date`. ≤5 working days → inform processing. >5 working days → escalate to human agent per **A7**. |
+| Cancellation Failed | Cancellation did not go through — mandate likely not active (rare) | Guide to verify/retry. If still debiting → escalate to human agent per **A7**. |
 
 ### A4 — Account Restrictions
 
@@ -62,7 +70,6 @@ eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. N
 | Joint account | Some banks do not support eMandates | Set up standing instructions via bank's netbanking |
 | NRE-PIS | Cannot create eMandate | Not supported |
 
-
 ### A5 — Timelines
 
 | Event | Timeline |
@@ -71,85 +78,71 @@ eMandate enables automatic transfer up to ₹1 crore/day from bank to Zerodha. N
 | Mandate deletion | Up to 5 working days |
 | Schedule cancellation advance notice | 3 working days (4 for SBI) |
 
-
 ### A6 — Links
 
 | Topic | URL |
 |---|---|
 | Mandate management on Console | console.zerodha.com/funds/mandates |
 
+### A7 — Escalation Triggers
 
-### A7 — Escalation Data Template
+When escalating, always include: client ID, mandate details (bank, creation/cancellation date), and specific issue.
 
-When escalating, always include: **client ID, mandate details (bank, creation/cancellation date), and specific issue.**
+## Section B: Decision Flow
 
-
----
-
-### Preflight (run on every query)
+### Routing
 
 ```
-1. Determine if query is about Console eMandate
-   └─ If about Coin/MF mandate or UPI autopay → this tool does not cover those.
-      Redirect accordingly.
+Route by scenario
+   ├─ Mandate status check (active/pending/failed/cancelled) → Rule 1
+   ├─ Cannot create mandate — account type restriction → Rule 2
+   ├─ Mandate creation not proceeding on iOS → Rule 3
+   ├─ Old pending mandate blocking new creation → Rule 4
+   └─ Coin/MF mandate queries → Rule 5
 ```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Mandate status check (active/pending/failed/cancelled)      → Rule 1
-Cannot create mandate — account type restriction            → Rule 2
-Mandate creation not proceeding on iOS                      → Rule 3
-Old pending mandate blocking new creation                   → Rule 4
-```
-
-### Scope
-
-- Address the client's query about Console eMandate status, creation issues, and cancellation.
-- Use **A2** field rules in all client communication — only `bank_account_number` (if asked) and `remark` (in friendly language) are shareable.
-- Redirect Coin/MF and UPI autopay mandate queries — this tool does not cover them.
 
 ### Fallback
 
-If no route matches, check `e_mandate_schedule_report` and `auto_debit_payins` for related context. If no root cause is found, escalate per **A7**.
+If no route matches, escalate to human agent per **A7**.
 
-
----
+## Section C: Rules
 
 ### Rule 1 — Mandate Status Check
 
-1. Determine status (per **A3**) and respond:
-   a. Active → Your eMandate is active. You can create or manage schedules at console.zerodha.com/funds/mandates..
-   b. Pending:
-      - Calculate working days since creation date.
-      - ≤5 working days → Your eMandate was initiated on [creation date] and is awaiting activation from your bank. This can take up to 5 working days..
-      - >5 working days → Your eMandate has been pending for more than 5 working days. Sometimes banks delay sending confirmation. We periodically follow up with banks, but cannot provide an exact timeline. If you need funds urgently, you can add funds manually via Kite.. escalate per **A7**.
-   c. Failed → Your eMandate registration could not be completed. This typically happens when the bank authentication was not successful — for example, if the authentication window was closed before completion or incorrect credentials were entered. You can create a new mandate at console.zerodha.com/funds/mandates.. If `remark` contains useful info, share in customer-friendly language.
-   d. Cancelled → Your eMandate has been cancelled. If you'd like to set up auto-debit again, you can create a new mandate at console.zerodha.com/funds/mandates..
-   e. Pending Cancellation:
-      - Check `cancellation_date`.
-      - ≤5 working days → Your eMandate cancellation is being processed. This may take up to 5 working days..
-      - >5 working days → escalate per **A7**.
-   f. Cancellation Failed → The cancellation attempt for your eMandate did not go through. The mandate is likely not active. You can verify and retry at console.zerodha.com/funds/mandates.. If client insists mandate is still debiting → escalate per **A7**.
-
+1. Determine status per **A3**:
+   a. Active → confirm active and direct to Console per **A6** for schedule management.
+   b. Pending → calculate working days since `created`. ≤5 working days → inform client mandate is awaiting bank activation, can take up to 5 working days. >5 working days → inform client banks sometimes delay confirmation, follow-up in progress, no exact timeline; suggest manual fund add via Kite. Escalate to human agent per **A7**.
+   c. Failed → bank authentication was unsuccessful (e.g., authentication window closed, incorrect credentials). Direct to create new mandate per **A6**. If `remark` contains useful info, share with client.
+   d. Cancelled → confirm cancellation; offer to create new mandate per **A6**.
+   e. Pending Cancellation → check `cancellation_date`. ≤5 working days → cancellation is being processed (up to 5 working days). >5 working days → escalate to human agent per **A7**.
+   f. Cancellation Failed → mandate likely not active. Direct to verify/retry per **A6**. If client insists mandate is still debiting → escalate to human agent per **A7**.
 
 ### Rule 2 — Cannot Create Mandate (Account Restrictions)
 
-1. Check account type against **A4**:
-   a. Current account → eMandates cannot be created with current bank accounts. You can set up standing instructions through your bank's netbanking portal by adding Zerodha as a beneficiary..
-   b. Joint account → Some banks do not support eMandates for joint accounts. You can set up standing instructions via your bank's netbanking instead..
-   c. NRE-PIS → eMandates are not supported for NRE-PIS accounts..
+Check `get_all_client_data`:
 
+1. **Current account:**
+   If `bank_1_account_type`, `bank_2_account_type`, or `bank_3_account_type` is "Current" → cannot create eMandate per **A4**.
+
+2. **Joint account:**
+   If `primary_dp_status` = "YES" → eMandates may not be supported per **A4**.
+
+3. **NRE-PIS account:**
+   If all three conditions match:
+   - `client_acc_type` is one of NRO, NRE, or NRI
+   - `bo_sub_status` contains "RepatriableWith"
+   - `pis_bank_1_name` or `pis_bank_2_name` is populated
+   → eMandates not supported per **A4**.
 
 ### Rule 3 — iOS Creation Issue
 
-1. This usually happens when your browser blocks pop-ups. Go to your iOS browser settings and enable 'Always show' for pop-ups, then retry at console.zerodha.com/funds/mandates..
-
+1. iOS browser may be blocking pop-ups. Direct client to enable "Always show" for pop-ups in iOS browser settings, then retry per **A6**.
 
 ### Rule 4 — Old Pending Mandate Blocking New Creation
 
-1. You cannot create a new eMandate while an existing one is still pending or being cancelled. The old mandate must be fully deleted first, which takes up to 5 working days.. Deletion timeline per **A5**.
-2. If old mandate has been in pending_cancellation for >5 working days → escalate per **A7**.
+1. Check `status` of all existing mandates. If any mandate has status Pending or Pending Cancellation, a new mandate cannot be created until that mandate is resolved.
+2. For resolution timelines and escalation, apply Rule 1.
 
+### Rule 5 — Out-of-Scope Redirect
+
+- Coin/MF mandate queries → invoke `mandate_report`.

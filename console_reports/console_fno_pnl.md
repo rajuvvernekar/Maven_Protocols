@@ -15,30 +15,44 @@ When clients:
 
 TRIGGER KEYWORDS: "F&O P&L", "FnO profit", "FnO loss", "futures P&L", "options P&L", "realized F&O", "F&O buy value", "F&O sell value", "derivative P&L", "contract P&L", "expiry P&L", "physical delivery P&L", "F&O tax P&L", "options turnover"
 
+TAGS: reports, holdings
+
 ## Protocol
 
-# CONSOLE FNO PNL PROTOCOL 
-
+# CONSOLE FNO PNL PROTOCOL
 
 ---
 
+## Section A: Reference Data
+
 ### A1 — Fundamentals
 
-This tool looks up a client's realized F&O P&L per contract. It shows realized P&L only — no charge or MTM breakdown.
+- Realized P&L only — no charge or MTM breakdown.
 
-**Segment selection is critical:** FO for equity F&O, CDS for currency, COM for commodities. Wrong segment = no results or incomplete data.
-
+---
 
 ### A2 — Field Usage Rules
 
-**Shareable fields:**
+**Shareable with client:**
 
-`tradingsymbol` | `quantity` | `buy_value` | `buy_average` | `sell_value` | `sell_average` | `realized_profit` | `realized_profit_percentage`
+| Field | Interpretation |
+|---|---|
+| `tradingsymbol` | Trading symbol of the instrument |
+| `quantity` | Number of contracts traded |
+| `buy_value` | Total buy value |
+| `buy_average` | Average buy price |
+| `sell_value` | Total sell value |
+| `sell_average` | Average sell price |
+| `realized_profit` | Realized P&L |
+| `realized_profit_percentage` | Realized P&L as a percentage |
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+**Non-shareable:**
 
-`client_id`
+| Field | Interpretation |
+|---|---|
+| `client_id` | Internal client identifier |
 
+---
 
 ### A3 — Segment Mapping
 
@@ -48,95 +62,108 @@ This tool looks up a client's realized F&O P&L per contract. It shows realized P
 | CDS | Currency derivatives |
 | COM | Commodities |
 
+---
 
-### A4 — Escalation Data Template
+### A4 — Escalation Data
 
-When escalating, always include: **client ID, tradingsymbol, segment, date range, and specific discrepancy.**
-
+Include when escalating to human agent: client ID, tradingsymbol, segment, date range, specific discrepancy.
 
 ---
 
-### Preflight (run on every query)
+### A5 — Scenarios & Interpretations
+
+- **P&L verification:**
+The fields `buy_value`, `buy_average`, `sell_value`, `sell_average`, `realized_profit`, and `realized_profit_percentage` together represent the client's realized position on a contract. A positive `realized_profit` is a gain; negative is a loss.
+
+- **Physical delivery P&L:**
+When an ITM stock option or futures contract is physically settled at expiry, the F&O P&L closes the contract at intrinsic value (or zero), which may show as a loss on the F&O side. The actual shares are delivered or received, and the delivery P&L appears in equity P&L as an intraday delivery trade. Total P&L on the position requires combining both the F&O P&L entry and the corresponding equity delivery P&L entry from `console_eq_pnl`.
+
+- **OTM expired (long position):**
+When a long options position expires OTM, the option becomes worthless. The entire premium paid (`buy_value`) is reflected as a realized loss.
+
+- **OTM expired (short position):**
+When a short options position expires OTM, the option expires worthless. The full premium received (`sell_value`) is reflected as realized profit.
+
+- **Asterisk (*) on P&L entry:**
+The asterisk indicates the contract symbol was changed during the series due to a corporate action on the underlying stock (e.g., lot size change, symbol rename). The system closed the old contract and opened a new one with adjusted terms. This appears only on the adjustment day — subsequent days show normally. P&L is calculated correctly across both contract versions.
+
+- **Tax P&L vs Console F&O P&L:**
+Differences between the two reports arise because Tax P&L classifies trades by type (futures, options) and calculates turnover as the absolute value of profit per contract, while Console F&O P&L shows aggregate realized profit per contract for the selected date range. Physical delivery contracts may appear split between F&O and equity sections in Tax P&L. Intraday contracts on certain dates may be excluded from one tab — a known issue for specific dates. For income tax filing, the Tax P&L report is the correct reference.
+
+- **Charges / MTM query:**
+This report shows realized P&L only — brokerage, STT, and other charges are not included. For a full breakdown including charges, the Tax P&L report is available on Console under Reports → Tax P&L. For live MTM on open positions, Kite is the correct reference.
+
+---
+
+## Section B: Decision Flow
+
+### Routing
 
 ```
-1. Confirm correct segment selected (per A3)
-   └─ FO for equity F&O, CDS for currency, COM for commodities.
-      Wrong segment = no results or incomplete data.
+Route by scenario
+   ├─ Realized F&O P&L verification for a contract → Rule 1
+   ├─ Physical delivery P&L (ITM stock option / futures at expiry) → Rule 2
+   ├─ OTM options expired worthless → Rule 3
+   ├─ Asterisk (*) on P&L entry → Rule 4
+   ├─ Expired contract not showing in P&L → Rule 5
+   ├─ Tax P&L vs Console F&O P&L difference → Rule 6
+   └─ Charges / brokerage / STT / MTM query → Rule 7
 ```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Client questions realized F&O P&L for a contract            → Rule 1
-Physical delivery P&L (ITM stock option / futures at expiry)→ Rule 2
-OTM options expired worthless                               → Rule 3
-Asterisk (*) on P&L entry                                   → Rule 4
-Expired contract not showing in P&L                         → Rule 5
-Tax P&L vs Console F&O P&L difference                       → Rule 6
-Charges / brokerage / STT / MTM query                       → Rule 7
-```
-
-### Scope
-
-- Address the client's query about their F&O realized P&L, physical delivery impact, expired contracts, and tax report differences.
-- Use **A2** field rules in all client communication.
 
 ### Fallback
 
-If no route matches, investigate using the tool data and Section A references. If no root cause is found, escalate per **A4**.
-
+If no root cause is found → escalate to human agent.
 
 ---
 
+## Section C: Rules
+
 ### Rule 1 — P&L Verification
 
-1. Your realized P&L for [tradingsymbol]: [quantity] contracts with buy value ₹[buy_value] (avg ₹[buy_average]) and sell value ₹[sell_value] (avg ₹[sell_average]), resulting in a [profit/loss] of ₹[realized_profit] ([realized_profit_percentage]%)..
+1. Refer to A5 (P&L verification) for scenario context and interpretation.
 
+---
 
 ### Rule 2 — Physical Delivery P&L
 
-1. Your [tradingsymbol] contract was physically settled at expiry. In F&O P&L, the ITM contract is closed at intrinsic value (or zero), which may show as a loss on the F&O side. However, the actual shares were delivered/received, and the delivery P&L is reflected in your equity P&L as an intraday delivery trade.
+1. Refer to A5 (Physical delivery P&L) for scenario context.
+2. If client reports double quantity in equity P&L after physical settlement → escalate to human agent.
 
-To see your total P&L on this position, you need to combine the F&O P&L entry with the corresponding equity delivery P&L entry in `console_eq_pnl`.. Client needs to combine F&O P&L with equity delivery P&L in `console_eq_pnl`.
-2. If client reports double quantity in equity P&L after physical settlement → escalate per **A4**.
-
+---
 
 ### Rule 3 — OTM Options Expired Worthless
 
-1. Determine if long or short position:
-   a. Long position (bought options) → Your [tradingsymbol] option expired out-of-the-money (OTM) and became worthless. The entire premium paid (₹[buy_value]) is reflected as a realized loss..
-   b. Short position (sold options) → Your [tradingsymbol] option expired OTM. The full premium received (₹[sell_value]) is reflected as realized profit since the option expired worthless..
+1. Determine position direction:
+   - Long (bought options) → refer to A5 (OTM expired — long position) for scenario context.
+   - Short (sold options) → refer to A5 (OTM expired — short position) for scenario context.
 
+---
 
 ### Rule 4 — Asterisk (*) on P&L Entry
 
-1. The asterisk (*) mark indicates that the contract symbol was changed during the series due to a corporate action on the underlying stock (e.g., lot size change, symbol rename). The system closed the old contract and opened a new one with adjusted terms. This appears only on the adjustment day — subsequent days will show normally. Your P&L is calculated correctly across both contract versions..
+1. Refer to A5 (Asterisk on P&L entry) for scenario context and interpretation.
 
+---
 
 ### Rule 5 — Expired Contract Not in P&L
 
-1. Verify internally:
-   a. Correct segment selected (per Preflight / **A3**).
-   b. Date range covers the expiry date.
-2. If both correct and contract still missing → escalate per **A4** immediately with: client ID, tradingsymbol, expiry date, segment, date range used.
-3. Escalate directly 
+1. Verify:
+   - Correct segment is selected per A3.
+   - Date range covers the expiry date.
+2. Both correct and contract still missing → escalate to human agent per A4.
 
+---
 
 ### Rule 6 — Tax P&L vs Console F&O P&L
 
-1. The Tax P&L report and Console F&O P&L may show different values because:
-- Tax P&L classifies trades by type (futures, options) and calculates turnover as the absolute value of profit per contract
-- Console F&O P&L shows aggregate realized profit per contract for the selected date range
-- Physical delivery contracts may appear split between F&O and equity sections in Tax P&L
-- Intraday contracts on certain dates may be excluded from one tab — known issue for specific dates
+1. Refer to A5 (Tax P&L vs Console F&O P&L) for scenario context and interpretation.
+2. If client reports a significant unexplained difference between the F&O tab and tradewise exits tab → escalate to human agent.
 
-For income tax filing, use the Tax P&L report..
-2. If client reports significant unexplained difference between F&O tab and tradewise exits tab → escalate per **A4**.
-
+---
 
 ### Rule 7 — Charges and MTM Queries
 
-This tool shows realized P&L only — no charge or MTM breakdown.
-
+1. Refer to A5 (Charges / MTM query) for scenario context and interpretation.
+2. If client needs the Tax P&L report for charges → direct to Console → Reports → Tax P&L.
+3. If client needs live MTM on open positions → direct to Kite positions screen.
+4. If client needs historical day-wise MTM → this tool does not provide it; escalate to human agent if further investigation is needed.

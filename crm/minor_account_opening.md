@@ -13,40 +13,49 @@ When clients:
 
 TRIGGER KEYWORDS: "minor account status", "minor account opening", "minor demat", "child account", "minor application", "minor rejected", "minor login credentials", "minor PAN failed", "esign minor", "minor account processing"
 
+TAGS: account
+
 ## Protocol
 
-# MINOR ACCOUNT OPENING PROTOCOL 
-
+# MINOR ACCOUNT OPENING PROTOCOL
 
 ---
 
-### A1 — Fundamentals
+## Section A: Reference Data
 
-This tool shows **minor account opening application status**. It tracks the application through processing to completion.
+### A1 — Field Usage Rules
 
-For questions about trading restrictions, fund transfers, MF investment, guardian changes, converting to individual account, or Kite login for pre-2024 accounts — answer from the reference data in this protocol, not from tool output.
+**Shareable with client:**
 
+| Field | Interpretation |
+|---|---|
+| `reasons` | Communicate in customer-friendly language per A6 — do not share raw values |
 
-### A2 — Field Usage Rules
+**Non-shareable:**
 
-**Shareable fields:**
+| Field | Interpretation |
+|---|---|
+| `status` | Application status — interpret per A2 |
+| `form_type` | Type of application form |
+| `eq_signed_on` | Timestamp of guardian's eSign; empty/null = eSign not completed |
+| `minor_client_id` | Minor's internal client ID |
+| `full_name` | Minor's full name |
+| `client_id` | Guardian's client ID |
+| `creation` | Application submission timestamp — used to calculate elapsed processing time per A3 |
+| `modified` | Last update timestamp |
 
-`reasons` (communicate in customer-friendly language)
+---
 
-**Internal-only fields** (use for reasoning; communicate outcomes in plain language):
+### A2 — Status Values
 
-`status` | `form_type` | `eq_signed_on` | `minor_client_id` | `full_name` | `client_id` | `creation` | `modified`
+| Status | Meaning |
+|---|---|
+| Processing | Application under review |
+| Completed | Application approved |
 
+---
 
-### A3 — Status Values
-
-| Status | Meaning | Action |
-|---|---|---|
-| Processing | Under review | If ≤48 working hours + no reasons → inform client to wait. If reasons present → share rejection reasons. If >48 working hours + no reasons → escalate. |
-| Completed | Approved | Account enabled within 24–48 hours. Credentials sent to registered email. |
-
-
-### A4 — Timelines
+### A3 — Timelines
 
 | Event | Timeline |
 |---|---|
@@ -55,8 +64,9 @@ For questions about trading restrictions, fund transfers, MF investment, guardia
 | Kite access for pre-Jan 2024 demat-only accounts | 72 working hours after trading form received |
 | Account enabled after approval | 24–48 hours |
 
+---
 
-### A5 — Trading Restrictions
+### A4 — Trading Restrictions
 
 | Allowed | Not Allowed |
 |---|---|
@@ -68,135 +78,125 @@ For questions about trading restrictions, fund transfers, MF investment, guardia
 
 Guardian can transfer securities to minor's account using CDSL Easiest or Zerodha's gifting feature.
 
+---
 
-### A6 — Account Opening Requirements
+### A5 — Account Opening Requirements
 
-**Online:** Guardian needs Zerodha account + both guardian and minor Aadhaar linked to mobile. No charges or AMC.
+- **Online:** Guardian needs Zerodha account + both guardian and minor Aadhaar linked to mobile. No charges or AMC.
+- **Documents (online):** Minor PAN | Guardian PAN | Minor Aadhaar (OTP) | DOB proof | Minor photo | Bank proof | Guardian signature | Legal guardian letter (if not parent).
+- **PAN:** Mandatory for minor — apply at onlineservices.nsdl.com if needed.
+- **Bank account:** Only the minor's bank account can be linked (not guardian's). Joint bank account is OK only if minor is a holder.
+- **Guardian:** Signs all forms. Unique mobile + email required per minor account (offline).
+- **NRI-minor:** Offline only.
+- **When minor turns 18:** Convert to individual account (fresh KYC required).
+- **Pre-Jan 2024 demat-only accounts:** Submit trading form + KYC for Kite access (72 working hours).
 
-**Documents (online):** Minor PAN | Guardian PAN | Minor Aadhaar (OTP) | DOB proof | Minor photo | Bank proof | Guardian signature | Legal guardian letter (if not parent).
+---
 
-**PAN:** Mandatory for minor — apply at onlineservices.nsdl.com if needed.
+### A6 — Common Rejection Reason Meanings
 
-**Bank account:** Only the minor's bank account can be linked (not guardian's). Joint bank account is OK only if minor is a holder.
-
-**Guardian:** Signs all forms. Unique mobile + email required per minor account (offline).
-
-**NRI-minor:** Offline only.
-
-**When minor turns 18:** Convert to individual account (fresh KYC required).
-
-**Pre-Jan 2024 demat-only accounts:** Submit trading form + KYC for Kite access (72 working hours).
-
-
-### A7 — Common Rejection Reason Translations
-
-| System Reason | Client-Friendly Response |
+| System Reason | Meaning |
 |---|---|
-| Bank proof invalid/unclear | "Please provide a clear copy of the minor's cancelled cheque, bank statement, or passbook" |
-| DOB proof missing/invalid | "Please upload a valid date of birth proof (birth certificate, school leaving certificate, passport, or marksheet)" |
-| eSign pending/failed | "The guardian's eSign is pending. Please complete the eSign to proceed" |
-| IPV pending | "In-Person Verification is pending. Both guardian and minor must complete IPV at signup.zerodha.com/ipv" |
-| PAN verification failed | "The minor's PAN verification failed. Please verify the PAN number and date of birth match the Income Tax Department records" |
+| Bank proof invalid/unclear | Bank document is missing, unclear, or not accepted |
+| DOB proof missing/invalid | Date of birth document is absent or invalid |
+| eSign pending/failed | Guardian's eSign is incomplete or failed |
+| IPV pending | In-Person Verification not yet completed by guardian and/or minor |
+| PAN verification failed | Minor's PAN or date of birth doesn't match ITD records |
 
+---
 
-### A8 — Links
+### A7 — Links
 
 | Topic | URL |
 |---|---|
 | Online minor account signup | signup.zerodha.com/minor |
 | In-Person Verification (IPV) | signup.zerodha.com/ipv |
 | Offline document email | forms@zerodha.com |
+| ITD portal (PAN / DOB verification) | incometax.gov.in |
 
 **Courier address:** Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
 
-
-### A9 — Escalation Data Template
-
-When escalating, always include: **client ID (guardian's), minor's name/details, application date, and specific issue.**
-
-
 ---
 
-### Preflight (run on every query)
+## Section B: Decision Flow
+
+### Routing
 
 ```
-1. Determine if query is about application status OR general minor account info
-   ├─ Application status → use tool data, route to Rules below
-   └─ General info (trading restrictions, fund transfers, MF, guardian change,
-      converting to individual, Kite login for pre-2024 accounts)
-      → answer from Section A reference data directly
+Query relates to minor account opening →
+│
+├─ eSign not completed                                        → Rule 5
+├─ Application processing — within timeline, no reasons       → Rule 1
+├─ Application processing — correction required               → Rule 2
+├─ Application processing — overdue (> 48 working hours)      → Rule 3
+├─ Application completed                                      → Rule 4
+├─ PAN verification failed during opening                     → Rule 6
+├─ NRI-minor account opening                                  → Rule 7
+├─ Trading capabilities / restrictions                        → Rule 8
+└─ General account opening requirements / documents           → A6 directly
 ```
-
-### Route
-
-```
-Intent / Condition                                          → Rule
-──────────────────────────────────────────────────────────────────────
-Application status (processing, within timeline)            → Rule 1
-Application rejected / corrections needed                   → Rule 2
-Application overdue                                         → Rule 3
-Application completed                                       → Rule 4
-eSign not completed                                         → Rule 5
-PAN verification failed during opening                      → Rule 6
-NRI-minor account opening                                   → Rule 7
-Trading capabilities / restrictions                         → Rule 8
-```
-
-### Scope
-
-- Address the client's query about minor account opening applications and general minor account information.
-- Use **A2** field rules in all client communication — only `reasons` is shareable (in friendly language). All other fields are for internal reasoning.
-- For general minor account questions, answer from **A5**, **A6**, and other Section A blocks.
 
 ### Fallback
 
-If no route matches, answer from Section A reference data. If unable to resolve, escalate per **A9**.
-
+If no rule matches, escalate to human agent.
 
 ---
 
+---
+
+## Section C: Rules
+
 ### Rule 1 — Application Processing (Within Timeline)
 
-1. `status` = "processing" AND `creation` ≤ 48 working hours AND `reasons` is empty/null.
-2. Your minor account application is being reviewed. It typically takes up to 48 working hours for the account to be processed after document verification.. Timeline per **A4**.
+1. `status` = "Processing" AND `creation` ≤ 48 working hours AND `reasons` is empty/null.
+2. Normal processing, no action needed. Timeline per A3.
 
+---
 
-### Rule 2 — Application Rejected / Reasons Present
+### Rule 2 — Application Processing — Correction Required
 
-1. `status` = "processing" AND `reasons` is not empty.
-2. Translate reasons per **A7** and Your minor account application requires corrections. [Share reasons per A7 translations]. Please make the necessary changes and resubmit..
+1. `status` = "Processing" AND `reasons` is not empty.
+2. Application needs corrections — communicate reasons per A6.
 
+---
 
 ### Rule 3 — Application Overdue
 
-1. `status` = "processing" AND `creation` > 48 working hours AND `reasons` is empty/null.
-2. Your application has been under review for longer than expected. I'm escalating this to our team for priority processing.. escalate per **A9**.
+1. `status` = "Processing" AND `creation` > 48 working hours AND `reasons` is empty/null.
+2. Application is overdue — escalate to human agent.
 
+---
 
 ### Rule 4 — Application Completed
 
-1. `status` = "completed".
-2. Your minor account application has been approved. The account will be enabled within 24–48 hours, and login credentials will be sent to the registered email ID.. Timeline per **A4**.
-3. If client says credentials not received → Please check your registered email (including spam/junk folder). If credentials haven't arrived within 48 hours of approval, please let us know..
+1. `status` = "Completed".
+2. Account approved; credentials sent to registered email; account enabled within 24–48 hours (A3).
+3. If client reports credentials not received → ask client to check spam/junk folder; if not received within 48 hours of approval, escalate to human agent.
 
+---
 
 ### Rule 5 — eSign Not Completed
 
-1. `status` = "processing" AND `eq_signed_on` is empty/null.
-2. It appears the guardian's eSign has not been completed yet. Please complete the eSign process to proceed with the application. You can do this during the account opening flow at signup.zerodha.com/minor..
+1. `status` = "Processing" AND `eq_signed_on` is empty/null.
+2. Direct guardian to complete eSign via the account opening flow. Link per A7.
 
+---
 
 ### Rule 6 — PAN Verification Failed
 
-1. The minor's PAN could not be verified. This means either the PAN number or date of birth entered does not match the Income Tax Department (ITD) records. Please verify the details at incometax.gov.in. If the PAN was recently issued, it may take a few days to reflect in the ITD database..
+1. `reasons` contains a PAN verification failure entry (per A6) OR client reports PAN verification failed during account opening.
+2. PAN or DOB doesn't match ITD records — direct to verify at ITD portal (A7). Note it may take a few days if PAN was recently issued.
 
+---
 
 ### Rule 7 — NRI-Minor Account
 
-1. NRI-minor accounts can only be opened offline. Please email the required documents to forms@zerodha.com for review, then courier them to our Bengaluru office. The account will be opened within 72 working hours after document verification.. Courier address per **A8**.
+1. Client is an NRI enquiring about opening a minor account.
+2. Offline only — direct to email documents to forms@zerodha.com and courier to Bengaluru office (A7). Processed within 72 working hours (A3).
 
+---
 
 ### Rule 8 — Trading Capabilities / Restrictions
 
-1. Minor accounts have specific restrictions as per SEBI regulations. Minors cannot buy shares or place intraday/F&O orders. However, minors can sell existing holdings, invest in mutual funds through Coin, and apply for IPOs, buybacks, and takeovers. The guardian can transfer securities to the minor's account using CDSL Easiest or Zerodha's gifting feature.. Full restrictions per **A5**.
-
+1. Client asks about what a minor account can or cannot trade.
+2. Refer to A4 for full list of allowed and restricted activities.
