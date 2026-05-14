@@ -54,7 +54,7 @@ TAGS: funds, charges, reports
 
 - Same-day deposits and unsettled trade proceeds block withdrawals until the next settlement working day.
 - Settlement entries: net obligation credited/debited per settlement cycle — combines buy/sell obligations for that trading day.
-- Each trading day settles under a distinct settlement number, posted the next settlement working day (T+1). Trades from different trading days always have different settlement numbers.
+- Each trading day settles under a distinct settlement number, posted the same day (T-day). Trades from different trading days always have different settlement numbers.
 - "Next trading day" and "next settlement working day" are usually the same but differ on settlement holidays. A settlement holiday is a day when exchanges are open for trading but clearing and settlement operations are closed (no payin/payout of stocks and funds). When settlement holidays exist, T+1 refers to the next settlement working day, not the next trading day.
 - Impact of settlement holidays: Trade proceeds from the trading day immediately before a settlement holiday (and from the settlement holiday itself, if trading occurred) are not settled until the next settlement working day.
 
@@ -218,7 +218,7 @@ Route by scenario
 │  ├─ Withdrawal failed or processed as ₹0 despite positive net balance → Rule 14
 │  ├─ Withdrawal partially processed (amount less than requested) → Rule 5
 │  └─ Zero / low withdrawable balance despite ledger funds → Rule 6
-├─ Stock sale proceeds not visible or not withdrawable → Rule 7
+├─ Stock Sale Proceeds Not Visible in kite funds (BTST) → Rule 7
 ├─ Quarterly Settlement (QS) — any query → Rule 8
 ├─ Balance mismatch
 │  ├─ Opening vs closing mismatch → Rule 9
@@ -321,15 +321,34 @@ Apply the applicable formula from A8. Formulas apply only when the position is c
 
 ---
 
-### Rule 7 — Stock Sale Proceeds Not Visible or Not Withdrawable
+### Rule 7 — Stock Sale Proceeds Not Visible in kite funds (BTST)
 
-**Key distinction:** For normal sales (existing demat holdings), proceeds are visible in `kite_margins` immediately after the sale but not withdrawable until T+1. For BTST sales (shares bought on T−1, sold on T), proceeds are not visible in `kite_margins` at all on the sale date — they appear only on the next trading day.
+**Step 1 — Identify the sold stock:**
+1. Invoke `kite_positions`. Check for negative quantity — negative quantity indicates the stock was sold today. If client has not mentioned the stock name, use this to identify which stock was sold.
 
-**BTST check:**
-1. Invoke `kite_order_history` for the sale date to identify the sell order.
-2. Invoke `kite_order_history` for the previous trading day (T−1) to check if the same stock was purchased.
-3. If purchased on T−1 and sold on T (BTST): proceeds will not show in `kite_margins` on the sale date — this is expected. Proceeds appear the next trading day. Ledger settlement is unchanged — T+1 applies as normal per A2.
-4. If not purchased on T−1 (existing holding from demat): proceeds are already visible in `kite_margins`. The concern is about withdrawal — T+1 settlement applies per A2.
+**Step 2 — Confirm BTST:**
+2. Invoke `kite_order_history` for the sell date. Note the stock name, filled quantity, and average price from the sell order.
+3. Invoke `kite_order_history` for the previous trading day (T−1). Check if the same stock was purchased and note the filled quantity bought on T−1.
+
+**Step 3 — Calculate BTST quantity:**
+4. BTST quantity = quantity purchased on T−1.
+5. Settled quantity = total quantity sold today − BTST quantity.
+
+- Scenario 1 — Sold less than bought on T−1:
+Client bought 100 shares on T−1 and sold 50 today. BTST quantity = 50. Settled quantity = 0. No credits available today.
+
+- Scenario 2 — Sold more than bought on T−1:
+Client bought 100 shares on T−1 and sold 200 today. BTST quantity = 100 (only the T−1 buy qty). Settled quantity = 100 (from older holdings). Credits for the settled 100 shares are available same day; credits for the BTST 100 shares appear T+1 morning.
+
+- Scenario 3 — Sold exact same quantity as bought on T−1:
+Client bought 100 shares on T−1 and sold 100 today. BTST quantity = 100. Settled quantity = 0. No credits available today.
+
+**Step 4 — Invoke ledger report:**
+6. Invoke `ledger_report` for the sell date. The settlement entry (Book Voucher — Net settlement for equity per A3) posts on T day between 7–9 PM and covers both BTST and non-BTST proceeds combined in one entry.
+7. BTST proceeds do not appear in `kite_margins` on the sell date. Credits for BTST quantity appear in `kite_margins` from T+1 trading day morning. Withdrawal eligibility follows T+1 per A2 for all settlement credits. Settlement holiday rules apply per A2.
+
+**Normal CNC sale (non-BTST):**
+If stock was not purchased on T−1, this is a normal CNC sale. Proceeds are visible in `kite_margins` immediately after the sale but not withdrawable until T+1 per A2.
 
 ---
 
