@@ -267,7 +267,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. **Check client-added external trade entries:**
    If quantity does not match, invoke `console_eq_external_trades`. Check `discrepant` column.
 
-   - No data found in external trades → escalate to support agent. Include client ID, instrument, holdings quantity, tradebook quantity.
-   - Client has added an entry → check date:
-     - Entry date >3 days from current → escalate to support agent. Include client ID, instrument, entry date, discrepant quantity.
-     - Entry date <3 days → buy average is being updated; typically reflects within 2 working days. If still N/A after 2 working days, raise a support ticket.
+   - No data found in external trades → escalate to human agent. Include client ID, instrument, holdings quantity, tradebook quantity.
+   - Client has added an entry → check date using `order_execution_time` column:
+     - Entry date >3 days from current → escalate to human agent. Include client ID, instrument, entry date, discrepant quantity.
+     - Entry date <3 days → buy average is being updated; typically reflects within 2 working days. If still N/A after 2 working days, escalate to human agent.
