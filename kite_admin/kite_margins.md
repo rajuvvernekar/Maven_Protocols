@@ -140,7 +140,7 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 |---|---|
 | Intraday/F&O profits | After T+1 settlement (next trading day). If the next trading/settlement day is a holiday, funds are available the following trading day. |
 | Sale proceeds from holdings (normal CNC) | 100% available same day for all trades (effective Oct 7, 2024) |
-| BTST sale | Funds available from T+1 (next trading day). |
+| BTST sale | Funds available from T+1 (next trading day) after EPI completes. |
 
 ---
 
@@ -151,6 +151,7 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 | Margin calculator | https://zerodha.com/margin-calculator |
 | Intraday leverages | https://zerodha.com/marketintel/bulletin/249809/latest-intraday-leverages-mis-bo-co |
 | Approved securities (pledge haircuts) | https://zerodha.com/approved-securities |
+| T1 holdings proceeds | https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds |
 | Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
 
 ---
@@ -194,7 +195,7 @@ Route by scenario
    ├─ Payin / payout inquiry → Rule 6
    ├─ P&L mismatch — positions page vs funds page → Rule 7
    ├─ Opening balance mismatch → Rule 8
-   ├─ Sale proceeds availability / BTST / same-day trading → Rule 9
+   ├─ Sale proceeds not available / T1 / BTST / funds not credited → Rule 9
    ├─ Negative balance after market order → Rule 10
    ├─ MTM explanation → Rule 11
    └─ Balance negative + ITM stock options near expiry → Rule 12
@@ -280,18 +281,23 @@ If no root cause is found, escalate to a human agent per **A9**.
 
 ---
 
-### Rule 9 — Sale Proceeds Availability
+### Rule 9 — Sale Proceeds / BTST
+
+**T1 query:**
+If client asks about T1 shares → invoke `kite_holdings` and check `t1_t2_holdings`. T1 shares purchased the previous trading day are pending settlement; funds from selling T1 shares are available from T+1 per **A7**.
 
 **BTST detection:**
-1. Invoke `kite_order_history` for the sell date and the previous trading day (accounting for holidays).
-2. If the stock was bought on the previous trading day and sold today → BTST trade. Funds are available from T+1 only.
-3. For additional confirmation, invoke `console_eq_holdings` for the sell date. Only quantity under `t1` is BTST — remaining quantity is from older settled holdings.
-4. Blocked value for BTST = `filled_quantity × average_price` from the sell order.
+When client reports sale proceeds not available or funds not credited after selling shares:
+1. Invoke `kite_order_history` for the sell date and one previous trading day (accounting for holidays).
+2. If the stock was bought on the previous trading day and sold today → BTST trade.
+3. Invoke `console_eq_holdings` for the sell date — only quantity under `t1` is BTST; remaining quantity is from older settled holdings.
+4. Blocked value = `filled_quantity × average_price` from the sell order.
+5. Inform: shares sold were purchased the previous trading day (T1/BTST). Sale proceeds blocked, available from next trading day as per **A7**. Settlement holiday in between → may take an additional day. Share BTST quantity and blocked value. Link per **A8** (T1 holdings proceeds).
 
 **Normal CNC sale (non-BTST):**
-100% of proceeds are available same day for all trades (effective Oct 7, 2024) per **A7**.
+100% of proceeds available same day for all trades (effective Oct 7, 2024) per **A7**.
 
--If client asks about specific holdings sold → invoke `kite_holdings`.
+If client asks about specific holdings sold → invoke `kite_holdings`.
 
 ---
 
