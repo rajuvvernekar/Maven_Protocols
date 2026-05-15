@@ -105,7 +105,7 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 |---|---|
 | Privacy Mode enabled | Client has Privacy Mode turned on — hides holdings, positions, P&L, and balances on screen. Data is intact; only display is hidden. To disable: tap user ID (top-right on Kite web, or profile icon on the app) → toggle Privacy Mode off. Links per **A9**. |
 | Shares already sold | Client may have sold shares — verify via tradebook before other checks. Share the FIFO buy/sell trail. |
-| Short delivery by seller | Investigate per **Rule 11**. Zerodha notifies via SMS/email. |
+| Short delivery by seller | Investigate per **Rule 10**. Zerodha notifies via SMS/email. |
 | Pending settlement (T1) | Check `t1_t2_holdings` field. |
 | Corporate action in progress | Wait per **A5** timelines. P&L may show a temporary drop until new shares are credited — auto-corrects. |
 | ESOP with lock-in | Not shown on Kite. Still in demat account — verify via CDSL statement (SOT/SOH). |
@@ -154,17 +154,17 @@ Include when escalating to human agent: client ID, instrument_name, and specific
 Route by scenario
    ├─ P&L questions (day's P&L, net P&L, total, post-3:30) → Rule 1
    ├─ Buy average / portfolio valuation / invested amount issues → Rule 2
-   ├─ Shares sold — funds not credited / T1 / BTST → Rule 3
-   ├─ Pledge / collateral status → Rule 4
-   ├─ Holdings/positions/P&L hidden on screen (Privacy Mode) → Rule 5
-   ├─ Shares bought today not in holdings → Rule 5
-   ├─ Shares not visible → Rule 5
-   ├─ CDSL TPIN / DDPI — can't sell → Rule 6
-   ├─ Exchange / LTP mismatch → Rule 7
-   ├─ Sold stocks showing as negative positions → Rule 8
-   ├─ Console vs Kite value mismatch → Rule 9
-   ├─ Smallcase vs Kite mismatch → Rule 10
-   └─ Holding has mtf_quantity > 0 → redirect to MTF protocol for MTF-specific queries
+   ├─ Pledge / collateral status → Rule 3
+   ├─ Holdings/positions/P&L hidden on screen (Privacy Mode) → Rule 4
+   ├─ Shares bought today not in holdings → Rule 4
+   ├─ Shares not visible → Rule 4
+   ├─ CDSL TPIN / DDPI — can't sell → Rule 5
+   ├─ Exchange / LTP mismatch → Rule 6
+   ├─ Sold stocks showing as negative positions → Rule 7
+   ├─ Console vs Kite value mismatch → Rule 8
+   ├─ Smallcase vs Kite mismatch → Rule 9
+   ├─ Short delivery notification received / shares not credited post-auction → Rule 10
+   └─ Holdings quantity doesn't match trade history (discrepant shares) → Rule 11
 ```
 
 ### Fallback
@@ -183,7 +183,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 2 — Buy Average Issues
 
 1. If client reports incorrect portfolio value or invested amount: invoke `console_eq_pseudo_holdings` and `console_eq_holdings`. Compare breakdown quantities and buy averages with `kite_holdings`. Calculate expected invested value (sum of qty × avg_cost) and compare. If discrepancies found, proceed to step 2 for those holdings.
-2. `avg_cost` = N/A or 0 → investigate per **Rule 12** first. If `discrepant` > 0 and quantity mismatch confirmed, follow **Rule 12** through to resolution or escalation. If **Rule 12** does not apply, diagnose:
+2. `avg_cost` = N/A or 0 → investigate per **Rule 11** first. If `discrepant` > 0 and quantity mismatch confirmed, follow **Rule 11** through to resolution or escalation. If **Rule 11** does not apply, diagnose:
    a. Transferred shares → buy average shows N/A; update manually on Console per **A7**, link in **A9**.
    b. CA pending adjustment → buy average being adjusted; auto-updates within ~2 weeks per **A5**, **A7**.
    c. ESOP/off-market → update manually on Console per **A7**.
@@ -191,26 +191,15 @@ If no route matches, investigate using Section A reference data. If no root caus
 4. Sell + rebuy same day, avg unchanged → intraday — shares don't physically move; buy average stays unchanged. Exception: T2T stocks (avg updates to latest buy) per **A7**.
 5. If client wants to verify original purchase → invoke `kite_order_history`.
 
-### Rule 3 — Shares Sold — Funds Not Credited
-
-1. T1 meaning → check `t1_t2_holdings`. T1 shares purchased yesterday, awaiting settlement; credited to demat by end of T+1 day per **A3**, **A4**.
-2. When client reports sale proceeds not available or funds not credited after selling shares, check for BTST first per **A4**:
-   a. Invoke `kite_order_history` for sell date and one previous trading day.
-   b. If stock was bought previous trading day and sold today, BTST trade.
-   c. Invoke `console_eq_holdings` for sell date — only `t1` quantity is BTST.
-   d. Calculate blocked value: `filled_quantity × average_price` from sell order.
-   e. Inform: shares sold were purchased previous trading day (T1/BTST). Sale proceeds blocked, available from next trading day after EPI completes. Settlement holiday in between → may take an additional day. Share BTST quantity and blocked value. Link per **A9** T1 holdings proceeds.
-3. If client asks why proceeds not reflected in balance → invoke `kite_margins`.
-
-### Rule 4 — Pledge / Collateral Status
+### Rule 3 — Pledge / Collateral Status
 
 1. P symbol / `collateral_quantity` → client has pledged shares as collateral. P symbol shows pledged quantity. Remaining (total minus collateral) is available for trading per **A1**.
 2. Can pledged shares be sold? → yes, can be sold instantly without unpledge request. Selling pledged holdings reduces collateral margin.
 3. Collateral reduced after selling → cross-check `kite_margins` for current `equity_collateral` and `total_collateral`.
-4. For pledge/unpledge process or why pledge fails for a stock → redirect to pledge protocol.
+4. For pledge/unpledge process or why pledge fails for a stock → invoke `pledge_request_report`.
 5. Can collateral margin be used for CNC purchases? → collateral margin from pledged shares can be used for equity intraday trading, futures, and options (buying and writing). For CNC purchases, available cash or cash-equivalent margin is required — collateral alone is not sufficient.
 
-### Rule 5 — Shares Not Visible
+### Rule 4 — Shares Not Visible
 
 1. **Check Privacy Mode:**
    If client reports holdings/positions/P&L hidden → Privacy Mode may be enabled. Direct client: tap user ID (top-right on Kite web, or profile icon on app) → toggle Privacy Mode off. Data is intact — display only. Links per **A9** (Privacy Mode rows).
@@ -221,7 +210,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. Systematically check causes from **A6**:
    a. Recently purchased → shares bought today appear under Positions per **A1**, **A3**. Invoke `kite_positions`.
    b. CA in progress → new shares credited within timelines per **A5**. For split shares not credited after 4 working days → escalate to a human agent per **A10**. P&L may show temporary drop until credited per **A6**.
-   c. Short delivery → complete **Rule 11**. Respond based on buy-side or sell-side findings.
+   c. Short delivery → complete **Rule 10**. Respond based on buy-side or sell-side findings.
    d. ESOP with lock-in → may not appear on Kite; still in demat — verify via CDSL statement (SOT/SOH) per **A6**.
    e. Suspended/delisted → may not appear on Kite. Check Console for complete view per **A1**, **A6**.
    f. Transfer from another broker → check CDSL Easiest status. Once credited, appears in holdings. Update buy average manually on Console per **A6**, link in **A9**.
@@ -229,7 +218,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 4. If client confirms order was placed → invoke `kite_order_history` to verify execution.
 
-### Rule 6 — CDSL TPIN / DDPI (Can't Sell)
+### Rule 5 — CDSL TPIN / DDPI (Can't Sell)
 
 1. Check `authorised_quantity` for the stock.
 2. TPIN not generated / authorisation failed → to sell, client must authorise via CDSL TPIN. Link per **A9**.
@@ -237,24 +226,24 @@ If no route matches, investigate using Section A reference data. If no root caus
 4. If sell order rejected (not authorisation issue) → invoke `kite_orders` for rejection reason.
 5. If GTT sell order didn't trigger → invoke `kite_gtt`.
 
-### Rule 7 — Exchange / LTP Mismatch
+### Rule 6 — Exchange / LTP Mismatch
 
 1. Kite displays holdings from the exchange with the higher previous closing price — not necessarily where shares were bought. Demat shares are not mapped to a specific exchange; client can sell on either NSE or BSE. Advise checking prices on both exchanges per **A1**.
 
-### Rule 8 — Sold Stocks as Negative Positions
+### Rule 7 — Sold Stocks as Negative Positions
 
 1. When shares sold from holdings during the trading day, they appear as a negative position (tagged HOLDING) in Positions per **A1**. Normal — allows intraday traders to buy back. If no rebuy, ignore. Shares debited from demat by EOD.
 2. If client asks about sell order details → invoke `kite_orders`.
 
-### Rule 9 — Console vs Kite Mismatch
+### Rule 8 — Console vs Kite Mismatch
 
 1. Kite shows only actively traded, listed instruments. Console shows everything including suspended, delisted, unlisted, GSM 3+ stocks, and locked-in ESOP. Value difference is typically from these instruments per **A1**.
 
-### Rule 10 — Smallcase vs Kite Mismatch
+### Rule 9 — Smallcase vs Kite Mismatch
 
 1. Kite uses FIFO; Smallcase uses simple average — average prices differ. If client sold Smallcase stocks directly on Kite, Smallcase platform may not reflect this — contact help@smallcase.com for Smallcase-specific discrepancies per **A8**.
 
-### Rule 11 — Short Delivery Investigation
+### Rule 10 — Short Delivery Investigation
 
 1. **Confirm short delivery occurred:**
    Use `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery" or "Upper Circuit". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details.
@@ -267,7 +256,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
    Reference: per **A9** (Short delivery info).
 
-### Rule 12 — Buy Average Discrepancy Investigation
+### Rule 11 — Buy Average Discrepancy Investigation
 
 1. **Check for discrepant shares:**
    Invoke `console_eq_pseudo_holdings`. If `discrepant` = 0, this rule does not apply — fall through to **A7**.
