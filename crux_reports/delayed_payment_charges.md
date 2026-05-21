@@ -105,16 +105,22 @@ TAGS: charges, margins
 | DPC debit entry on ledger (actual posting) | Ledger Report protocol |
 | Collateral holdings verification (if client disputes collateral in DPC) | Pledge Request Report protocol |
 
-### A8 — Escalation Triggers
+### A8 — Escalation Output
 
-Escalate to human agent when any of the following occur:
-- DPC report values don't match ledger debit entry amount for the same period.
-- Collateral amount in DPC report differs significantly from pledged holdings for the same date.
-- Margin blocked in DPC report doesn't match `ledger_report` "With Margin" margin entries.
-- Client provides a valid calculation showing a different amount from the report, and report values themselves appear incorrect after verification.
-- Client requests a waiver, reversal, or reimbursement of DPC for any reason (including AMC-induced debit, lack of notification, or account inactivity).
+When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
 
-Include when escalating to human agent: client ID, date range, specific discrepancy (or client's stated reason for dispute), DPC report values, and interest amounts.
+Begin the response with this literal line on its own:
+
+`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
+
+Then provide:
+
+- **Client ID:** the client's ID
+- **Query:** one-line summary of what the client asked
+- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
+- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
+
+Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
 
 ---
 

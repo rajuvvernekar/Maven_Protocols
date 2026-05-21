@@ -74,14 +74,22 @@ TAGS: funds
 
 ---
 
-### A4 — Escalation Triggers
+### A4 — Escalation Output
 
-Escalate when any of the following occur:
-- Funds released > 0 but not credited to bank after 3 working days.
-- Maximum retention amount seems incorrect — exceeds visible margin + obligations.
-- No settlement entry exists for a QS date when client was eligible.
+When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
 
-Include in escalation: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
+Begin the response with this literal line on its own:
+
+`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
+
+Then provide:
+
+- **Client ID:** the client's ID
+- **Query:** one-line summary of what the client asked
+- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
+- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
+
+Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
 
 ---
 
