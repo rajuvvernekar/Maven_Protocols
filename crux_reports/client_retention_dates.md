@@ -72,27 +72,6 @@ TAGS: funds
 | `collateral_amount` | Value of collateral pledged |
 | `mode_of_settlement` | Settlement mode (e.g., electronic, physical) |
 
----
-
-### A4 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -123,7 +102,7 @@ in combination with any of the above routes.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → ESCALATE TO HUMAN AGENT per Rule 7.
+If no root cause is identified after checking all relevant rules → Escalate.
 
 ---
 
@@ -149,7 +128,7 @@ Not all funds are released during QS. Funds are retained for open F&O or commodi
 
 ### Rule 4 — QS Payout Not Received in Bank
 
-`funds_released` > 0 but the client has not received the payout in their bank account. Credit timing is 1–2 working days per A1. If more than 3 working days have passed and the amount has not been credited → escalate to human agent per A4.
+`funds_released` > 0 but the client has not received the payout in their bank account. Credit timing is 1–2 working days per A1. If more than 3 working days have passed and the amount has not been credited → escalate.
 
 ---
 
@@ -167,4 +146,4 @@ Apply A2.
 
 ### Rule 7 — Escalation
 
-Any trigger in A4 is met, or no root cause identified after checking all relevant rules. Escalate to human agent. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
+Any trigger in A4 is met, or no root cause identified after checking all relevant rules. Escalate. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.

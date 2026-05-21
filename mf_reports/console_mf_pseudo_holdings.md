@@ -154,7 +154,7 @@ Query relates to MF holdings →
 
 ### Fallback
 
-If no root cause is identified after the diagnostic steps → escalate to Human Agent with fund name, `discrepant` value (internal), and the specific issue.
+If no root cause is identified after the diagnostic steps → escalate.
 
 ---
 
@@ -162,7 +162,7 @@ If no root cause is identified after the diagnostic steps → escalate to Human 
 
 ### Rule 1 — `failure_date`: Immediate Escalation
 
-If `failure_date` is populated → escalate to Human Agent.
+If `failure_date` is populated → escalate.
 
 ---
 
@@ -172,20 +172,20 @@ If `failure_date` is populated → escalate to Human Agent.
 Invoke `console_mf_tradebook` for the fund. Sum all BUY `quantity` entries; subtract all SELL `quantity` entries. Compare result to `available`.
 
 - Result matches `available` AND `discrepant` = 0 → no discrepancy; stop.
-- Result matches `available` AND `discrepant` > 0 → exchange/depository mismatch; escalate to Human Agent.
+- Result matches `available` AND `discrepant` > 0 → exchange/depository mismatch; escalate.
 - Result does not match `available` → proceed with diagnosis below.
 
 **Payout dividend check:**
-If `dividend_type` = payout AND `discrepant` > 0 → escalate to Human Agent.
+If `dividend_type` = payout AND `discrepant` > 0 → escalate.
 
 1. **Late allotment:** Recent order found in `mf_order_history` with `exchange_timestamp` within T+3 working days (excluding weekends and trading/settlement holidays). If no Coin purchase history exists and the fund is present, ask whether units were transferred from another platform before continuing.
    - Units may arrive late to demat. NA shows on T+2 for one day; rectified on T+3. This is late delivery of units, not a longer allotment window.
    - If units are confirmed allotted (in `mf_order_history` or `console_mf_tradebook`) but invested value is NA or incorrect: settlement files are processed in stages; resolves within 24–48 hours.
    - Share the late allotment link from **A8**.
 
-2. **Late allotment — escalation:** `exchange_timestamp` beyond T+3 working days (excluding weekends and trading/settlement holidays) → escalate to Human Agent.
+2. **Late allotment — escalation:** `exchange_timestamp` beyond T+3 working days (excluding weekends and trading/settlement holidays) → escalate.
 
-3. **Wrongly entered external trades:** All purchases through Coin but external entries exist in `console_mf_external_trades` → escalate to Human Agent.
+3. **Wrongly entered external trades:** All purchases through Coin but external entries exist in `console_mf_external_trades` → escalate.
 
 4. **Transferred from another platform:** No Coin purchase history, no external entries → guide to add external trades: Console → Portfolio → Holdings → [fund] → Add External Trade.
 
@@ -198,7 +198,7 @@ If `dividend_type` = payout AND `discrepant` > 0 → escalate to Human Agent.
 ### Rule 3 — Mismatch Between Reports
 
 1. If `available` or `discrepant` in `console_mf_pseudo_holdings` does not match the corresponding values in `console_mf_holdings` → invoke `console_mf_tradebook` to identify missing trade entries.
-2. If trade entries exist but the mismatch persists → escalate to Human Agent.
+2. If trade entries exist but the mismatch persists → escalate.
 
 ---
 
@@ -244,7 +244,7 @@ If `dividend_type` = payout AND `discrepant` > 0 → escalate to Human Agent.
 
 1. Check `quantity` here. Invoke `console_mf_holdings` for `total_quantity` of the same fund.
 2. If the fund exists here but not in `console_mf_holdings` (or units mismatch between the two) → residual decimal unit display issue requiring backend data rerun.
-3. Escalate to Human Agent.
+3. Escalate.
 
 ---
 

@@ -76,27 +76,6 @@ TAGS: investments, holdings
 |---|---|
 | MF NAV display difference (Console T-2, Coin T-1) | https://support.zerodha.com/category/mutual-funds/coin-general/coin-reports/articles/mf-nav-of-t-2-days-on-console |
 
----
-
-### A6 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -134,18 +113,18 @@ Route to console_mf_pseudo_holdings.
 
 1. Invoke `console_mf_pseudo_holdings` — compare `available` and `discrepant` values.
 2. If mismatch → invoke `console_mf_tradebook` for missing trade entries.
-3. If trade entry exists but mismatch persists → escalate to human agent.
+3. If trade entry exists but mismatch persists → escalate.
 
 ### Rule 4 — Buy Average Incorrect
 
 1. Invoke `console_mf_external_trades` — verify all entries are correct and complete.
 2. If units were transferred in, verify external trade entries have been added.
-3. If all entries correct and `failure_date` is empty → escalate to human agent.
+3. If all entries correct and `failure_date` is empty → escalate.
 
 ### Rule 5 — Failure Date
 
 1. Invoke `console_mf_pseudo_holdings`.
-2. Escalate to human agent.
+2. Escalate.
 
 ### Rule 6 — Console vs Coin Value Difference
 

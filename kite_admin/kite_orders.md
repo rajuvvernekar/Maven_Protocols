@@ -222,10 +222,6 @@ TAGS: orders, margins
 | SL execution explained | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger |
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 
-### A17 — Escalation Data
-
-Include when escalating to human agent: client ID, instrument, order type, time, and specific issue.
-
 ### A18 — Negative Opening Balance with Negative Option Premium
 
 - When `opening_balance` is negative, blocks all fresh positions.
@@ -251,7 +247,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause found after completing all diagnostic steps → escalate to human agent per **A17**.
+If no root cause found after completing all diagnostic steps → escalate.
 
 ## Section C: Rules
 
@@ -321,7 +317,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 1. Check `placed_by`:
    a. ADMINSQF or starts with "rms" → apply Rule 7.
-   b. Client's own ID → escalate to human agent per **A17** immediately.
+   b. Client's own ID → escalate.
 
 ### Rule 9 — Circuit / Ban Period Impact
 

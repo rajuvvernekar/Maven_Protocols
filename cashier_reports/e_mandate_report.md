@@ -56,11 +56,11 @@ TAGS: funds
 | Status | Meaning | Action |
 |---|---|---|
 | Active | Ready for scheduled debits | Confirm active, direct to Console for schedule management. |
-| Pending | Awaiting bank activation | ≤5 working days from `creation` → inform client to wait. >5 working days → escalate to human agent per **A7**. |
+| Pending | Awaiting bank activation | ≤5 working days from `creation` → inform client to wait. >5 working days → escalate. |
 | Failed | Creation failed — bank authentication unsuccessful | Guide to retry. Share `remark`. |
 | Cancelled | Cancelled by client | Confirm cancelled, offer to create new mandate. |
-| Pending Cancellation | Cancellation in progress | Check `cancellation_date`. ≤5 working days → inform processing. >5 working days → escalate to human agent per **A7**. |
-| Cancellation Failed | Cancellation did not go through — mandate likely not active (rare) | Guide to verify/retry. If still debiting → escalate to human agent per **A7**. |
+| Pending Cancellation | Cancellation in progress | Check `cancellation_date`. ≤5 working days → inform processing. >5 working days → escalate. |
+| Cancellation Failed | Cancellation did not go through — mandate likely not active (rare) | Guide to verify/retry. If still debiting → escalate. |
 
 ### A4 — Account Restrictions
 
@@ -84,23 +84,6 @@ TAGS: funds
 |---|---|
 | Mandate management on Console | console.zerodha.com/funds/mandates |
 
-### A7 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -116,7 +99,7 @@ Route by scenario
 
 ### Fallback
 
-If no route matches, escalate to human agent per **A7**.
+If no route matches, escalate.
 
 ## Section C: Rules
 
@@ -124,11 +107,11 @@ If no route matches, escalate to human agent per **A7**.
 
 1. Determine status per **A3**:
    a. Active → confirm active and direct to Console per **A6** for schedule management.
-   b. Pending → calculate working days since `created`. ≤5 working days → inform client mandate is awaiting bank activation, can take up to 5 working days. >5 working days → inform client banks sometimes delay confirmation, follow-up in progress, no exact timeline; suggest manual fund add via Kite. Escalate to human agent per **A7**.
+   b. Pending → calculate working days since `created`. ≤5 working days → inform client mandate is awaiting bank activation, can take up to 5 working days. >5 working days → inform client banks sometimes delay confirmation, follow-up in progress, no exact timeline; suggest manual fund add via Kite. Escalate.
    c. Failed → bank authentication was unsuccessful (e.g., authentication window closed, incorrect credentials). Direct to create new mandate per **A6**. If `remark` contains useful info, share with client.
    d. Cancelled → confirm cancellation; offer to create new mandate per **A6**.
-   e. Pending Cancellation → check `cancellation_date`. ≤5 working days → cancellation is being processed (up to 5 working days). >5 working days → escalate to human agent per **A7**.
-   f. Cancellation Failed → mandate likely not active. Direct to verify/retry per **A6**. If client insists mandate is still debiting → escalate to human agent per **A7**.
+   e. Pending Cancellation → check `cancellation_date`. ≤5 working days → cancellation is being processed (up to 5 working days). >5 working days → escalate.
+   f. Cancellation Failed → mandate likely not active. Direct to verify/retry per **A6**. If client insists mandate is still debiting → escalate.
 
 ### Rule 2 — Cannot Create Mandate (Account Restrictions)
 

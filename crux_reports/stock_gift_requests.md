@@ -99,25 +99,6 @@ TAGS: general
 |---|---|
 | Manual beneficiary addition (if CDSL email not received) | https://www.cdslindia.com/Authentication/OTP.aspx?id=B |
 
-### A9 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -187,18 +168,18 @@ If receiver's demat account was already added as a beneficiary from a previous t
 ### Rule 5 — Gifted Stocks Not Visible in Holdings
 
 - Confirm status = Stocks Transferred (per A4).
-- If 2+ trading days have passed and stocks still not visible → ESCALATE TO HUMAN AGENT.
+- If 2+ trading days have passed and stocks still not visible → Escalate.
 - Invoke `console_eq_holdings`.
 
 ### Rule 6 — Discrepancy Mark on Gifted Stocks
 
 - Normal for recently gifted stocks (per A5).
-- If discrepancy persists after 3 working days → ESCALATE TO HUMAN AGENT.
+- If discrepancy persists after 3 working days → Escalate.
 
 ### Rule 7 — Buy Average Not Updated
 
 - Confirm 3+ working days since transfer (per A5).
-- If still N/A or incorrect → ESCALATE TO HUMAN AGENT.
+- If still N/A or incorrect → Escalate.
 - Invoke `console_eq_external_trades`.
 
 ### Rule 8 — Gift Charges
@@ -214,4 +195,4 @@ If receiver's demat account was already added as a beneficiary from a previous t
 
 ### Rule 10 — Escalation
 
-ESCALATE TO HUMAN AGENT when no root cause is identified after checking all relevant rules. Include details per A9.
+Escalate. Include details per A9.

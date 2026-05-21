@@ -144,10 +144,10 @@ Two scenarios:
 | Event | Behavior |
 |---|---|
 | Gift transfer in | Closing price on transfer date used as entry price. System auto-posts entry (`console_eq_external_trades`, `external_trade_type` = gift). |
-| Zerodha-gifted shares (shares gifted by Zerodha to client) | Buy average updated automatically by Zerodha. Verify via `stock_gift_requests`. If client has also added an external trades entry for the same ISIN → double entry risk; escalate to human agent immediately. Do not draft any client-facing response. |
+| Zerodha-gifted shares (shares gifted by Zerodha to client) | Buy average updated automatically by Zerodha. Verify via `stock_gift_requests`. If client has also added an external trades entry for the same ISIN → double entry risk; escalate. Do not draft any client-facing response. |
 | Gift transfer out | Gift transfer date = exit date; closing price on that date = exit price. |
 | Off-market transfer in | No automatic buy price assigned. Purchase details must be added manually via discrepancy flow. |
-| Off-market transfer out | No automatic exit entry. Escalate to human agent. |
+| Off-market transfer out | No automatic exit entry. Escalate. |
 
 ---
 
@@ -209,21 +209,6 @@ Two scenarios:
 | RBI G-Sec interest schedule | rbi.org.in/Scripts/NotificationUser.aspx |
 | Short delivery explanation | https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences |
 
----
-
-### A14 — Escalation Data
-
-- Include when escalating to human agent: client ID, `tradingsymbol`(s), specific issue description, and relevant data.
-
-▎ Escalation behavior: When any rule in this protocol says ESCALATE, stop reasoning immediately — do not identify a root cause, do not frame a response. Output only:
-
-HUMAN AGENT
-▎ ACTION REQUIRED — [reason from the rule]
-
-The human agent will handle the query manually.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -258,26 +243,15 @@ Route by scenario
 
 ### Fallback
 
-If no route matches, interpret holdings data using Section A. If no root cause is identified → escalate to human agent per A14.
+If no route matches, interpret holdings data using Section A. If no root cause is identified → escalate.
 
 ---
 
 ## Section C: Rules
 
-### Escalation Behavior
-
-When any rule in this protocol says ESCALATE, stop reasoning immediately — do not identify a root cause, do not frame a response. Output only:
-
-HUMAN AGENT
-▎ ACTION REQUIRED — [reason from the rule]
-
-The human agent will handle the query manually.
-
----
-
 ### Rule 1 — Escalation Triggers
 
-Escalate to human agent immediately for all triggers listed below. Include data per A14.
+Escalate.
 
 | Trigger | Data to include |
 |---|---|
@@ -307,7 +281,7 @@ Escalate to human agent immediately for all triggers listed below. Include data 
   2. Verify current exchange status via Kite holdings or instrument search. If listed → continue; if still unlisted/suspended → Rule 1.
   3. Invoke `console_eq_external_trades` for an entry for this ISIN:
      - Entry exists AND processing → buy average updates per A2.
-     - Entry exists AND processed but avg still N/A → escalate to human agent per A14.
+     - Entry exists AND processed but avg still N/A → escalate.
      - No entry AND client did not buy on Zerodha → route to Rule 7.
   4. Client confirms purchase before 31 Jan 2018 with no records → apply grandfather clause (A3).
 - `discrepant` = 0 AND `pending` > 0 → CA buy average adjustment in progress (A2).
@@ -315,11 +289,11 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 **2c. `buy_average` = ₹0 AND `total_quantity` > 0**
 1. Invoke `console_eq_holdings_breakdown`; check for entries with `exchange` = "BONUS".
 2. Found → apply ₹0 buy average reason per A3.
-3. Not found → escalate to human agent per A14.
+3. Not found → escalate.
 
 **2d. Buy average wrong after corporate action**
 - Within 2 weeks of CA → adjustment in progress (A2).
-- 3+ weeks post-CA → escalate to human agent per A14 with expected vs actual.
+- 3+ weeks post-CA → escalate.
 
 **2e. Investment value mismatch**
 - Common causes:
@@ -333,25 +307,25 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 
 **3a. Bonus — not credited / not visible**
 1. Invoke `console_eq_external_trades`; check for a system-posted CA credit entry (e.g., `external_trade_type` = devolved or CA-related) for this ISIN.
-   - If investigation at any step reveals REs (Rights Entitlements) or PPs (Partly Paid shares) instead of bonus shares → escalate to human agent per A14 immediately. Do not proceed further. Do not draft any response.
+   - If investigation at any step reveals REs (Rights Entitlements) or PPs (Partly Paid shares) instead of bonus shares → escalate. Do not proceed further. Do not draft any response.
 2. Entry found but not in holdings → credit is in system; holdings update within ~1 trading day.
 3. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
    - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
-   - Mismatch → escalate to human agent per A14 with both values.
+   - Mismatch → escalate.
 4. No entry AND within bonus credit window (A2) → temp ISIN → perm ISIN conversion pending; CDSL SMS on credit. Temporary P&L drop is expected and auto-corrects.
-5. Beyond 5 trading days from record date → escalate to human agent per A14.
+5. Beyond 5 trading days from record date → escalate.
 
 **3b. Split — qty / price**
 1. Use `total_quantity`, `available`, `pending` from this report as source of truth — do not derive from recent trade history.
 2. Invoke `kite_holdings`; check for post-split credit.
 3. Full post-split qty in `kite_holdings` → split credit confirmed. Avg update timeline per A2; client can sell in the interim without P&L impact.
 4. Partial / not credited → credit timeline per A2.
-5. Beyond 5 trading days from record date → escalate to human agent per A14.
+5. Beyond 5 trading days from record date → escalate.
 
 **3c. Demerger — new shares or avg**
 1. Shares not credited → new entity credit timeline per A2.
 2. Avg not updated → split per Cost of Acquisition (COA) ratio announced by company (A5); Zerodha updates the buy average once the Cost of Acquisition is announced by the company.
-3. COA announced but avg still not updated after 3 weeks → escalate to human agent per A14 with expected vs actual.
+3. COA announced but avg still not updated after 3 weeks → escalate.
 
 **3d. Merger — share swap**
 - Explain swap mechanics per A5. Fractional shares → cash to primary bank (A4).
@@ -366,14 +340,14 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 
 1. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
    - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
-   - Mismatch → escalate to human agent per A14 with both values.
+   - Mismatch → escalate.
 2. If stock was purchased within the last 90 days → invoke `console_eq_tradebook`; check for a subsequent sell trade:
    - Sell trade found → inform client of sale (date, qty, price); proceeds credited. Stop.
 3. Diagnose by quantity field:
    - `t1` > 0 → T+1 settlement in progress (A1, A2).
    - `pending` > 0 → CA credit pending; timeline per A2.
    - `margin` > 0 → pledged as collateral (A9).
-   - `loan` > 0 → LAS or external NBFC lending (A10); escalate to human agent per A14.
+   - `loan` > 0 → LAS or external NBFC lending (A10); escalate.
    - All fields = 0 and stock not found → confirm `tradingsymbol` / ISIN and whether purchase has settled.
 
 **Diagnostic checklist** (when client reports a discrepancy or a specific purchase that doesn't match holdings):
@@ -381,7 +355,7 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 2. Apply FIFO to compute net qty (buy − sell chronologically).
 3. If client describes a sale/redemption event, invoke `ledger_report`; check for matching credit entries.
 4. Compare calculated qty with `available` qty in this report:
-   - Calculated = available → bought on Zerodha, display/sync issue → escalate to human agent per A14.
+   - Calculated = available → bought on Zerodha, display/sync issue → escalate.
    - Calculated ≠ available AND no matching sale proceeds → likely transferred/gifted/IPO/off-market → route to Rule 7.
 
 ---
@@ -416,7 +390,7 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 **7b. Gift transfer in**
 1. Invoke `console_eq_external_trades`; check for `external_trade_type` = gift.
 2. Entry found → gift shares recorded at closing price on transfer date (A8); buy average reflects once processed.
-3. No entry → escalate to human agent per A14 (system should have auto-posted).
+3. No entry → escalate.
 
 **7c. Gift / off-market P&L or avg queries**
 - Gift in (avg/P&L) → A8; client can use discrepancy flow for actual acquisition cost; advise CA for tax filing.
@@ -448,21 +422,21 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 **7h. Zerodha-gifted shares — buy average double entry**
 1. Invoke `stock_gift_requests`; verify Zerodha gift for this ISIN / stock.
 2. Gift confirmed → invoke `console_eq_external_trades`; check for a client-added entry for the same ISIN.
-3. Client-added entry exists → double entry risk (Zerodha auto-updates buy average; client has also added an entry manually) → escalate to human agent per A14 immediately. Do not draft any client-facing response.
+3. Client-added entry exists → double entry risk (Zerodha auto-updates buy average; client has also added an entry manually) → escalate. Do not draft any client-facing response.
 4. No client-added entry → buy average will be updated automatically by Zerodha; no further action required.
 
 ---
 
 ### Rule 8 — Loan (LAS) Handling
 
-- `loan` > 0 → shares are either pledged via LAS or lent externally to an NBFC (A10). Escalate to human agent per A14.
+- `loan` > 0 → shares are either pledged via LAS or lent externally to an NBFC (A10). Escalate.
 
 ---
 
 ### Rule 9 — Short Delivery Handling
 
 - Explain per A6 (two scenarios; auction vs close-out).
-- Specific short delivery case reported by client → escalate to human agent per A14 with client ID, `tradingsymbol`, and trade details.
+- Specific short delivery case reported by client → escalate.
 
 ---
 
@@ -470,7 +444,7 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 
 **10a. Dividend not received**
 - Credited to primary bank; timeline per A2.
-- Contact RTA (lookup per A11) — Zerodha does not process dividend payments. Escalate to human agent per A14.
+- Contact RTA (lookup per A11) — Zerodha does not process dividend payments. Escalate.
 
 **10b. Dividend amount less than expected**
 - TDS deducted before credit (rates per A11).
@@ -495,6 +469,6 @@ Escalate to human agent immediately for all triggers listed below. Include data 
 
 ### Rule 12 — Holding Statement / SOT / SOH Request
 
-1. If client requests for visa purposes or requests a signed / stamped copy → escalate to human agent per A14 immediately.
+1. If client requests for visa purposes or requests a signed / stamped copy → escalate.
 2. Console holdings statement for a specific date is available at console.zerodha.com/portfolio/holdings.
 3. For a PDF-based statement covering both holdings and transactions, the client can download the SOT / SOH (Statement of Transactions / Statement of Holdings) directly — share A13 — SOT / SOH holding statement article.

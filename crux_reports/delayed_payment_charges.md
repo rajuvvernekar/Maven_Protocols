@@ -105,25 +105,6 @@ TAGS: charges, margins
 | DPC debit entry on ledger (actual posting) | Ledger Report protocol |
 | Collateral holdings verification (if client disputes collateral in DPC) | Pledge Request Report protocol |
 
-### A8 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -144,7 +125,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate to human agent per A8.
+If no root cause is identified after checking all relevant rules → escalate.
 
 ---
 
@@ -177,7 +158,7 @@ If no root cause is identified after checking all relevant rules → escalate to
 2. If client provides their own calculation and it differs:
    - Verify daily values from the report against rates in A2.
    - If report values are correct per the rate → explain weekend/holiday accrual per Rule 5.
-   - If report values themselves appear incorrect → escalate to human agent per A8.
+   - If report values themselves appear incorrect → escalate.
 
 ### Rule 5 — Weekend/Holiday Interest
 
@@ -203,4 +184,4 @@ If no root cause is identified after checking all relevant rules → escalate to
 1. Share `collateral_amount` and `liquidbees_collateral` (these fields are only relevant for collateral disputes).
 2. Explain the 50% cash-vs-collateral rule per A1.
 3. If client still disputes → compare with Pledge Request Report per A7 for the same dates.
-4. If mismatch between DPC collateral and Pledge Request Report → escalate to human agent per A8.
+4. If mismatch between DPC collateral and Pledge Request Report → escalate.

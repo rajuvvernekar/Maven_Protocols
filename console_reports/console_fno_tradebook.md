@@ -22,7 +22,6 @@ TRIGGER KEYWORDS: "FnO tradebook", "F&O trade", "futures trade", "options trade"
 
 # CONSOLE FNO TRADEBOOK PROTOCOL
 
-
 ---
 
 ### A1 — Fundamentals
@@ -35,7 +34,6 @@ For charges, MTM calculations, and obligation breakdowns: contract note must be 
 
 Auction trades appear in tradebook with specific `order_id` patterns.
 
-
 ### A2 — Field Usage Rules
 
 **Shareable fields:**
@@ -46,7 +44,6 @@ Auction trades appear in tradebook with specific `order_id` patterns.
 
 `client_id`
 
-
 ### A3 — Segment Mapping
 
 | Segment Code | Covers |
@@ -54,7 +51,6 @@ Auction trades appear in tradebook with specific `order_id` patterns.
 | FO | Equity F&O |
 | CDS | Currency Derivatives |
 | COM | Commodities |
-
 
 ### A4 — Instrument Type Identification
 
@@ -67,7 +63,6 @@ Auction trades appear in tradebook with specific `order_id` patterns.
 | `expiry_date` field | Last trading day of the contract |
 
 **Contract symbol format:** underlying + expiry + strike + CE/PE (e.g., NIFTY2621727100CE = NIFTY, 26 Feb 2026 expiry, 27100 strike, Call).
-
 
 ### A5 — Corporate Action Impact on F&O Contracts
 
@@ -85,7 +80,6 @@ The contract symbol itself does not change — strike price and lot size change.
 
 Contract symbol may also change mid-series if a CA causes a symbol rename.
 
-
 ### A6 — Cross-Reference Tools
 
 | Tool | When to Use |
@@ -93,26 +87,6 @@ Contract symbol may also change mid-series if a CA causes a symbol rename.
 | `console_fno_tradebook_prepared` | Same schema, no date limit. Use for F&O trades older than 100 days. |
 | `console_fno_positions` | Open position snapshot. Tradebook entries feed into positions. |
 | `console_fno_pnl` | Realized P&L computed from tradebook entries. |
-
-
-### A7 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
 
 ### Preflight (run on every query)
 
@@ -145,8 +119,7 @@ Charges / brokerage / STT / MTM query                       → Rule 6
 
 ### Fallback
 
-If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, escalate per **A7**.
-
+If no route matches, cross-reference with **A6** tools for additional context. If no root cause is found, escalate.
 
 ---
 
@@ -154,27 +127,23 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 
 1. Your [trade_type] trade for [tradingsymbol] ([instrument_type]) on [trade_date] at [order_execution_time]: [quantity] contracts at ₹[price]. Strike: ₹[strike], Expiry: [expiry_date]. Exchange: [exchange]. Order ID: [order_id], Trade ID: [trade_id]..
 
-
 ### Rule 2 — Trade Missing from Tradebook
 
 1. Search by date, segment, and tradingsymbol.
 2. If found → Your [trade_type] trade for [tradingsymbol] ([instrument_type]) on [trade_date] at [order_execution_time]: [quantity] contracts at ₹[price]. Strike: ₹[strike], Expiry: [expiry_date]. Exchange: [exchange]. Order ID: [order_id], Trade ID: [trade_id]..
 3. If not found → verify correct segment selected (per Preflight / **A3**). Check if date is within 100 days — if not, use `console_fno_tradebook_prepared` (per **A6**).
-4. If still not found after correct segment and date → escalate per **A7**.
-
+4. If still not found after correct segment and date → escalate.
 
 ### Rule 3 — Multiple Fills for One Order
 
 1. Check if multiple `trade_id`s exist for the same `order_id`.
 2. If yes → Your order (Order ID: [order_id]) was executed in [N] parts at different prices: [list each trade_id with qty and price]. The average execution price across all fills is ₹[calculated avg]. with each fill's qty and price plus calculated average.
 
-
 ### Rule 4 — Contract Symbol Change After Corporate Action
 
 1. Explain the CA adjustment per **A5**.
 2. After the corporate action ([split/bonus]) on [underlying], your F&O contract was adjusted by the exchange. The strike price and lot size have been modified per the adjustment factor. Your position value remains the same — only the contract terms were adjusted. For more details: https://support.zerodha.com/category/console/corporate-actions/ca-others/articles/impact-of-corporate-actions-on-derivatives.
-3. If client is not satisfied → escalate per **A7**.
-
+3. If client is not satisfied → escalate.
 
 ### Rule 5 — Identifying Contract Details
 
@@ -184,9 +153,8 @@ If no route matches, cross-reference with **A6** tools for additional context. I
 - Put option: "This is a put option with strike price ₹[strike]"
 - Expiry: "This contract expires on [expiry_date].
 
-
 ### Rule 6 — Contract Note Queries (Manual Handling)
 
 1. This tool provides trade-level execution data only — no charge, MTM, or obligation data.
-2. Escalate to support agent for actual contract note charges, MTM, and settlement details.
+2. Escalate.
 

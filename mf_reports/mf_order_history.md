@@ -108,10 +108,10 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 
 | `status_message` pattern | Cause category | Action |
 |---|---|---|
-| INVALID BANK ACCOUNT DETAILS, PAN/PEKRN MISMATCH, INVALID MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC, REGISTER WITH AMC | Account-level KYC or registration issue | Escalate to a human agent |
-| E-KYC limit ₹50K/AMC | Incomplete KYC — investment limit hit | Escalate to a human agent |
+| INVALID BANK ACCOUNT DETAILS, PAN/PEKRN MISMATCH, INVALID MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC, REGISTER WITH AMC | Account-level KYC or registration issue | Escalate|
+| E-KYC limit ₹50K/AMC | Incomplete KYC — investment limit hit | Escalate|
 | DOB DIFFERS WITH PAN | DOB mismatch | Update DOB in Zerodha |
-| FOLIO LOCKED KRA | KRA lock | Contact AMC directly. Escalate to a human agent. |
+| FOLIO LOCKED KRA | KRA lock | Contact AMC directly. Escalate. |
 | SCHEME CLOSED | Scheme suspended | Communicate the closure and suggest AMC SIP as an alternative |
 | NON ELIGIBLE SCHEME | Scheme suspended or restricted | Communicate that the scheme is unavailable |
 | MINIMUM AMOUNT FAILED | Order below scheme minimum | Communicate the scheme's minimum amount |
@@ -323,7 +323,7 @@ Query relates to an MF order →
 
 ### Fallback
 
-If no rule matches and no root cause is identified → escalate to a human agent.
+If no rule matches and no root cause is identified → escalate.
 
 ---
 
@@ -342,7 +342,7 @@ If no rule matches and no root cause is identified → escalate to a human agent
 - **Allotted** → Communicate that units have been allotted. For MF/FOF NFO: units appear in Coin only after the fund is listed — typically within 5 working days of allotment; after listing, units are visible on Coin within T+2 working days. For ETF NFO (if `fund` name contains "ETF"): units appear in Kite/Console equity holdings, not Coin — invoke `console_eq_external_trades` and check for an 'ipo' entry matching the fund per A8.
 - **Still Processing — ETF NFO:** Invoke `console_eq_external_trades`. If an 'IPO' entry exists → communicate that units are in Kite holdings under the scrip name, even though order status on Coin shows Processing.
 - **Still Processing — non-ETF NFO:** Communicate that the NFO order is being processed and status updates within T+2 after listing. Rejection remarks for NFO orders update only after the allotment window closes. Share allotment quantities only if `mf_order_history` shows order status as 'Allotted'. Invoke `console_mf_pseudo_holdings` to check quantities — for NFO orders, these may be preliminary until allotment is officially confirmed.
-- **Cannot determine** → Escalate to a human agent.
+- **Cannot determine** → Escalate.
 
 **Payment not yet confirmed (`payment_confirmed` = false):**
 
@@ -378,11 +378,11 @@ If no rule matches and no root cause is identified → escalate to a human agent
 - Map the order per A7.
 
 - Check `error_remarks` first:
-- "INVALID BANK ACCOUNT DETAIL" → Escalate to a human agent immediately.
+- "INVALID BANK ACCOUNT DETAIL" → Escalate.
 
 - Then check flags:
 
-- `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted by the AMC. Within T+3 working days from `exchange_timestamp` → late delivery: holdings credit may take up to T+3 working days; NA is shown on Coin on T+2 for one day only, rectified on T+3. Communicate as late delivery of units, not standard allotment duration. Share MF units settlement timeline link from A9. Beyond T+3 → escalate to a human agent.
+- `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted by the AMC. Within T+3 working days from `exchange_timestamp` → late delivery: holdings credit may take up to T+3 working days; NA is shown on Coin on T+2 for one day only, rectified on T+3. Communicate as late delivery of units, not standard allotment duration. Share MF units settlement timeline link from A9. Beyond T+3 → escalate.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status = "Allotted" → allotment is finalised; units will be credited.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status ≠ "Allotted" → Communicate: "Payment settled. Allotment expected by [date]." — date = T+1 working day from `exchange_timestamp` per A8.
 - `settled_flag` = N → check the mapping columns first. If both `order_number` AND `settlement_number` are null or empty, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply A4 refund language. If either column is populated, the payment is mapped. Count working days from `payment_date` in `fund_allocation_report`:
@@ -393,7 +393,7 @@ If no rule matches and no root cause is identified → escalate to a human agent
 
 **Beyond T+3:**
 
-- Cross-check `fund_allocation_report`. If no entry → escalate to a human agent.
+- Cross-check `fund_allocation_report`. If no entry → escalate.
 
 **`payment_confirmed` = true, `settled_flag` = N, beyond T+2 (working days, excluding weekends and trading/settlement holidays):**
 
@@ -405,7 +405,7 @@ If no rule matches and no root cause is identified → escalate to a human agent
 
 - Match `status_message` against A5 and apply the Action column.
 - If `payment_confirmed` = true → apply A4 refund language alongside the failure cause.
-- If the client has multiple recent failed orders → invoke `fund_allocation_report` and check `error_remarks` for "INVALID BANK ACCOUNT DETAIL". If found → escalate to a human agent.
+- If the client has multiple recent failed orders → invoke `fund_allocation_report` and check `error_remarks` for "INVALID BANK ACCOUNT DETAIL". If found → escalate.
 
 ---
 
@@ -425,8 +425,8 @@ For cancelled orders, apply A1 status interpretation based on `payment_confirmed
 
 - Check `order_timestamp` to determine working days elapsed.
 - Within T+3 working days from `order_timestamp` → Communicate that the order is pending third-party bank account validation. The exchange automatically re-validates pending orders on the next working day. If the order is rejected due to TPV pending status, the exchange performs a penny drop test on the bank account used for payment. If the account passes, the order status updates to allotted within 2 working days.
-- Beyond T+3 working days from `order_timestamp`, status unchanged → Ask the client to share their bank statement from the order date to present. Escalate to a human agent with the bank statement.
-- Rejected after re-validation (`status_message` contains TPV INVALID, per A5) → Escalate to a human agent.
+- Beyond T+3 working days from `order_timestamp`, status unchanged → Ask the client to share their bank statement from the order date to present. Escalate.
+- Rejected after re-validation (`status_message` contains TPV INVALID, per A5) → Escalate.
 
 ---
 
@@ -445,14 +445,14 @@ Match the client's scenario:
 | Order after cutoff | Communicate the adjusted T-day and expected credit date per A6. |
 | UNITS NOT AUTHORISED / UNRID | Per A5. |
 | FREE QTY LESS | Invoke `console_mf_pseudo_holdings` for pledged units (`margin`) and `console_mf_holdings` for available units. Communicate the actual available quantity and the reason for the difference (margin or pledge reduces free qty). |
-| Redeemed, no bank credit | Compute expected credit date per A6. Within the window → communicate the expected date. Beyond → escalate to a human agent. |
+| Redeemed, no bank credit | Compute expected credit date per A6. Within the window → communicate the expected date. Beyond → escalate. |
 | ELSS lock-in | Invoke `console_mf_tradebook` and follow FIFO from `trade_date`. Communicate which units are under lock-in and when eligible units become available. |
-| UI error, no order found | Advise clearing cache, retrying with fewer units, retrying the next day. If persistent → escalate to a human agent with screenshot. |
-| TPV failed on redemption | Escalate to a human agent. |
+| UI error, no order found | Advise clearing cache, retrying with fewer units, retrying the next day. If persistent → escalate. |
+| TPV failed on redemption | Escalate. |
 | CDSL portal showing all funds | Apply A8 CDSL redemption redirect explanation. Share redemption links from A9. |
-| NRI account + exit load/TDS dispute | Escalate to a human agent. |
-| Non-NRI exit load dispute | Escalate to a human agent. |
-| Client disputes redemption NAV (lower than published NAV for that date) | Escalate to a human agent. |
+| NRI account + exit load/TDS dispute | Escalate. |
+| Non-NRI exit load dispute | Escalate. |
+| Client disputes redemption NAV (lower than published NAV for that date) | Escalate. |
 | Repeated OTP redirect on CDSL authorisation | Apply A8 CDSL authorisation loop context. Advise the client of the two options: place a fresh redemption for remaining units (excluding recently allotted ones), or wait until the next working day for holdings to sync. Suggest enabling DDPI via Console → Settings → Account Authorization (using the Aadhaar-linked mobile number) to avoid this in future. |
 
 ---
@@ -510,7 +510,7 @@ The SIP will not trigger until the initial lumpsum is allotted and settled. Invo
 
 - UPI failing repeatedly → suggest netbanking or NEFT/RTGS.
 - Netbanking failing repeatedly → suggest UPI or NEFT/RTGS.
-- All methods failing → escalate to a human agent.
+- All methods failing → escalate.
 
 Share Payments on Coin and NEFT/RTGS on Coin links from A9 where relevant.
 
@@ -537,4 +537,4 @@ Share Payments on Coin and NEFT/RTGS on Coin links from A9 where relevant.
 ### Rule 12 — Out-of-scope and Miscellaneous Escalations
 
 - Client asks about children's fund or gift plans → communicate that these schemes are not available on Coin.
-- `status_message` contains TRANSMISSION, DESIGNATED PERSON, or TAX STATUS → escalate to a human agent with fund, amount, `order_timestamp`, and `status_message`.
+- `status_message` contains TRANSMISSION, DESIGNATED PERSON, or TAX STATUS → escalate.

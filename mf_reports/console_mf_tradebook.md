@@ -59,27 +59,6 @@ TAGS: investments, reports
 | `scheme_code` | Internal scheme code |
 | `settlement_type` | Internal settlement type |
 
----
-
-### A4 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -93,7 +72,7 @@ Route by scenario
 
 ### Fallback
 
-If trade data seems inconsistent or missing entries cannot be explained → escalate to human agent with client ID, fund name, trade dates, and the specific discrepancy.
+If trade data seems inconsistent or missing entries cannot be explained → escalate.
 
 ## Section C: Rules
 
@@ -110,10 +89,10 @@ If trade data seems inconsistent or missing entries cannot be explained → esca
 
 1. Check if a trade entry exists for the matching fund and date.
 2. Trade entry exists → units allotted. Invoke `console_mf_pseudo_holdings` for discrepancy diagnosis.
-3. Trade entry missing → escalate to human agent.
+3. Trade entry missing → escalate.
 
 ### Rule 3 — P&L FIFO Verification
 
 1. List BUY entries sorted by `trade_date` ascending. Match SELL entries against the oldest BUY first (FIFO).
 2. Invoke `console_mf_external_trades` for transferred-in units.
-3. If calculation still differs after both checks → escalate to human agent.
+3. If calculation still differs after both checks → escalate.

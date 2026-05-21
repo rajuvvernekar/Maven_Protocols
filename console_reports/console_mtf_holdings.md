@@ -79,7 +79,7 @@ TAGS: margins, holdings
 - **Condition:** Margin shortfall exceeds 80% of funded value.
 - **Action:** RMS team sells minimum qty needed to restore margin — partial square-off possible. Can happen anytime during market hours when breach is detected.
 - **Post-square-off:** Remaining MTF shares continue as MTF holdings. Temporary discrepancy may appear for 24–28 working hours, then auto-resolves.
-- **Stock removed from approved list:** Existing MTF positions are NOT auto-squared-off unless a margin breach occurs (see **A8**).
+- **Stock removed from approved list:** Existing MTF positions are NOT auto-squared-off unless a margin breach occurs (see **A7**).
 
 ---
 
@@ -102,28 +102,7 @@ TAGS: margins, holdings
 
 A full-year downloadable MTF holdings statement is not available. Zerodha does not create custom reports or statements on request. The MTF Interest Statement and tradebook download are the only available alternatives for MTF-related data.
 
----
-
-### A7 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
-### A8 — Stock Removal from MTF Approved List
+### A7 — Stock Removal from MTF Approved List
 
 **Reclassification (removed from Group 1 securities):** Zerodha notifies the client on the same day. Client has until 4 PM to either sell during market hours or convert to CNC. If neither is done by 4 PM, Zerodha converts the MTF position to CNC on the same day.
 
@@ -153,7 +132,7 @@ Query relates to MTF holdings →
 
 ### Fallback
 
-If no route matches, interpret MTF holdings data using Section A. If no root cause is identified, ESCALATE TO HUMAN AGENT per A7.
+If no route matches, interpret MTF holdings data using Section A. If no root cause is identified, Escalate.
 
 ---
 
@@ -171,7 +150,7 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 2. If `quantity_available` > 0 → display issue. Advise client to log out and back in, or try a different browser/device.
 3. If `quantity_available` = 0 → Invoke `console_eq_holdings` and Invoke `console_ledger` (MTF ledger type) before concluding no MTF holdings exist.
    - If `console_ledger` MTF closing balance shows Debit → funded amount is outstanding; MTF holdings exist.
-4. If not found in either tool AND MTF interest is still being charged → ESCALATE TO HUMAN AGENT.
+4. If not found in either tool AND MTF interest is still being charged → Escalate.
 
 ---
 
@@ -182,7 +161,7 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 3. If client says interest was charged after selling all MTF positions:
    - Invoke `console_ledger` (MTF ledger type) and verify closing balance was zero on the claimed dates.
    - If balance was non-zero (e.g., due to settlement timing) → explain the timing.
-   - If balance was zero and interest was still charged → ESCALATE TO HUMAN AGENT.
+   - If balance was zero and interest was still charged → Escalate.
 
 ---
 
@@ -190,7 +169,7 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 
 1. Explain per **A4**: square-off triggers when margin shortfall exceeds 80% of funded value; only minimum qty needed to restore margin is sold; remaining shares continue as MTF.
 2. If client reports discrepancy after square-off: temporary discrepancy resolves automatically within 24–28 working hours.
-   - If discrepancy persists beyond 2 trading days → ESCALATE TO HUMAN AGENT.
+   - If discrepancy persists beyond 2 trading days → Escalate.
 
 ---
 
@@ -199,12 +178,12 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 1. Explain conversion requirements per **A5**: free cash equal to funded amount required; if insufficient, conversion fails silently and may show "Processed" while shares remain under MTF.
 2. If conversion shows "Processed" but shares still in MTF → Invoke `console_mtf_conversion` and check actual `converted_quantity`:
    - `converted_quantity` = 0 → conversion not processed due to insufficient margin; "Processed" status is a display issue; client should add funds and place a new request.
-   - If conversion was 2+ trading days ago and status is still unclear → ESCALATE TO HUMAN AGENT.
+   - If conversion was 2+ trading days ago and status is still unclear → Escalate.
 3. If conversion failed on ex-date → per **A5**, conversions on ex-date are not processed; client should retry after ex-date.
 4. If client sold MTF shares and re-bought in CNC same day but holdings still show MTF:
    - Invoke `console_eq_holdings_breakdown` to verify both trades.
    - If stock is EQ series (not BE/T2T) and both trades exist on the same day → trades were netted off as intraday per **A5**; holdings category remains unchanged; client should use the conversion flow to move shares from MTF to CNC.
-5. If auto-converted from short delivery → verify interest has stopped. If interest is still being charged on the converted quantity → ESCALATE TO HUMAN AGENT.
+5. If auto-converted from short delivery → verify interest has stopped. If interest is still being charged on the converted quantity → Escalate.
 
 ---
 
@@ -223,7 +202,7 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 ### Rule 8 — Corporate Action on MTF Holdings
 
 1. CA adjustments and credits work the same for MTF and regular holdings — no separate or delayed timeline.
-2. If CA credits not reflected after 2+ trading days from credit date → ESCALATE TO HUMAN AGENT.
+2. If CA credits not reflected after 2+ trading days from credit date → Escalate.
 
 ---
 
@@ -235,7 +214,7 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 
 ### Rule 10 — Stock Removed from MTF Approved List
 
-1. Determine which scenario applies per **A8**:
+1. Determine which scenario applies per **A7**:
    - Reclassification (removed from Group 1): client notified same day; has until 4 PM to sell or convert to CNC; if neither done, Zerodha converts to CNC on the same day.
    - General removal (not reclassification): existing MTF position not auto-squared-off; client can continue to hold but cannot buy more under MTF; square-off only if margin breach per **A4**.
 

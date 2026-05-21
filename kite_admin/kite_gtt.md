@@ -134,17 +134,6 @@ TAGS: orders
 | Activate DDPI | https://support.zerodha.com/category/your-zerodha-account/your-profile/ddpi/articles/activate-ddpi |
 | GTT stoploss option | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/gtt/articles/gtt-stoploss-option |
 
-### A9 — Escalation Triggers
-
-Escalate to human agent when any of the following occur:
-- GTT report data appears inconsistent or missing.
-- Client provides evidence (screenshot/email) showing different GTT details than the report.
-- Client requests compensation or reversal for GTT non-execution.
-
-Include when escalating to human agent: client ID, tradingsymbol, GTT type, status, trigger values, and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -166,7 +155,7 @@ Route by scenario
 
 ### Fallback
 
-If no rule matches, escalate to human agent per A9.
+If no rule matches, escalate.
 
 ---
 

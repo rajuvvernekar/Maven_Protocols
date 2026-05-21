@@ -92,27 +92,6 @@ TAGS: charges, reports
 | `exchange` | Exchange and segment identifier — used for charge rate lookup per A3 |
 | `igst` | Inter-state GST — typically null; only applicable for inter-state transactions |
 
----
-
-### A5 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -133,7 +112,7 @@ Query relates to tradewise charges →
 
 ### Fallback
 
-If no rule matches, ESCALATE TO HUMAN AGENT.
+If no rule matches, Escalate.
 
 ---
 
@@ -150,10 +129,10 @@ If no rule matches, ESCALATE TO HUMAN AGENT.
 
 1. From `get_all_client_data`, confirm account type per A2.
 2. Verify delivery brokerage against the applicable rate per A3 for the client's account type:
-   - If Individual account + delivery trade + brokerage ≠ ₹0 → flag discrepancy, escalate to human agent.
-   - If Non-Individual or NRI account + delivery trade + brokerage = null/0 → brokerage may have been incorrectly waived, escalate to human agent.
+   - If Individual account + delivery trade + brokerage ≠ ₹0 → flag discrepancy, escalate.
+   - If Non-Individual or NRI account + delivery trade + brokerage = null/0 → brokerage may have been incorrectly waived, escalate.
    - For all other Non-Individual and NRI delivery trades → verify brokerage against rates per A3.
-3. For Intraday/F&O trades (all account types): verify brokerage cap per A3. If brokerage exceeds the cap → escalate to human agent.
+3. For Intraday/F&O trades (all account types): verify brokerage cap per A3. If brokerage exceeds the cap → escalate.
 
 ---
 
@@ -162,7 +141,7 @@ If no rule matches, ESCALATE TO HUMAN AGENT.
 1. Use `exchange` field internally to identify the segment.
 2. Verify the applied rate against published rates per A3 for the identified segment.
 3. Note: SENSEX options have specific rates different from NIFTY options; BSE equity rates may differ from NSE (per A3).
-4. If the applied rate significantly differs from the published rate for that segment → escalate to human agent.
+4. If the applied rate significantly differs from the published rate for that segment → escalate.
 
 ---
 
@@ -183,7 +162,7 @@ If no rule matches, ESCALATE TO HUMAN AGENT.
 
 1. Differences can occur due to rounding at trade level vs order level, exchange rate updates not yet reflected in the calculator, or fill-level charge application.
 2. The tradewise charges report reflects the actual charges applied.
-3. If the difference is significant (greater than 10% or greater than ₹5 for a single order) → verify charges against A3 and A2. If discrepancy remains → escalate to human agent.
+3. If the difference is significant (greater than 10% or greater than ₹5 for a single order) → verify charges against A3 and A2. If discrepancy remains → escalate.
 
 ---
 
@@ -191,20 +170,20 @@ If no rule matches, ESCALATE TO HUMAN AGENT.
 
 1. Exchange transaction charges may be revised after the trade date and the difference posted directly to the ledger as an adjustment entry. The contract note may show the original amount while the ledger reflects the updated total.
 2. Direct the client to check their ledger for adjustment entries posted after the trade date — invoke `ledger_report`.
-3. If no adjustment entry is found and the mismatch persists → escalate to human agent.
+3. If no adjustment entry is found and the mismatch persists → escalate.
 
 ---
 
 ### Rule 8 — Auction Trade Charges
 
 1. If `trade_process_type` = "auction" OR client asks about auction charges: auction trades have a different charge structure arising when a trade goes to exchange auction (for example, due to short delivery) and may include additional penalties beyond standard trade charges.
-2. Escalate to human agent immediately — auction charge calculations require manual handling (per A5).
+2. Escalate.
 
 ---
 
 ### Rule 9 — Escalation
 
-Escalate to human agent when any of the following apply:
+Escalate
 
 - Brokerage exceeds the applicable cap per order (per A3 and A2).
 - Individual account is charged delivery brokerage that is not ₹0.

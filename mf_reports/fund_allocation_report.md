@@ -91,27 +91,6 @@ Standard refund language: "The debited amount will be refunded by BSE STAR MF to
 | `error_remarks` | Rejection reason — check for "INVALID BANK ACCOUNT DETAIL" |
 | `cfppg_bank_ref_no` | Maps to `cashier_reference` in `mandate_debit_report` for mandate payment cross-referencing |
 
----
-
-### A7 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -125,7 +104,7 @@ Query relates to MF payment / fund allocation →
 
 ### Fallback
 
-If no root cause is identified → escalate to a human agent with the UTR, payment date, and the specific issue.
+If no root cause is identified → escalate.
 
 ---
 
@@ -135,7 +114,7 @@ If no root cause is identified → escalate to a human agent with the UTR, payme
 
 Find the row by payment date or UTR. Invoke `mf_order_history` using `order_number` = `exchange_order_id` and `settlement_number` = `settlement_id` to cross-reference the order.
 
-If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → escalate to a human agent.
+If `error_remarks` contains "INVALID BANK ACCOUNT DETAIL" → escalate.
 
 If both `order_number` AND `settlement_number` are null or empty → unmapped payment. Apply A5 refund language.
 
@@ -144,7 +123,7 @@ Check `settled_flag` and `allotment_flag` per A4:
 - `settled_flag` = N, within T+1 working day of payment → communicate: payment pending settlement. Allow one working day.
 - `settled_flag` = N, beyond T+2 → order will not process. Apply A5 refund status logic.
 - `settled_flag` = Y, `allotment_flag` = N → communicate: payment settled, allotment pending from the AMC.
-- `settled_flag` = Y, `allotment_flag` = Y → check order status in `mf_order_history`. If status shows Processing → within T+3 working days from `exchange_timestamp` (excluding weekends and trading/settlement holidays) → late delivery of units. Communicate that payment is settled, units are allotted, and holdings will be credited. Beyond T+3 → escalate to a human agent.
+- `settled_flag` = Y, `allotment_flag` = Y → check order status in `mf_order_history`. If status shows Processing → within T+3 working days from `exchange_timestamp` (excluding weekends and trading/settlement holidays) → late delivery of units. Communicate that payment is settled, units are allotted, and holdings will be credited. Beyond T+3 → escalate.
 
 ---
 

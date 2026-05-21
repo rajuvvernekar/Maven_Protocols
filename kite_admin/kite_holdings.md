@@ -143,12 +143,6 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 | Privacy Mode (Kite web) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-web |
 | Privacy Mode (Kite app) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-app |
 
-### A10 — Escalation Triggers
-
-Include when escalating to human agent: client ID, instrument_name, and specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -173,7 +167,7 @@ Route by scenario
 
 ### Fallback
 
-If no route matches, investigate using Section A reference data. If no root cause is found, escalate per **A10**.
+If no route matches, investigate using Section A reference data. If no root cause is found, escalate.
 
 ---
 
@@ -215,7 +209,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 3. Systematically check causes from **A6**:
    a. Recently purchased → shares bought today appear under Positions per **A1**, **A3**. Invoke `kite_positions`.
-   b. CA in progress → new shares credited within timelines per **A5**. For split shares not credited after 4 working days → escalate to a human agent per **A10**. P&L may show temporary drop until credited per **A6**.
+   b. CA in progress → new shares credited within timelines per **A5**. For split shares not credited after 4 working days → escalate. P&L may show temporary drop until credited per **A6**.
    c. Short delivery → complete **Rule 10**. Respond based on buy-side or sell-side findings.
    d. ESOP with lock-in → may not appear on Kite; still in demat — verify via CDSL statement (SOT/SOH) per **A6**.
    e. Suspended/delisted → may not appear on Kite. Check Console for complete view per **A1**, **A6**.
@@ -273,10 +267,10 @@ If no route matches, investigate using Section A reference data. If no root caus
 3. **Check client-added external trade entries:**
    If quantity does not match, invoke `console_eq_external_trades`. Check `discrepant` column.
 
-   - No data found in external trades → escalate to human agent per **A10**.
+   - No data found in external trades → escalate.
    - Client has added an entry → check date using `order_execution_time` column:
-     - Entry date >3 days from current → escalate to human agent per **A10**.
-     - Entry date ≤3 days → buy average is being updated; typically reflects within 2 working days. If still N/A after 2 working days, escalate to human agent per **A10**.
+     - Entry date >3 days from current → escalate.
+     - Entry date ≤3 days → buy average is being updated; typically reflects within 2 working days. If still N/A after 2 working days, escalate.
 
 ### Rule 12 — NRE-PIS Account: BTST / T1 Selling Restriction
 

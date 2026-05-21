@@ -92,14 +92,6 @@ TAGS: margins
 | F&O segment not active — request pending | "Pledge is not allowed for your account" or similar; activation request already found in `account_modification` |
 | F&O segment not active — no request placed | "Pledge is not allowed for your account" or similar; no activation request found in `account_modification` |
 
----
-
-### A6 — Escalation Data
-
-- **When escalating to a human agent, provide:** client ID, tradingsymbol, pledge_type, status, pledge_date, specific issue.
-
----
-
 ### A7 — Scenarios
 
 | Scenario | Meaning / Interpretation |
@@ -137,7 +129,7 @@ Route by scenario
 
 ### Fallback
 
-- If no route matches, escalate to human agent per A6.
+- If no route matches, escalate.
 
 ---
 
@@ -163,7 +155,7 @@ Route by scenario
 ### Rule 3 — Collateral Not Reflecting After Successful Pledge
 
 1. If pledge was within the last 30 minutes → per A7.
-2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate to human agent per A6.
+2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate.
 
 ---
 
@@ -176,7 +168,7 @@ Route by scenario
    - "Pledge is not allowed for your account" or similar account-level restriction → check Segments in `get_all_client_data`. If F&O is not active → invoke `account_modification` to check if an activation request is already placed:
      - Request found → per A7: F&O segment not active — request pending.
      - No request found → per A7: F&O segment not active — no request placed.
-2. If none of the above explains the failure → escalate to human agent per A6.
+2. If none of the above explains the failure → escalate.
 
 ---
 
@@ -189,7 +181,7 @@ Route by scenario
 ### Rule 6 — Overdue Pledge Request
 
 1. Check status and `pledge_creation` timestamp and apply per A7.
-2. If overdue > 24 hours → escalate to human agent per A6.
+2. If overdue > 24 hours → escalate.
 
 ---
 
@@ -198,7 +190,7 @@ Route by scenario
 1. Apply per A7.
 2. Invoke `console_eq_holdings` to confirm qty is present.
 3. If holdings qty mismatch suspected → invoke `console_eq_pseudo_holdings` to cross-check SOT data.
-4. If qty = 0 in Console as well → escalate to human agent per A6.
+4. If qty = 0 in Console as well → escalate.
 
 ---
 

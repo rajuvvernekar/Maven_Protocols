@@ -27,7 +27,7 @@ TAGS: corporate-actions, orders
 
 ### A1 — Fundamentals
 
-- OFS (Offer for Sale) orders are not handled in this tool — escalate to human agent for all OFS queries without checking the tool.
+- OFS (Offer for Sale) orders are not handled in this tool — escalate.
 - Rights Issue orders are not tracked in this tool. Clients should check their bank for ASBA status, or the company's RTA for allotment status.
 - Reasons an order may not appear in this tool: application was not submitted successfully, or it was placed from a different platform or process.
 - Delisting and Takeover: only one closing window — cancel and refile is the only option to change quantity.
@@ -75,28 +75,7 @@ TAGS: corporate-actions, orders
 - From 1st October 2024, buyback proceeds are taxed as capital gains in the hands of the shareholder (previously the company paid dividend distribution tax).
 - For buybacks processed after this date, Tax P&L may show incorrect classification. The Tax P&L report is editable on Console (Reports → Tax P&L → Edit) to allow cost basis and gain/loss corrections.
 
----
-
-### A5 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
-### A6 — Key Timelines
+### A5 — Key Timelines
 
 | Event | Expected Timeline |
 |---|---|
@@ -104,7 +83,7 @@ Do not include any client-facing apology, "I am transferring you" / "I am escala
 | Order status stuck at "Placed" | Up to CA closure date + 5 working days |
 | Rights allotment discrepancy | Up to listing date + 3 days |
 
-- If actual timing exceeds these thresholds → escalate to human agent per A5.
+- If actual timing exceeds these thresholds → escalate.
 
 - **CA data retention in this tool:** see table below.
 
@@ -118,11 +97,11 @@ If the corporate action is older than the above window, data will not be availab
 
 ---
 
-### A7 — Processed State Details by CA Type
+### A6 — Processed State Details by CA Type
 
 | CA Type | What Happens on Processed Status |
 |---|---|
-| Buyback | Shares debited from holdings. Proceeds credited to client's primary bank by the company (not Zerodha) — timeline per A6. Partial acceptance possible; remaining shares stay in holdings. |
+| Buyback | Shares debited from holdings. Proceeds credited to client's primary bank by the company (not Zerodha) — timeline per A5. Partial acceptance possible; remaining shares stay in holdings. |
 | Delisting | Shares debited from holdings. Proceeds credited to client's bank account by the company. |
 | Takeover | Shares debited from holdings. Proceeds credited to client's bank account by the acquirer. |
 
@@ -146,7 +125,7 @@ Route by scenario
 
 ### Fallback
 
-If no route matches and no root cause is found → escalate to human agent.
+If no route matches and no root cause is found → escalate.
 
 ---
 
@@ -157,7 +136,7 @@ If no route matches and no root cause is found → escalate to human agent.
 1. Look up by client ID and find the matching `trading_symbol`.
 2. Communicate order details: trade_type, trading_symbol, quantity, price, creation date, and status.
 3. Apply status handling per A3:
-   - Placed → order pending; processing timeline depends on corporate action schedule. If beyond CA closure date + 5 working days per A6 → escalate to human agent.
+   - Placed → order pending; processing timeline depends on corporate action schedule. If beyond CA closure date + 5 working days per A5 → escalate.
    - Processed → route to Rule 2 (buyback) or Rule 4 (delisting/takeover).
    - Rejected → shares not debited; identify rejection scenario per A3.
 
@@ -165,22 +144,22 @@ If no route matches and no root cause is found → escalate to human agent.
 
 ### Rule 2 — Buyback Order (Processed)
 
-1. Apply buyback processed details per A7. Use `allotment_price` if populated; otherwise use `price` per A2.
-2. If client says shares still showing in holdings despite status = Processed → invoke `console_eq_holdings`. If shares still present → escalate to human agent.
+1. Apply buyback processed details per A6. Use `allotment_price` if populated; otherwise use `price` per A2.
+2. If client says shares still showing in holdings despite status = Processed → invoke `console_eq_holdings`. If shares still present → escalate.
 
 ---
 
 ### Rule 3 — Rights Issue and OFS (Not Handled in This Tool)
 
 Apply A1:
-- OFS query → escalate to human agent immediately, without checking the tool.
+- OFS query → escalate.
 - Rights Issue query → direct client per A1 (bank for ASBA, RTA for allotment).
 
 ---
 
 ### Rule 4 — Delisting / Takeover Order (Processed)
 
-1. Apply delisting/takeover processed details per A7. Use `allotment_price` if populated; otherwise use `price` per A2.
+1. Apply delisting/takeover processed details per A6. Use `allotment_price` if populated; otherwise use `price` per A2.
 
 ---
 
@@ -194,7 +173,7 @@ Apply A1:
 
 1. Communicate possible reasons per A1.
 2. Ask client to confirm how and when the application was placed; a confirmation screenshot aids investigation.
-3. If client confirms they applied → escalate to human agent.
+3. If client confirms they applied → escalate.
 
 ---
 
@@ -202,4 +181,4 @@ Apply A1:
 
 1. Apply buyback tax treatment per A4.
 2. If Tax P&L shows incorrect classification for a post-Oct 2024 buyback → advise the client to edit via Console → Reports → Tax P&L → Edit.
-3. If client cannot edit or the issue persists → escalate to human agent.
+3. If client cannot edit or the issue persists → escalate.

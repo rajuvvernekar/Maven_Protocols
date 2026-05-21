@@ -190,9 +190,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause is identified after completing all applicable rules, output only:
-
-**HUMAN AGENT ▎ ACTION REQUIRED** — no root cause identified after completing all applicable rules.
+If no root cause is identified after completing all applicable rules, escalate.
 
 ---
 
@@ -200,7 +198,7 @@ If no root cause is identified after completing all applicable rules, output onl
 
 ### Rule 1: Early Exit
 
-- If `account_type` = NRI PIS → escalate to a human agent. Do not respond and do not share bank details.
+- If `account_type` = NRI PIS → escalate. Do not respond and do not share bank details.
 
 ---
 
@@ -230,7 +228,7 @@ Applies when `transfer_mode` = netbanking.
 | Credit deadline PASSED, refund deadline NOT passed | Payment not credited within the processing window. If debited from source bank, refund by 5:00 PM on T+2 banking working day (per **A1**). If not debited, no action needed. |
 | Both deadlines PASSED | Payment unsuccessful. If debited and not yet refunded, request bank statement screenshot (debit proof) to investigate. If not debited, no action needed. |
 
-**Customer confirms debit or provides bank statement:** State both deadlines (credit + refund). If both deadlines already passed → escalate to a human agent with proof.
+**Customer confirms debit or provides bank statement:** State both deadlines (credit + refund). If both deadlines already passed → escalate.
 
 ---
 
@@ -242,7 +240,7 @@ Applies when `transfer_mode` = netbanking.
    - Suggest a different UPI app linked to the primary bank account (e.g., Google Pay, PhonePe, BHIM).
    - If UPI issues persist, suggest IMPS/NEFT/RTGS or netbanking; share the step-by-step link from A9.
    - Inactive registered bank → suggest adding another active bank via Console → Profile → Bank accounts.
-   - Customer outside India → escalate NRI conversion to a human agent.
+   - Customer outside India → escalate.
 
 ---
 
@@ -257,7 +255,7 @@ UPI cases → **Rule 2**. Netbanking cases → **Rule 3**.
 Check if the client has shared a UTR or bank reference number in the attachment or query text.
 
 - Provided → go to Step 2.
-- Not provided → output only: **HUMAN AGENT ▎ ACTION REQUIRED** — UTR / reference number not provided. Request the client to share the UTR or bank reference number for the transfer before proceeding.
+- Not provided → escalate. Request the client to share the UTR or bank reference number for the transfer before proceeding.
 
 **Step 2 — UTR re-query:**
 
@@ -266,7 +264,7 @@ Invoke `cashier_payin` — leave **Client ID** blank and enter the UTR / referen
 | Result | Action |
 |---|---|
 | Found — `nest_update` = N/A or Pending | Transfer has reached Zerodha but hasn't been pushed to the trading account yet. Go to Step 3 (bank account match). |
-| Not found | No record of this UTR in Zerodha's system. Request a bank statement screenshot showing: debit date, amount, UTR/reference number, and destination account + IFSC (to confirm the transfer was sent to Zerodha's correct bank account). Then output only: **HUMAN AGENT ▎ ACTION REQUIRED** — UTR not found in Zerodha's system. Include client ID, UTR, amount, date, source bank account, destination account + IFSC, and bank statement screenshot. |
+| Not found | No record of this UTR in Zerodha's system. Request a bank statement screenshot showing: debit date, amount, UTR/reference number, and destination account + IFSC (to confirm the transfer was sent to Zerodha's correct bank account). Then escalate. Include client ID, UTR, amount, date, source bank account, destination account + IFSC, and bank statement screenshot. |
 
 **Step 3 — Bank account match:**
 
@@ -274,7 +272,7 @@ Check the source account against the client's registered bank accounts (`bank_1_
 
 | Status | Action |
 |---|---|
-| Matches a registered bank | Funds need a manual push to the trading account. Escalate to a human agent for the funds team to check — include client ID, UTR, amount, date, source account. |
+| Matches a registered bank | Funds need a manual push to the trading account. Escalate. |
 | Doesn't match any registered account | Transfer sent from an unlinked account. Per SEBI regulations, the amount will be reversed to the source bank within 2–3 days (per **A2**). Share **A9** unmapped transfer link. |
 
 ---
@@ -318,7 +316,7 @@ Apply A3 per account/bank type.
 2. If orders exist on the payin date → orders placed that day reduced the available balance. If no orders on the payin date → do not mention trading.
 3. Invoke `ledger_report` for: negative opening balance, AMC charges, NSE/BSE charges, trading debit obligations, delayed payment charges, prior QS payouts.
 4. A pre-existing negative balance is adjusted against the new deposit, resulting in a lower current balance. Identify the specific reason from the ledger.
-5. If the ledger doesn't explain the gap → escalate to a human agent.
+5. If the ledger doesn't explain the gap → escalate.
 
 **MTF margin shortfall:** If `ledger_report` shows MTF debits → account has an MTF margin shortfall. Uncleared shortfalls may trigger square-off of open MTF positions; an email notification is sent regarding this shortage.
 
@@ -328,7 +326,7 @@ Apply A3 per account/bank type.
 
 1. Invoke `crux_qs_payouts` and `ledger_report` for QS between the payin date and today. If the client hasn't stated the payin date, match by amount instead (when the client has shared an amount).
 2. QS found → the idle balance from the payin was transferred back to the client's bank account via Quarterly Settlement on the QS date.
-3. No QS found → escalate to a human agent.
+3. No QS found → escalate.
 
 ---
 
@@ -346,7 +344,7 @@ Apply Rule 2 or Rule 3 per transaction based on `transfer_mode` and `Status`. Ad
 
 ### Rule 12: Escalation Triggers
 
-Escalate to a human agent for the funds team to check (include transaction details) when:
+Escalate
 - Bank success but Zerodha failed.
 - U30 error.
 - Cheque debited but no system entry — escalate immediately, no troubleshooting.

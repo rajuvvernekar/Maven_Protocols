@@ -142,20 +142,6 @@ When checking `mandate_report`, only `status` = `success` indicates a usable, ac
 | Redeem on Coin | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeem-on-coin-app |
 | Microsavings SIP | https://support.zerodha.com/category/mutual-funds/features-on-coin/systematic-investment-plan/articles/microsavings-sip |
 
----
-
-### A9 — Escalation Triggers
-
-Escalate to human agent when any of the following apply:
-
-- Account type conversion in progress (per Rule 7 check).
-- Client reports SIP deletion is not succeeding from their end.
-- SIP trigger issue remains unresolved after completing all checks in Rule 1.
-
-Include in escalation: client ID, SIP fund name (`name`), `sip_status`, and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -176,7 +162,7 @@ Route by scenario
 
 ### Fallback
 
-If no rule matches and no root cause is identified after checks → escalate to human agent per A9.
+If no rule matches and no root cause is identified after checks → escalate.
 
 ---
 
@@ -186,7 +172,7 @@ If no rule matches and no root cause is identified after checks → escalate to 
 
 **Account conversion check:**
 
-If status from `get_all_client_data` ≠ "approved" → account type conversion is in progress. Escalate per A9. Stop.
+If status from `get_all_client_data` ≠ "approved" → account type conversion is in progress. Escalate. Stop.
 
 **SIP status check:**
 
@@ -239,7 +225,7 @@ If the SIP order exists in `mf_order_history` for the trigger date, check `fund_
 - `fund_source` = `digio-mandates` or `upi-mandates` → mandate linked. Invoke `mandate_debit_report` and apply A5 status interpretation. If status = `failed` or `pending` (with execution issue), the SIP order has failed for this cycle. For Zerodha SIPs, advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs, communicate the failure cause from the debit `remark`; the next AMC SIP cycle will retry automatically.
 - `fund_source` = `rp-pg`, `pool`, or blank → mandate not linked. Route to Rule 5.
 
-**Fallback:** If none of the above resolves the issue → escalate per A9.
+**Fallback:** If none of the above resolves the issue → escalate.
 
 ---
 
@@ -305,13 +291,13 @@ If the client has multiple SIPs, check each one separately. A mandate linked to 
 ### Rule 6 — SIP Deletion Failing
 
 1. Confirm: the client reports they followed the deletion steps but deletion is not succeeding.
-2. Escalate to human agent per A9.
+2. Escalate.
 
 ---
 
 ### Rule 7 — Account Type Conversion Check
 
-If status from `get_all_client_data` ≠ "approved" → account type conversion is in progress. SIP-related actions may not work correctly until conversion completes. Escalate to human agent per A9.
+If status from `get_all_client_data` ≠ "approved" → account type conversion is in progress. SIP-related actions may not work correctly until conversion completes. Escalate.
 
 ---
 

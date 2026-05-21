@@ -82,7 +82,7 @@ TAGS: reports, holdings
 | Differences | Aggregate view | Excludes intraday from delivery section; turnover = absolute P&L for speculative; editable for cost adjustments (gifts, transfers) |
 | Editability | Not editable | Editable on Console (Reports → Tax P&L → Edit) for gift shares, cost basis adjustments |
 
-Verified P&L report for ITR filing: see A8.
+Verified P&L report for ITR filing: see A7.
 
 ---
 
@@ -96,28 +96,7 @@ Verified P&L report for ITR filing: see A8.
 | Merger | Shares swapped at defined ratio. P&L uses original acquisition cost carried over to new shares. |
 | Fractional shares (any CA) | Settled in cash → appears as a realized P&L entry for the fractional quantity. |
 
----
-
-### A6 — Escalation Output
-
-When any rule in this protocol routes to escalation, abandon the client-facing voice. The response is for a Zerodha support manager, not the client.
-
-Begin the response with this literal line on its own:
-
-`HUMAN SUPPORT MANAGER TO HANDLE THIS —`
-
-Then provide:
-
-- **Client ID:** the client's ID
-- **Query:** one-line summary of what the client asked
-- **Checked:** every tool invoked and every relevant fact gathered, with values (IDs, dates, amounts, fields read)
-- **Blocker:** the specific reason Maven cannot resolve, and what needs human judgement
-
-Do not include any client-facing apology, "I am transferring you" / "I am escalating" phrasing addressed to the client, second-person address, or sign-off. The handoff is for the support manager only.
-
----
-
-### A7 — Scenarios & Interpretations
+### A6 — Scenarios & Interpretations
 
 **S1 — FIFO Causing Unexpected P&L:**
 Client's expected P&L doesn't match because they're comparing against a recent purchase price, but FIFO consumed older shares (at a different cost) first. The discrepancy is expected and correct. The buy value used is not the most recent purchase — it is the cost of the oldest shares held at the time of the sale.
@@ -163,7 +142,7 @@ When all originally purchased shares have been sold via FIFO and the remaining o
 
 ---
 
-### A8 — Links
+### A7 — Links
 
 | Purpose | URL |
 |---|---|
@@ -194,7 +173,7 @@ Query relates to equity P&L →
 
 ### Fallback
 
-If no route matches, invoke relevant tools for additional context. If no root cause is found, escalate to human agent.
+If no route matches, invoke relevant tools for additional context. If no root cause is found, escalate.
 
 ---
 
@@ -208,7 +187,7 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 
 ### Rule 2 — FIFO Causing Unexpected P&L
 
-1. Explain that the buy value in P&L is not necessarily the most recent purchase price — FIFO consumes the oldest shares first, which may be at a different cost. See A7-S1.
+1. Explain that the buy value in P&L is not necessarily the most recent purchase price — FIFO consumes the oldest shares first, which may be at a different cost. See A6-S1.
 2. If the calculation needs to be proven step by step → invoke `console_eq_holdings_breakdown` to walk through FIFO entries.
 
 ---
@@ -217,8 +196,8 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 
 1. Invoke `console_eq_holdings` — verify if `discrepant` > 0 for that stock (or was > 0 before selling).
 2. Invoke `console_eq_external_trades` to check for missing buy entries.
-3. Communicate that the inflated profit is due to ₹0 cost assigned to discrepant shares — the buy entry is missing. See A7-S2.
-4. If shares already sold with ₹0 cost → escalate to human agent. Backend correction required.
+3. Communicate that the inflated profit is due to ₹0 cost assigned to discrepant shares — the buy entry is missing. See A6-S2.
+4. If shares already sold with ₹0 cost → escalate. Backend correction required.
 
 ---
 
@@ -226,7 +205,7 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 
 1. Determine whether the client is comparing realized or unrealized P&L.
 2. **Realized:** Should match. If values differ → check the date range used. Console P&L requires a specific date range; Kite shows current FY by default.
-3. **Unrealized:** Console uses previous day's closing price; Kite uses live LTP — difference is by design. See A7-S3 and A3 for calculation details.
+3. **Unrealized:** Console uses previous day's closing price; Kite uses live LTP — difference is by design. See A6-S3 and A3 for calculation details.
 
 ---
 
@@ -238,11 +217,11 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 
 ### Rule 6 — Intraday vs Delivery Classification
 
-Product type (CNC, MIS, Long-term, etc.) does not determine tax classification. Even if a client used CNC, same-day buy + sell of the same stock in EQ series is treated as intraday (speculative). What matters is whether offsetting trades exist on the same day — not the product type label. See A8 for the CNC/MIS/NRML explainer link.
+Product type (CNC, MIS, Long-term, etc.) does not determine tax classification. Even if a client used CNC, same-day buy + sell of the same stock in EQ series is treated as intraday (speculative). What matters is whether offsetting trades exist on the same day — not the product type label. See A7 for the CNC/MIS/NRML explainer link.
 
 1. Invoke `console_eq_tradebook` to check the `series` field.
-2. **Series EQ + same-day buy and sell** → classified as intraday (speculative), not delivery, regardless of product type used. See A7-S4.
-3. **Series BE / BT / BZ (T2T)** → same-day buy + sell in T2T is always delivery. See A7-S5.
+2. **Series EQ + same-day buy and sell** → classified as intraday (speculative), not delivery, regardless of product type used. See A6-S4.
+3. **Series BE / BT / BZ (T2T)** → same-day buy + sell in T2T is always delivery. See A6-S5.
 
 Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shares of CDSL using CNC on 30 March → intraday trade, classified as speculative, not delivery.
 
@@ -251,24 +230,24 @@ Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shar
 ### Rule 7 — Corporate Action Impact on P&L
 
 1. Identify the CA type from the client's query and apply the relevant interpretation:
-   - **Bonus** → See A7-S8 and A5 for impact details.
-   - **Bonus shares showing ₹0 buy price in Tax P&L** → invoke `console_eq_holdings_breakdown` to check whether remaining or sold shares are entirely bonus shares. If all originally purchased shares were sold via FIFO and only bonus shares remain or were sold, the ₹0 buy price is correct. See A7-S14.
-   - **Split** → See A7-S9 and A5 for impact details.
-   - **Demerger** → See A7-S10 and A5 for impact details.
-   - **Merger** → See A7-S11 and A5 for impact details.
-   - **Fractional shares** → See A7-S12 and A5 for impact details.
-2. If the CA occurred 3+ weeks ago and P&L still appears wrong → escalate to human agent.
+   - **Bonus** → See A6-S8 and A5 for impact details.
+   - **Bonus shares showing ₹0 buy price in Tax P&L** → invoke `console_eq_holdings_breakdown` to check whether remaining or sold shares are entirely bonus shares. If all originally purchased shares were sold via FIFO and only bonus shares remain or were sold, the ₹0 buy price is correct. See A6-S14.
+   - **Split** → See A6-S9 and A5 for impact details.
+   - **Demerger** → See A6-S10 and A5 for impact details.
+   - **Merger** → See A6-S11 and A5 for impact details.
+   - **Fractional shares** → See A6-S12 and A5 for impact details.
+2. If the CA occurred 3+ weeks ago and P&L still appears wrong → escalate.
 
 ---
 
 ### Rule 8 — Tax P&L vs Console P&L
 
-1. Explain the difference: Console P&L is aggregate realized P&L; Tax P&L classifies for ITR with STCG/LTCG/speculative and charges. See A7-S6 and A4 for full comparison.
-2. If client wants to edit Tax P&L → edit path is Console → Reports → Tax P&L → Edit. See A7-S7 and A4.
+1. Explain the difference: Console P&L is aggregate realized P&L; Tax P&L classifies for ITR with STCG/LTCG/speculative and charges. See A6-S6 and A4 for full comparison.
+2. If client wants to edit Tax P&L → edit path is Console → Reports → Tax P&L → Edit. See A6-S7 and A4.
 
 ---
 
 ### Rule 9 — Unrealized P&L Orphan Entry
 
 1. Invoke `console_eq_holdings` for that stock.
-2. If no holdings found but unrealized P&L still shows an entry → this is a data error (orphan lot). See A7-S13. escalate to human agent.
+2. If no holdings found but unrealized P&L still shows an entry → this is a data error (orphan lot). See A6-S13. escalate.

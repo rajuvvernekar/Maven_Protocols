@@ -234,28 +234,6 @@ The query date is the date the client is asking about. All data analysis — ord
 
 Conditions on the current date (e.g., orders placed today) are irrelevant to a query about a past date.
 
----
-
-### A14 — Escalation Required Data
-
-When any rule says ESCALATE, stop reasoning immediately — do not frame a response. Output only:
-
-**HUMAN AGENT ACTION REQUIRED**
-
-Include only the fields below that are available and relevant to the escalation scenario:
-
-| Field | Include when |
-|---|---|
-| Client ID | Always |
-| `payout_type` | Available in withdrawal record |
-| Creation date | Available in withdrawal record |
-| Amount | Available in withdrawal record |
-| `bank_response_remarks` | Rejection scenario |
-| `bank_ref_no` | Present in withdrawal record |
-| Reason for escalation | Always |
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -279,20 +257,20 @@ Route by scenario
 
 ### Fallback
 
-If no route matches after all checks, escalate to human agent per A14.
+If no route matches after all checks, escalate.
 
 ---
 
 ## Section C: Rules
 
-### Rule 1: Early Exit — Escalate to Human Agent
+### Rule 1: Early Exit — Escalate
 
-If any condition below matches, escalate immediately per A14. Do not share any account or bank details with the client.
+If any condition below matches, escalate immediately. Do not share any account or bank details with the client.
 
 | Condition | Action |
 |---|---|
-| NRI PIS account | Escalate to human agent per A14 |
-| Withdrawal request > ₹5 crore | Escalate to human agent per A14 |
+| NRI PIS account | Escalate|
+| Withdrawal request > ₹5 crore | Escalate|
 
 ---
 
@@ -306,14 +284,14 @@ If one already exists for the query date, it consumes the day's single attempt p
 **Step 2 — Check A3 blockers:**
 Compare the reported error time against the earliest order/position timestamp. Filter CNC sell executed first (non-blocker per A3).
 - Orders/positions placed after the error time → not the cause; skip to Step 4. Instant is blocked for the rest of the day due to subsequent trading; offer regular withdrawal per A4.
-- Category 2 blocker (Paytm Payments Bank) → escalate to human agent per A14.
+- Category 2 blocker (Paytm Payments Bank) → escalate.
 - All other blockers → apply per A3.
 
 **Step 3 — No blockers → check settlement:**
 Invoke `ledger_report`. If unsettled funds are present → T+1 per A5 applies. Suggest regular withdrawal.
 
 **Step 4 — No blockers, funds settled:**
-Service is intermittent before 09:25 per A1 — retry after 09:25. If after 09:25 and still failing → direct to Console per A10; try alternate device if issue persists. If still unresolved → escalate to human agent per A14.
+Service is intermittent before 09:25 per A1 — retry after 09:25. If after 09:25 and still failing → direct to Console per A10; try alternate device if issue persists. If still unresolved → escalate.
 
 ---
 
@@ -367,7 +345,7 @@ If client traded with the credited/deposited funds during the same period, ident
 | Within timeline (Instant: < 10 min; Regular: before T+1 14:00) | Processing within expected window — no action |
 | Past timeline + bank_ref_no present + < 3 days since modified | Share bank_ref_no; refer client to their bank |
 | Past timeline + bank_ref_no present + ≥ 3 days since modified | Share bank_ref_no; client to request bank statement from payout_date to today |
-| Past timeline + no bank_ref_no | Escalate to human agent per A14 |
+| Past timeline + no bank_ref_no | Escalate|
 
 ---
 
@@ -418,7 +396,7 @@ Regular withdrawals cannot be expedited. Inform the client of the applicable pro
 
 **Step 1:** Route to Console web withdrawal page per A10.
 
-**Step 2:** If issue persists on Console web → try alternate device. If still unresolved → escalate to human agent per A14.
+**Step 2:** If issue persists on Console web → try alternate device. If still unresolved → escalate.
 
 ---
 

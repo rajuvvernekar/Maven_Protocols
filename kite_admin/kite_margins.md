@@ -145,14 +145,6 @@ TAGS: margins
 | Approved securities (pledge haircuts) | https://zerodha.com/approved-securities |
 | Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
 
----
-
-### A8 — Escalation Data Template
-
-Escalate to a human agent. Always include: **client ID, current margin values, and specific issue.**
-
----
-
 ### A9 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
 
 | Day | Margin Requirement |
@@ -195,7 +187,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause is found, escalate to a human agent per **A8**.
+If no root cause is found, escalate.
 
 ---
 

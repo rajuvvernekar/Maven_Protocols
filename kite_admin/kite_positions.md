@@ -180,10 +180,6 @@ TAGS: holdings, margins
 | Options on expiry day | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day |
 | Same-day profits | https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits |
 
-### A12 — Escalation Data
-
-- Include when escalating to human agent: client ID, instrument_name, product type, and specific issue.
-
 ### A13 — F&O Ban Period Delta Rules
 
 When a stock enters F&O ban period, fresh positions that increase net delta exposure are blocked. Positions that reduce or offset delta exposure are permitted. Exit of existing positions is always allowed.
@@ -220,7 +216,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause found after completing all diagnostic steps → escalate to human agent per **A12**.
+If no root cause found after completing all diagnostic steps → escalate.
 
 ## Section C: Rules
 
@@ -272,7 +268,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 7. Balance went negative due to physical delivery margin near expiry:
    a. Invoke `ledger_report` and check `remarks` for "Physical delivery margin blocked for long options in NSE F&O" with corresponding `debit` to confirm delivery margin was the cause.
    b. If found → physical delivery margin blocked for ITM stock option position approaching expiry. Share margin schedule from **A6** and the debit amount. Reference physical settlement policy per **A11**.
-   c. If not found → invoke `kite_margins` to investigate other causes of negative balance. If no cause identified → escalate to human agent per **A12**.
+   c. If not found → invoke `kite_margins` to investigate other causes of negative balance. If no cause identified → escalate.
 
 ### Rule 8 — Sold Holdings as Negative Positions
 
@@ -306,4 +302,4 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 1. Invoke `kite_order_history` — check if position was squared off today, or locate previous-day trade records.
 2. Invoke `kite_holdings` — check if CNC position moved to holdings.
 3. If still not found: confirm Privacy Mode is off in Kite settings.
-4. If still not found after steps 1–3 → escalate to human agent per **A12**.
+4. If still not found after steps 1–3 → escalate.

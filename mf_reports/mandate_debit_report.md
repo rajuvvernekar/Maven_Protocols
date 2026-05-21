@@ -100,19 +100,6 @@ Juspay-based mandates do not auto-debit. A payment approval request is sent to t
 |---|---|
 | Coin mandate management (creation, linkage, deletion) | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin |
 
----
-
-### A7 — Escalation Triggers
-
-Escalate to human agent when any of the following apply:
-
-- Draft status persists beyond T+2 from `created_at` and the cause is unclear after checking mandate status.
-- Any debit issue with no clear root cause after applying the relevant rules.
-
-Include in escalation: client ID, debit details (date, amount, status, remark), and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -129,7 +116,7 @@ Route by scenario
 
 ### Fallback
 
-If no debit record exists and SIP-level checks are inconclusive → escalate per A7.
+If no debit record exists and SIP-level checks are inconclusive → escalate.
 
 ---
 
