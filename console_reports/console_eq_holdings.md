@@ -144,6 +144,7 @@ Two scenarios:
 | Event | Behavior |
 |---|---|
 | Gift transfer in | Closing price on transfer date used as entry price. System auto-posts entry (`console_eq_external_trades`, `external_trade_type` = gift). |
+| Zerodha-gifted shares (shares gifted by Zerodha to client) | Buy average updated automatically by Zerodha. Verify via `stock_gift_requests`. If client has also added an external trades entry for the same ISIN → double entry risk; escalate to human agent immediately. Do not draft any client-facing response. |
 | Gift transfer out | Gift transfer date = exit date; closing price on that date = exit price. |
 | Off-market transfer in | No automatic buy price assigned. Purchase details must be added manually via discrepancy flow. |
 | Off-market transfer out | No automatic exit entry. Escalate to human agent. |
@@ -202,6 +203,7 @@ Two scenarios:
 | Discrepancy explanation | https://support.zerodha.com/category/trading-and-markets/alerts-and-nudges/kite-error-messages/articles/discrepant-holdings |
 | Add external trades on Console | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/how-to-update-buy-average |
 | LIQUIDBEES fractional redemption | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units |
+| SOT / SOH holding statement | https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/cdsl-easi-easiest/articles/will-zerodha-send-me-holding-statements-for-my-investments |
 | NSE historical prices | nseindia.com (search company → Historical Data) |
 | BSE historical prices | bseindia.com (search company → Historical Prices) |
 | RBI G-Sec interest schedule | rbi.org.in/Scripts/NotificationUser.aspx |
@@ -213,6 +215,13 @@ Two scenarios:
 
 - Include when escalating to human agent: client ID, `tradingsymbol`(s), specific issue description, and relevant data.
 
+▎ Escalation behavior: When any rule in this protocol says ESCALATE, stop reasoning immediately — do not identify a root cause, do not frame a response. Output only:
+
+HUMAN AGENT
+▎ ACTION REQUIRED — [reason from the rule]
+
+The human agent will handle the query manually.
+
 ---
 
 ## Section B: Decision Flow
@@ -221,27 +230,30 @@ Two scenarios:
 
 ```
 Route by scenario
-   ├─ failure_date populated (any value)                                    → Rule 11
-   ├─ tradingsymbol contains ISIN-format alphanumeric entry
-   │    (client asking about this instrument)                               → Rule 11
-   ├─ Employer-mandated account deactivation / closure                      → Rule 11
-   ├─ Rights issue query                                                    → Rule 11
-   ├─ Rights entitlement (RE) query                                         → Rule 11
-   ├─ Unlisted / suspended stock discrepancy (confirmed)                    → Rule 11
+   ├─ failure_date populated (any value)                                    → Rule 1
+   ├─ tradingsymbol appears as ISIN-format alphanumeric string in holdings
+   │    data (shares are unlisted)                                          → Rule 1
+   ├─ Employer-mandated account deactivation / closure                      → Rule 1
+   ├─ Rights issue query                                                    → Rule 1
+   ├─ Rights entitlement (RE) / Partly Paid (PP) share query                → Rule 1
+   ├─ Unlisted / suspended stock discrepancy (confirmed)                    → Rule 1
    ├─ Buy average query
-   │    (differs from expected / N/A / ₹0 / wrong post-CA / invested value) → Rule 1
+   │    (differs from expected / N/A / ₹0 / wrong post-CA / invested value) → Rule 2
    ├─ Corporate action query
-   │    (bonus / split / consolidation / demerger / merger / eligibility)   → Rule 2
-   ├─ Holdings not visible / qty mismatch                                   → Rule 3
-   ├─ Pledged qty in holdings                                               → Rule 4
-   ├─ T1 / settlement query                                                 → Rule 5
+   │    (bonus / split / consolidation / demerger / merger / eligibility)   → Rule 3
+   ├─ Holdings not visible / qty mismatch                                   → Rule 4
+   ├─ Pledged qty in holdings                                               → Rule 5
+   ├─ T1 / settlement query                                                 → Rule 6
    ├─ Discrepancy
    │    (transferred / gift / ESOP / off-market / entry error /
-   │     wrong / incorrect entry by client / P&L / avg)                               → Rule 6
-   ├─ Loan (LAS) query                                                      → Rule 7
-   ├─ Short delivery query                                                  → Rule 8
-   ├─ Dividend / G-Sec / NCD / bond interest query                          → Rule 9
-   └─ LIQUIDBEES fractional redemption                                      → Rule 10
+   │     wrong / incorrect entry by client / P&L / avg)                    → Rule 7
+   ├─ Zerodha-gifted shares — client mentions buy average updated for
+   │    gifted stock, or stock name mentioned and recently gifted by Zerodha → Rule 7h
+   ├─ Loan (LAS) query                                                      → Rule 8
+   ├─ Short delivery query                                                  → Rule 9
+   ├─ Dividend / G-Sec / NCD / bond interest query                          → Rule 10
+   ├─ LIQUIDBEES fractional redemption                                      → Rule 11
+   └─ Holding statement / SOT / SOH / Statement of Transaction              → Rule 12
 ```
 
 ### Fallback
@@ -252,34 +264,64 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 
 ## Section C: Rules
 
-### Rule 1 — Buy Average Handling
+### Escalation Behavior
 
-**1a. Buy average differs from expected**
+When any rule in this protocol says ESCALATE, stop reasoning immediately — do not identify a root cause, do not frame a response. Output only:
+
+HUMAN AGENT
+▎ ACTION REQUIRED — [reason from the rule]
+
+The human agent will handle the query manually.
+
+---
+
+### Rule 1 — Escalation Triggers
+
+Escalate to human agent immediately for all triggers listed below. Include data per A14.
+
+| Trigger | Data to include |
+|---|---|
+| `failure_date` populated (any value) | Client ID, `tradingsymbol`, `failure_date`. |
+| `tradingsymbol` appears as ISIN-format alphanumeric string in holdings data — shares are unlisted | Client ID and the ISIN entry. |
+| Unlisted stock (confirmed after verification) | Client ID, `tradingsymbol`, ISIN. |
+| Suspended / inactive stock (confirmed after verification) | Client ID, `tradingsymbol`, ISIN. |
+| Rights entitlement (RE) / Partly Paid (PP) share query | Client ID, `tradingsymbol`, query details. |
+| REs or PPs found during bonus credit investigation — no bonus issued; REs or PPs present instead | Client ID, `tradingsymbol`, query details. |
+| Rights issue query | Client ID, `tradingsymbol`, query details. |
+| Employer-mandated account deactivation / closure (employer restrictions, compliance, empanelment) | Client ID and client's stated reason. |
+| Client requests SOT / SOH / Holding Statement / Statement of Transaction for visa purposes, or requests a signed / stamped copy | Client ID and stated purpose. |
+| Zerodha-gifted shares — client has added external trades entry for the same ISIN (double entry risk; Zerodha also auto-updates buy average) | Client ID, `tradingsymbol`, ISIN, `stock_gift_requests` details. |
+
+---
+
+### Rule 2 — Buy Average Handling
+
+**2a. Buy average differs from expected**
 1. Explain FIFO basis (A3). Point to View breakdown on Kite / Console.
 2. Sold + bought back same day → intraday exception (A3).
 3. Same-day change in invested value / buy average → check Kite Order History and Kite Positions for today's executed sell trades. If found → partial sell FIFO impact (A3).
 
-**1b. `buy_average` is null / N/A**
+**2b. `buy_average` is null / N/A**
 - `discrepant` > 0:
-  1. If client reports a specific purchase (date, qty, or price) → run diagnostic checklist in Rule 3 first.
-  2. Verify current exchange status via Kite holdings or instrument search. If listed → continue; if still unlisted/suspended → Rule 11.
+  1. If client reports a specific purchase (date, qty, or price) → run diagnostic checklist in Rule 4 first.
+  2. Verify current exchange status via Kite holdings or instrument search. If listed → continue; if still unlisted/suspended → Rule 1.
   3. Invoke `console_eq_external_trades` for an entry for this ISIN:
      - Entry exists AND processing → buy average updates per A2.
      - Entry exists AND processed but avg still N/A → escalate to human agent per A14.
-     - No entry AND client did not buy on Zerodha → route to Rule 6.
+     - No entry AND client did not buy on Zerodha → route to Rule 7.
   4. Client confirms purchase before 31 Jan 2018 with no records → apply grandfather clause (A3).
 - `discrepant` = 0 AND `pending` > 0 → CA buy average adjustment in progress (A2).
 
-**1c. `buy_average` = ₹0 AND `total_quantity` > 0**
+**2c. `buy_average` = ₹0 AND `total_quantity` > 0**
 1. Invoke `console_eq_holdings_breakdown`; check for entries with `exchange` = "BONUS".
 2. Found → apply ₹0 buy average reason per A3.
 3. Not found → escalate to human agent per A14.
 
-**1d. Buy average wrong after corporate action**
+**2d. Buy average wrong after corporate action**
 - Within 2 weeks of CA → adjustment in progress (A2).
 - 3+ weeks post-CA → escalate to human agent per A14 with expected vs actual.
 
-**1e. Investment value mismatch**
+**2e. Investment value mismatch**
 - Common causes:
   - Recent CA → adjustment in progress (A2).
   - `discrepant` > 0 → invested value inaccurate until purchase details added (A7). For NCDs/bonds, note A7 market-value behavior and share A13 links.
@@ -287,10 +329,11 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 
 ---
 
-### Rule 2 — Corporate Action Handling
+### Rule 3 — Corporate Action Handling
 
-**2a. Bonus — not credited / not visible**
+**3a. Bonus — not credited / not visible**
 1. Invoke `console_eq_external_trades`; check for a system-posted CA credit entry (e.g., `external_trade_type` = devolved or CA-related) for this ISIN.
+   - If investigation at any step reveals REs (Rights Entitlements) or PPs (Partly Paid shares) instead of bonus shares → escalate to human agent per A14 immediately. Do not proceed further. Do not draft any response.
 2. Entry found but not in holdings → credit is in system; holdings update within ~1 trading day.
 3. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
    - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
@@ -298,28 +341,28 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 4. No entry AND within bonus credit window (A2) → temp ISIN → perm ISIN conversion pending; CDSL SMS on credit. Temporary P&L drop is expected and auto-corrects.
 5. Beyond 5 trading days from record date → escalate to human agent per A14.
 
-**2b. Split — qty / price**
+**3b. Split — qty / price**
 1. Use `total_quantity`, `available`, `pending` from this report as source of truth — do not derive from recent trade history.
 2. Invoke `kite_holdings`; check for post-split credit.
 3. Full post-split qty in `kite_holdings` → split credit confirmed. Avg update timeline per A2; client can sell in the interim without P&L impact.
 4. Partial / not credited → credit timeline per A2.
 5. Beyond 5 trading days from record date → escalate to human agent per A14.
 
-**2c. Demerger — new shares or avg**
+**3c. Demerger — new shares or avg**
 1. Shares not credited → new entity credit timeline per A2.
 2. Avg not updated → split per Cost of Acquisition (COA) ratio announced by company (A5); Zerodha updates the buy average once the Cost of Acquisition is announced by the company.
 3. COA announced but avg still not updated after 3 weeks → escalate to human agent per A14 with expected vs actual.
 
-**2d. Merger — share swap**
+**3d. Merger — share swap**
 - Explain swap mechanics per A5. Fractional shares → cash to primary bank (A4).
 
-**2e. Corporate action eligibility**
+**3e. Corporate action eligibility**
 - Answer from A4 (general, sold-on-ex-date, pledged, settlement holiday / short delivery exceptions).
-- If client reports missing CA benefit due to short delivery → route to Rule 8.
+- If client reports missing CA benefit due to short delivery → route to Rule 9.
 
 ---
 
-### Rule 3 — Quantity Mismatch Handling
+### Rule 4 — Quantity Mismatch Handling
 
 1. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
    - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
@@ -339,11 +382,11 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 3. If client describes a sale/redemption event, invoke `ledger_report`; check for matching credit entries.
 4. Compare calculated qty with `available` qty in this report:
    - Calculated = available → bought on Zerodha, display/sync issue → escalate to human agent per A14.
-   - Calculated ≠ available AND no matching sale proceeds → likely transferred/gifted/IPO/off-market → route to Rule 6.
+   - Calculated ≠ available AND no matching sale proceeds → likely transferred/gifted/IPO/off-market → route to Rule 7.
 
 ---
 
-### Rule 4 — Pledge Handling
+### Rule 5 — Pledge Handling
 
 1. Describe `margin` field per A9 — pledged but still in client demat.
 2. Selling pledged shares → CNC sell on Kite allowed without unpledge (A9).
@@ -352,91 +395,97 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 
 ---
 
-### Rule 5 — T1 Handling
+### Rule 6 — T1 Handling
 
 - `t1` > 0 → T+1 settlement; moves to `available` by end of today; visible in regular holdings from next trading day (A1, A2).
 
 ---
 
-### Rule 6 — Discrepancy Handling
+### Rule 7 — Discrepancy Handling
 
-**6a. Transferred / ESOP / off-market shares**
+**7a. Transferred / ESOP / off-market shares**
 1. Invoke `console_eq_external_trades`; check for an existing entry for this ISIN.
 2. Entry exists AND processing → buy average updates per A2.
 3. Entry exists AND processed but discrepancy not resolved → continue with `console_eq_external_trades` (that protocol's routing handles the appropriate path).
 4. No entry:
-   - Client says they already added details → go to 6d.
-   - Client got an error when adding entry → go to 6g.
-   - Client has no purchase details → go to 6f.
+   - Client says they already added details → go to 7d.
+   - Client got an error when adding entry → go to 7g.
+   - Client has no purchase details → go to 7f.
    - Otherwise → guide through self-resolution path per A7 (include entry rules).
 
-**6b. Gift transfer in**
+**7b. Gift transfer in**
 1. Invoke `console_eq_external_trades`; check for `external_trade_type` = gift.
 2. Entry found → gift shares recorded at closing price on transfer date (A8); buy average reflects once processed.
 3. No entry → escalate to human agent per A14 (system should have auto-posted).
 
-**6c. Gift / off-market P&L or avg queries**
+**7c. Gift / off-market P&L or avg queries**
 - Gift in (avg/P&L) → A8; client can use discrepancy flow for actual acquisition cost; advise CA for tax filing.
 - Off-market in (avg/P&L) → A8; manual add via discrepancy flow (A7).
 - Gift out → A8 (exit date = transfer date, exit price = closing price).
 - Off-market out → A8 (share transfer details for reversal, or update Tax P&L manually).
 
-**6d. Client says they already added details**
+**7d. Client says they already added details**
 1. Invoke `console_eq_external_trades` first.
 2. Entry exists → continue with `console_eq_external_trades` (that protocol's routing handles the appropriate path: recalc-stuck, incorrect entry by client, or deletion).
 3. No entry → guide through self-resolution path per A7.
 
-**6e. NCD / bond transferred from another broker**
+**7e. NCD / bond transferred from another broker**
 - `discrepant` > 0 → self-resolution path per A7. Note NCD market-value behavior (A7). Share A13 links (discrepancy explanation, add external trades).
 
-**6f. Client doesn't have purchase details**
+**7f. Client doesn't have purchase details**
 - Advise client to obtain details from previous broker (A7).
 
-**6g. Error when adding entry**
+**7g. Error when adding entry**
 1. Invoke `console_eq_external_trades` first — entry may have posted despite the error.
 2. Entry found → buy average updates per A2.
 3. No entry → evaluate A7 cannot-resolve conditions. Verify current exchange status via Kite holdings / instrument search before applying the unlisted/inactive exception:
    - Trading holiday → try next trading day.
-   - Inactive / suspended (confirmed) → route to Rule 11.
-   - Unlisted (confirmed) → route to Rule 11.
+   - Inactive / suspended (confirmed) → route to Rule 1.
+   - Unlisted (confirmed) → route to Rule 1.
    - CA within 10 days → try after 10 days from CA date.
    - IPO within 3 days → try after 3 days from listing.
 
+**7h. Zerodha-gifted shares — buy average double entry**
+1. Invoke `stock_gift_requests`; verify Zerodha gift for this ISIN / stock.
+2. Gift confirmed → invoke `console_eq_external_trades`; check for a client-added entry for the same ISIN.
+3. Client-added entry exists → double entry risk (Zerodha auto-updates buy average; client has also added an entry manually) → escalate to human agent per A14 immediately. Do not draft any client-facing response.
+4. No client-added entry → buy average will be updated automatically by Zerodha; no further action required.
+
 ---
 
-### Rule 7 — Loan (LAS) Handling
+### Rule 8 — Loan (LAS) Handling
 
 - `loan` > 0 → shares are either pledged via LAS or lent externally to an NBFC (A10). Escalate to human agent per A14.
 
 ---
 
-### Rule 8 — Short Delivery Handling
+### Rule 9 — Short Delivery Handling
 
 - Explain per A6 (two scenarios; auction vs close-out).
 - Specific short delivery case reported by client → escalate to human agent per A14 with client ID, `tradingsymbol`, and trade details.
 
 ---
 
-### Rule 9 — Dividend and Debt Instrument Interest Handling
+### Rule 10 — Dividend and Debt Instrument Interest Handling
 
-**9a. Dividend not received**
+**10a. Dividend not received**
 - Credited to primary bank; timeline per A2.
 - Contact RTA (lookup per A11) — Zerodha does not process dividend payments. Escalate to human agent per A14.
 
-**9b. Dividend amount less than expected**
+**10b. Dividend amount less than expected**
 - TDS deducted before credit (rates per A11).
 
-**9c. Dividend tracking**
+**10c. Dividend tracking**
 - Kite and Console paths per A11.
 
-**9d. G-Sec / NCD / bond interest**
+**10d. G-Sec / NCD / bond interest**
 - Credited by RBI / paying agent to primary bank; not through Zerodha.
 - Timeline and eligibility per A2.
 - RBI schedule and client tracking options per A11.
 
 ---
 
-### Rule 10 — LIQUIDBEES Fractional Redemption
+### Rule 11 — LIQUIDBEES Fractional Redemption
 
 - Fractional units not sellable on secondary market → off-market transfer to AMC via CDSL Easiest (A12).
 - Share A13 link for step-by-step process.
@@ -444,16 +493,8 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 
 ---
 
-### Rule 11 — Escalation Triggers
+### Rule 12 — Holding Statement / SOT / SOH Request
 
-Escalate to human agent immediately for all triggers listed below. Include data per A14.
-
-| Trigger | Data to include |
-|---|---|
-| `failure_date` populated (any value) | Client ID, `tradingsymbol`, `failure_date`. |
-| `tradingsymbol` contains an ISIN-format alphanumeric entry (client asking about this instrument) | Client ID and the ISIN entry. |
-| Unlisted stock (confirmed after verification) | Client ID, `tradingsymbol`, ISIN. |
-| Suspended / inactive stock (confirmed after verification) | Client ID, `tradingsymbol`, ISIN. |
-| Rights entitlement (RE) query | Client ID, `tradingsymbol`, query details. |
-| Rights issue query | Client ID, `tradingsymbol`, query details. |
-| Employer-mandated account deactivation / closure (employer restrictions, compliance, empanelment) | Client ID and client's stated reason. |
+1. If client requests for visa purposes or requests a signed / stamped copy → escalate to human agent per A14 immediately.
+2. Console holdings statement for a specific date is available at console.zerodha.com/portfolio/holdings.
+3. For a PDF-based statement covering both holdings and transactions, the client can download the SOT / SOH (Statement of Transactions / Statement of Holdings) directly — share A13 — SOT / SOH holding statement article.

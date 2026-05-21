@@ -38,6 +38,7 @@ TAGS: orders, margins
 - Clicking the instrument hyperlink opens the Order History sub-view showing the full lifecycle: OPEN PENDING → OPEN → COMPLETE/CANCELLED/REJECTED with timestamps, exchange times, filled qty, avg price, and variety.
 - Orders follow price-time priority: first come, first served at same price.
 - Zerodha pre-validates orders — some rejections won't appear in the order book (shown in status notification only).
+- When the client references a specific instrument or order, match by `instrument` field first. If multiple orders exist for the same instrument, use `order_status` and `time` to identify the order the client is referring to.
 
 ### A2 — Field Usage Rules
 
@@ -184,6 +185,7 @@ TAGS: orders, margins
 | Order being processed | Already executed/cancelled | Refresh page for updated status. |
 | CO on ETF / restricted instruments | CO not allowed on ETFs, BSE scrips, stock options, currency options, index options | Use CNC or MIS instead. |
 | Invalid quantity / odd lot | Quantity does not match current lot size — residual odd-lot from SEBI lot size revision | Odd-lot positions cannot be traded. Hold until expiry — cash-settled based on moneyness. Lot size revision link per **A16**. |
+| KYC verification required | KYC details mismatch between account and exchange records | Invoke `pan_status` per Rule 4. |
 
 ### A13 — `placed_by` Values
 
@@ -293,6 +295,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 7. For CO on ETF or other restricted instruments → use matching row in **A12**.
 8. For invalid quantity / odd lot from lot size revision → use matching row in **A12**.
 9. For any rejection not matching **A12** → share `rejection_reason` text verbatim and suggest retry or contact support.
+10. If `rejection_reason` = "KYC verification required" → invoke `pan_status` to check for name or DOB mismatch.
 
 ### Rule 5 — AMO (After Market Orders)
 

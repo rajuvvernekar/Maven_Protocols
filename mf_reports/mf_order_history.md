@@ -57,7 +57,7 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 
 **T-day (Trading day):** The date on which the order is processed at the exchange. T-day is determined by when the payment is confirmed at ICCL, captured in `payment_updated_at`. If `payment_updated_at` is not yet populated, use `payment_initiated_at` as reference — the applicable NAV depends on when the payment is updated at ICCL.
 
-**Working-day check:** If `payment_updated_at` falls on a weekend or trading/settlement holiday, T = the next working day. If that day is also non-working, shift further until a working day is reached.
+**Working-day check:** If `payment_updated_at` falls on a weekend or trading/settlement holiday, T = the next working day. If that day is also non-working, shift further until a working day is reached. Only apply cutoff logic after confirming the payment date is a working day.
 
 **Holiday shift scope:** The holiday shift applies only to the date on which `payment_updated_at` falls (or the order placement date for redemptions). Holidays after T-day affect the settlement/allotment timeline (when units appear in holdings), not T-day or the NAV date.
 
@@ -108,8 +108,10 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 
 | `status_message` pattern | Cause category | Action |
 |---|---|---|
-| INVALID BANK ACCOUNT DETAILS, PAN/PEKRN MISMATCH, DOB DIFFERS WITH PAN, FOLIO LOCKED KRA, INVALID MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC, REGISTER WITH AMC | Account-level KYC or registration issue | Escalate to a human agent |
+| INVALID BANK ACCOUNT DETAILS, PAN/PEKRN MISMATCH, INVALID MODE OF HOLDING, BANK ACCOUNT MISMATCH WITH UCC, REGISTER WITH AMC | Account-level KYC or registration issue | Escalate to a human agent |
 | E-KYC limit ₹50K/AMC | Incomplete KYC — investment limit hit | Escalate to a human agent |
+| DOB DIFFERS WITH PAN | DOB mismatch | Update DOB in Zerodha |
+| FOLIO LOCKED KRA | KRA lock | Contact AMC directly. Escalate to a human agent. |
 | SCHEME CLOSED | Scheme suspended | Communicate the closure and suggest AMC SIP as an alternative |
 | NON ELIGIBLE SCHEME | Scheme suspended or restricted | Communicate that the scheme is unavailable |
 | MINIMUM AMOUNT FAILED | Order below scheme minimum | Communicate the scheme's minimum amount |
@@ -120,15 +122,15 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | UNIT NOT RECEIVED IN DEPOSITORY | Units not in demat — pledged or ELSS locked | Invoke `console_mf_pseudo_holdings` for pledged units (`margin`) and invoke `console_mf_tradebook` for ELSS lock-in (FIFO from `trade_date`). If pledged → advise unpledging via Console → Portfolio → Holdings → [fund] → Unpledge. If ELSS locked → advise waiting for lock-in expiry. |
 | TPV INVALID | Bank validation failed on re-validation | See Rule 4 (TPV Pending) |
 | BSE STAR MF system-side errors (network-related or instance-specific error, BSEMFDB, Connection Timeout, DUPLICATE UNIQUE REF NO, CLIENT DOES NOT EXISTS, PASSWORD EXPIRED, login failed) | Exchange infrastructure issue | Communicate that there was a technical issue at the exchange. If `payment_confirmed` = true, apply A4 refund language. |
+| ER[XX] prefixed | AMC-level restriction | Share the `status_message` as-is to the client. |
 | Buy/lumpsum option not available, only AMC SIP visible | AMC has suspended lumpsum investments due to valuation/size constraints; Zerodha SIPs (placed as lumpsum) are also affected | Communicate the AMC restriction. AMC SIP is available as an alternative. Share link from A9. |
 
 ---
 
 ### A6 — Redemption Settlement Computation
 
-- **T-day:** Order placed before 3:00 PM on a working day → T = that day. After 3:00 PM, or on a weekend/settlement holiday → T = next working day. Holiday shift scope per A2.
+- **T-day:** Order placed before 3:00 PM on a working day → T = that day. Order placed after 3:00 PM, or on a weekend or settlement holiday → T = the next working day. If that next day is also a settlement or trading holiday, T shifts to the following working day. Holidays after T-day determine the settlement timeline only.
 - **Credit date:** Add `redemption_time` working days (Monday–Friday, excluding trading/settlement holidays) to T. `redemption_time` applies only to redemption (SELL) orders — it is the settlement period for redemption proceeds.
-- **If `redemption_time` is blank or null:** Communicate that the settlement timeline for this fund is being updated and will be available shortly.
 
 ---
 
@@ -170,6 +172,7 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | `variety` | See A3 |
 | `payment_method` | Used to identify the bank per A10 for netbanking orders |
 | `fund_source` | Payment source — see A2 mapping |
+| `payment_remarks` | Internal remarks on payment — use for analysis only |
 
 ---
 
@@ -177,7 +180,8 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 
 - Stamp duty: 0.005% deducted from allotted units.
 - Zerodha fund house WhatsApp orders are processed separately and appear in AMC records, not in Coin order history.
-- NAV display differs between platforms: Coin shows the NAV as of T-1 (previous working day); Console shows the NAV as of T-2 (two working days prior). P&L values on the two platforms may differ for this reason; both are correct for their respective display dates.
+- NAV declaration: AMC declares NAV at ~11 PM on T-day; AMFI publishes it by midnight–3:00 AM on T+1. Coin reflects T-1 NAV throughout the trading day.
+- Coin vs Console NAV: Coin shows T-1 NAV; Console shows T-2 NAV. P&L values on the two platforms may differ for this reason; both are correct for their respective display dates.
 - NEFT/RTGS/IMPS payments are credited directly to ICCL and cannot be tracked on Coin.
 - Minor account MF purchases must use the minor's linked bank account. The guardian's bank account cannot be used. Kite balance is not used for MF purchases.
 - Minor account initial investment: if the minor does not have access to NetBanking or UPI, NEFT/RTGS from the minor's linked bank account is the only available payment option for the initial investment. Subsequent SIP instalments can then be debited from the linked mandate.
@@ -186,14 +190,15 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 - ETF NFO allotment verification: invoke `console_eq_external_trades` and check for an 'IPO' entry matching the fund. Order status in `mf_order_history` may remain "Processing" even after ETF NFO allotment is complete.
 - MF units not in CDSL statement: units are held in demat with CDSL. Delays may be due to reporting cycles or PAN/email mismatches. Advise checking the monthly CAS email or viewing on Coin/Console.
 - Client cannot view a fund on Coin: invoke `console_mf_pseudo_holdings` first. If holdings exist → escalate. If no holdings → ask for a screenshot.
-- **Allotment timeline:** Units are expected to be allotted on T+1 (the next working day after `exchange_timestamp`). In some cases, late delivery of units to the demat account causes allotment to take longer than T+1 — up to T+3 working days (excluding weekends and trading/settlement holidays). When units are delivered late, NA is shown on Coin on T+2 (the day after the expected allotment) for one day only, and is rectified on T+3. Communicate this as late delivery of units, not as an allotment duration of T+3.
+- **Allotment timeline:** Units are allotted on T+1 (the next working day after `exchange_timestamp`).
 - **Multi-order principle:** When the client's query involves multiple orders for the same fund, diagnose each order independently. One order succeeding does not mean all orders succeeded.
 - **SIP mechanics:**
   - SIPs trigger 2 days prior to the preferred date.
   - Zerodha SIP unpaid → auto-deleted at T+4 calendar days. AMC SIP unpaid → auto-deleted at T+5 working days.
   - AMC SIP supports deletion only — modification and pause are not supported. Deletion must be at least 2 days before the next instalment. To change amount or date, delete and create a new SIP.
-  - For daily SIPs with a linked mandate, orders are placed on T-1.
+  - For daily SIPs with a linked mandate, orders are placed on T-1. Always check T-1 in order history before concluding an instalment is missing.
   - Fortnightly SIP contribution counts depend on actual allotment dates, not fixed monthly triggers.
+  - AMC SIP allotment: always check full MF Order History by fund and date range, not just SIP order book.
 
 ---
 
@@ -218,6 +223,13 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 ### A10 — Direct vs Non-Direct Settlement Banks
 
 Non-direct settlement banks report payments to the exchange on the next working day. Because the exchange only registers the payment on the next working day, that next day becomes T-day for the order. This shift happens regardless of when the client made the payment or whether it was made before the cutoff.
+
+- **Identifying the client's bank for a specific order:**
+1. Check `payment_method` in the order. If `payment_method` = netbanking → proceed to identify the bank.
+2. Extract `acc_number` from `payment_details`.
+3. Match `acc_number` against `bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number` from `get_all_client_data`.
+4. Use the matching `bank_1_name` / `bank_2_name` / `bank_3_name` to identify the bank.
+5. Check the bank against the classification below.
 
 **Direct Settlement Banks:**
 
@@ -282,6 +294,14 @@ Non-direct settlement banks report payments to the exchange on the next working 
 
 ## Section B: Decision Flow
 
+### Preflight
+
+- List all orders for the queried fund in the relevant date range.
+- Diagnose each order independently and report the status of every order to the client.
+- Map each order to its `fund_allocation_report` entry using either `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) or `settlement_id` (mf_order_history) = `settlement_number` (fund_allocation_report). Both columns should typically be populated for a mapped payment.
+- Check `payment_confirmed` and `status` for each order.
+- If the query is about an order older than 180 days, invoke `console_mf_tradebook` for older data before proceeding.
+
 ### Routing
 
 ```
@@ -297,6 +317,7 @@ Query relates to an MF order →
 ├─ Repeated UPI or netbanking payment failures → Rule 9
 ├─ NRI MF eligibility or resident-to-NRI account conversion → Rule 10
 ├─ Duplicate or extra payment debited → Rule 11
+├─ Buy/lumpsum option not available for a fund → Rule 2
 └─ Out-of-scope (children's/gift plans, scheme not on Coin) or miscellaneous escalation → Rule 12
 ```
 
@@ -312,49 +333,56 @@ If no rule matches and no root cause is identified → escalate to a human agent
 
 **NEFT/RTGS payment:**
 
-If `status_message` contains "Pending payment via NEFT/RTGS" → go to Rule 8.
+- If `status_message` contains "Pending payment via NEFT/RTGS" → go to Rule 8.
 
 **NFO order:**
 
-If `tag` contains `"product": "nfo"`, the order follows NFO logic:
+- If `tag` contains `"product": "nfo"`, the order follows NFO logic:
 
-- **Allotted** → Communicate that units have been allotted. For MF/FOF NFO: units appear in Coin only after the fund is listed — typically within 5 working days of allotment; after listing, units are visible on Coin within T+2 working days. Share the listing date if known from order data. For ETF NFO: units appear in Kite/Console equity holdings, not Coin — invoke `console_eq_external_trades` and check for an 'ipo' entry matching the fund per A8.
+- **Allotted** → Communicate that units have been allotted. For MF/FOF NFO: units appear in Coin only after the fund is listed — typically within 5 working days of allotment; after listing, units are visible on Coin within T+2 working days. For ETF NFO (if `fund` name contains "ETF"): units appear in Kite/Console equity holdings, not Coin — invoke `console_eq_external_trades` and check for an 'ipo' entry matching the fund per A8.
 - **Still Processing — ETF NFO:** Invoke `console_eq_external_trades`. If an 'IPO' entry exists → communicate that units are in Kite holdings under the scrip name, even though order status on Coin shows Processing.
 - **Still Processing — non-ETF NFO:** Communicate that the NFO order is being processed and status updates within T+2 after listing. Rejection remarks for NFO orders update only after the allotment window closes. Share allotment quantities only if `mf_order_history` shows order status as 'Allotted'. Invoke `console_mf_pseudo_holdings` to check quantities — for NFO orders, these may be preliminary until allotment is officially confirmed.
 - **Cannot determine** → Escalate to a human agent.
 
 **Payment not yet confirmed (`payment_confirmed` = false):**
 
-For non-SIP orders:
+- For non-SIP orders (variety` = regular):
 
 1. Check `payment_error_code` and `payment_error_description`. If either is populated → payment failed. Communicate that the payment was not confirmed and advise placing a new order. Apply A4 refund language.
 2. If no error code is present, invoke `fund_allocation_report` using the order mapping per A7. If an entry exists, use its data to confirm what happened to the payment.
 3. If `fund_allocation_report` has no matching entry, the data is inconclusive. Apply A4 refund language conditionally (if the client's bank was debited, the refund will apply).
 
-For SIP orders (`variety` = sip):
+- For SIP orders (`variety` = sip):
 
-Invoke `sip_report` and check `fund_source`:
-- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the order date. Apply the debit status per Mandate Debit Report A4 translations.
+- Invoke `sip_report` and check `fund_source`:
+- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the order date.
 - Otherwise → no mandate linked.
 
-**Determine T-day (when `payment_confirmed` = true):**
+**T-day determination (`payment_confirmed` = true):**
 
-- Apply the working-day check from A2. If `payment_updated_at` falls on a weekend or trading/settlement holiday → T = next working day. State the non-working day(s) and reason.
-- For netbanking orders, identify the client's bank per A10. If the bank is a non-direct settlement bank → T shifts per A10. Communicate that the payment was made via a non-direct settlement bank, the payment was reported to the exchange on the next working day, and that became T-day; allotment is expected by T+1.
-- For UPI orders or netbanking with a direct settlement bank, apply NAV cutoff logic per A2:
-  - `payment_updated_at` is populated, before cutoff → T = that day. Allotment expected by T+1.
-  - `payment_updated_at` is populated, after cutoff → T shifts per A2 (for liquid funds, NAV moves from T-1 to T-day; for other funds, T = next working day). Further shift if that day is non-working.
-  - `payment_updated_at` is not yet populated → use `payment_initiated_at` as reference. Share the cutoff link from A9. Communicate that the applicable NAV depends on when the payment is updated at ICCL.
-- Cross-check T-day against `exchange_timestamp`. If they differ, use `exchange_timestamp` as the actual T-day (this confirms when the exchange processed the order). Invoke `fund_allocation_report` and verify against `payment_date` as well.
-- Allotment is expected on T+1 per A8. Name any holidays that fall within the window.
+- If `payment_updated_at` is beyond T+2 working days → invoke `fund_allocation_report` using the order mapping per A7.
+
+- If within T+2:
+- `payment_updated_at` on a weekend or settlement holiday → T = next working day. State the non-working day(s) and reason.
+- `payment_updated_at` on a working day:
+  - Netbanking + non-direct settlement bank (per A10) → T = next working day. Communicate that the bank is non-direct, payment was reported to the exchange on the next working day, and that became T-day. Allotment expected by T+1.
+  - Netbanking + direct settlement bank or UPI → apply NAV cutoff per A2:
+    - Before cutoff → T = that day. Allotment expected by T+1.
+    - After cutoff → T = next working day per A2 (for liquid funds, NAV moves from T-1 to T-day). Further shift if that day is non-working.
+    - `payment_updated_at` not yet populated → use `payment_initiated_at` as reference. Share cutoff link from A9. Communicate that NAV depends on when payment is updated at ICCL.
+
+- Cross-check T-day against `exchange_timestamp`. If they differ, use `exchange_timestamp` as actual T-day. Verify against `payment_date` in `fund_allocation_report`. Name any holidays within the allotment window.
 
 **Invoke `fund_allocation_report`:**
 
-Map the order per A7.
+- Map the order per A7.
 
-Check flags:
+- Check `error_remarks` first:
+- "INVALID BANK ACCOUNT DETAIL" → Escalate to a human agent immediately.
 
-- `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted. Within T+3 working days from `exchange_timestamp` → late delivery of units per A8. Communicate that the payment has been settled and units have been allotted by the AMC, and holdings may take up to T+3 working days to be credited due to late delivery. Share the MF units settlement timeline link from A9. Beyond T+3 → escalate to a human agent.
+- Then check flags:
+
+- `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted by the AMC. Within T+3 working days from `exchange_timestamp` → late delivery: holdings credit may take up to T+3 working days; NA is shown on Coin on T+2 for one day only, rectified on T+3. Communicate as late delivery of units, not standard allotment duration. Share MF units settlement timeline link from A9. Beyond T+3 → escalate to a human agent.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status = "Allotted" → allotment is finalised; units will be credited.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status ≠ "Allotted" → Communicate: "Payment settled. Allotment expected by [date]." — date = T+1 working day from `exchange_timestamp` per A8.
 - `settled_flag` = N → check the mapping columns first. If both `order_number` AND `settlement_number` are null or empty, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply A4 refund language. If either column is populated, the payment is mapped. Count working days from `payment_date` in `fund_allocation_report`:
@@ -362,6 +390,14 @@ Check flags:
   - Beyond T+2 → order has failed. Check `refund_utr`:
     - Populated → Communicate that the refund of ₹[amount] has been processed; share the reference to track with the bank.
     - Empty → Apply A4 refund language.
+
+**Beyond T+3:**
+
+- Cross-check `fund_allocation_report`. If no entry → escalate to a human agent.
+
+**`payment_confirmed` = true, `settled_flag` = N, beyond T+2 (working days, excluding weekends and trading/settlement holidays):**
+
+- Compute T+2 excluding weekends and settlement holidays before concluding the window has been breached. If genuinely beyond T+2: communicate that the order is likely to fail and advise placing a lumpsum order for the current cycle. Apply A4 refund language.
 
 ---
 
@@ -376,7 +412,7 @@ Check flags:
 ### Rule 3 — Cancelled Orders
 
 For cancelled orders, apply A1 status interpretation based on `payment_confirmed`:
-- `payment_confirmed` = true → apply A4 refund language.
+- `payment_confirmed` = true → payment was debited. Apply A4 refund language.
 - `payment_confirmed` = false → proceed to the SIP check below before concluding no payment was debited.
 
 **SIP cancelled with `payment_confirmed` = false:** For SIP orders (`variety` = sip) cancelled after placement, invoke `sip_report` and check `fund_source`:
@@ -433,6 +469,8 @@ Match the client's scenario:
   - `payment_updated_at` after cutoff → communicate the confirmation time and applicable NAV per A2.
   - `payment_updated_at` before cutoff → NAV should match T-day per A2.
 
+If no discrepancy is found in the above checks and client still questions the NAV shown on Coin → per A8, Coin reflects T-1 NAV throughout the trading day. AMC declares NAV at ~11 PM on T-day; AMFI publishes by midnight–3:00 AM on T+1. The current day's NAV is available only the following day.
+
 ---
 
 ### Rule 7 — SIP Queries
@@ -480,7 +518,7 @@ Share Payments on Coin and NEFT/RTGS on Coin links from A9 where relevant.
 
 ### Rule 10 — NRI MF Investment Eligibility
 
-- From ‘get_all_client_data’, check account type details and then apply A11 based on the following fields:
+- Invoke `get_all_client_data` and check account type details, then apply A11 based on the following fields:
   - `account_type` indicates a resident account (for a client who has become an NRI) → advise conversion to NRO or NRE. Share the conversion support article from A9.
   - `starmf_status` = "MF inactive" → advise reactivation first. Share the reactivation link from A9.
   - `communication_country` = USA or Canada → communicate the technical restriction per A11.
@@ -498,6 +536,5 @@ Share Payments on Coin and NEFT/RTGS on Coin links from A9 where relevant.
 
 ### Rule 12 — Out-of-scope and Miscellaneous Escalations
 
-- Client cannot find a scheme on Coin → communicate that the scheme may be suspended or restricted.
 - Client asks about children's fund or gift plans → communicate that these schemes are not available on Coin.
 - `status_message` contains TRANSMISSION, DESIGNATED PERSON, or TAX STATUS → escalate to a human agent with fund, amount, `order_timestamp`, and `status_message`.

@@ -10,6 +10,29 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-05-21 — Batch update (15 tools)
+
+Source: `Protocols - Changes to Push.md`. Protocol bodies rewritten for 15 tools; Description (WHEN TO USE + TRIGGER KEYWORDS) rewritten for 2 tools. Existing TAGS lines preserved. Source-doc bullet typos (`\-Word` with missing space) corrected across 6 files (37 bullets total).
+
+**Description + Protocol updated:**
+- kite_positions
+- kite_margins
+
+**Protocol-only updated:**
+- cashier_payins
+- withdrawal_request
+- console_eq_holdings
+- console_instant_pledge
+- mf_order_history
+- kite_holdings
+- account_modification_report
+- amc_charges
+- sip_report
+- console_mf_pseudo_holdings
+- kite_orders
+- kite_gtt
+- mandate_debit_report
+
 ### 2026-04-13 — Batch update (25 tools)
 
 **cashier_payins**

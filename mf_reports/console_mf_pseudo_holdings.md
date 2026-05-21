@@ -22,6 +22,7 @@ TAGS: investments, holdings
 ## Protocol
 
 # CONSOLE MF PSEUDO HOLDINGS PROTOCOL
+
 ---
 
 ## Section A: Reference Data
@@ -43,9 +44,8 @@ TAGS: investments, holdings
 | Console | T-2 days |
 | Coin | T-1 day |
 
-This difference causes P&L values to differ between the two platforms. For the latest valuation, refer to Coin.
-
-Reference: NAV difference link from **A8**.
+- This difference causes P&L values to differ between the two platforms. For the latest valuation, refer to Coin.
+- Reference: NAV difference link from **A8**.
 
 ---
 
@@ -90,7 +90,7 @@ Reference: NAV difference link from **A8**.
 
 ### A5 — MF Unit Transfer (Inward and Outward)
 
-**Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 + 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: up to 4 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
+**Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 + 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: RTA may take up to 25 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
 
 **Inward — demat (CDSL Easiest):** For MF units held in demat with another broker. CDSL Easiest for CDSL-to-CDSL transfers. ELSS locked units: closure cum transfer process only (same account holder). Free (unlocked) ELSS units transferable without restriction. Timeline: up to 4 days after submitting documents. Link: transfer shares article from **A8**.
 
@@ -112,9 +112,9 @@ Link: CAS statement article from **A8**.
 
 ### A7 — XIRR Display Behavior
 
-Portfolio XIRR will not display if the majority of investments are less than one year old. The system shows '–' to avoid displaying disproportionately high or misleading XIRR values.
+- Portfolio XIRR will not display if the majority of investments are less than one year old. The system shows '–' to avoid displaying disproportionately high or misleading XIRR values.
 
-Reference: XIRR article from **A8**.
+- Reference: XIRR article from **A8**.
 
 ---
 
@@ -143,6 +143,7 @@ Query relates to MF holdings →
 │
 ├─ failure_date populated → Rule 1
 ├─ Discrepancy signals (discrepant > 0, "fix discrepancy" message, or "NA" invested amount) → Rule 2
+├─ Client reports missing or incorrect units → Rule 2
 ├─ Mismatch between this tool and console_mf_holdings → Rule 3
 ├─ Pledged units blocking redemption/SWP, or collateral margin query → Rule 5
 ├─ Client asks about transferring MF units to or from Zerodha (demat or non-demat) → Rule 7
@@ -167,24 +168,24 @@ If `failure_date` is populated → escalate to Human Agent.
 
 ### Rule 2 — Discrepancy Detection & Diagnosis
 
+**Tradebook verification:**
+Invoke `console_mf_tradebook` for the fund. Sum all BUY `quantity` entries; subtract all SELL `quantity` entries. Compare result to `available`.
+
+- Result matches `available` AND `discrepant` = 0 → no discrepancy; stop.
+- Result matches `available` AND `discrepant` > 0 → exchange/depository mismatch; escalate to Human Agent.
+- Result does not match `available` → proceed with diagnosis below.
+
 **Payout dividend check:**
 If `dividend_type` = payout AND `discrepant` > 0 → escalate to Human Agent.
 
-**Tradebook verification:**
-Invoke console_mf_tradebook for the fund. Sum all BUY `quantity` entries; subtract all SELL `quantity` entries. Result must equal `available` from this tool.
-
-If result matches `available` → discrepancy; escalate to Human Agent.
-
-If result does not match,
-
-1. **Late allotment:** Recent order found in ‘mf_order_history’ with `exchange_timestamp` within T+3 working days (excluding weekends and trading/settlement holidays). If no Coin purchase history exists and the fund is present, ask whether units were transferred from another platform before continuing.
+1. **Late allotment:** Recent order found in `mf_order_history` with `exchange_timestamp` within T+3 working days (excluding weekends and trading/settlement holidays). If no Coin purchase history exists and the fund is present, ask whether units were transferred from another platform before continuing.
    - Units may arrive late to demat. NA shows on T+2 for one day; rectified on T+3. This is late delivery of units, not a longer allotment window.
-   - If units are confirmed allotted (in ‘mf_order_history’ or console_mf_tradebook) but invested value is NA or incorrect: settlement files are processed in stages; resolves within 24–48 hours.
+   - If units are confirmed allotted (in `mf_order_history` or `console_mf_tradebook`) but invested value is NA or incorrect: settlement files are processed in stages; resolves within 24–48 hours.
    - Share the late allotment link from **A8**.
 
 2. **Late allotment — escalation:** `exchange_timestamp` beyond T+3 working days (excluding weekends and trading/settlement holidays) → escalate to Human Agent.
 
-3. **Wrongly entered external trades:** All purchases through Coin but external entries exist in console_mf_external_trades → escalate to Human Agent.
+3. **Wrongly entered external trades:** All purchases through Coin but external entries exist in `console_mf_external_trades` → escalate to Human Agent.
 
 4. **Transferred from another platform:** No Coin purchase history, no external entries → guide to add external trades: Console → Portfolio → Holdings → [fund] → Add External Trade.
 
@@ -196,14 +197,14 @@ If result does not match,
 
 ### Rule 3 — Mismatch Between Reports
 
-1. If `available` or `discrepant` in console_mf_pseudo_holdings does not match the corresponding values in `console_mf_holdings` → invoke `console_mf_tradebook` to identify missing trade entries.
+1. If `available` or `discrepant` in `console_mf_pseudo_holdings` does not match the corresponding values in `console_mf_holdings` → invoke `console_mf_tradebook` to identify missing trade entries.
 2. If trade entries exist but the mismatch persists → escalate to Human Agent.
 
 ---
 
 ### Rule 4 — Buy Average / Investment Value
 
-1. If values differ from the client's expectation → invoke console_mf_external_trades for missing or incorrect external entries.
+1. If values differ from the client's expectation → invoke `console_mf_external_trades` for missing or incorrect external entries.
 2. If investment value has not updated → settlement delay (liquid: T-day by 7 PM; non-liquid: T+1 by 7 PM).
 
 ---
@@ -211,7 +212,7 @@ If result does not match,
 ### Rule 5 — Pledged Units
 
 1. Confirm: `margin` > 0.
-2. Check the client's Silo classification from ‘get_all_client_data’. If Silo = K → collateral margins from pledged mutual funds update at end of day. Communicate: pledge processed; collateral margin available from the next trading day.
+2. Check the client's Silo classification from `get_all_client_data`. If Silo = K → collateral margins from pledged mutual funds update at end of day. Communicate: pledge processed; collateral margin available from the next trading day.
 3. For all other Silos or when the query is about redemption/SWP: communicate the number of pledged units and the unpledge path — Console → Portfolio → Holdings → [fund] → Unpledge.
 
 ---
@@ -235,14 +236,14 @@ If result does not match,
 
 4. Check `margin` > 0. If pledged → advise unpledging first per **A5** (outward).
 5. Guide per **A5** (outward) based on destination (CDSL demat / NSDL demat / non-demat), including lock-in and PAN conditions. Share charges and link from **A5**.
-6. Share the client's DP ID and Client ID from ‘get_all_client_data’.
+6. Share the client's DP ID and Client ID from `get_all_client_data`.
 
 ---
 
 ### Rule 8 — Residual Decimal Units After Full Redemption
 
-1. Check `quantity` here. Invoke console_mf_holdings for `total_quantity` of the same fund.
-2. If the fund exists here but not in console_mf_holdings (or units mismatch between the two) → residual decimal unit display issue requiring backend data rerun.
+1. Check `quantity` here. Invoke `console_mf_holdings` for `total_quantity` of the same fund.
+2. If the fund exists here but not in `console_mf_holdings` (or units mismatch between the two) → residual decimal unit display issue requiring backend data rerun.
 3. Escalate to Human Agent.
 
 ---
@@ -255,7 +256,7 @@ Redirect to the capital support team at the contact from **A8**.
 
 ### Rule 10 — XIRR Not Displaying
 
-1. Invoke console_mf_tradebook for the fund. Sum BUY `quantity` entries; check `trade_date` for each. If ≥50% of `available` units have `trade_date` within the last year → XIRR will not display.
+1. Invoke `console_mf_tradebook` for the fund. Sum BUY `quantity` entries; check `trade_date` for each. If ≥50% of `available` units have `trade_date` within the last year → XIRR will not display.
 2. Communicate per **A7** — portfolio XIRR does not display when the majority of investments are less than one year old; the system shows '–' to avoid disproportionately high or misleading values.
 3. Share the XIRR link from **A8**.
 
