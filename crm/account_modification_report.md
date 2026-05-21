@@ -166,8 +166,8 @@ Context extracted from `get_all_client_data`:
 - **Offline:** Courier to **A3** address. Documents: modification form + IPV. Timeline: **A1** contact detail changes. No charges. Mandatory for non-individual; optional for individual.
 - **International mobile / NRI:** eSign and attach to ticket, or courier.
 - **No access to registered mobile AND email:** Refer to the reset password article per **A14**.
-- **Mobile/email already linked to another account:** escalate to human agent without addressing the query.
-- **Client requests deletion/removal of mobile number from system:** escalate to human agent without addressing the query.
+- **Mobile/email already linked to another account:** escalate.
+- **Client requests deletion/removal of mobile number from system:** escalate.
 
 #### DOB / Gender / Marital / Occupation / PEP Update
 
@@ -236,7 +236,7 @@ Allowed if joint holder. Same process as single-holder. Restriction: if linked t
 
 #### Bank Details Update Errors
 
-When IFSC errors occur (O vs 0 confusion, branch not recognised by CDSL, "invalid IFSC" error): escalate to human agent with client ID and error details.
+When IFSC errors occur (O vs 0 confusion, branch not recognised by CDSL, "invalid IFSC" error): escalate.
 
 #### Primary Bank Penny Drop Verification
 
@@ -253,8 +253,8 @@ Condition: bank_type = "Primary" AND request_type = "update" AND bank validation
 - **Online process:** Console → Account → Segments → Account closure. Options: sell holdings (Kite redirect) OR transfer holdings (demat in your name only). Accept terms → eSign with Aadhaar.
 - **Demat closure:** When a trading account is closed, the linked CDSL demat account is also closed as part of the same process. The client does not need to submit a separate demat closure request to CDSL.
 - **AMC after closure:** Not charged from day closure is processed.
-- **Post-closure new account error:** escalate to human agent.
-- **Blocked closure:** If closure is blocked due to unlisted securities or pending corporate actions → escalate to human agent. Cannot reopen same account/user ID after closure.
+- **Post-closure new account error:** escalate.
+- **Blocked closure:** If closure is blocked due to unlisted securities or pending corporate actions → escalate. Cannot reopen same account/user ID after closure.
 
 ---
 
@@ -420,7 +420,7 @@ Applies to voluntarily deactivated accounts only. Dormant accounts: complete ReK
 Route by scenario
    ├─ Name / DOB / PAN update → Rule 1
    ├─ Modification status inquiry → Rule 2
-   ├─ Modification cancellation (eSign not yet completed) → escalate to human agent
+   ├─ Modification cancellation (eSign not yet completed) → escalate
    ├─ Closure-related escalations (secondary demat, employer policy,
    │   IL&FS, closure cum transfer) → Rule 4
    ├─ Segment activation → Rule 5
@@ -439,7 +439,7 @@ Route by scenario
 
 ### Fallback
 
-If the query does not match any route above → escalate to human agent.
+If the query does not match any route above → escalate.
 
 ---
 
@@ -447,7 +447,7 @@ If the query does not match any route above → escalate to human agent.
 
 ### Rule 1: Name / DOB / PAN Updates
 
-If query mentions name change, DOB mismatch, or PAN correction → escalate to human agent without addressing the query.
+If query mentions name change, DOB mismatch, or PAN correction → escalate.
 
 ---
 
@@ -479,7 +479,7 @@ Check `account_modification_report` for an existing ReKYC request (`form_type` I
 
 - **Found → apply Rule 2** for that request.
 - **Rejected with "Invalid IPV"** → guide to complete ReKYC again at account portal per **A14**.
-- **Rejected with any other reason** → communicate rejection reason and escalate to human agent.
+- **Rejected with any other reason** → communicate rejection reason and escalate.
 - **Not found OR > 3 months** → guide to account portal per **A14**; complete ReKYC with Aadhaar eSign. Requires: Aadhaar-linked mobile (see **A3**). Share the reactivation support article from **A14**. Authentication per **A12**.
 
 **Charges:** **A2** standard — applicable only if client selects "Update as per Aadhaar". Mention only if this option is selected.
@@ -488,7 +488,7 @@ Check `account_modification_report` for an existing ReKYC request (`form_type` I
 
 ### Rule 4: Account Closure
 
-Query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" / "cancel account opening" / "don't want to proceed with account opening" → escalate to human agent without addressing the query.
+Query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" / "cancel account opening" / "don't want to proceed with account opening" → escalate.
 
 **Pre-closure checks:**
 Invoke `ledger_report`, `console_eq_holdings`, `kite_positions`, `console_mf_holdings`. Note:
@@ -504,11 +504,11 @@ If a closure request exists:
 | Status | Action |
 |---|---|
 | Approved | Acknowledge closure; ask for feedback on issues that led to closure; thank client for their association with Zerodha. |
-| Request_pending / Processing / Pending_eSign / Rejected / No match | Escalate to human agent; include pre-closure check results. |
+| Request_pending / Processing / Pending_eSign / Rejected / No match | Escalate. |
 
-No closure request found → escalate to human agent; include pre-closure check results.
+No closure request found → escalate.
 
-**Post-closure new account error:** escalate to human agent.
+**Post-closure new account error:** escalate.
 
 ---
 
@@ -532,7 +532,7 @@ If client reports a UI error (e.g., "Service unavailable", "Unknown exchange seg
 3. Try in incognito/private mode.
 4. Try on a different device and different network.
 
-If error persists after troubleshooting → escalate to human agent.
+If error persists after troubleshooting → escalate.
 
 ---
 
@@ -557,13 +557,13 @@ When a client queries about commodity trading (MCX, CRUDEOILM, commodity options
 
 | Raw Status | Response |
 |---|---|
-| `Reactivation_pending` | Check timestamp against current time. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate to human agent. |
+| `Reactivation_pending` | Check timestamp against current time. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate. |
 | `Request_pending` | Same as Reactivation_pending. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
 | `Blocked` | Communicate the `remarks` field content for this status. |
-| `Activated` | Confirm segment is active. Orders can be placed only after 24 hours from activation — use `*_updated_on` for the activation timestamp. If 24 hours have already passed and client still cannot place orders → escalate to human agent. |
-| Coin segment = `Generated` | Escalate to human agent. |
+| `Activated` | Confirm segment is active. Orders can be placed only after 24 hours from activation — use `*_updated_on` for the activation timestamp. If 24 hours have already passed and client still cannot place orders → escalate. |
+| Coin segment = `Generated` | Escalate. |
 | `Dormant` | Apply Rule 6. |
-| `Inactivated` | Check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate to human agent. |
+| `Inactivated` | Check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate. |
 | `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 8 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
 
 ---
@@ -574,7 +574,7 @@ If any segment (per **A4** field pairs) shows as Rejected, Activation_rejected, 
 
 1. Invoke `pan_status` to retrieve the specific rejection reason.
 2. If `pan_status` returns a specific, actionable mismatch → follow the 'pan_status' tool's resolution guidance.
-3. For all other `pan_status` results (no issues found, ambiguous, or unclear) → escalate to human agent.
+3. For all other `pan_status` results (no issues found, ambiguous, or unclear) → escalate.
 
 ---
 
@@ -594,7 +594,7 @@ From `get_all_client_data`, check `nominee_1_first_name`, `nominee_2_first_name`
 
 **If query mentions nominee modification request AND client reports rejection:**
 1. Check `account_modification_report` where `form_type` = "nominee_addition".
-2. Status = Rejected → communicate rejection reason and escalate to human agent.
+2. Status = Rejected → communicate rejection reason and escalate.
 3. Status ≠ Rejected → apply Rule 2.
 
 ---
@@ -629,7 +629,7 @@ When the client reports an error message in the app or web platform (e.g., "acco
    a. Ask the client to verify they are entering the correct User ID during login.
    b. If User ID is correct, ask the client to retry after clearing the app cache or using a different browser/device.
    c. If the issue persists, ask the client to share a screenshot of the error message.
-   d. Screenshot confirms a persistent error with no account-level cause → escalate to human agent. Include: client ID, error message, and confirmation that account data shows no issues.
+   d. Screenshot confirms a persistent error with no account-level cause → escalate.
 
 ---
 

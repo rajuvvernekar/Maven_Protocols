@@ -10,6 +10,16 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-05-21 — Escalation handoff format moved to system prompt (pilot: account_modification_report)
+
+System-level change with a single-tool pilot. Broader rollout to the other 41 tools with their own Escalation Output section is deferred (see `proposed_changes/2026-05-21_escalation_consolidation.md`).
+
+**system_prompt.md**
+- [Added]: `## Escalation Output Format` section between Writing Style and Final Reminder. Defines the HOW of escalations: opener literal `HUMAN SUPPORT MANAGER TO HANDLE THIS —`, Checked + Blocker fields, no client-facing voice.
+
+**crm/account_modification_report.md**
+- [Modified]: 21 in-rule escalation directives standardised to uniform `escalate.` (or `Escalate.` at sentence start, `→ escalate` in routing trees). Dropped "to human agent" phrasing and per-line qualifiers ("with X", "include X", "without addressing the query") — all of these are now covered by the system prompt's format.
+
 ### 2026-05-21 — Batch update (15 tools)
 
 Source: `Protocols - Changes to Push.md`. Protocol bodies rewritten for 15 tools; Description (WHEN TO USE + TRIGGER KEYWORDS) rewritten for 2 tools. Existing TAGS lines preserved. Source-doc bullet typos (`\-Word` with missing space) corrected across 6 files (37 bullets total).
