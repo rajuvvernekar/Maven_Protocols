@@ -88,7 +88,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause found after completing all diagnostic steps → escalate to human agent with screenshot.
+If no root cause found after completing all diagnostic steps → escalate.
 
 ## Section C: Rules
 

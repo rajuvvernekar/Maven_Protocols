@@ -91,8 +91,6 @@ TAGS: demat
 | `remarks` | Internal remarks |
 | `client_id` | Internal client identifier |
 
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -120,7 +118,7 @@ Query relates to demat transfer →
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → ESCALATE TO HUMAN AGENT
+If no root cause is identified after checking all relevant rules → Escalate
 
 ---
 
@@ -136,18 +134,18 @@ If no root cause is identified after checking all relevant rules → ESCALATE TO
 
 1. Status is Failed — present the applicable failure reason and its meaning from **A5**.
 2. Client can retry by placing a new transfer request on Kite and ensuring OTP verification is completed by 8 PM (per **A3**).
-3. If client confirms they completed OTP and balance was sufficient → ESCALATE TO HUMAN AGENT.
+3. If client confirms they completed OTP and balance was sufficient → Escalate.
 
 ### Rule 3 — Transferred Stocks Not Visible
 
 1. Confirm status = Stocks Transferred (per **A4**).
 2. Stocks should be visible within 24 working hours of transfer completion.
-3. If more than 24 working hours have passed since completion and stocks are still not visible → ESCALATE TO HUMAN AGENT.
+3. If more than 24 working hours have passed since completion and stocks are still not visible → Escalate.
 
 ### Rule 4 — Buy Average After Transfer
 
 1. Buy average is auto-updated within 3 working days post-transfer (per **A6**). Stocks may show discrepancy or incorrect buy average during this period.
-2. If more than 3 working days have passed and buy average is still incorrect → ESCALATE TO HUMAN AGENT. Invoke `console_eq_external_trades` for entry reference.
+2. If more than 3 working days have passed and buy average is still incorrect → Escalate. Invoke `console_eq_external_trades` for entry reference.
 
 ### Rule 5 — Transfer Charges
 
@@ -155,7 +153,7 @@ If no root cause is identified after checking all relevant rules → ESCALATE TO
 
 ### Rule 6 — Escalation
 
-1. ESCALATE TO HUMAN AGENT when any of the following occur:
+1. Escalate
    - Status = Stocks Transferred but stocks not visible in target account after 24 working hours.
    - Buy average not updated or incorrect after 3+ working days post-transfer.
    - Transfer failed despite client completing OTP verification and having sufficient balance.

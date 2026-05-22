@@ -89,15 +89,7 @@ TAGS: orders, reports
 
 - **Tradebook vs Tax P&L difference:** Tradebook shows gross trade values (`price` × `quantity`) per individual fill. Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L — both are correct for their respective purposes. Tax P&L is the authoritative report for income tax filing.
 
----
-
-### A6 — Escalation Data
-
-Include when escalating to human agent: client ID, trade_date (or date range), tradingsymbol, order_id (if specific), and specific issue.
-
----
-
-### A7 — Links
+### A6 — Links
 
 | Topic | URL |
 |---|---|
@@ -107,7 +99,7 @@ Include when escalating to human agent: client ID, trade_date (or date range), t
 
 ---
 
-### A8 — Order Execution & Pricing Mechanics
+### A7 — Order Execution & Pricing Mechanics
 
 - **Market order:** execution price is the best available price at time of execution; may differ from the last traded price the client saw before placing the order.
 - **Limit order:** execution price is at or better than the limit price placed.
@@ -138,7 +130,7 @@ Route by scenario
 
 ### Fallback
 
-- If no root cause is found → escalate to human agent.
+- If no root cause is found → escalate.
 
 ---
 
@@ -149,15 +141,15 @@ Route by scenario
 1. Trade found in the tradebook → share `trade_date`, `trade_type`, `quantity`, `price`, `exchange`, `order_id`, `trade_id` per A2.
 2. If the client questions whether sale proceeds were credited → invoke `ledger_report` for corroboration.
 3. Trade not in the tradebook → invoke `console_eq_external_trades` — may be an off-platform entry (IPO, transfer, buyback, gift, ESOP).
-4. Still not found after all sources → escalate to human agent per A6.
+4. Still not found after all sources → escalate.
 
 ---
 
 ### Rule 2 — Execution Price Verification
 
-1. Apply order-type behavior per A8 (Market order vs Limit order).
+1. Apply order-type behavior per A7 (Market order vs Limit order).
 2. Client says price differs from contract note → explain per A4 (tradebook = per-fill, contract note = weighted average).
-3. Execution price materially differs from the client's stated limit price → escalate to human agent per A6.
+3. Execution price materially differs from the client's stated limit price → escalate.
 
 ---
 
@@ -175,7 +167,7 @@ Route by scenario
 
 ### Rule 5 — Buy Average Verification via Tradebook
 
-1. Direct client to Console for the full FIFO breakdown per A8 (Buy average calculation).
+1. Direct client to Console for the full FIFO breakdown per A7 (Buy average calculation).
 2. Do not list all individual trade entries in the response — there may be many.
 3. For internal verification → invoke `console_eq_holdings_breakdown`; walk through FIFO entry by entry.
 
@@ -183,8 +175,8 @@ Route by scenario
 
 ### Rule 6 — NSE vs BSE Price Difference
 
-1. Explain NSE vs BSE pricing per A8.
-2. If the client wants to trade on the other exchange → share the exchange toggle link from A7.
+1. Explain NSE vs BSE pricing per A7.
+2. If the client wants to trade on the other exchange → share the exchange toggle link from A6.
 
 ---
 
@@ -192,14 +184,14 @@ Route by scenario
 
 1. Charges and obligation data are out of scope per A1.
 2. For charges and obligations, the client should refer to their contract note directly — available on Console → Reports → Contract Notes.
-3. If the client believes there is a discrepancy in charges on the contract note → escalate to human agent per A6.
+3. If the client believes there is a discrepancy in charges on the contract note → escalate.
 
 ---
 
 ### Rule 8 — Duplicate Trade Entries
 
 1. Same `order_id` with identical trade details appearing more than once → known system issue on specific dates.
-2. Escalate to human agent per A6 with client ID, affected `trade_date`, `order_id`(s), and `tradingsymbol`(s).
+2. Escalate.
 
 ---
 
@@ -211,14 +203,14 @@ Route by scenario
 
 ### Rule 10 — Full Tradebook Request (Tax / Audit / Compliance)
 
-1. Refer to A5 (Full tradebook request) for scenario context. Guide client to self-service download using links from A7.
-2. If client specifically requests PDF format → same links from A7.
+1. Refer to A5 (Full tradebook request) for scenario context. Guide client to self-service download using links from A6.
+2. If client specifically requests PDF format → same links from A6.
 
 ---
 
 ### Rule 11 — Closed Account Trade Data
 
-- Escalate to human agent per A6.
+- Escalate.
 
 ---
 
@@ -226,4 +218,4 @@ Route by scenario
 
 1. Large date ranges with high trade volume may cause timeouts.
 2. Narrow the date range (e.g., one financial year at a time) and retry.
-3. If the issue persists → escalate to human agent per A6.
+3. If the issue persists → escalate.

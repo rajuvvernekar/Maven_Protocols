@@ -116,8 +116,6 @@ Guardian can transfer securities to minor's account using CDSL Easiest or Zerodh
 
 **Courier address:** Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
 
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -138,7 +136,7 @@ Query relates to minor account opening →
 
 ### Fallback
 
-If no rule matches, escalate to human agent.
+If no rule matches, escalate.
 
 ---
 
@@ -163,7 +161,7 @@ If no rule matches, escalate to human agent.
 ### Rule 3 — Application Overdue
 
 1. `status` = "Processing" AND `creation` > 48 working hours AND `reasons` is empty/null.
-2. Application is overdue — escalate to human agent.
+2. Application is overdue — escalate.
 
 ---
 
@@ -171,7 +169,7 @@ If no rule matches, escalate to human agent.
 
 1. `status` = "Completed".
 2. Account approved; credentials sent to registered email; account enabled within 24–48 hours (A3).
-3. If client reports credentials not received → ask client to check spam/junk folder; if not received within 48 hours of approval, escalate to human agent.
+3. If client reports credentials not received → ask client to check spam/junk folder; if not received within 48 hours of approval, escalate.
 
 ---
 

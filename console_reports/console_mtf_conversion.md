@@ -90,14 +90,6 @@ TAGS: margins, holdings
 | `console_mtf_holdings` | To check whether shares still appear under MTF after a conversion (Rule 4). |
 | `console_eq_holdings` | To confirm converted shares now appear in delivery holdings (Rule 1 display-issue verification, Rule 4). |
 
----
-
-### A7 — Escalation Data
-
--Include when escalating to human agent: client ID, `tradingsymbol`, `isin`, conversion date, `request_quantity`, `converted_quantity`, and specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -115,7 +107,7 @@ Route by scenario
 
 ### Fallback
 
-If no rule matches → escalate to human agent per A7.
+If no rule matches → escalate.
 
 ---
 
@@ -150,7 +142,7 @@ Diagnose against A4:
 | Insufficient funds | Share funded amount from `remarks` per A1; client adds funds and re-requests. |
 | T+1 restriction | Invoke `kite_order_history` per A6 to confirm purchase date; apply A4. |
 | Ex-date restriction | Apply A4. |
-| None of the above | Escalate to human agent per A7. |
+| None of the above | Escalate. |
 
 ---
 
@@ -159,14 +151,14 @@ Diagnose against A4:
 1. Invoke `console_eq_holdings` per A6 — confirm converted shares are now in delivery holdings.
 2. Invoke `console_mtf_holdings` per A6 — check whether shares still appear under MTF.
 3. If conversion was within the last 1 trading day → reflection can take overnight; advise client to check the next trading day.
-4. If 2+ trading days since conversion and shares still in MTF → escalate to human agent per A7.
+4. If 2+ trading days since conversion and shares still in MTF → escalate.
 
 ---
 
 ### Rule 5 — MTF Interest After Conversion
 
-1. If the conversion was an auto-conversion from short delivery → interest should stop per A4. If interest is still charged → escalate to human agent per A7 for reversal.
-2. Otherwise (regular conversion, interest still accruing) → escalate to human agent per A7.
+1. If the conversion was an auto-conversion from short delivery → interest should stop per A4. If interest is still charged → escalate.
+2. Otherwise (regular conversion, interest still accruing) → escalate.
 
 ---
 

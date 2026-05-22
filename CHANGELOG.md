@@ -10,6 +10,57 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-05-21 — Escalation handoff consolidation (full rollout, 55 tools)
+
+Completes the consolidation begun in the account_modification_report pilot. System prompt now owns the escalation handoff format; tool rules just say `escalate`.
+
+**Section A sub-section deletions (51 tools)**
+
+Removed the `### Ax — Escalation Output` / `Escalation Required Data` / `Escalation Data` / `Escalation Data Template` / `Escalation Behavior` sub-sections from every tool. 7 of these required downstream A-section renumbering (sections that moved up + all in-body cross-references updated): `console_fno_positions`, `console_fno_pnl`, `console_eq_tradebook_prepared`, `corporate_action_orders`, `console_mtf_holdings`, `console_eq_pnl`, `pan_status`.
+
+**In-rule wording standardised**
+- Every escalation directive collapses to `escalate.` / `Escalate.` / `→ escalate`.
+- Dropped: "to a human agent" / "to human agent" / "to support agent" / "human support agent" everywhere.
+- Dropped trailing qualifiers next to the verb: "with X data", "include X", "per Ax" (referencing now-deleted sections), "for the funds team to check", inline `**HUMAN AGENT ▎ ACTION REQUIRED**` directives.
+- Preserved separate sentences and trigger conditionals.
+
+**Files unchanged** (no escalation directives existed): `amc_charges`, `referral_payout`, `get_call_info`, `get_client_contact`, `get_client_interactions`, `st_reports`.
+
+Proposal archived: `archive/2026-05-21_escalation_consolidation.md`.
+
+### 2026-05-21 — Escalation handoff format moved to system prompt (pilot: account_modification_report)
+
+System-level change with a single-tool pilot. Broader rollout to the other 41 tools with their own Escalation Output section is deferred (see `proposed_changes/2026-05-21_escalation_consolidation.md`).
+
+**system_prompt.md**
+- [Added]: `## Escalation Output Format` section between Writing Style and Final Reminder. Defines the HOW of escalations: opener literal `HUMAN SUPPORT MANAGER TO HANDLE THIS —`, Checked + Blocker fields, no client-facing voice.
+
+**crm/account_modification_report.md**
+- [Modified]: 21 in-rule escalation directives standardised to uniform `escalate.` (or `Escalate.` at sentence start, `→ escalate` in routing trees). Dropped "to human agent" phrasing and per-line qualifiers ("with X", "include X", "without addressing the query") — all of these are now covered by the system prompt's format.
+
+### 2026-05-21 — Batch update (15 tools)
+
+Source: `Protocols - Changes to Push.md`. Protocol bodies rewritten for 15 tools; Description (WHEN TO USE + TRIGGER KEYWORDS) rewritten for 2 tools. Existing TAGS lines preserved. Source-doc bullet typos (`\-Word` with missing space) corrected across 6 files (37 bullets total).
+
+**Description + Protocol updated:**
+- kite_positions
+- kite_margins
+
+**Protocol-only updated:**
+- cashier_payins
+- withdrawal_request
+- console_eq_holdings
+- console_instant_pledge
+- mf_order_history
+- kite_holdings
+- account_modification_report
+- amc_charges
+- sip_report
+- console_mf_pseudo_holdings
+- kite_orders
+- kite_gtt
+- mandate_debit_report
+
 ### 2026-04-13 — Batch update (25 tools)
 
 **cashier_payins**

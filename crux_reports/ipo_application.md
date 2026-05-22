@@ -166,18 +166,6 @@ ASBA keeps money in customer's bank account but blocks it until allotment. Allot
 | Minor | Own bank/demat required — cannot use parent/guardian bank. Can apply via UPI (if bank enabled) or ASBA. |
 | NRI | UPI on NRE/NRO with Indian mobile number (up to ₹5L per A2) or ASBA. Cannot apply from both NRE and NRO accounts (same PAN). NRE demat holders must use NRE bank account only — not NRO. PIS holders: bank-specific annexure + bank statement showing IPO debit required post-allotment via ticket. |
 
----
-
-### A10 — Escalation Conditions
-
-Escalate when:
-- A technical error persists after all troubleshooting steps (re-login, cache clear, alternate device, web version, market hours check).
-- Closing day urgency with an unresolved technical issue.
-
-Include when escalating to human agent: screenshot, IPO name, action attempted, device type.
-
----
-
 ## Section B: Decision Flow
 
 ###Routing
@@ -221,7 +209,7 @@ Query relates to IPO →
 ├─ Technical errors                   → Rule 16
 ├─ Buying instrument, no active IPO   → Rule 17
 │
-└─ No matching scenario               → Escalate per A10
+└─ No matching scenario               → Escalate
 ```
 
 ---
@@ -418,7 +406,7 @@ Do not ask clarifying questions. Respond directly:
 
 1. Troubleshoot in order: internet connection, cache clear, alternate device, app update, web version at Kite IPO page (A8), market hours (per A3), category restrictions (per A4).
 2. UPI ID not showing: suggest entering manually, verify bank support at UPI partners page (A8), or use ASBA per Rule 9.
-3. If issue persists after all troubleshooting: collect screenshot, IPO name, action attempted, device type. Escalate to support agent per A10. If closing day → treat as urgent.
+3. If issue persists after all troubleshooting: collect screenshot, IPO name, action attempted, device type. Escalate. If closing day → treat as urgent.
 
 ---
 

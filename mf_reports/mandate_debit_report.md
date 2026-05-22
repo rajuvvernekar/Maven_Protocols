@@ -24,11 +24,11 @@ TAGS: investments, funds
 
 ### A1 — Fundamentals
 
--Failed debits are not retried automatically — the client must add funds manually for that cycle. The mandate must be active before debits can be processed.
+- Failed debits are not retried automatically — the client must add funds manually for that cycle. The mandate must be active before debits can be processed.
 
 -`order_id` on this protocol's data maps to `cashier_reference` in `fund_allocation_report`.
 
--For Zerodha SIPs, a missed or failed debit can be covered by placing a manual lumpsum order. AMC SIPs cannot have manual lumpsum orders placed against them.
+- For Zerodha SIPs, a missed or failed debit can be covered by placing a manual lumpsum order. AMC SIPs cannot have manual lumpsum orders placed against them.
 
 ---
 
@@ -39,7 +39,6 @@ TAGS: investments, funds
 | Field | Interpretation |
 |---|---|
 | `amount` | Debit amount |
-| `status` | Debit status — translate per A3 |
 | `remark` | Debit remark — communicate in plain language per A4 |
 
 **Non-shareable:**
@@ -59,6 +58,7 @@ TAGS: investments, funds
 | `merchant` | Mandate issuer entity (Coin/Zerodha) |
 | `type` | Mandate type — `autopay` (UPI) or `enach` |
 | `provider` | Mandate provider — `ybl` (UPI autopay) or `digio` (eNACH) |
+| `status` | Debit status — translate per A3 |
 
 ### A3 — Debit Status Values
 
@@ -100,19 +100,6 @@ Juspay-based mandates do not auto-debit. A payment approval request is sent to t
 |---|---|
 | Coin mandate management (creation, linkage, deletion) | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin |
 
----
-
-### A7 — Escalation Triggers
-
-Escalate to human agent when any of the following apply:
-
-- Draft status persists beyond T+2 from `created_at` and the cause is unclear after checking mandate status.
-- Any debit issue with no clear root cause after applying the relevant rules.
-
-Include in escalation: client ID, debit details (date, amount, status, remark), and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -129,7 +116,7 @@ Route by scenario
 
 ### Fallback
 
-If no debit record exists and SIP-level checks are inconclusive → escalate per A7.
+If no debit record exists and SIP-level checks are inconclusive → escalate.
 
 ---
 
@@ -152,17 +139,17 @@ Compare today's date to the scheduled date and `created_at`:
 
 **Scheduled date not yet passed:**
 
--Communicate that the debit instruction has been sent to the bank and funds will be debited on the scheduled date. Once debited, the order will be processed automatically.
+- Communicate that the debit instruction has been sent to the bank and funds will be debited on the scheduled date. Once debited, the order will be processed automatically.
 
 **Scheduled date passed, draft persists beyond T+2 from `created_at`:**
 
--This typically indicates the mandate was revoked or cancelled from the client's UPI app or bank portal. Communicate this and advise checking mandate status in `mandate_report`; if no active mandate exists, advise creating a new one. Share the relevant link from A6.
+- This typically indicates the mandate was revoked or cancelled from the client's UPI app or bank portal. Communicate this and advise checking mandate status in `mandate_report`; if no active mandate exists, advise creating a new one. Share the relevant link from A6.
 
 **Scheduled date passed, within T+2 window:**
 
--Check `transaction_id` per A5. If null or empty → Juspay mandate. Communicate the Juspay manual-approval mechanic per A5; if the client missed the approval, no debit happened this cycle. Suggest creating an eNACH mandate as an alternative for fully automatic debits.
+- Check `transaction_id` per A5. If null or empty → Juspay mandate. Communicate the Juspay manual-approval mechanic per A5; if the client missed the approval, no debit happened this cycle. Suggest creating an eNACH mandate as an alternative for fully automatic debits.
 
--If `transaction_id` is populated → check `sip_type` from `sip_report`. For Zerodha SIPs, communicate that the auto-debit was not processed for this cycle and advise placing a manual lumpsum order. For AMC SIPs, communicate that the auto-debit was not processed; the next cycle will retry automatically.
+- If `transaction_id` is populated → check `sip_type` from `sip_report`. For Zerodha SIPs, communicate that the auto-debit was not processed for this cycle and advise placing a manual lumpsum order. For AMC SIPs, communicate that the auto-debit was not processed; the next cycle will retry automatically.
 
 ---
 
@@ -180,11 +167,11 @@ If the client reports the order has not been allotted yet:
 
 ### Rule 4 — Pending or Failed Status
 
--Check `transaction_id` per A5. If null or empty → Juspay mandate. Communicate the Juspay manual-approval mechanic per A5.
+- Check `transaction_id` per A5. If null or empty → Juspay mandate. Communicate the Juspay manual-approval mechanic per A5.
 
--If `transaction_id` is populated → use the `remark` value with A4 to identify the cause. Communicate the cause to the client in plain language.
+- If `transaction_id` is populated → use the `remark` value with A4 to identify the cause. Communicate the cause to the client in plain language.
 
--For Zerodha SIPs, advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs, the next cycle will retry automatically.
+- For Zerodha SIPs, advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs, the next cycle will retry automatically.
 
 ---
 

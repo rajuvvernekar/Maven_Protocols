@@ -62,15 +62,7 @@ TAGS: reports, holdings
 | CDS | Currency derivatives |
 | COM | Commodities |
 
----
-
-### A4 — Escalation Data
-
-Include when escalating to human agent: client ID, tradingsymbol, segment, date range, specific discrepancy.
-
----
-
-### A5 — Scenarios & Interpretations
+### A4 — Scenarios & Interpretations
 
 - **P&L verification:**
 The fields `buy_value`, `buy_average`, `sell_value`, `sell_average`, `realized_profit`, and `realized_profit_percentage` together represent the client's realized position on a contract. A positive `realized_profit` is a gain; negative is a loss.
@@ -112,7 +104,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause is found → escalate to human agent.
+If no root cause is found → escalate.
 
 ---
 
@@ -120,28 +112,28 @@ If no root cause is found → escalate to human agent.
 
 ### Rule 1 — P&L Verification
 
-1. Refer to A5 (P&L verification) for scenario context and interpretation.
+1. Refer to A4 (P&L verification) for scenario context and interpretation.
 
 ---
 
 ### Rule 2 — Physical Delivery P&L
 
-1. Refer to A5 (Physical delivery P&L) for scenario context.
-2. If client reports double quantity in equity P&L after physical settlement → escalate to human agent.
+1. Refer to A4 (Physical delivery P&L) for scenario context.
+2. If client reports double quantity in equity P&L after physical settlement → escalate.
 
 ---
 
 ### Rule 3 — OTM Options Expired Worthless
 
 1. Determine position direction:
-   - Long (bought options) → refer to A5 (OTM expired — long position) for scenario context.
-   - Short (sold options) → refer to A5 (OTM expired — short position) for scenario context.
+   - Long (bought options) → refer to A4 (OTM expired — long position) for scenario context.
+   - Short (sold options) → refer to A4 (OTM expired — short position) for scenario context.
 
 ---
 
 ### Rule 4 — Asterisk (*) on P&L Entry
 
-1. Refer to A5 (Asterisk on P&L entry) for scenario context and interpretation.
+1. Refer to A4 (Asterisk on P&L entry) for scenario context and interpretation.
 
 ---
 
@@ -150,20 +142,20 @@ If no root cause is found → escalate to human agent.
 1. Verify:
    - Correct segment is selected per A3.
    - Date range covers the expiry date.
-2. Both correct and contract still missing → escalate to human agent per A4.
+2. Both correct and contract still missing → escalate.
 
 ---
 
 ### Rule 6 — Tax P&L vs Console F&O P&L
 
-1. Refer to A5 (Tax P&L vs Console F&O P&L) for scenario context and interpretation.
-2. If client reports a significant unexplained difference between the F&O tab and tradewise exits tab → escalate to human agent.
+1. Refer to A4 (Tax P&L vs Console F&O P&L) for scenario context and interpretation.
+2. If client reports a significant unexplained difference between the F&O tab and tradewise exits tab → escalate.
 
 ---
 
 ### Rule 7 — Charges and MTM Queries
 
-1. Refer to A5 (Charges / MTM query) for scenario context and interpretation.
+1. Refer to A4 (Charges / MTM query) for scenario context and interpretation.
 2. If client needs the Tax P&L report for charges → direct to Console → Reports → Tax P&L.
 3. If client needs live MTM on open positions → direct to Kite positions screen.
-4. If client needs historical day-wise MTM → this tool does not provide it; escalate to human agent if further investigation is needed.
+4. If client needs historical day-wise MTM → this tool does not provide it; escalate.

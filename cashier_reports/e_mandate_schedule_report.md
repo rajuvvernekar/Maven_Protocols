@@ -76,10 +76,6 @@ TAGS: funds, investments
 | Mandate & schedule management | console.zerodha.com/funds/mandates |
 | How to create an eMandate schedule | https://support.zerodha.com/category/funds/mandate/how-to-set-up-emandates/articles/schedule-emandate-transactions |
 
-### A6 — Escalation Triggers
-
-When escalating, always include: client ID, schedule details, and specific issue.
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -95,7 +91,7 @@ Route by scenario
 
 ### Fallback
 
-If no route matches, escalate to human agent per **A6**.
+If no route matches, escalate.
 
 ## Section C: Rules
 
@@ -121,7 +117,7 @@ If no route matches, escalate to human agent per **A6**.
 
 1. Check `active`. If value is other than "Active" or "Deleted" per **A3** → deletion is in progress; inform client to wait.
 2. If `active` = "Active" → deletion may have failed because a debit is already being processed. Suggest retry after the current processing cycle completes, or from a different browser/device.
-3. If error persists → escalate to human agent per **A6**.
+3. If error persists → escalate.
 
 ### Rule 5 — Cancelled Schedule But Still Debited
 

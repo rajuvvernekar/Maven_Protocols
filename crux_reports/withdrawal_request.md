@@ -35,7 +35,7 @@ TAGS: funds
 | `Instant_Payout` | Instant | ₹100–₹2,00,000 | Once per day (regardless of outcome) | 09:00–16:00 daily (incl. weekends; intermittent before 09:25) | Within minutes | No |
 | `Payout` | Regular | ₹1 to available balance (up to ₹5 crore via Console) | No daily limit | At applicable cutoff (per A4) | Within 24h of processing | Yes — while Pending, via Console → Funds → Withdrawal history |
 
--One instant and one regular can be pending simultaneously. A pending regular withdrawal has no effect on instant availability. Regular withdrawals are automated and cannot be expedited.
+- One instant and one regular can be pending simultaneously. A pending regular withdrawal has no effect on instant availability. Regular withdrawals are automated and cannot be expedited.
 
 ---
 
@@ -75,7 +75,7 @@ TAGS: funds
 | Full-day blocker (instant only) | Orbis-linked account | Instant unavailable for the entire day |
 | Full-day blocker (instant only) | Non-whole-number withdrawal amount | Instant unavailable for the entire day |
 | Account-level blocker | Paytm Payments Bank as primary bank account | Blocks both instant and regular |
-| Fund availability | Same-day deposit (weekday) | Funds deposited today not available for instant withdrawal today |
+| Fund availability | Same-day deposit (weekday) | Funds deposited today not available for instant or regular withdrawal today; available from next working day |
 | Fund availability | Deposit on Saturday, Sunday, or settlement holiday | Funds deposited that day not available for instant withdrawal on next working day |
 
 Confirmed non-blockers: GTT orders, pending regular withdrawals.
@@ -93,6 +93,8 @@ Confirmed non-blockers: GTT orders, pending regular withdrawals.
 | Weekday + before 17:00 + has trades/positions/instant | 22:00 | Within 24h |
 | Weekday + after 17:00 (no ZBL_MCX) | 22:00 | Within 24h |
 
+**Priority:** If ZBL_MCX is active, the 23:59 row takes precedence over all other weekday conditions.
+
 ---
 
 ### A5 — T+1 Settlement Rule
@@ -106,6 +108,8 @@ Confirmed non-blockers: GTT orders, pending regular withdrawals.
 | Balance display | Settlement credits appear in ledger same day; only withdrawal eligibility follows T+1 |
 
 The official settlement holiday list is the authoritative source for confirmed settlement holidays. Settlement holidays defer T+1 settlement by one working day. Dates not on the list are not confirmed holidays.
+
+**Exception:** Weekend and settlement holiday deposits are exempt from the T+1 restriction for regular withdrawals — regular withdrawal is available immediately per A8. Instant withdrawal follows separate restrictions per A3.
 
 ---
 
@@ -139,6 +143,7 @@ The official settlement holiday list is the authoritative source for confirmed s
 |---|---|---|---|
 | Bank Receipts | On creation/query date (weekday) | Same-day deposit | Not withdrawable until next working day |
 | Bank Receipts | On Saturday or Sunday | Weekend deposit | Regular: available now. Instant: available Tuesday |
+| Bank Receipts | On settlement holiday | Settlement holiday deposit | Regular: available now. Instant: not available on the next working day |
 | Book Voucher | "Net settlement for Equity..." | Equity trade settlement | T+1 per A5 |
 | Book Voucher | "Net obligation for Equity F&O" | F&O trade settlement | T+1 per A5 |
 | Book Voucher | "Net obligation for MCX commodity FNO" | MCX commodity trade settlement | T+1 per A5 |
@@ -229,14 +234,6 @@ The query date is the date the client is asking about. All data analysis — ord
 
 Conditions on the current date (e.g., orders placed today) are irrelevant to a query about a past date.
 
----
-
-### A14 — Escalation Required Data
-
-Include when escalating to human agent: client ID, `payout_type`, creation date, amount, `bank_response_remarks` (if rejection), `bank_ref_no` (if present), and specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -253,24 +250,27 @@ Route by scenario
 ├─ Multiple or repeat withdrawal question                          → Rule 7
 ├─ Existing withdrawal — status, timeline, expedite, or cancel    → Rule 8
 ├─ App or UI issue on withdrawal page                              → Rule 9
+├─ Funds deposited same day but not available for withdrawal       → Rule 10
 ├─ Zero / low / negative balance                                   → Rule 10
 └─ No withdrawal records / charges query                           → Rule 11
 ```
 
 ### Fallback
 
-If no route matches after all checks, escalate to human agent per A14.
+If no route matches after all checks, escalate.
+
+---
 
 ## Section C: Rules
 
-### Rule 1: Early Exit — Escalate to Human Agent
+### Rule 1: Early Exit — Escalate
 
-If any condition below matches, stop immediately and escalate. Do not provide any response or bank details.
+If any condition below matches, escalate immediately. Do not share any account or bank details with the client.
 
 | Condition | Action |
 |---|---|
-| NRI PIS account | Escalate to human agent per A14 |
-| Withdrawal request > ₹5 crore | Escalate to human agent per A14 |
+| NRI PIS account | Escalate|
+| Withdrawal request > ₹5 crore | Escalate|
 
 ---
 
@@ -284,14 +284,14 @@ If one already exists for the query date, it consumes the day's single attempt p
 **Step 2 — Check A3 blockers:**
 Compare the reported error time against the earliest order/position timestamp. Filter CNC sell executed first (non-blocker per A3).
 - Orders/positions placed after the error time → not the cause; skip to Step 4. Instant is blocked for the rest of the day due to subsequent trading; offer regular withdrawal per A4.
-- Category 2 blocker (Paytm Payments Bank) → escalate to human agent per A14.
+- Category 2 blocker (Paytm Payments Bank) → escalate.
 - All other blockers → apply per A3.
 
 **Step 3 — No blockers → check settlement:**
 Invoke `ledger_report`. If unsettled funds are present → T+1 per A5 applies. Suggest regular withdrawal.
 
 **Step 4 — No blockers, funds settled:**
-Service is intermittent before 09:25 per A1 — retry after 09:25. If after 09:25 and still failing → direct to Console per A10; try alternate device if issue persists. If still unresolved → escalate to human agent per A14.
+Service is intermittent before 09:25 per A1 — retry after 09:25. If after 09:25 and still failing → direct to Console per A10; try alternate device if issue persists. If still unresolved → escalate.
 
 ---
 
@@ -329,7 +329,7 @@ If `bank_response_status` = failed:
    - Absent → reversal in progress; funds return within 24–48 working hours.
 3. If `bank_response_remarks` contains "NPCI" per A7 → rejection from the client's bank payment network. If `Instant_Payout` → today's instant attempt is consumed; only regular is available.
 4. Cross-check with CMR (Console → Profile) and bank statement. Bank update per A10.
-5. NRI/NRE: NRE PIS details must match bank records exactly. Verify via Console → Profile → Bank accounts. Bank update requires courier form and bank proof; if Aadhaar-linked, e-sign and submit via ticket.
+5. NRI/NRE: NRE PIS details must match bank records exactly. Verify via Console → Profile → Bank accounts. Bank update requires courier form and bank proof; if Aadhaar-linked, e-sign and submit via ticket. *(Note: NRI PIS accounts are escalated at Rule 1 and do not reach this step. This step applies to non-PIS NRI accounts or resident accounts with an NRE bank account mapped.)*
 
 **Step 2 — Non-rejection failure:**
 Identify cause from ledger per A8. Apply A6 for reversal framing.
@@ -345,6 +345,7 @@ If client traded with the credited/deposited funds during the same period, ident
 | Within timeline (Instant: < 10 min; Regular: before T+1 14:00) | Processing within expected window — no action |
 | Past timeline + bank_ref_no present + < 3 days since modified | Share bank_ref_no; refer client to their bank |
 | Past timeline + bank_ref_no present + ≥ 3 days since modified | Share bank_ref_no; client to request bank statement from payout_date to today |
+| Past timeline + no bank_ref_no | Escalate|
 
 ---
 
@@ -380,7 +381,7 @@ If client traded with the credited/deposited funds during the same period, ident
 
 **Step 1 — Status / timeline inquiry:**
 Share current `status` per A2 with expected processing timeline per A4 based on withdrawal type and day:
-- Instant: within minutes of approval per A1.
+- Instant: within minutes per A1.
 - Regular: per applicable cutoff in A4. Regular withdrawals are automated and cannot be expedited.
 
 **Step 2 — Cancellation request:**
@@ -395,7 +396,7 @@ Regular withdrawals cannot be expedited. Inform the client of the applicable pro
 
 **Step 1:** Route to Console web withdrawal page per A10.
 
-**Step 2:** If issue persists on Console web → try alternate device. If still unresolved → escalate to human agent per A14.
+**Step 2:** If issue persists on Console web → try alternate device. If still unresolved → escalate.
 
 ---
 
@@ -403,13 +404,19 @@ Regular withdrawals cannot be expedited. Inform the client of the applicable pro
 
 **Step 1:** Invoke `ledger_report` (5 days). Identify cause from ledger per A8.
 
-**Step 2 — Quarterly settlement:**
+**Step 2 — Same-day deposit:**
+If ledger shows a Bank Receipts entry on the query date:
+- Weekday: funds not withdrawable until next working day per A5 and A8. Neither instant nor regular withdrawal is available today. Suggest placing the request on the next working day.
+- Saturday / Sunday: regular withdrawal is available now; instant is available on Tuesday per A8.
+- Settlement holiday: regular withdrawal is available now; instant is not available on the next working day per A8.
+
+**Step 3 — Quarterly settlement:**
 If ledger contains a "quarterly settlement" entry (Bank Payments voucher type per A8) → funds were paid out to the client's bank as part of Zerodha's mandatory quarterly settlement. Client should check their bank account for the credited amount.
 
-**Step 3 — Delayed payment charges:**
+**Step 4 — Delayed payment charges:**
 If ledger shows "Delayed payment charges" (Journal Entry per A8) → client has outstanding dues. They must add funds to clear the balance before a withdrawal can be placed.
 
-**Step 4 — Negative balance:**
+**Step 5 — Negative balance:**
 If balance is negative → outstanding dues or unsettled obligations. Identify the specific charge from ledger per A8 and inform the client accordingly.
 
 ---
@@ -419,4 +426,4 @@ If balance is negative → outstanding dues or unsettled obligations. Identify t
 | Scenario | Action |
 |---|---|
 | No withdrawal records found | No requests on file; "Withdrawal Balance" on Console is the current withdrawable balance, not a withdrawal request |
-| Charges on withdrawal | Withdrawals are free; if processed amount < requested amount → route to Rule 4 |
+| Charges on withdrawal | Withdrawals are free; if processed amount < requested amount → route to Rule 3 |

@@ -166,8 +166,8 @@ Context extracted from `get_all_client_data`:
 - **Offline:** Courier to **A3** address. Documents: modification form + IPV. Timeline: **A1** contact detail changes. No charges. Mandatory for non-individual; optional for individual.
 - **International mobile / NRI:** eSign and attach to ticket, or courier.
 - **No access to registered mobile AND email:** Refer to the reset password article per **A14**.
-- **Mobile/email already linked to another account:** escalate to human agent without addressing the query.
-- **Client requests deletion/removal of mobile number from system:** escalate to human agent without addressing the query.
+- **Mobile/email already linked to another account:** escalate.
+- **Client requests deletion/removal of mobile number from system:** escalate.
 
 #### DOB / Gender / Marital / Occupation / PEP Update
 
@@ -236,7 +236,7 @@ Allowed if joint holder. Same process as single-holder. Restriction: if linked t
 
 #### Bank Details Update Errors
 
-When IFSC errors occur (O vs 0 confusion, branch not recognised by CDSL, "invalid IFSC" error): escalate to human agent with client ID and error details.
+When IFSC errors occur (O vs 0 confusion, branch not recognised by CDSL, "invalid IFSC" error): escalate.
 
 #### Primary Bank Penny Drop Verification
 
@@ -253,8 +253,8 @@ Condition: bank_type = "Primary" AND request_type = "update" AND bank validation
 - **Online process:** Console → Account → Segments → Account closure. Options: sell holdings (Kite redirect) OR transfer holdings (demat in your name only). Accept terms → eSign with Aadhaar.
 - **Demat closure:** When a trading account is closed, the linked CDSL demat account is also closed as part of the same process. The client does not need to submit a separate demat closure request to CDSL.
 - **AMC after closure:** Not charged from day closure is processed.
-- **Post-closure new account error:** escalate to human agent.
-- **Blocked closure:** If closure is blocked due to unlisted securities or pending corporate actions → escalate to human agent. Cannot reopen same account/user ID after closure.
+- **Post-closure new account error:** escalate.
+- **Blocked closure:** If closure is blocked due to unlisted securities or pending corporate actions → escalate. Cannot reopen same account/user ID after closure.
 
 ---
 
@@ -308,10 +308,10 @@ Prerequisite: equity segment must be active. Demat prerequisite: `primary_dp_sta
 
 #### MTF (Margin Trading Facility) Activation
 
-MTF allows clients to buy stocks with leverage. Prerequisite: DDPI must be active on the account.
+MTF allows clients to buy stocks with leverage. Prerequisite: DDPI must be active or POA consent must be on record.
 
-- **DDPI active:** MTF can be used via Kite order placement with MTF product type.
-- **DDPI not active:** Client must first activate DDPI per **A9**. If a DDPI request already exists in `account_modification_report`, apply Rule 2 to report its status.
+- **DDPI active OR `poa_consent` = YES:** MTF can be used via Kite order placement with MTF product type.
+- **Both inactive:** Client must first activate DDPI per **A9**. If a DDPI request already exists in `account_modification_report`, apply Rule 2 to report its status.
 - Support article: MTF trading not allowed per **A14**.
 
 #### Active Segments Check
@@ -420,26 +420,26 @@ Applies to voluntarily deactivated accounts only. Dormant accounts: complete ReK
 Route by scenario
    ├─ Name / DOB / PAN update → Rule 1
    ├─ Modification status inquiry → Rule 2
-   ├─ Modification cancellation (eSign not yet completed) → escalate to human agent
+   ├─ Modification cancellation (eSign not yet completed) → escalate
    ├─ Closure-related escalations (secondary demat, employer policy,
    │   IL&FS, closure cum transfer) → Rule 4
    ├─ Segment activation → Rule 5
-   ├─ MTF activation query → check primary_ddpi_flag; if inactive, apply Rule 2 on DDPI request and guide per A9 / A10 MTF subsection
+   ├─ MTF activation query → Rule 16
    ├─ Any equity segment Dormant (nse_eq_status or bse_eq_status) → Rule 6
    ├─ Segment status issue → Rule 7
-   ├─ Segment rejected (PAN failure) → Rule 7.1
-   ├─ Nominee query (modification, rejection, CAS nominee mismatch) → Rule 8
-   ├─ Pledging / collateral margin query → Rule 9
-   ├─ Segment deactivation (disable / deactivate F&O, Currency, or Commodity) → Rule 10
-   ├─ Client reports app/web error message → Rule 11
-   ├─ Unpaid dividend / RTA CML query → Rule 12
-   ├─ Email or mobile modification status / request query → Rule 13
-   └─ Address change query → Rule 14
+   ├─ Segment rejected (PAN failure) → Rule 8
+   ├─ Nominee query (modification, rejection, CAS nominee mismatch) → Rule 9
+   ├─ Pledging / collateral margin query → Rule 10
+   ├─ Segment deactivation (disable / deactivate F&O, Currency, or Commodity) → Rule 11
+   ├─ Client reports app/web error message → Rule 12
+   ├─ Unpaid dividend / RTA CML query → Rule 13
+   ├─ Email or mobile modification status / request query → Rule 14
+   └─ Address change query → Rule 15
 ```
 
 ### Fallback
 
-If the query does not match any route above → escalate to human agent.
+If the query does not match any route above → escalate.
 
 ---
 
@@ -447,7 +447,7 @@ If the query does not match any route above → escalate to human agent.
 
 ### Rule 1: Name / DOB / PAN Updates
 
-If query mentions name change, DOB mismatch, or PAN correction → escalate to human agent without addressing the query.
+If query mentions name change, DOB mismatch, or PAN correction → escalate.
 
 ---
 
@@ -459,7 +459,7 @@ If query mentions name change, DOB mismatch, or PAN correction → escalate to h
 
 - **Multi-row processing:** When the query returns multiple rows (e.g., both `rekyc` and `rekyc_fno` from the same submission), evaluate each row's status independently. A single ReKYC submission can result in equity segments approved while F&O segments are rejected. Match the row to the client's query — if the client is asking about F&O/currency/commodity, check the `rekyc_fno` row specifically. Report only the status relevant to what the client asked.
 
-- **Segment status check:** For segment activation queries, check segment status fields in `get_all_client_data` using the field pairs in **A4**. If segment shows Rejected, Activation_rejected, or Deactivated → check the corresponding remarks field (per **A4**) and apply Rule 7.1 before any other response.
+- **Segment status check:** For segment activation queries, check all `*_status` fields in `get_all_client_data` using the field pairs in **A4**. If any segment shows Rejected, Activation_rejected, Deactivated, or Inactivated → check the corresponding remarks field (per **A4**) and apply Rule 7 before any other response.
 
 **Status responses:**
 
@@ -479,7 +479,7 @@ Check `account_modification_report` for an existing ReKYC request (`form_type` I
 
 - **Found → apply Rule 2** for that request.
 - **Rejected with "Invalid IPV"** → guide to complete ReKYC again at account portal per **A14**.
-- **Rejected with any other reason** → communicate rejection reason and escalate to human agent.
+- **Rejected with any other reason** → communicate rejection reason and escalate.
 - **Not found OR > 3 months** → guide to account portal per **A14**; complete ReKYC with Aadhaar eSign. Requires: Aadhaar-linked mobile (see **A3**). Share the reactivation support article from **A14**. Authentication per **A12**.
 
 **Charges:** **A2** standard — applicable only if client selects "Update as per Aadhaar". Mention only if this option is selected.
@@ -488,7 +488,7 @@ Check `account_modification_report` for an existing ReKYC request (`form_type` I
 
 ### Rule 4: Account Closure
 
-Query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" / "cancel account opening" / "don't want to proceed with account opening" → escalate to human agent without addressing the query.
+Query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" / "cancel account opening" / "don't want to proceed with account opening" → escalate.
 
 **Pre-closure checks:**
 Invoke `ledger_report`, `console_eq_holdings`, `kite_positions`, `console_mf_holdings`. Note:
@@ -504,11 +504,11 @@ If a closure request exists:
 | Status | Action |
 |---|---|
 | Approved | Acknowledge closure; ask for feedback on issues that led to closure; thank client for their association with Zerodha. |
-| Request_pending / Processing / Pending_eSign / Rejected / No match | Escalate to human agent; include pre-closure check results. |
+| Request_pending / Processing / Pending_eSign / Rejected / No match | Escalate. |
 
-No closure request found → escalate to human agent; include pre-closure check results.
+No closure request found → escalate.
 
-**Post-closure new account error:** escalate to human agent.
+**Post-closure new account error:** escalate.
 
 ---
 
@@ -532,7 +532,7 @@ If client reports a UI error (e.g., "Service unavailable", "Unknown exchange seg
 3. Try in incognito/private mode.
 4. Try on a different device and different network.
 
-If error persists after troubleshooting → escalate to human agent.
+If error persists after troubleshooting → escalate.
 
 ---
 
@@ -557,27 +557,28 @@ When a client queries about commodity trading (MCX, CRUDEOILM, commodity options
 
 | Raw Status | Response |
 |---|---|
-| `Reactivation_pending` | Check timestamp against current time. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate to human agent. |
+| `Reactivation_pending` | Check timestamp against current time. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate. |
 | `Request_pending` | Same as Reactivation_pending. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
 | `Blocked` | Communicate the `remarks` field content for this status. |
-| `Activated` | Confirm segment is active. If client reports inability to place orders or shows 0 available funds → check activation timestamp. Calculate: activation time + 1 working day. If that time is still in the future → inform client of the activation date and that orders will be possible from activation date + 1 working day. If 1 working day has already passed → escalate to human agent. Always give the specific date, not a generic window. |
-| Coin segment = `Generated` | Escalate to human agent. |
+| `Activated` | Confirm segment is active. Orders can be placed only after 24 hours from activation — use `*_updated_on` for the activation timestamp. If 24 hours have already passed and client still cannot place orders → escalate. |
+| Coin segment = `Generated` | Escalate. |
 | `Dormant` | Apply Rule 6. |
-| `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 7.1 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
+| `Inactivated` | Check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate. |
+| `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 8 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
 
 ---
 
-### Rule 7.1: Segment Rejection — PAN Verification
+### Rule 8: Segment Rejection — PAN Verification
 
 If any segment (per **A4** field pairs) shows as Rejected, Activation_rejected, or Deactivated AND the corresponding remarks field contains "PAN Verification Failed":
 
 1. Invoke `pan_status` to retrieve the specific rejection reason.
-2. If `pan_status` returns a specific, actionable mismatch → follow the ‘pan_status’ tool's resolution guidance.
-3. For all other `pan_status` results (no issues found, ambiguous, or unclear) → escalate to human agent.
+2. If `pan_status` returns a specific, actionable mismatch → follow the 'pan_status' tool's resolution guidance.
+3. For all other `pan_status` results (no issues found, ambiguous, or unclear) → escalate.
 
 ---
 
-### Rule 8: Nominee Queries
+### Rule 9: Nominee Queries
 
 Nominee modifications are handled through the nominee process only — direct to **A11** support article per **A14**.
 
@@ -593,12 +594,12 @@ From `get_all_client_data`, check `nominee_1_first_name`, `nominee_2_first_name`
 
 **If query mentions nominee modification request AND client reports rejection:**
 1. Check `account_modification_report` where `form_type` = "nominee_addition".
-2. Status = Rejected → communicate rejection reason and escalate to human agent.
+2. Status = Rejected → communicate rejection reason and escalate.
 3. Status ≠ Rejected → apply Rule 2.
 
 ---
 
-### Rule 9: Pledging / Collateral Margin Queries
+### Rule 10: Pledging / Collateral Margin Queries
 
 If the client is unable to pledge or has a query about pledging holdings for collateral margin:
 
@@ -608,7 +609,7 @@ If the client is unable to pledge or has a query about pledging holdings for col
 
 ---
 
-### Rule 10: Segment Deactivation
+### Rule 11: Segment Deactivation
 
 If the client wants to disable or deactivate an F&O, Currency, or Commodity segment:
 
@@ -619,7 +620,7 @@ If the client wants to disable or deactivate an F&O, Currency, or Commodity segm
 
 ---
 
-### Rule 11: UI / App Error
+### Rule 12: UI / App Error
 
 When the client reports an error message in the app or web platform (e.g., "account is inactive," "service unavailable," "account not found") not related to segment activation:
 
@@ -628,11 +629,11 @@ When the client reports an error message in the app or web platform (e.g., "acco
    a. Ask the client to verify they are entering the correct User ID during login.
    b. If User ID is correct, ask the client to retry after clearing the app cache or using a different browser/device.
    c. If the issue persists, ask the client to share a screenshot of the error message.
-   d. Screenshot confirms a persistent error with no account-level cause → escalate to human agent. Include: client ID, error message, and confirmation that account data shows no issues.
+   d. Screenshot confirms a persistent error with no account-level cause → escalate.
 
 ---
 
-### Rule 12: RTA / Unpaid Dividend
+### Rule 13: RTA / Unpaid Dividend
 
 1. Check `bank_details` in `get_all_client_data` — verify `bank_1_dividend` = YES.
 2. If bank details are correct and dividend enabled: communicate that Zerodha shares updated CML data with CDSL; CDSL forwards it to RTAs in their regular update cycle, typically within a few business days. If not credited within 10 business days, follow up with RTA directly. Share the primary bank change article per **A14** only if bank details need updating. Charge of ₹25 + GST applies for primary bank change.
@@ -640,12 +641,15 @@ When the client reports an error message in the app or web platform (e.g., "acco
 
 ---
 
-### Rule 13: Email / Mobile Modification
+### Rule 14: Email / Mobile Modification
 
 | Query type | `form_type` to check |
 |---|---|
 | Email modification | `email_modification` |
 | Mobile modification | `mobile_modification` |
+
+**Client shares a new email address to update:**
+Check `account_modification_report` for `form_type = email_modification`, most recent. If found → apply Rule 2 status responses. If not found → guide per **A6** Contact Details Change.
 
 **No request found (count = 0):**
 Guide per **A6** Contact Details Change.
@@ -655,14 +659,22 @@ Communicate status per Rule 2 status responses. If status = Rejected → communi
 
 ---
 
-### Rule 14: Address Change
+### Rule 15: Address Change
 
--From `get_all_client_data`, check `client_acc_type`.
+From `get_all_client_data`, check `client_acc_type`.
 
 **Account type = individual:**
--Check `primary_dp_joint_account`.
+Check `primary_dp_joint_account`.
 - "Yes" → joint account; offline process only per **A6** Address Change.
 - Not "Yes" → guide per **A6** Address Change online process and **A14** address change (online) article.
 
 **Account type ≠ individual:**
 Offline process only per **A6** Address Change.
+
+---
+
+### Rule 16: MTF Activation
+
+1. From `get_all_client_data`, check `primary_ddpi_flag` and `poa_consent`.
+2. `primary_ddpi_flag` active OR `poa_consent` = YES → MTF can be used via Kite per **A10** MTF subsection.
+3. Both inactive → check `account_modification_report` for a pending DDPI request and apply Rule 2 to report its status. Guide client to activate DDPI per **A9**.

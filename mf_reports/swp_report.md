@@ -78,7 +78,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause found after completing all diagnostic steps → suggest manual redemption and escalate to human agent if issue recurs.
+If no root cause found after completing all diagnostic steps → suggest manual redemption and escalate.
 
 ## Section C: Rules
 

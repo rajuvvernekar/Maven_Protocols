@@ -72,7 +72,7 @@ Route by scenario
 
 ### Fallback
 
-If trade data seems inconsistent or missing entries cannot be explained → escalate to human agent with client ID, fund name, trade dates, and the specific discrepancy.
+If trade data seems inconsistent or missing entries cannot be explained → escalate.
 
 ## Section C: Rules
 
@@ -89,10 +89,10 @@ If trade data seems inconsistent or missing entries cannot be explained → esca
 
 1. Check if a trade entry exists for the matching fund and date.
 2. Trade entry exists → units allotted. Invoke `console_mf_pseudo_holdings` for discrepancy diagnosis.
-3. Trade entry missing → escalate to human agent.
+3. Trade entry missing → escalate.
 
 ### Rule 3 — P&L FIFO Verification
 
 1. List BUY entries sorted by `trade_date` ascending. Match SELL entries against the oldest BUY first (FIFO).
 2. Invoke `console_mf_external_trades` for transferred-in units.
-3. If calculation still differs after both checks → escalate to human agent.
+3. If calculation still differs after both checks → escalate.

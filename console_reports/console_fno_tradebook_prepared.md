@@ -108,14 +108,6 @@ When a corporate action occurs on the underlying stock (e.g., stock split, bonus
 | Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |
 | Corporate action impact on derivatives | https://support.zerodha.com/category/console/corporate-actions/ca-others/articles/impact-of-corporate-actions-on-derivatives |
 
----
-
-### A7 — Escalation Data
-
-Include when escalating to human agent: client ID, trade_date, tradingsymbol, segment, order_id, and specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -135,7 +127,7 @@ Route by scenario
 
 ### Fallback
 
-- If still unresolved → escalate to human agent.
+- If still unresolved → escalate.
 
 ---
 
@@ -150,7 +142,7 @@ Route by scenario
 
 ### Rule 2 — Closed Account — Historical F&O Trade Data
 
-- Escalate to human agent.
+- Escalate.
 
 ---
 
@@ -165,7 +157,7 @@ Route by scenario
 1. Search by date, segment (per A3), and tradingsymbol.
 2. If found → confirm trade details per Rule 3.
 3. If not found → verify correct segment is selected (per A3).
-4. If still not found after correct segment → escalate per A7.
+4. If still not found after correct segment → escalate.
 
 ---
 
@@ -180,7 +172,7 @@ Route by scenario
 
 1. Explain the CA adjustment per A5.
 2. Share the corporate action impact link from A6.
-3. If client is not satisfied → escalate per A7.
+3. If client is not satisfied → escalate.
 
 ---
 
@@ -194,11 +186,11 @@ Route by scenario
 ### Rule 8 — Contract Note Queries (Charges / MTM)
 
 1. This tool provides trade-level execution data only — no charge, MTM, or obligation data.
-2. Escalate to human agent for contract note charges, MTM, and settlement details.
+2. Escalate.
 
 ---
 
 ### Rule 9 — Report Fails to Load / Times Out
 
 1. Retry with a narrower date range (e.g., one financial year at a time) or filter by segment.
-2. If the issue persists → escalate to human agent.
+2. If the issue persists → escalate.

@@ -154,18 +154,6 @@ Use the client-friendly labels from the Semantic Label column in A2 when communi
 
 For DPC-specific queries, invoke `delayed_payment_charges`.
 
-### A11 — Escalation Triggers
-
-Escalate to human agent when any of the following occur:
-- Client requests refund citing SEBI circular 60/2022 or claims upfront penalties cannot be passed to clients.
-- Client requests waiver, reversal, or refund of margin penalty.
-- Calculated penalty from report doesn't match ledger entry amount after correct calculation.
-- Report data appears inconsistent or missing.
-
-Include when escalating to human agent: client ID, segment, date, report values, and the specific discrepancy or request.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -193,7 +181,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate to human agent per A11.
+If no root cause is identified after checking all relevant rules → escalate.
 
 ---
 
@@ -272,13 +260,13 @@ If no root cause is identified after checking all relevant rules → escalate to
 
 ### Rule 14 — SEBI Circular Refund Request
 
-1. Escalate to human agent immediately. Do not attempt to explain or deny.
-2. Include when escalating to human agent: client ID, penalty dates referenced, and the client's specific claim.
+1. Escalate. Do not attempt to explain or deny.
+2. Include when escalating.
 
 ### Rule 15 — Penalty Waiver Request
 
-1. Escalate to human agent immediately.
-2. Include when escalating to human agent: client ID, penalty date(s), amount(s), and client's reason for requesting waiver.
+1. Escalate.
+2. Include when escalating.
 
 ### Rule 16 — DPC vs Margin Penalty Confusion
 

@@ -27,8 +27,6 @@ TAGS: margins
 
 ### A1 — Fundamentals
 
-- Collateral is reflected after CDSL confirmation — usually instant, can take up to 30 minutes.
-
 - `previous_quantity` shows pledged qty before the transaction — used to track incremental pledges.
 
 - MTF shares are auto-pledged and are separate from client-initiated pledges.
@@ -85,28 +83,19 @@ TAGS: margins
 
 | Reason | Explanation |
 |---|---|
-| Security not approved | Not in approved pledge list — may show "Something went wrong" or a specific error |
-| T1 holdings | Shares bought today (T1) — not yet settled; cannot pledge until T+1 |
-| Insufficient qty | Trying to pledge more qty than available free holdings |
-| Margin utilized (unpledge) | Unpledge rejected because collateral margin already used against open positions |
+| Security not approved | "Something went wrong" error or a security-specific error |
+| T1 holdings | Shares purchased today |
+| Insufficient qty | Pledging more than available free holdings |
+| Margin utilized (unpledge) | Unpledge on shares whose collateral is in use |
 | Overdue | CDSL confirmation delayed — request stuck in pending/overdue state |
 | Same-day unpledge | Securities pledged today cannot be unpledged on the same day. The pledge is processed on the same day and collateral is credited within 15 minutes. An unpledge request can only be submitted from the next working day onwards. The client can sell the pledged shares on the same day, provided the collateral is not being utilised. |
-| F&O segment not active | F&O segment must be active for pledging to work. Error appears as "Pledge is not allowed for your account" or a similar account-level restriction. |
-
----
-
-### A6 — Escalation Data
-
-- **When escalating to a human agent, provide:** client ID, tradingsymbol, pledge_type, status, pledge_date, specific issue.
-
----
+| F&O segment not active — request pending | "Pledge is not allowed for your account" or similar; activation request already found in `account_modification` |
+| F&O segment not active — no request placed | "Pledge is not allowed for your account" or similar; no activation request found in `account_modification` |
 
 ### A7 — Scenarios
 
 | Scenario | Meaning / Interpretation |
 |---|---|
-| Status: Success | Request processed by CDSL — collateral margin should be reflected in the account |
-| Status: Pending | Awaiting CDSL confirmation — usually resolves within 30 minutes |
 | Collateral not reflecting within 30 mins of pledge | Normal delay — collateral margin can take up to 30 minutes to reflect after a successful pledge |
 | Pledge failure: unapproved security | Security may not be in the approved pledge list — only securities approved for margin are eligible |
 | Pledge failure: T1 shares | Shares purchased today are not yet settled (T+1) — cannot be pledged until the next trading day |
@@ -116,7 +105,8 @@ TAGS: margins
 | Overdue > 30 mins, < 24 hours | Request has been pending too long and is likely to fail — client should retry on next trading day or pledge a different approved security |
 | Holdings showing zero after pledge | Pledged shares do not appear in standard holdings view — shares are safe and pledged as collateral; visible on Console |
 | MTF auto-pledge | Shares purchased under MTF are automatically pledged as collateral — these are separate from client-initiated pledges |
-| F&O segment not active | F&O segment must be active for pledging — client needs to activate F&O via income proof upload on Console |
+| F&O segment not active — request pending | F&O activation request is already in progress — client should wait for it to be processed |
+| F&O segment not active — no request placed | F&O segment must be active for pledging — client needs to activate F&O via income proof upload on Console |
 
 ---
 
@@ -139,7 +129,7 @@ Route by scenario
 
 ### Fallback
 
-- If no route matches, escalate to human agent per A6.
+- If no route matches, escalate.
 
 ---
 
@@ -155,17 +145,17 @@ Route by scenario
 ### Rule 2 — Pledge / Unpledge Status Verification
 
 1. Find the matching tradingsymbol and pledge_type.
-2. Apply A7 by status:
-   - Success → per A7.
+2. Apply A4 by status:
+   - Success → per A4.
    - Failure → route to Rule 4 for diagnosis.
-   - Pending → per A7.
+   - Pending → per A4.
 
 ---
 
 ### Rule 3 — Collateral Not Reflecting After Successful Pledge
 
 1. If pledge was within the last 30 minutes → per A7.
-2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate to human agent per A6.
+2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate.
 
 ---
 
@@ -175,8 +165,10 @@ Route by scenario
    - "Something went wrong" error → unapproved security.
    - T1 shares.
    - Insufficient qty → invoke `console_eq_holdings` for available qty.
-   - "Pledge is not allowed for your account" or similar account-level restriction → invoke `account_modification` to check segment activation. If F&O is not enabled → F&O segment not active.
-2. If none of the above explains the failure → escalate to human agent per A6.
+   - "Pledge is not allowed for your account" or similar account-level restriction → check Segments in `get_all_client_data`. If F&O is not active → invoke `account_modification` to check if an activation request is already placed:
+     - Request found → per A7: F&O segment not active — request pending.
+     - No request found → per A7: F&O segment not active — no request placed.
+2. If none of the above explains the failure → escalate.
 
 ---
 
@@ -188,10 +180,8 @@ Route by scenario
 
 ### Rule 6 — Overdue Pledge Request
 
-1. Check status and `pledge_creation` timestamp; apply per A7:
-   - Pending/overdue < 30 mins.
-   - Pending/overdue > 30 mins but < 24 hours.
-   - Pending/overdue > 24 hours → escalate to human agent per A6.
+1. Check status and `pledge_creation` timestamp and apply per A7.
+2. If overdue > 24 hours → escalate.
 
 ---
 
@@ -200,7 +190,7 @@ Route by scenario
 1. Apply per A7.
 2. Invoke `console_eq_holdings` to confirm qty is present.
 3. If holdings qty mismatch suspected → invoke `console_eq_pseudo_holdings` to cross-check SOT data.
-4. If qty = 0 in Console as well → escalate to human agent per A6.
+4. If qty = 0 in Console as well → escalate.
 
 ---
 

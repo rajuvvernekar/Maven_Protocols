@@ -24,10 +24,10 @@ When clients:
 - Report sold holdings appearing as negative positions during the day (tagged HOLDING — normal)
 - Ask about overnight quantity or carry-forward positions
 - Ask about margin shown when exiting a position (increase in utilised portfolio margin — order still executes)
-- Ask when intraday/F&O profits, delivery sale proceeds, BTST proceeds, or option premium become available
+- Ask when intraday/F&O profits, or option premium become available
 - Ask about NRI Non-PIS sale proceeds availability (75% same day, rest T+1)
 
-TRIGGER KEYWORDS: "position", "open position", "intraday", "MIS", "NRML", "carry forward", "overnight", "square off", "squared off", "auto square off", "P&L positions", "MTM", "mark to market", "margin call", "margin shortfall", "margin penalty", "hedged position", "convert position", "conversion", "expiry", "physical settlement", "physical delivery", "ITM expiry", "OTM expiry", "settlement price", "net position", "day position", "negative position", "profit available", "withdrawal after selling", "circuit limit position", "CO conversion", "BTST proceeds", "option premium available"
+TRIGGER KEYWORDS: "position", "open position", "intraday", "MIS", "NRML", "carry forward", "overnight", "square off", "squared off", "auto square off", "P&L positions", "MTM", "mark to market", "margin call", "margin shortfall", "margin penalty", "hedged position", "convert position", "conversion", "expiry", "physical settlement", "physical delivery", "ITM expiry", "OTM expiry", "settlement price", "net position", "day position", "negative position", "profit available", "withdrawal after selling", "circuit limit position", "CO conversion", "option premium available"
 
 TAGS: holdings, margins
 
@@ -39,13 +39,13 @@ TAGS: holdings, margins
 
 ### A1 — Fundamentals
 
--CNC buy on the same day appears in Positions → moves to Holdings on T+1.
+- CNC buy on the same day appears in Positions → moves to Holdings on T+1.
 
--Net position = actual current portfolio (overnight + today's trades). Day position = only today's trading activity.
+- Net position = actual current portfolio (overnight + today's trades). Day position = only today's trading activity.
 
--P&L in positions includes both realised (closed trades) and unrealised (open trades), calculated from original entry price. Multiple trades in same instrument same day: buy avg calculated across ALL trades, not just current position — can show profit even if current buy avg > LTP.
+- P&L in positions includes both realised (closed trades) and unrealised (open trades), calculated from original entry price. Multiple trades in same instrument same day: buy avg calculated across ALL trades, not just current position — can show profit even if current buy avg > LTP.
 
--Zerodha does not square off for freak trades — unrealised loss lasts only a fraction of a second.
+- Zerodha does not square off for freak trades — unrealised loss lasts only a fraction of a second.
 
 ### A2 — Field Usage Rules
 
@@ -89,9 +89,9 @@ TAGS: holdings, margins
 | Next day before 9:15 AM | Previous close | Previous close |
 | 6:30–7:00 AM (F&O only) | — | Settlement prices update (BHAVCOPY from NSE) |
 
--Settlement price = 0 for OTM options regardless of LTP — this is normal.
+- Settlement price = 0 for OTM options regardless of LTP — this is normal.
 
--Funds page uses MTM settlement price for futures/short options — will differ from positions P&L.
+- Funds page uses MTM settlement price for futures/short options — will differ from positions P&L.
 
 ### A4 — Auto Square-Off
 
@@ -101,11 +101,11 @@ TAGS: holdings, margins
 | Equity F&O | 3:26 PM |
 | MCX | 10 min before market close (Nov–Mar: 11:55 PM; Mar–Nov: 11:30 PM — shifts with US DST) |
 
--Charge: ₹50 + 18% GST per order squared off.
+- Charge: ₹50 + 18% GST per order squared off.
 
--Failure reasons: System/link failure, stock at circuit limit, connectivity issues.
+- Failure reasons: System/link failure, stock at circuit limit, connectivity issues.
 
--Failure consequence: MIS converts to CNC (equity) or NRML (F&O). Client responsible for closing. Zerodha may square off at discretion without margin call.
+- Failure consequence: MIS converts to CNC (equity) or NRML (F&O). Client responsible for closing. Zerodha may square off at discretion without margin call.
 
 ### A5 — Product Conversion Rules
 
@@ -137,7 +137,7 @@ TAGS: holdings, margins
 | E-1 (Monday) | 25% of contract value |
 | Expiry day (Tuesday) | 50% of contract value |
 
--This margin is blocked progressively for ITM stock options and futures positions approaching expiry. It can cause the available cash / fund balance to go negative.
+- This margin is blocked progressively for ITM stock options and futures positions approaching expiry. It can cause the available cash / fund balance to go negative.
 
 ### A7 — Margin Shortfall & Penalty
 
@@ -163,9 +163,7 @@ TAGS: holdings, margins
 
 | Source | When Available |
 |---|---|
-| Delivery sale proceeds | 100% available for new trades same day (stocks or F&O) |
 | NRI Non-PIS delivery sale | 75% same day; remaining 25% available T+1 |
-| BTST (T1 holdings) sale | Proceeds available from next trading day only |
 | Intraday profits (equity/F&O) | Not usable on T day. Available after T+1 settlement. |
 | Options sold/exited | Usable only for buying options in same segment same day. Available for all trades from T+1. |
 
@@ -181,10 +179,6 @@ TAGS: holdings, margins
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 | Options on expiry day | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day |
 | Same-day profits | https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits |
-
-### A12 — Escalation Data
-
--Include when escalating to human agent: client ID, instrument_name, product type, and specific issue.
 
 ### A13 — F&O Ban Period Delta Rules
 
@@ -222,7 +216,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause found after completing all diagnostic steps → escalate to human agent per **A12**.
+If no root cause found after completing all diagnostic steps → escalate.
 
 ## Section C: Rules
 
@@ -274,7 +268,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 7. Balance went negative due to physical delivery margin near expiry:
    a. Invoke `ledger_report` and check `remarks` for "Physical delivery margin blocked for long options in NSE F&O" with corresponding `debit` to confirm delivery margin was the cause.
    b. If found → physical delivery margin blocked for ITM stock option position approaching expiry. Share margin schedule from **A6** and the debit amount. Reference physical settlement policy per **A11**.
-   c. If not found → invoke `kite_margins` to investigate other causes of negative balance. If no cause identified → escalate to human agent per **A12**.
+   c. If not found → invoke `kite_margins` to investigate other causes of negative balance. If no cause identified → escalate.
 
 ### Rule 8 — Sold Holdings as Negative Positions
 
@@ -308,4 +302,4 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 1. Invoke `kite_order_history` — check if position was squared off today, or locate previous-day trade records.
 2. Invoke `kite_holdings` — check if CNC position moved to holdings.
 3. If still not found: confirm Privacy Mode is off in Kite settings.
-4. If still not found after steps 1–3 → escalate to human agent per **A12**.
+4. If still not found after steps 1–3 → escalate.

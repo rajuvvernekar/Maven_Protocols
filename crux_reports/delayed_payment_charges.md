@@ -105,19 +105,6 @@ TAGS: charges, margins
 | DPC debit entry on ledger (actual posting) | Ledger Report protocol |
 | Collateral holdings verification (if client disputes collateral in DPC) | Pledge Request Report protocol |
 
-### A8 — Escalation Triggers
-
-Escalate to human agent when any of the following occur:
-- DPC report values don't match ledger debit entry amount for the same period.
-- Collateral amount in DPC report differs significantly from pledged holdings for the same date.
-- Margin blocked in DPC report doesn't match `ledger_report` "With Margin" margin entries.
-- Client provides a valid calculation showing a different amount from the report, and report values themselves appear incorrect after verification.
-- Client requests a waiver, reversal, or reimbursement of DPC for any reason (including AMC-induced debit, lack of notification, or account inactivity).
-
-Include when escalating to human agent: client ID, date range, specific discrepancy (or client's stated reason for dispute), DPC report values, and interest amounts.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -138,7 +125,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate to human agent per A8.
+If no root cause is identified after checking all relevant rules → escalate.
 
 ---
 
@@ -171,7 +158,7 @@ If no root cause is identified after checking all relevant rules → escalate to
 2. If client provides their own calculation and it differs:
    - Verify daily values from the report against rates in A2.
    - If report values are correct per the rate → explain weekend/holiday accrual per Rule 5.
-   - If report values themselves appear incorrect → escalate to human agent per A8.
+   - If report values themselves appear incorrect → escalate.
 
 ### Rule 5 — Weekend/Holiday Interest
 
@@ -197,4 +184,4 @@ If no root cause is identified after checking all relevant rules → escalate to
 1. Share `collateral_amount` and `liquidbees_collateral` (these fields are only relevant for collateral disputes).
 2. Explain the 50% cash-vs-collateral rule per A1.
 3. If client still disputes → compare with Pledge Request Report per A7 for the same dates.
-4. If mismatch between DPC collateral and Pledge Request Report → escalate to human agent per A8.
+4. If mismatch between DPC collateral and Pledge Request Report → escalate.

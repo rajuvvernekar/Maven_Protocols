@@ -134,17 +134,6 @@ TAGS: orders
 | Activate DDPI | https://support.zerodha.com/category/your-zerodha-account/your-profile/ddpi/articles/activate-ddpi |
 | GTT stoploss option | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/gtt/articles/gtt-stoploss-option |
 
-### A9 — Escalation Triggers
-
-Escalate to human agent when any of the following occur:
-- GTT report data appears inconsistent or missing.
-- Client provides evidence (screenshot/email) showing different GTT details than the report.
-- Client requests compensation or reversal for GTT non-execution.
-
-Include when escalating to human agent: client ID, tradingsymbol, GTT type, status, trigger values, and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -166,7 +155,7 @@ Route by scenario
 
 ### Fallback
 
-If no rule matches, escalate to human agent per A9.
+If no rule matches, escalate.
 
 ---
 
@@ -186,12 +175,9 @@ If no rule matches, escalate to human agent per A9.
 ### Rule 3 — Status: Triggered
 
 1. Check `order_result_status`:
-   a. COMPLETE → triggered and executed. Invoke `kite_orders` (today) or `kite_order_history` (past) for execution details.
-   b. REJECTED → match `order_result_rejection_reason` against A5 (buy) or A6 (sell). Cross-reference `kite_margins` (margin) or `kite_holdings` (holdings) as needed.
-   c. CANCELLED → invoke `kite_order_history` filtered to the GTT trigger date. Use `gtt` field internally to confirm linkage.
-      - Cancelled during market hours → user cancelled during the session. Trigger is one-time per A1; advise creating a new GTT.
-      - Cancelled after market hours → triggered but unfilled by EOD per A1; advise creating a new GTT.
-2. If triggered GTT not visible in order book → reference DAY-validity behaviour per A1; direct client to email for trigger and order details.
+   a. failed → match `order_result_rejection_reason` against A5 (buy) or A6 (sell); share the explanation and resolution from the matching row. Invoke `kite_margins` or `kite_holdings` and answer accordingly.
+   b. success → use `order_result_id` → invoke `kite_order_history` → match against `order_id`. If `order_result_id` unavailable, use GTT `id` → match against `gtt` field in `kite_order_history`. Check `order_status` and share details accordingly.
+2. If triggered GTT not visible in `kite_order_history` → reference DAY-validity behaviour per A1; direct client to email for trigger and order details.
 
 ### Rule 4 — Price Reached but GTT Didn't Fire
 

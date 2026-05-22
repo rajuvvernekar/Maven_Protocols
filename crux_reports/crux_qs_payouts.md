@@ -134,13 +134,6 @@ If both conditions apply (inactive during regular QS period), mention inactivity
 | QS facts (schedule, opt-out, LIQUIDCASE) | `ledger_report` — A4 (QS Facts) |
 | Instant withdrawal eligibility / regular withdrawal processing cutoffs | `withdrawal_request` — A2 (Instant Eligibility) and A3 (Processing Cutoffs) |
 
-### A10 — Escalation Triggers
-
-Escalate when:
-- NRI PIS account (NRE PIS or NRO PIS) — escalate to support agent, do not proceed with QS processing.
-- Bank rejection persists after client verifies bank details match.
-- Client provides bank statement showing no credit after QS completed status.
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -158,7 +151,7 @@ Route by scenario
 
 ### Fallback
 
-If no matching scenario is found → escalate per **A10**.
+If no matching scenario is found → escalate.
 
 ## Section C: Rules
 

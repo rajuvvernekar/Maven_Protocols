@@ -99,17 +99,6 @@ TAGS: general
 |---|---|
 | Manual beneficiary addition (if CDSL email not received) | https://www.cdslindia.com/Authentication/OTP.aspx?id=B |
 
-### A9 — Escalation Triggers
-
-Escalate when any of the following occur:
-- Status = Stocks Transferred but receiver cannot see shares after 2+ trading days.
-- Stocks transferred but buy average not updated after 3+ working days.
-- Gift request fails repeatedly despite completing all steps correctly.
-
-Include in escalation: client ID (sender/receiver), creation date, status, items, and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -179,18 +168,18 @@ If receiver's demat account was already added as a beneficiary from a previous t
 ### Rule 5 — Gifted Stocks Not Visible in Holdings
 
 - Confirm status = Stocks Transferred (per A4).
-- If 2+ trading days have passed and stocks still not visible → ESCALATE TO HUMAN AGENT.
+- If 2+ trading days have passed and stocks still not visible → Escalate.
 - Invoke `console_eq_holdings`.
 
 ### Rule 6 — Discrepancy Mark on Gifted Stocks
 
 - Normal for recently gifted stocks (per A5).
-- If discrepancy persists after 3 working days → ESCALATE TO HUMAN AGENT.
+- If discrepancy persists after 3 working days → Escalate.
 
 ### Rule 7 — Buy Average Not Updated
 
 - Confirm 3+ working days since transfer (per A5).
-- If still N/A or incorrect → ESCALATE TO HUMAN AGENT.
+- If still N/A or incorrect → Escalate.
 - Invoke `console_eq_external_trades`.
 
 ### Rule 8 — Gift Charges
@@ -206,4 +195,4 @@ If receiver's demat account was already added as a beneficiary from a previous t
 
 ### Rule 10 — Escalation
 
-ESCALATE TO HUMAN AGENT when no root cause is identified after checking all relevant rules. Include details per A9.
+Escalate. Include details per A9.

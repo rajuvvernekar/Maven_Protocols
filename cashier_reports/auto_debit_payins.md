@@ -84,10 +84,6 @@ TAGS: funds, investments
 | Active mandates on Console | console.zerodha.com/funds/mandates |
 | How to create an eMandate schedule | https://support.zerodha.com/category/funds/mandate/how-to-set-up-emandates/articles/schedule-emandate-transactions |
 
-### A6 — Escalation Triggers
-
-When escalating, always include: client ID, amount, transaction date, and specific issue.
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -104,7 +100,7 @@ Route by scenario
 
 ### Fallback
 
-If no route matches, escalate to human agent per **A6**.
+If no route matches, escalate.
 
 ## Section C: Rules
 
@@ -132,12 +128,12 @@ If no route matches, escalate to human agent per **A6**.
 
 ### Rule 4 — Repeated "Mandate Debit Delayed" Emails
 
-1. Escalate to human agent per **A6**.
+1. Escalate.
 
 ### Rule 5 — Double Debit Complaint
 
-1. Check for multiple records with the same `transaction_id`. If the same `transaction_id` appears twice, it is a duplicate entry — escalate to human agent per **A6**.
-2. If two records with different `transaction_id` values both show Success → escalate to human agent per **A6**.
+1. Check for multiple records with the same `transaction_id`. If the same `transaction_id` appears twice, it is a duplicate entry — escalate.
+2. If two records with different `transaction_id` values both show Success → escalate.
 3. If one Success + one Failed (different `transaction_id`) → only the successful debit was credited. The failed debit was not processed.
 
 ### Rule 6 — Out-of-Scope Redirect

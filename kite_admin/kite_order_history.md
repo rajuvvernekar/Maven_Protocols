@@ -211,10 +211,6 @@ TAGS: orders
 | Market intelligence bulletin | zerodha.com/marketintel/bulletin |
 | SEBI retail algo compliance | https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest |
 
-### A14 — Escalation Data
-
-Include when escalating to human agent: client ID, instrument, date, order details, and specific issue.
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -241,7 +237,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause found after completing all diagnostic steps → escalate to human agent per **A14**.
+If no root cause found after completing all diagnostic steps → escalate.
 
 ## Section C: Rules
 
@@ -299,7 +295,7 @@ If no root cause found after completing all diagnostic steps → escalate to hum
 
 1. Check `placed_by`:
    a. ADMINSQF/rms → apply Rule 4.
-   b. Client's own ID → order appears placed from client's account. Escalate to human agent per **A14** for investigation. Suggest checking third-party Kite Connect API access; consider blocking account if unauthorized.
+   b. Client's own ID → order appears placed from client's account. Escalate. Suggest checking third-party Kite Connect API access; consider blocking account if unauthorized.
 
 ### Rule 8 — SIP Order Investigation
 

@@ -63,16 +63,6 @@ TAGS: charges, reports
 
 Order of charges to communicate to the client: Brokerage, Exchange transaction charges, STT, SEBI turnover fee, Stamp duty, Clearing charges, GST, Investor Protection Fund Trust, Total charges. Include the period in the response.
 
-### A5 — Escalation Triggers
-
-Escalate to human agent when any of the following occur:
-- Total charges seem significantly wrong compared to trading volume for the period.
-- A specific charge head shows an unusual amount that cannot be explained by the account head definition.
-
-Include when escalating to human agent: client ID, date range, exchange, segment, and the specific discrepancy.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -87,7 +77,7 @@ Route by scenario
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → escalate to human agent per A5.
+If no root cause is identified after checking all relevant rules → escalate.
 
 ---
 

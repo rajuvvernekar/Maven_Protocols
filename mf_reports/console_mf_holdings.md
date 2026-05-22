@@ -113,18 +113,18 @@ Route to console_mf_pseudo_holdings.
 
 1. Invoke `console_mf_pseudo_holdings` — compare `available` and `discrepant` values.
 2. If mismatch → invoke `console_mf_tradebook` for missing trade entries.
-3. If trade entry exists but mismatch persists → escalate to human agent.
+3. If trade entry exists but mismatch persists → escalate.
 
 ### Rule 4 — Buy Average Incorrect
 
 1. Invoke `console_mf_external_trades` — verify all entries are correct and complete.
 2. If units were transferred in, verify external trade entries have been added.
-3. If all entries correct and `failure_date` is empty → escalate to human agent.
+3. If all entries correct and `failure_date` is empty → escalate.
 
 ### Rule 5 — Failure Date
 
 1. Invoke `console_mf_pseudo_holdings`.
-2. Escalate to human agent.
+2. Escalate.
 
 ### Rule 6 — Console vs Coin Value Difference
 

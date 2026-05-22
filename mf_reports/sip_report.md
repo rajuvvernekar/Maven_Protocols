@@ -27,9 +27,10 @@ TAGS: investments
 
 ### A1 — SIP Fundamentals
 
-- SIP types: `sip` (Zerodha — modifiable), `amc_sip` (BSE — delete-only),
+- SIP types: `sip` (Zerodha — modifiable), `amc_sip` (BSE — delete-only).
 - Zerodha SIP triggers at 1:30 AM. AMC SIP triggers at 3:15 AM.
 - Standard SIP trigger: 2 days prior to `preferred_date`. UPI mandate SIPs (`fund_source` = `upi-mandates`): trigger on T-1 instead of T-2.
+- **Microsavings SIP:** Zerodha Nifty Largemidcap 250 Index Fund supports daily SIP frequency only. `sip_type` = `amc_sip`. See Rule 9.
 
 ---
 
@@ -138,20 +139,8 @@ When checking `mandate_report`, only `status` = `success` indicates a usable, ac
 | Mandate creation and SIP linkage | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin#:~:text=Linking%20a%20mandate%20to%20an%20existing%20SIP |
 | Modify, pause, or delete SIP | https://support.zerodha.com/category/mutual-funds/features-on-coin/systematic-investment-plan/articles/modify-cancel-sip-coin-app |
 | NRI PIS NEFT/RTGS payments on Coin | https://support.zerodha.com/category/mutual-funds/payments-and-orders/payment-methods/articles/neft-rtgs-coin |
-
----
-
-### A9 — Escalation Triggers
-
-Escalate to human agent when any of the following apply:
-
-- Account type conversion in progress (per Rule 7 check).
-- Client reports SIP deletion is not succeeding from their end.
-- SIP trigger issue remains unresolved after completing all checks in Rule 1.
-
-Include in escalation: client ID, SIP fund name (`name`), `sip_status`, and the specific issue.
-
----
+| Redeem on Coin | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeem-on-coin-app |
+| Microsavings SIP | https://support.zerodha.com/category/mutual-funds/features-on-coin/systematic-investment-plan/articles/microsavings-sip |
 
 ## Section B: Decision Flow
 
@@ -165,12 +154,15 @@ Route by scenario
    ├─ NRI PIS account: cannot create mandate → Rule 4
    ├─ SIP mandate linkage / auto-debit / "pending mandate verification" → Rule 5
    ├─ SIP deletion failing → Rule 6
-   └─ Account type conversion suspected → Rule 7
+   ├─ Account type conversion suspected → Rule 7
+   ├─ Client asks about refund / getting money back after cancelling SIP → Rule 8
+   ├─ Client wants to create SIP in Zerodha Nifty Largemidcap 250 Index Fund → Rule 9
+   └─ SIP cancelled but payment was still debited → Rule 10
 ```
 
 ### Fallback
 
-If no rule matches and no root cause is identified after checks → escalate to human agent per A9.
+If no rule matches and no root cause is identified after checks → escalate.
 
 ---
 
@@ -180,7 +172,7 @@ If no rule matches and no root cause is identified after checks → escalate to 
 
 **Account conversion check:**
 
-If status from ‘get_all_client_data’  ≠ "approved" → account type conversion is in progress. Escalate per A9. Stop.
+If status from `get_all_client_data` ≠ "approved" → account type conversion is in progress. Escalate. Stop.
 
 **SIP status check:**
 
@@ -233,7 +225,7 @@ If the SIP order exists in `mf_order_history` for the trigger date, check `fund_
 - `fund_source` = `digio-mandates` or `upi-mandates` → mandate linked. Invoke `mandate_debit_report` and apply A5 status interpretation. If status = `failed` or `pending` (with execution issue), the SIP order has failed for this cycle. For Zerodha SIPs, advise placing a manual lumpsum order to cover the missed cycle. For AMC SIPs, communicate the failure cause from the debit `remark`; the next AMC SIP cycle will retry automatically.
 - `fund_source` = `rp-pg`, `pool`, or blank → mandate not linked. Route to Rule 5.
 
-**Fallback:** If none of the above resolves the issue → escalate per A9.
+**Fallback:** If none of the above resolves the issue → escalate.
 
 ---
 
@@ -259,10 +251,10 @@ If the SIP order exists in `mf_order_history` for the trigger date, check `fund_
 
 ### Rule 4 — NRI PIS Account: Mandate Restriction
 
-1. If all three conditions match in ‘get_all_client_data’ → NRI PIS account confirmed:
-  - client_acc_type is one of NRO, NRE, or NRI
-  - bo_sub_status contains "RepatriableWith" (NRE)
-  - pis_bank_1_name or pis_bank_2_name is populated (PIS)
+1. If all three conditions match in `get_all_client_data` → NRI PIS account confirmed:
+  - `client_acc_type` is one of NRO, NRE, or NRI
+  - `bo_sub_status` contains "RepatriableWith" (NRE)
+  - `pis_bank_1_name` or `pis_bank_2_name` is populated (PIS)
 
 Communicate the NRI PIS mandate restriction per A4. Share the NRI PIS NEFT/RTGS link from A8.
 
@@ -299,10 +291,36 @@ If the client has multiple SIPs, check each one separately. A mandate linked to 
 ### Rule 6 — SIP Deletion Failing
 
 1. Confirm: the client reports they followed the deletion steps but deletion is not succeeding.
-2. Escalate to human agent per A9.
+2. Escalate.
 
 ---
 
 ### Rule 7 — Account Type Conversion Check
 
-If status from ‘get_all_client_data’ ≠ "approved" → account type conversion is in progress. SIP-related actions may not work correctly until conversion completes. Escalate to human agent per A9.
+If status from `get_all_client_data` ≠ "approved" → account type conversion is in progress. SIP-related actions may not work correctly until conversion completes. Escalate.
+
+---
+
+### Rule 8 — Redemption After SIP Cancellation
+
+Cancelling a SIP stops future instalments only — it does not redeem existing units or credit funds back to the bank account. To receive the invested money, the client must place a separate redemption request.
+
+1. Invoke `console_mf_pseudo_holdings` for the fund linked to the cancelled SIP.
+2. Units found → guide client to place a redemption request per the Redeem on Coin link from A8.
+3. No units found → inform client that no units are held in this fund; nothing to redeem.
+
+---
+
+### Rule 9 — Microsavings SIP: Zerodha Nifty Largemidcap 250 Index Fund
+
+This fund supports daily SIP frequency only. The client must select daily when creating the SIP. `sip_type` will be `amc_sip`. Share the microsavings SIP link from A8.
+
+---
+
+### Rule 10 — Cancelled SIP: Payment Still Debited
+
+1. Confirm `sip_status` = Cancelled for the SIP the client is referring to.
+2. Check `fund_source` per A4. If no mandate was linked (`fund_source` = `rp-pg`, `pool`, or blank) → no auto-debit could have occurred; inform client accordingly.
+3. If mandate was linked (`fund_source` = `digio-mandates` or `upi-mandates`) → invoke `mandate_debit_report` for the date the client reports the debit. Apply A5 status interpretation.
+4. Debit not initiated (no record or `draft`) → no payment was processed; inform client.
+5. Debit initiated (`success`, `pending`, or `failed`) → invoke `mf_order_history` for the fund and guide based on order status

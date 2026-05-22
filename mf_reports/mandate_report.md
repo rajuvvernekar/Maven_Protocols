@@ -129,20 +129,6 @@ Other NRI account types (NRO PIS, NRO non-PIS, NRE non-PIS) can create mandates 
 |---|---|
 | Coin mandate management (creation, linkage, deletion) | https://support.zerodha.com/category/mutual-funds/payments-and-orders/coin-mandates/articles/sip-mandate-on-coin |
 
----
-
-### A9 — Escalation Triggers
-
-Escalate to human agent when any of the following apply:
-
-- eNACH mandate pending more than 5 working days.
-- Old mandate stuck in pending or being-cancelled state for more than 5 working days, blocking new mandate creation.
-- Mandate deletion not completing within the timeline in A7.
-
-Include in escalation: client ID, mandate type (UPI autopay or eNACH), bank, creation date, and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -158,7 +144,7 @@ Route by scenario
 
 ### Fallback
 
-If no rule matches and no root cause is identified after checks → escalate to human agent per A9.
+If no rule matches and no root cause is identified after checks → escalate.
 
 ---
 
@@ -170,7 +156,7 @@ Apply the status meaning per A3. Communicate the current state to the client.
 
 For pending status, branch by mandate type per A4:
 
-- **eNACH** (`type` = `enach`): calculate working days since `created_at`. If 5 working days or fewer → communicate that eNACH activation takes up to 3 working days. If more than 5 working days → communicate that the mandate has been pending beyond the normal window; banks sometimes delay confirmation. Escalate per A9.
+- **eNACH** (`type` = `enach`): calculate working days since `created_at`. If 5 working days or fewer → communicate that eNACH activation takes up to 3 working days. If more than 5 working days → communicate that the mandate has been pending beyond the normal window; banks sometimes delay confirmation. Escalate.
 - **UPI autopay** (`type` = `autopay`): check time elapsed since `created_at`. If within 2 minutes → mandate is still being activated; communicate to wait. If more than 2 minutes → the UPI PIN confirmation step was likely not completed. Communicate that the mandate will be auto-cancelled by 11 PM the same day, and advise creating a new mandate with the PIN confirmation step completed.
 
 -For failed status, communicate that the mandate registration could not be completed. Suggest creating a new mandate; UPI autopay activates within 2 minutes if the client wants faster activation.
@@ -208,7 +194,7 @@ If the client has an NRI account but is not NRE-PIS → mandates can be created 
 
 A new mandate cannot be created while an existing one is still pending or being cancelled. Communicate this and the deletion timeline per A7 (up to 5 working days).
 
-If the old mandate has been pending for more than 5 working days → escalate per A9.
+If the old mandate has been pending for more than 5 working days → escalate.
 
 ---
 

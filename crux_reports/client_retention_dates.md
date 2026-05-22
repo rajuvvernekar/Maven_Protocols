@@ -72,19 +72,6 @@ TAGS: funds
 | `collateral_amount` | Value of collateral pledged |
 | `mode_of_settlement` | Settlement mode (e.g., electronic, physical) |
 
----
-
-### A4 — Escalation Triggers
-
-Escalate when any of the following occur:
-- Funds released > 0 but not credited to bank after 3 working days.
-- Maximum retention amount seems incorrect — exceeds visible margin + obligations.
-- No settlement entry exists for a QS date when client was eligible.
-
-Include in escalation: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -115,7 +102,7 @@ in combination with any of the above routes.
 
 ### Fallback
 
-If no root cause is identified after checking all relevant rules → ESCALATE TO HUMAN AGENT per Rule 7.
+If no root cause is identified after checking all relevant rules → Escalate.
 
 ---
 
@@ -141,7 +128,7 @@ Not all funds are released during QS. Funds are retained for open F&O or commodi
 
 ### Rule 4 — QS Payout Not Received in Bank
 
-`funds_released` > 0 but the client has not received the payout in their bank account. Credit timing is 1–2 working days per A1. If more than 3 working days have passed and the amount has not been credited → escalate to human agent per A4.
+`funds_released` > 0 but the client has not received the payout in their bank account. Credit timing is 1–2 working days per A1. If more than 3 working days have passed and the amount has not been credited → escalate.
 
 ---
 
@@ -159,4 +146,4 @@ Apply A2.
 
 ### Rule 7 — Escalation
 
-Any trigger in A4 is met, or no root cause identified after checking all relevant rules. Escalate to human agent. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
+Any trigger in A4 is met, or no root cause identified after checking all relevant rules. Escalate. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.

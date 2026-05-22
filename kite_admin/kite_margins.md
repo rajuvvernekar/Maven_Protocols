@@ -20,12 +20,15 @@ When clients:
 - Ask about free cash calculation or how available margin is computed
 - Report difference between Kite positions P&L and funds page P&L (entry price vs MTM settlement price)
 - Report opening balance not matching expected amount (T+1 settlement, MTM, charges, holidays)
-- Ask about sale proceeds availability (100% same day for holdings since Oct 2024)
+- Report sale proceeds not appearing in funds or balance after selling shares
+- Report funds not available for trading after selling stocks
+- Report balance not updated after selling shares purchased the previous day
+- Ask why money is not credited after selling stocks bought the previous trading day
 - Report available cash rounding on Kite (1 decimal display, full amount withdrawable)
 - Report market order causing negative balance (validation vs execution price difference)
 - Ask about weekend or holiday payin visibility (appears on Monday)
 
-TRIGGER KEYWORDS: "available margin", "available cash", "opening balance", "used margin", "fund balance", "funds page", "funds tab", "collateral", "SPAN", "exposure margin", "delivery margin", "option premium", "free cash", "negative balance", "debit balance", "margin shortfall", "margin call", "margin penalty", "MTM", "mark to market", "M2M", "unsettled funds", "profit not showing", "yesterday profit", "payin", "payout", "balance incorrect", "balance wrong", "balance mismatch", "margin blocked", "sale proceeds", "interest on negative", "opening balance wrong"
+TRIGGER KEYWORDS: "available margin", "available cash", "opening balance", "used margin", "fund balance", "funds page", "funds tab", "collateral", "SPAN", "exposure margin", "delivery margin", "option premium", "free cash", "negative balance", "debit balance", "margin shortfall", "margin call", "margin penalty", "MTM", "mark to market", "M2M", "unsettled funds", "profit not showing", "yesterday profit", "payin", "payout", "balance incorrect", "balance wrong", "balance mismatch", "margin blocked", "sale proceeds", "interest on negative", "opening balance wrong", "money not credited", "amount not credited", "sold but not credited", "proceeds not credited", "sale amount not showing", "funds not showing after selling", "balance not updated after selling", "sold shares not showing", "money not reflecting", "amount not reflecting", "sale not reflected"
 
 TAGS: margins
 
@@ -33,13 +36,11 @@ TAGS: margins
 
 # KITE MARGINS PROTOCOL
 
----
-
 ## Section A: Reference Data
 
 ### A1 — Fundamentals
 
-Positions P&L uses entry price; Funds page uses last MTM settlement price — these may differ intraday. Overall P&L will be the same once positions are closed.
+- Positions P&L uses entry price; Funds page uses last MTM settlement price — these may differ intraday. Overall P&L will be the same once positions are closed.
 
 ---
 
@@ -56,7 +57,7 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 | `payin` | Funds added to the account today |
 | `payout` | Funds withdrawn from the account today |
 | `span` | SPAN margin requirement for F&O positions |
-| `delivery_margin` | Margin blocked for delivery settlement obligations |
+| `delivery_margin` | Additional margin blocked for F&O positions due for physical delivery or MCX contracts close to expiry |
 | `exposure_margin` | Exposure margin requirement for F&O positions |
 | `option_premium` | Net option premium paid or received |
 | `liquid_collateral` | Collateral value from liquid mutual fund pledges |
@@ -69,6 +70,7 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 | Field | Interpretation |
 |---|---|
 | `m2m_unrealised` | Unrealised MTM P&L on open positions — fluctuates intraday until positions are closed |
+| `zbl_mcx_status` | MCX single ledger status — internal use only |
 
 ---
 
@@ -90,7 +92,7 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 | SPAN | Margins blocked for F&O portfolios. Exchanges use Standard Portfolio Analysis of Risk (SPAN) to calculate risk. |
 | Exposure | Margin charged over and above SPAN to cover risks that SPAN may not account for (index: 2% of contract value; stock: 3.5% or 1.5 SD). |
 | SPAN + Exposure | Initial Margin required by exchange for F&O. |
-| Delivery Margin | T1 sale proceeds + physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry. Physical delivery margin increases progressively from 4 days before expiry to expiry day — see **A10** for the full schedule. |
+| Delivery Margin | Physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry. Physical delivery margin increases progressively from 4 days before expiry to expiry day — see **A9** for the full schedule. |
 | M2M Realised | Realised MTM P&L from closed F&O positions. Mark to Market is the daily revaluation of open futures positions at the closing price — profits or losses are settled to the client's account daily. Options do not have MTM settlement. |
 | M2M Unrealised | Unrealised MTM P&L from open F&O positions (internal use only). |
 
@@ -134,35 +136,16 @@ Positions P&L uses entry price; Funds page uses last MTM settlement price — th
 
 ---
 
-### A7 — Settlement & Availability
-
-| Source | When Available |
-|---|---|
-| Intraday/F&O profits | After T+1 settlement (next trading day). If the next trading/settlement day is a holiday, funds are available the following trading day. |
-| Sale proceeds from holdings (normal CNC) | 100% available same day for all trades (effective Oct 7, 2024) |
-| BTST sale | Funds available from T+1 (next trading day) after EPI completes. |
-
----
-
-### A8 — Links
+### A7 — Links
 
 | Topic | URL |
 |---|---|
 | Margin calculator | https://zerodha.com/margin-calculator |
 | Intraday leverages | https://zerodha.com/marketintel/bulletin/249809/latest-intraday-leverages-mis-bo-co |
 | Approved securities (pledge haircuts) | https://zerodha.com/approved-securities |
-| T1 holdings proceeds | https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds |
 | Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
 
----
-
-### A9 — Escalation Data Template
-
-Escalate to a human agent. Always include: **client ID, current margin values, and specific issue.**
-
----
-
-### A10 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
+### A9 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
 
 | Day | Margin Requirement |
 |---|---|
@@ -176,7 +159,7 @@ This margin is blocked progressively for ITM stock options and futures positions
 
 Ledger entry: "Physical delivery margin blocked for long options in NSE F&O"
 
-**Reference:** Physical settlement policy per **A8**.
+**Reference:** Physical settlement policy per **A7**.
 
 ---
 
@@ -195,15 +178,16 @@ Route by scenario
    ├─ Payin / payout inquiry → Rule 6
    ├─ P&L mismatch — positions page vs funds page → Rule 7
    ├─ Opening balance mismatch → Rule 8
-   ├─ Sale proceeds not available / T1 / BTST / funds not credited → Rule 9
+   ├─ Funds not available after stock sold / sale proceeds not reflected → Rule 9
    ├─ Negative balance after market order → Rule 10
    ├─ MTM explanation → Rule 11
-   └─ Balance negative + ITM stock options near expiry → Rule 12
+   ├─ Balance negative + ITM stock options near expiry → Rule 12
+   └─ MCX / commodity margin or single ledger query → Rule 13
 ```
 
 ### Fallback
 
-If no root cause is found, escalate to a human agent per **A9**.
+If no root cause is found, escalate.
 
 ---
 
@@ -223,7 +207,7 @@ If no root cause is found, escalate to a human agent per **A9**.
 
 ### Rule 2 — Profit Not Showing in Balance
 
-1. Intraday and F&O profits are available only after T+1 settlement per **A7**. The current available margin does not include today's unsettled profits. These will reflect in the opening balance on the next trading day.
+1. Intraday and F&O profits are available only after T+1 settlement (next trading day). If the next trading/settlement day is a holiday, funds are available the following trading day. The current available margin does not include today's unsettled profits. These will reflect in the opening balance on the next trading day.
 2. To determine if the client made an intraday trade:
    - Invoke `kite_orders` (filter `order_status` = COMPLETE): if the same instrument has both BUY and SELL orders with matching quantities, it is intraday.
    - For F&O: invoke `console_fno_positions`. Any quantity in `open_quantity` from the previous day was carried overnight — everything bought and sold beyond that today is intraday.
@@ -235,7 +219,7 @@ If no root cause is found, escalate to a human agent per **A9**.
 ### Rule 3 — Negative Available Cash
 
 1. `available_cash` < 0 → negative cash attracts interest at 0.05%/day (18% p.a.) per **A5**. Advise adding funds to clear the deficit. If not cleared, open positions may be squared off.
-2. If client holds ITM stock option positions approaching expiry → invoke `ledger_report` and check `remarks` for the ledger entry in **A10**. If found → route to Rule 12. If not found → continue with step 1 above — explain interest charge and advise adding funds.
+2. If client holds ITM stock option positions approaching expiry → invoke `ledger_report` and check `remarks` for the ledger entry in **A9**. If found → route to Rule 12. If not found → continue with step 1 above — explain interest charge and advise adding funds.
 
 ---
 
@@ -246,14 +230,14 @@ If no root cause is found, escalate to a human agent per **A9**.
    - Equity collateral is non-cash and attracts 0.035%/day if used beyond the 50% cash limit.
    - Usable for: equity intraday, futures, options buying and writing.
    - Not usable for equity delivery (CNC) purchases.
-2. Approved list and haircuts per **A8** (approved securities).
+2. Approved list and haircuts per **A7** (approved securities).
 
 ---
 
 ### Rule 5 — SPAN / Exposure / Delivery Margin
 
 1. Per **A3**: SPAN + Exposure = Initial Margin required by exchange for F&O.
-2. For physical delivery margin near expiry → share **A10** schedule. Margin calculator per **A8**.
+2. For physical delivery margin near expiry → share **A9** schedule. Margin calculator per **A7**.
 3. If client asks which position is blocking margin → invoke `kite_positions`.
 4. If client asks about a specific order's margin requirement → invoke `kite_orders` and check `filled_quantity` and `average_price` for OPEN and COMPLETE orders.
 
@@ -281,23 +265,19 @@ If no root cause is found, escalate to a human agent per **A9**.
 
 ---
 
-### Rule 9 — Sale Proceeds / BTST
+### Rule 9 — Funds Not Available After Stock Sold
 
-**T1 query:**
-If client asks about T1 shares → invoke `kite_holdings` and check `t1_t2_holdings`. T1 shares purchased the previous trading day are pending settlement; funds from selling T1 shares are available from T+1 per **A7**.
+**BTST (Buy Today Sell Tomorrow):** Stock purchased the previous trading day that has not yet settled — visible as `t1` quantity in holdings. Selling T1 holdings is a BTST trade; proceeds are not available same day.
 
 **BTST detection:**
-When client reports sale proceeds not available or funds not credited after selling shares:
-1. Invoke `kite_order_history` for the sell date and one previous trading day (accounting for holidays).
-2. If the stock was bought on the previous trading day and sold today → BTST trade.
-3. Invoke `console_eq_holdings` for the sell date — only quantity under `t1` is BTST; remaining quantity is from older settled holdings.
-4. Blocked value = `filled_quantity × average_price` from the sell order.
-5. Inform: shares sold were purchased the previous trading day (T1/BTST). Sale proceeds blocked, available from next trading day as per **A7**. Settlement holiday in between → may take an additional day. Share BTST quantity and blocked value. Link per **A8** (T1 holdings proceeds).
+1. Invoke `kite_order_history` for the sell date and the previous trading day (accounting for holidays).
+2. If the stock was bought on the previous trading day and sold today → BTST trade. Funds are available from T+1 only.
+3. For additional confirmation, invoke `console_eq_holdings` for the sell date. Only quantity under `t1` is BTST — remaining quantity is from older settled holdings.
+4. Blocked value for BTST = `filled_quantity × average_price` from the sell order.
 
-**Normal CNC sale (non-BTST):**
-100% of proceeds available same day for all trades (effective Oct 7, 2024) per **A7**.
-
-If client asks about specific holdings sold → invoke `kite_holdings`.
+**Normal CNC sale (non-BTST — settled holdings):**
+- 100% of proceeds are available same day for all trades (effective Oct 7, 2024).
+- If client asks about specific holdings sold → invoke `kite_holdings`.
 
 ---
 
@@ -319,7 +299,15 @@ If client asks about specific holdings sold → invoke `kite_holdings`.
 ### Rule 12 — Balance Negative Due to Physical Delivery Margin
 
 1. If the client's fund balance went negative near F&O expiry and client holds ITM stock option positions:
-   a. Invoke `ledger_report` and check `remarks` for the ledger entry in **A10** with a corresponding `debit` entry.
-   b. If found → physical delivery margin has been blocked for the ITM stock option position approaching expiry. Share the margin schedule from **A10** and the debit amount from the ledger. Physical settlement policy per **A8**.
+   a. Invoke `ledger_report` and check `remarks` for the ledger entry in **A9** with a corresponding `debit` entry.
+   b. If found → physical delivery margin has been blocked for the ITM stock option position approaching expiry. Share the margin schedule from **A9** and the debit amount from the ledger. Physical settlement policy per **A7**.
    c. If not found → route to Rule 3.
 2. If client asks about the position → invoke `kite_positions`.
+
+---
+
+### Rule 13 — MCX / Commodity Margin and Single Ledger
+
+1. No separate funds are needed for MCX and Equity — the same funds cover both segments when the single ledger is active.
+2. If `zbl_mcx_status` = active → single ledger is active; the same funds are available for trading across both Equity and Commodity (MCX) segments.
+3. If `zbl_mcx_status` is not active and client wants to trade in commodities → guide to activate the single ledger; invoke `account_modification_report`.

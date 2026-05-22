@@ -82,14 +82,6 @@ TAGS: holdings, demat
 | Split | Immediate (on record date) |
 | Demerger | 30–45 days from record date |
 
----
-
-### A5 — Escalation Data
-
-- Include when escalating to human agent: client ID, tradingsymbol, ISIN, specific missing or incorrect entries, and dates.
-
----
-
 ## Section B: Decision Flow
 
 ### Routing
@@ -108,7 +100,7 @@ Route by scenario
 
 ### Fallback
 
-- If no rule matches → escalate to human agent per A5.
+- If no rule matches → escalate.
 
 ---
 
@@ -140,7 +132,7 @@ Route by scenario
 ### Rule 4 — Entry Missing from Breakdown
 
 1. If the trade was executed within the last 1 trading day → inform client per A1; trade is in the tradebook and will appear in the breakdown shortly. Buy average and P&L are not affected.
-2. If trade was 2+ trading days ago and still not in breakdown → escalate to human agent per A5.
+2. If trade was 2+ trading days ago and still not in breakdown → escalate.
 
 ---
 
@@ -150,15 +142,15 @@ Route by scenario
    a. `external_trade_type` populated → external entry for shares received via transfer/gift/IPO/ESOP/buyback. Invoke `console_eq_external_trades` for details.
    b. `exchange` = DIVIDEND → dividend reinvestment (per Rule 2).
    c. Corporate action entry (price = 0, system entry) → bonus/split/merger/demerger.
-   d. None of the above → escalate to human agent per A5 as potential breakdown-tradebook mismatch.
+   d. None of the above → escalate.
 
 ---
 
 ### Rule 6 — Breakdown Not Loading / Error
 
 1. Try a different stock to confirm whether the issue is stock-specific or account-wide.
-2. Stock-specific → escalate to human agent per A5 with client ID and tradingsymbol.
-3. Account-wide → temporary issue; suggest retrying after some time or using a different browser. If the issue persists beyond 24 hours → escalate to human agent per A5.
+2. Stock-specific → escalate.
+3. Account-wide → temporary issue; suggest retrying after some time or using a different browser. If the issue persists beyond 24 hours → escalate.
 
 ---
 
@@ -166,7 +158,7 @@ Route by scenario
 
 1. Walk through FIFO per Rule 1 — list buy entries chronologically, consume oldest-first against any sell entries, and compute the average of remaining quantity.
 2. If the FIFO-derived average matches `console_eq_holdings` → confirm to client that buy average is correct.
-3. If the FIFO-derived average does not match `console_eq_holdings` → escalate to human agent per A5.
+3. If the FIFO-derived average does not match `console_eq_holdings` → escalate.
 
 ---
 
@@ -174,4 +166,4 @@ Route by scenario
 
 1. Identify the CA entry per A3 (price = 0 for bonus, or adjusted qty/price around CA date for split/merger/demerger).
 2. CA entry found → share date, qty, price.
-3. CA entry not found → compare against expected timeline per A4. If beyond expected timeline → escalate to human agent per A5.
+3. CA entry not found → compare against expected timeline per A4. If beyond expected timeline → escalate.
