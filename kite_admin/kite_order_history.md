@@ -347,5 +347,3 @@ If no root cause found after completing all diagnostic steps → escalate.
 3. MCX IOC rejection: MCX does not support IOC validity in the algo segment. Orders via third-party API on MCX with IOC validity will be rejected. Use DAY validity instead.
 4. Order slicing: API order slicing should be capped at a maximum of 10 slices to stay within the 10 orders-per-second rate limit.
 5. For details on all SEBI retail algo compliance, share link from **A13**.
-
-# # ACCOUNT MODIFICATION REPORT
