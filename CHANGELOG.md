@@ -10,6 +10,8 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+**Before adding a new entry for a tool:** check `REGRESSION_LOG.md` to see if that tool + section was previously modified. If yes, note it there before applying.
+
 ### 2026-05-21 — Escalation handoff consolidation (full rollout, 55 tools)
 
 Completes the consolidation begun in the account_modification_report pilot. System prompt now owns the escalation handoff format; tool rules just say `escalate`.
