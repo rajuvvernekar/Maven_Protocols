@@ -341,7 +341,7 @@ Escalate.
 1. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
    - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
    - Mismatch → escalate.
-2. If stock was purchased within the last 90 days → invoke `console_eq_tradebook`; check for a subsequent sell trade:
+2. If stock was purchased within the last 90 days → invoke `console_eq_tradebook_prepared`; check for a subsequent sell trade:
    - Sell trade found → inform client of sale (date, qty, price); proceeds credited. Stop.
 3. Diagnose by quantity field:
    - `t1` > 0 → T+1 settlement in progress (A1, A2).

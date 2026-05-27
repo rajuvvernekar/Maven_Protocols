@@ -205,7 +205,7 @@ If no route matches, investigate using Section A reference data. If no root caus
    If client reports holdings/positions/P&L hidden → Privacy Mode may be enabled. Direct client: tap user ID (top-right on Kite web, or profile icon on app) → toggle Privacy Mode off. Data is intact — display only. Links per **A9** (Privacy Mode rows).
 
 2. **Verify client still holds the shares:**
-   Invoke `console_eq_tradebook` for the instrument within the relevant date range. Compute net quantity using FIFO: sum all BUY quantities and subtract all SELL quantities chronologically. If net remaining ≤ 0 → client has sold all shares. Share buy/sell summary (dates, quantities, prices) so client can see the FIFO trail. If net remaining is positive but less than expected → inform client of actual remaining quantity, then investigate the missing portion.
+   Invoke `console_eq_tradebook_prepared` for the instrument within the relevant date range. Compute net quantity using FIFO: sum all BUY quantities and subtract all SELL quantities chronologically. If net remaining ≤ 0 → client has sold all shares. Share buy/sell summary (dates, quantities, prices) so client can see the FIFO trail. If net remaining is positive but less than expected → inform client of actual remaining quantity, then investigate the missing portion.
 
 3. Systematically check causes from **A6**:
    a. Recently purchased → shares bought today appear under Positions per **A1**, **A3**. Invoke `kite_positions`.

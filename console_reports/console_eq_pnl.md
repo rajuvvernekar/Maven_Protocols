@@ -219,7 +219,7 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 
 Product type (CNC, MIS, Long-term, etc.) does not determine tax classification. Even if a client used CNC, same-day buy + sell of the same stock in EQ series is treated as intraday (speculative). What matters is whether offsetting trades exist on the same day — not the product type label. See A7 for the CNC/MIS/NRML explainer link.
 
-1. Invoke `console_eq_tradebook` to check the `series` field.
+1. Invoke `console_eq_tradebook_prepared` to check the `series` field.
 2. **Series EQ + same-day buy and sell** → classified as intraday (speculative), not delivery, regardless of product type used. See A6-S4.
 3. **Series BE / BT / BZ (T2T)** → same-day buy + sell in T2T is always delivery. See A6-S5.
 
