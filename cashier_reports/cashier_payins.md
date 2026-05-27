@@ -259,7 +259,7 @@ Check if the client has shared a UTR or bank reference number in the attachment 
 
 **Step 2 — UTR re-query:**
 
-Invoke `cashier_payin` — leave **Client ID** blank and enter the UTR / reference number in the **Bank Reference** field. For NEFT / IMPS / RTGS, `status` is always Success when the transaction is located — only `nest_update` and the bank-account match determine the next step.
+Invoke `cashier_payins` — leave **Client ID** blank and enter the UTR / reference number in the **Bank Reference** field. For NEFT / IMPS / RTGS, `status` is always Success when the transaction is located — only `nest_update` and the bank-account match determine the next step.
 
 | Result | Action |
 |---|---|

@@ -281,7 +281,7 @@ Route by scenario
 
 ### Rule 4 — Withdrawal Status Lookup by Reference Number
 
-1. When client quotes a bank reference number or UTR, Invoke `withdrawal_report` to look up that specific transaction.
+1. When client quotes a bank reference number or UTR, Invoke `withdrawal_request` to look up that specific transaction.
 2. Identify the transaction status: processed, rejected, or pending.
 3. If rejected: funds are credited back to the Zerodha trading account — check ledger for the corresponding credit entry. Check if a subsequent withdrawal was placed after the rejection.
 4. If processed: if not received by client's bank within 24 hours of the processing date, advise client to follow up with their bank.
