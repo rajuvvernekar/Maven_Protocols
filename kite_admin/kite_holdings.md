@@ -162,7 +162,8 @@ Route by scenario
    ├─ Smallcase vs Kite mismatch → Rule 9
    ├─ Short delivery notification received / shares not credited post-auction → Rule 10
    ├─ Holdings quantity doesn't match trade history (discrepant shares) → Rule 11
-   └─ Unable to sell T1 shares / shares bought yesterday → Rule 12
+   ├─ Unable to sell T1 shares / shares bought yesterday → Rule 12
+   └─ Stock sold but funds not credited → Rule 13
 ```
 
 ### Fallback
@@ -282,3 +283,15 @@ If no route matches, investigate using Section A reference data. If no root caus
 2. If confirmed → BTST is not permitted for NRE-PIS accounts. Client cannot sell T1 shares (shares bought the previous trading day) until they settle on T+1 per **A4**.
 
 3. If not confirmed → route to **Rule 5** for TPIN/DDPI investigation.
+
+### Rule 13 — Stock Sold but Funds Not Credited
+
+**BTST detection:**
+1. Invoke `kite_order_history` for the sell date and the previous trading day (accounting for holidays).
+2. If the stock was bought on the previous trading day and sold today → BTST trade. Funds are available from T+1 only per **A4**. Share T1 holdings proceeds link from **A9**.
+3. For additional confirmation, invoke `console_eq_holdings` for the sell date. Only quantity under `t1` is BTST — remaining quantity is from older settled holdings.
+4. Blocked value for BTST = `filled_quantity` × `average_price` from the sell order.
+
+**Normal CNC sale (non-BTST — settled holdings):**
+- 100% of proceeds are available same day for all trades (effective Oct 7, 2024).
+- If client asks about specific holdings sold → invoke `kite_holdings`.

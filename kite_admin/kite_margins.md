@@ -182,7 +182,8 @@ Route by scenario
    ├─ Negative balance after market order → Rule 10
    ├─ MTM explanation → Rule 11
    ├─ Balance negative + ITM stock options near expiry → Rule 12
-   └─ MCX / commodity margin or single ledger query → Rule 13
+   ├─ MCX / commodity margin or single ledger query → Rule 13
+   └─ Collateral not reflecting / collateral value decreased → Rule 14
 ```
 
 ### Fallback
@@ -311,3 +312,13 @@ If no root cause is found, escalate.
 1. No separate funds are needed for MCX and Equity — the same funds cover both segments when the single ledger is active.
 2. If `zbl_mcx_status` = active → single ledger is active; the same funds are available for trading across both Equity and Commodity (MCX) segments.
 3. If `zbl_mcx_status` is not active and client wants to trade in commodities → guide to activate the single ledger; invoke `account_modification_report`.
+
+---
+
+### Rule 14 — Collateral Not Reflecting / Collateral Value Decreased
+
+**Collateral not added or not showing:**
+- Invoke `console_instant_pledge` and check the pledge request timestamp and guide accordingly.
+
+**Collateral value decreased:**
+- Invoke `pledge_request_report` and check the reason for the reduction and guide accordingly.

@@ -31,6 +31,7 @@ TAGS: account, nri, non-individual
 ## Protocol
 
 # ACCOUNT MODIFICATION REPORT PROTOCOL
+
 ---
 
 ## Section A: Reference Data
@@ -81,9 +82,10 @@ TAGS: account, nri, non-individual
 
 | Field | Interpretation |
 |---|---|
-| `form_type` | Type of modification request — `segment_activation` = segment activation; `bank_modification` = bank modification; `rekyc` = ReKYC for equity and mutual fund segments; `rekyc_fno` = ReKYC for F&O, currency, and commodity segments; `primary_bank` = primary bank; `secondary_bank` = secondary bank |
+| `form_type` | Type of modification request — `segment_activation` = segment activation; `bank_modification` = bank modification; `rekyc` = ReKYC for equity and mutual fund segments; `rekyc_fno` = ReKYC for F&O, currency, and commodity segments; `primary_bank` = primary bank; `secondary_bank` = secondary bank; `kill_switch` = Kill Switch segment enable/disable action |
 | `description` | Internal request description |
 | `request_type` | Internal request type classification |
+| `modified` | Timestamp of when the request was last modified |
 | `income_proof` | Internal field indicating income proof status |
 | `bank_name` | Bank name associated with the modification request |
 | `account_number` | Account number for bank modification requests |
@@ -101,6 +103,7 @@ TAGS: account, nri, non-individual
 | `primary_dp_status` | Internal demat account status |
 | `third_party_demat` | Indicates third-party demat linkage |
 | `client_id` | Internal client identifier |
+| `created` | Timestamp when the modification request was created — internal use only |
 
 - **Segment status and remarks field pairs:**
 
@@ -302,6 +305,9 @@ Prerequisite: equity segment must be active. Demat prerequisite: `primary_dp_sta
 #### F&O / Currency / Commodity Deactivation
 
 - **Temporary (Kill Switch):** Disables the segment until the client chooses to re-enable. Ensure no open orders or positions before disabling. Once disabled, the segment can only be re-enabled after 12 hours. Process: Kite/Console → User ID → Profile → Segments → Kill Switch.
+- **Kill Switch report fields:** When `form_type = kill_switch` and status = Approved, segment fields (`nse_eq`, `bse_eq`, `nse_fo`, `bse_fo`, `nse_cfx`, `bse_cds`, `nse_com`, `zbl_mcx`) carry one of two values:
+  - "Segment enabled" — Kill Switch turned off; segment is active
+  - "Segment disabled" — Kill Switch turned on; segment is disabled
 - **Permanent deactivation:** Requires submission of an account modification form. Applicable to F&O, Currency, and Commodity segments. Process: (1) Download and fill the account modification form per **A14** — specify the segment(s) to be permanently deactivated. (2) eSign the form via Digilocker per **A14**. (3) Submit the eSigned form in the same support ticket.
 - Timeline: **A1** segment deactivation.
 - Support article: F&O deactivation per **A14**.
@@ -421,10 +427,9 @@ Route by scenario
    ├─ Name / DOB / PAN update → Rule 1
    ├─ Modification status inquiry → Rule 2
    ├─ Modification cancellation (eSign not yet completed) → escalate
-   ├─ Closure-related escalations (secondary demat, employer policy,
-   │   IL&FS, closure cum transfer) → Rule 4
+   ├─ Account closure / closure-related escalations (close account,
+   │   secondary demat, employer policy, IL&FS, closure cum transfer) → Rule 4
    ├─ Segment activation → Rule 5
-   ├─ MTF activation query → Rule 16
    ├─ Any equity segment Dormant (nse_eq_status or bse_eq_status) → Rule 6
    ├─ Segment status issue → Rule 7
    ├─ Segment rejected (PAN failure) → Rule 8
@@ -434,7 +439,9 @@ Route by scenario
    ├─ Client reports app/web error message → Rule 12
    ├─ Unpaid dividend / RTA CML query → Rule 13
    ├─ Email or mobile modification status / request query → Rule 14
-   └─ Address change query → Rule 15
+   ├─ Address change query → Rule 15
+   ├─ MTF activation query → Rule 16
+   └─ Kill Switch query (segment enabled/disabled, unable to trade after Kill Switch) → Rule 17
 ```
 
 ### Fallback
@@ -453,7 +460,7 @@ If query mentions name change, DOB mismatch, or PAN correction → escalate.
 
 ### Rule 2: Modification Status
 
-- **Check request:** For segment activation → query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. For Coin/MF → query `form_type` = `rekyc`, most recent within 3 months. If no request found OR last request > 3 months → communicate: last request date (if any) and guide to submit a new request at account portal per **A14**.
+- **Check request:** For segment activation → query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. For Coin/MF → query `form_type` = `rekyc`, most recent within 3 months. If no request found OR last request > 3 months → communicate: `created` date (if any) and guide to submit a new request at account portal per **A14**.
 
 - **No matching request (count=0):** If the client claims they submitted a request but `account_modification_report` returns no matching row, treat the report as the source of truth. Apply the "No request found (count=0) despite client claim of submission" row in the status table below.
 
@@ -465,9 +472,9 @@ If query mentions name change, DOB mismatch, or PAN correction → escalate.
 
 | Status | Communicate |
 |---|---|
-| Request_pending / Processing | Modification type, submission date, expected timeline per **A1**. |
+| Request_pending / Processing | Modification type, `created` date, expected timeline per **A1**. |
 | Pending_eSign | Modification type is pending eSign on Console. |
-| Approved | Cross-check: submission_date must be at least [relevant timeline per **A1**] before current date. Communicate: modification type, approval date, activation timeline per **A1**. |
+| Approved | Invoke `settlement_date_calculator` with `created` to compute working days elapsed. Cross-check: elapsed working days must meet the relevant timeline per **A1**. Communicate: modification type, approval date, activation timeline per **A1**. |
 | Rejected | Check all relevant form_types (`rekyc`, `rekyc_fno`, `segment_addition`). Communicate: modification type, rejection reason, guidance to resolve and resubmit. |
 | No request found (count=0) despite client claim of submission | No matching request found; process may not have completed. Ask client to retry. If IPV and eSign were completed but request is absent, ask for confirmation screenshot. |
 
@@ -488,7 +495,7 @@ Check `account_modification_report` for an existing ReKYC request (`form_type` I
 
 ### Rule 4: Account Closure
 
-Query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" / "cancel account opening" / "don't want to proceed with account opening" → escalate.
+Query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" / "cancel account opening" / "don't want to proceed with account opening" / "cancel closure request" / "cancel account closure" → escalate.
 
 **Pre-closure checks:**
 Invoke `ledger_report`, `console_eq_holdings`, `kite_positions`, `console_mf_holdings`. Note:
@@ -547,7 +554,7 @@ Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant". Check which segme
 
 - **F&O/commodity dormant (equity already active):** Check `account_modification_report` for `form_type` IN (`rekyc_fno`, `segment_addition`); also check `form_type` = `rekyc` if not found. Evaluate each row independently per Rule 2. Rejected request exists → apply Rule 2 first. No existing request → guide per Rule 5.
 
-- **After equity reactivation:** F&O/commodity segments require separate activation via Console → Account → Segment Activation. Coin/MF: ReKYC automatically re-enables Coin — cross-check Coin segment status in `get_all_client_data` to confirm.
+- **After equity reactivation:** Coin/MF is automatically re-enabled by ReKYC — confirm Coin segment status in `get_all_client_data`. For F&O/commodity: check `account_modification_report` for `form_type = rekyc_fno`. If present (count = 2, or both `rekyc` and `rekyc_fno` returned) → the existing request covers F&O/commodity; apply Rule 2 to report `rekyc_fno` status. If not present (count = 1, only `rekyc`) → guide to separate F&O activation per Rule 5.
 
 ---
 
@@ -557,14 +564,17 @@ When a client queries about commodity trading (MCX, CRUDEOILM, commodity options
 
 | Raw Status | Response |
 |---|---|
-| `Reactivation_pending` | Check timestamp against current time. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate. |
-| `Request_pending` | Same as Reactivation_pending. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
+| `Reactivation_pending` | Invoke `settlement_date_calculator` with `created` to determine working days elapsed. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate. |
+| `Request_pending` | Invoke `settlement_date_calculator` with `created` to determine working days elapsed. Within 1 working day → being processed. 1 working day elapsed → escalate. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
 | `Blocked` | Communicate the `remarks` field content for this status. |
 | `Activated` | Confirm segment is active. Orders can be placed only after 24 hours from activation — use `*_updated_on` for the activation timestamp. If 24 hours have already passed and client still cannot place orders → escalate. |
 | Coin segment = `Generated` | Escalate. |
 | `Dormant` | Apply Rule 6. |
 | `Inactivated` | Check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate. |
 | `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 8 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
+
+**Mixed NSE/BSE status (one Activated, one pending):**
+When NSE and BSE statuses for the same segment type differ — one shows Activated and the other shows Request_pending or Processing — guide the client to use the activated exchange for order placement in the meantime. For the pending exchange, once it shows Activated, the 24-hour window per the Activated row above applies before orders can be placed; check `*_updated_on` for the activation timestamp.
 
 ---
 
@@ -678,3 +688,15 @@ Offline process only per **A6** Address Change.
 1. From `get_all_client_data`, check `primary_ddpi_flag` and `poa_consent`.
 2. `primary_ddpi_flag` active OR `poa_consent` = YES → MTF can be used via Kite per **A10** MTF subsection.
 3. Both inactive → check `account_modification_report` for a pending DDPI request and apply Rule 2 to report its status. Guide client to activate DDPI per **A9**.
+
+---
+
+### Rule 17: Kill Switch
+
+Check `account_modification_report` for `form_type = kill_switch`, most recent record.
+
+If no record found or status ≠ Approved → apply Rule 2 status responses.
+
+If status = Approved: check segment fields per **A10** Kill Switch report fields.
+- "Segment disabled" on any field → Kill Switch is active on those segment(s); communicate which segments are disabled.
+- "Segment enabled" → Kill Switch has been turned off; segment is re-enabled. If client reports segment still disabled, check `modified` timestamp: if less than 10 minutes have elapsed → ask client to wait 10 minutes for segment sync; if 10 or more minutes have elapsed → escalate.

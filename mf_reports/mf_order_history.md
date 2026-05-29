@@ -57,7 +57,7 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 
 **T-day (Trading day):** The date on which the order is processed at the exchange. T-day is determined by when the payment is confirmed at ICCL, captured in `payment_updated_at`. If `payment_updated_at` is not yet populated, use `payment_initiated_at` as reference — the applicable NAV depends on when the payment is updated at ICCL.
 
-**Working-day check:** If `payment_updated_at` falls on a weekend or trading/settlement holiday, T = the next working day. If that day is also non-working, shift further until a working day is reached. Only apply cutoff logic after confirming the payment date is a working day.
+**Working-day check:** Invoke `settlement_date_calculator` with `payment_updated_at` to confirm whether it falls on a trading/settlement holiday and to get the next working day. If that day is also non-working, the tool shifts further until a working day is reached. Only apply cutoff logic after confirming the payment date is a working day.
 
 **Holiday shift scope:** The holiday shift applies only to the date on which `payment_updated_at` falls (or the order placement date for redemptions). Holidays after T-day affect the settlement/allotment timeline (when units appear in holdings), not T-day or the NAV date.
 
@@ -115,6 +115,7 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 | SCHEME CLOSED | Scheme suspended | Communicate the closure and suggest AMC SIP as an alternative |
 | NON ELIGIBLE SCHEME | Scheme suspended or restricted | Communicate that the scheme is unavailable |
 | MINIMUM AMOUNT FAILED | Order below scheme minimum | Communicate the scheme's minimum amount |
+| ORDER AMT IS MORE THAN MAX VALUE SPECIFIED FOR SCHEME | Order amount exceeds the maximum investment limit set by the fund house for this scheme | Communicate that the order amount exceeds the scheme's maximum limit. Advise placing a fresh order within the scheme's permitted ceiling. If `payment_confirmed` = true, apply A4 refund language. |
 | UNITS NOT AUTHORISED / UNRID | CDSL T-PIN authorisation not completed | T-PIN must be completed on the same day before 3 PM. Advise placing a fresh order and suggest enabling DDPI. For SWP/STP orders: T-PIN window is 10:00 AM (trigger) to 3:00 PM on trigger day; if missed, the order is cancelled. |
 | UNITS NOT AUTHORISED / UNRID — settlement holiday | Sell date authorised on CDSL did not match order process date due to a settlement holiday | Communicate that the sell date authorised on CDSL must match the order process date, and the mismatch was caused by the settlement holiday. Advise placing a fresh redemption order. |
 | UNITS NOT AUTHORISED / UNRID — near cutoff (non-holiday) | CDSL authorisation date did not match order process date due to order placement near the 3:00 PM cutoff | Communicate the same mismatch reason (sell date / order process date). Advise placing a fresh redemption order. |
@@ -129,8 +130,8 @@ New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
 
 ### A6 — Redemption Settlement Computation
 
-- **T-day:** Order placed before 3:00 PM on a working day → T = that day. Order placed after 3:00 PM, or on a weekend or settlement holiday → T = the next working day. If that next day is also a settlement or trading holiday, T shifts to the following working day. Holidays after T-day determine the settlement timeline only.
-- **Credit date:** Add `redemption_time` working days (Monday–Friday, excluding trading/settlement holidays) to T. `redemption_time` applies only to redemption (SELL) orders — it is the settlement period for redemption proceeds.
+- **T-day:** Invoke `settlement_date_calculator` with the order placement date to confirm it is a working day. Order placed before 3:00 PM on a working day → T = that day. Order placed after 3:00 PM, or on a weekend or settlement holiday → T = the next working day returned by the tool. If that next day is also non-working, T shifts further. Holidays after T-day determine the settlement timeline only.
+- **Credit date:** Invoke `settlement_date_calculator` with T and `redemption_time` to compute the credit date, adding `redemption_time` working days (Monday–Friday, excluding trading/settlement holidays). `redemption_time` applies only to redemption (SELL) orders — it is the settlement period for redemption proceeds.
 
 ---
 
@@ -333,11 +334,11 @@ If no rule matches and no root cause is identified → escalate.
 
 **NEFT/RTGS payment:**
 
-- If `status_message` contains "Pending payment via NEFT/RTGS" → go to Rule 8.
+-If `status_message` contains "Pending payment via NEFT/RTGS" → go to Rule 8.
 
 **NFO order:**
 
-- If `tag` contains `"product": "nfo"`, the order follows NFO logic:
+-If `tag` contains `"product": "nfo"`, the order follows NFO logic:
 
 - **Allotted** → Communicate that units have been allotted. For MF/FOF NFO: units appear in Coin only after the fund is listed — typically within 5 working days of allotment; after listing, units are visible on Coin within T+2 working days. For ETF NFO (if `fund` name contains "ETF"): units appear in Kite/Console equity holdings, not Coin — invoke `console_eq_external_trades` and check for an 'ipo' entry matching the fund per A8.
 - **Still Processing — ETF NFO:** Invoke `console_eq_external_trades`. If an 'IPO' entry exists → communicate that units are in Kite holdings under the scrip name, even though order status on Coin shows Processing.
@@ -346,46 +347,46 @@ If no rule matches and no root cause is identified → escalate.
 
 **Payment not yet confirmed (`payment_confirmed` = false):**
 
-- For non-SIP orders (variety` = regular):
+-For non-SIP orders (`variety` = regular):
 
 1. Check `payment_error_code` and `payment_error_description`. If either is populated → payment failed. Communicate that the payment was not confirmed and advise placing a new order. Apply A4 refund language.
 2. If no error code is present, invoke `fund_allocation_report` using the order mapping per A7. If an entry exists, use its data to confirm what happened to the payment.
 3. If `fund_allocation_report` has no matching entry, the data is inconclusive. Apply A4 refund language conditionally (if the client's bank was debited, the refund will apply).
 
-- For SIP orders (`variety` = sip):
+-For SIP orders (`variety` = sip):
 
-- Invoke `sip_report` and check `fund_source`:
+-Invoke `sip_report` and check `fund_source`:
 - `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the order date.
 - Otherwise → no mandate linked.
 
 **T-day determination (`payment_confirmed` = true):**
 
-- If `payment_updated_at` is beyond T+2 working days → invoke `fund_allocation_report` using the order mapping per A7.
+-Invoke `settlement_date_calculator` with `payment_updated_at` to check working days elapsed. If beyond T+2 → invoke `fund_allocation_report` using the order mapping per A7.
 
-- If within T+2:
-- `payment_updated_at` on a weekend or settlement holiday → T = next working day. State the non-working day(s) and reason.
+-If within T+2:
+- Invoke `settlement_date_calculator` with `payment_updated_at` to confirm it is a working day. If on a weekend or settlement holiday → T = next working day returned by the tool. State the non-working day(s) and reason.
 - `payment_updated_at` on a working day:
   - Netbanking + non-direct settlement bank (per A10) → T = next working day. Communicate that the bank is non-direct, payment was reported to the exchange on the next working day, and that became T-day. Allotment expected by T+1.
   - Netbanking + direct settlement bank or UPI → apply NAV cutoff per A2:
     - Before cutoff → T = that day. Allotment expected by T+1.
-    - After cutoff → T = next working day per A2 (for liquid funds, NAV moves from T-1 to T-day). Further shift if that day is non-working.
+    - After cutoff → invoke `settlement_date_calculator` to get the next working day as T (for liquid funds, NAV moves from T-1 to T-day). Further shift if that day is also non-working.
     - `payment_updated_at` not yet populated → use `payment_initiated_at` as reference. Share cutoff link from A9. Communicate that NAV depends on when payment is updated at ICCL.
 
-- Cross-check T-day against `exchange_timestamp`. If they differ, use `exchange_timestamp` as actual T-day. Verify against `payment_date` in `fund_allocation_report`. Name any holidays within the allotment window.
+-Cross-check T-day against `exchange_timestamp`. If they differ, use `exchange_timestamp` as actual T-day. Verify against `payment_date` in `fund_allocation_report`. Invoke `settlement_date_calculator` to identify any holidays within the allotment window and name them.
 
 **Invoke `fund_allocation_report`:**
 
-- Map the order per A7.
+-Map the order per A7.
 
-- Check `error_remarks` first:
+-Check `error_remarks` first:
 - "INVALID BANK ACCOUNT DETAIL" → Escalate.
 
-- Then check flags:
+-Then check flags:
 
-- `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted by the AMC. Within T+3 working days from `exchange_timestamp` → late delivery: holdings credit may take up to T+3 working days; NA is shown on Coin on T+2 for one day only, rectified on T+3. Communicate as late delivery of units, not standard allotment duration. Share MF units settlement timeline link from A9. Beyond T+3 → escalate.
+- `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted by the AMC. Invoke `settlement_date_calculator` with `exchange_timestamp` to check whether the current date is within T+3 working days. Within T+3 → late delivery: holdings credit may take up to T+3 working days; NA is shown on Coin on T+2 for one day only, rectified on T+3. Communicate as late delivery of units, not standard allotment duration. Share MF units settlement timeline link from A9. Beyond T+3 → escalate.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status = "Allotted" → allotment is finalised; units will be credited.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status ≠ "Allotted" → Communicate: "Payment settled. Allotment expected by [date]." — date = T+1 working day from `exchange_timestamp` per A8.
-- `settled_flag` = N → check the mapping columns first. If both `order_number` AND `settlement_number` are null or empty, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply A4 refund language. If either column is populated, the payment is mapped. Count working days from `payment_date` in `fund_allocation_report`:
+- `settled_flag` = N → check the mapping columns first. If both `order_number` AND `settlement_number` are null or empty, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply A4 refund language. If either column is populated, the payment is mapped. Invoke `settlement_date_calculator` with `payment_date` to count working days elapsed:
   - Within T+1 → Communicate: "Payment pending settlement. Allow one working day."
   - Beyond T+2 → order has failed. Check `refund_utr`:
     - Populated → Communicate that the refund of ₹[amount] has been processed; share the reference to track with the bank.
@@ -393,11 +394,11 @@ If no rule matches and no root cause is identified → escalate.
 
 **Beyond T+3:**
 
-- Cross-check `fund_allocation_report`. If no entry → escalate.
+-Cross-check `fund_allocation_report`. If no entry → escalate.
 
 **`payment_confirmed` = true, `settled_flag` = N, beyond T+2 (working days, excluding weekends and trading/settlement holidays):**
 
-- Compute T+2 excluding weekends and settlement holidays before concluding the window has been breached. If genuinely beyond T+2: communicate that the order is likely to fail and advise placing a lumpsum order for the current cycle. Apply A4 refund language.
+-Invoke `settlement_date_calculator` to compute T+2 from `payment_updated_at` excluding weekends and settlement holidays before concluding the window has been breached. If genuinely beyond T+2: communicate that the order is likely to fail and advise placing a lumpsum order for the current cycle. Apply A4 refund language.
 
 ---
 
@@ -423,7 +424,7 @@ For cancelled orders, apply A1 status interpretation based on `payment_confirmed
 
 ### Rule 4 — TPV Pending
 
-- Check `order_timestamp` to determine working days elapsed.
+- Invoke `settlement_date_calculator` with `order_timestamp` to determine working days elapsed.
 - Within T+3 working days from `order_timestamp` → Communicate that the order is pending third-party bank account validation. The exchange automatically re-validates pending orders on the next working day. If the order is rejected due to TPV pending status, the exchange performs a penny drop test on the bank account used for payment. If the account passes, the order status updates to allotted within 2 working days.
 - Beyond T+3 working days from `order_timestamp`, status unchanged → Ask the client to share their bank statement from the order date to present. Escalate.
 - Rejected after re-validation (`status_message` contains TPV INVALID, per A5) → Escalate.
@@ -435,8 +436,8 @@ For cancelled orders, apply A1 status interpretation based on `payment_confirmed
 **Redemption order check:**
 Check `transaction_type` = SELL. If no SELL order is found → ask the client for the fund name and when the order was placed.
 
-- Compute expected credit date per A6 using `redemption_time` from order data.
-- Apply A6 cutoff logic first: if the order was placed after 3:00 PM on a working day, or on a weekend/settlement holiday, T shifts to the next working day. State the adjusted T-day and compute credit per A6.
+- Invoke `settlement_date_calculator` with the order placement date and time to apply A6 cutoff logic: confirm whether the placement date is a working day and whether it falls before or after 3:00 PM. If after 3:00 PM or on a non-working day, T = next working day returned by the tool. State the adjusted T-day.
+- Invoke `settlement_date_calculator` with T and `redemption_time` to compute the expected credit date per A6.
 
 Match the client's scenario:
 
@@ -502,7 +503,7 @@ The SIP will not trigger until the initial lumpsum is allotted and settled. Invo
 - **Partial/split transfers:** If a client sends multiple smaller transfers intended for a single larger order, each transfer is mapped independently on FIFO. If no single transfer matches or exceeds the order amount, the order will fail and the unmatched amount will be reversed (apply A4 refund language). Example: a ₹40L order with two ₹20L transfers — ₹20L maps to the ₹40L order but does not fulfil it, so the order fails. Conversely, a ₹20L order with a ₹40L transfer fulfils the ₹20L order, and the remaining ₹20L carries forward.
 - Common issue: the client transferred without selecting NEFT mode on Coin first → payment not received.
 
-- Order still Processing beyond T+4 → communicate that the order is unlikely to go through and advise placing a fresh order if needed.
+- Invoke `settlement_date_calculator` with the order date to check if T+4 working days have passed. If beyond T+4 → communicate that the order is unlikely to go through and advise placing a fresh order if needed.
 
 ---
 

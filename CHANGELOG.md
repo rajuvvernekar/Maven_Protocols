@@ -10,6 +10,17 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-05-29 — Feedback batch from "Protocols - Changes to Push (1)" (12 tools)
+
+Applied Protocol-body feedback (dated 25th/27th) to 12 tools. All Description blocks preserved (body-only changes). Tools updated: account_modification_report, mf_order_history, ledger_report, console_eq_holdings, amc_charges, kite_margins, kite_positions, kite_holdings, cashier_payins, console_eq_tradebook_prepared, console_eq_pnl, kite_orders.
+
+While applying, re-applied this session's earlier cleanups so the feedback did not regress them:
+- Collapsed reintroduced "escalate to a human agent" wording (MF Order History, Kite Holdings) to bare `escalate`.
+- Deleted the reintroduced `A10 — Escalation Triggers` Section-A reference block from kite_holdings (the handoff format lives in the system prompt; Section-C "Rule N — Escalation Triggers" rules are untouched).
+- `cashier_payin` → `cashier_payins`; `console_eq_tradebook` → `console_eq_tradebook_prepared` (disabled tool).
+
+New: feedback introduces `settlement_date_calculator` as an invokable tool (working-day / holiday-shift computation) across several protocols — kept verbatim per product confirmation that it is now a live tool.
+
 ### 2026-05-21 — Escalation handoff consolidation (full rollout, 55 tools)
 
 Completes the consolidation begun in the account_modification_report pilot. System prompt now owns the escalation handoff format; tool rules just say `escalate`.

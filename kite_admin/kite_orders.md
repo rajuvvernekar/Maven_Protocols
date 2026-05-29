@@ -35,7 +35,7 @@ TAGS: orders, margins
 ### A1 — Fundamentals
 
 - Today's orders only — for historical orders, invoke `kite_order_history`.
-- Clicking the instrument hyperlink opens the Order History sub-view showing the full lifecycle: OPEN PENDING → OPEN → COMPLETE/CANCELLED/REJECTED with timestamps, exchange times, filled qty, avg price, and variety.
+- Order History sub-view shows the full order lifecycle: OPEN PENDING → OPEN → COMPLETE/CANCELLED/REJECTED with timestamps, exchange times, filled qty, avg price, and variety.
 - Orders follow price-time priority: first come, first served at same price.
 - Zerodha pre-validates orders — some rejections won't appear in the order book (shown in status notification only).
 - When the client references a specific instrument or order, match by `instrument` field first. If multiple orders exist for the same instrument, use `order_status` and `time` to identify the order the client is referring to.
@@ -80,7 +80,7 @@ TAGS: orders, margins
 |---|---|
 | Complete | Fully executed — all quantity filled |
 | Open | Pending execution — limit not hit, in queue, or circuit hit |
-| Cancelled | By user, system (IOC unmatched), or exchange (end of session / LPP range) |
+| Cancelled | By user, system (IOC unmatched), or exchange (end of session / LPP range); check `filled_quantity` for any quantity executed before cancellation |
 | Rejected | Failed validation — check `rejection_reason` |
 
 ### A4 — Product Types
@@ -89,7 +89,7 @@ TAGS: orders, margins
 |---|---|
 | CNC | Long-term / delivery — equity only, no leverage, no auto square-off, no short selling |
 | MIS | Intraday — leveraged, auto squared off per **A9** |
-| NRML | Overnight — F&O carry till expiry, full margin required |
+| NRML | F&O product for overnight holding; positions can be carried till contract expiry with full margin required |
 | MTF | Margin Trading Facility — partial funding, interest charged, equity only |
 | CO | Cover Order — intraday with compulsory SL, cannot convert to other product types |
 
@@ -197,7 +197,16 @@ TAGS: orders, margins
 
 ### A14 — AMO (After Market Orders)
 
-- Placement window: 4:00 PM to 8:58 AM for NSE/BSE equity. Executes at next market open. Cannot place during market hours.
+- Placement window:
+
+| Segment | AMO Window |
+|---|---|
+| NSE/BSE Equity | 4:00 PM – 8:58 AM |
+| F&O | 3:45 PM – 9:11 AM |
+| Currency | 5:00 PM – 8:59 AM |
+| MCX | 11:30 PM – 8:58 AM (Mar–Nov); 11:55 PM – 8:58 AM (Nov–Mar, US DST) |
+
+- Executes at next market open. Cannot place during market hours.
 - AMO market order for index options: blocked — use limit instead.
 - Pre-open session conversion: AMO market orders convert to limit at equilibrium price (or previous day's close if no equilibrium). Standard exchange behavior.
 
@@ -257,10 +266,10 @@ If no root cause found after completing all diagnostic steps → escalate.
 2. If client questions execution price:
    a. Market order → Per **A5**, market order fills at best available price — large quantity may fill at multiple price levels.
    b. Limit order executed at better price → limit order at `price` executed at `average_price` because market had counterparties at a better price. Limit guarantees price as the worst, not the exact price.
-   c. Client wanted to buy at breakout (not immediately) → use SL (intraday) with trigger at `price` or GTT (valid up to 1 year). Invoke `kite_gtt` if client wants to set up GTT.
+   c. Client wanted to buy at breakout (not immediately) → use SL (intraday) with trigger at `price` or GTT (valid up to 1 year).
    d. SL trigger seems "wrong" → charts display snapshots; actual market price determines execution. Client can verify via NSE trade verification per **A16**. Reference SL execution link per **A16**.
 3. If `filled_quantity` < `total_quantity` → partial fill. Check `cancelled_quantity`. IOC orders: unfilled portion auto-cancelled.
-4. If client asks where bought shares are → invoke `kite_holdings` (settled) or `kite_positions` (today's buy).
+4. If client asks where bought shares are → invoke `kite_holdings` (settled) or `kite_positions` (today's buy). CNC purchases appear in Positions on trade day (T+0) because they haven't settled; they move to Holdings on T+1 after settlement.
 
 ### Rule 2 — Order Open / Pending
 
@@ -272,7 +281,7 @@ If no root cause found after completing all diagnostic steps → escalate.
 ### Rule 3 — Order Cancelled
 
 1. Check Order History sub-view for cancellation timing and context:
-   a. Cancelled near market close → unmatched pending orders auto-cancelled at session end per **A8**. Suggest re-placing next session, or use GTT for orders valid up to 1 year. Invoke `kite_gtt`.
+   a. Cancelled near market close → unmatched pending orders auto-cancelled at session end per **A8**. Suggest re-placing next session, or use GTT for orders valid up to 1 year.
    b. LPP range cancellation → exchange cancelled because price was outside the allowed Limit Price Protection range. Retry closer to current market price.
    c. IOC partial fill + cancel → IOC order partially filled; unfilled portion auto-cancelled.
    d. Cancelled by user → no action needed.

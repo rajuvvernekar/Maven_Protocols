@@ -27,7 +27,6 @@ TAGS: charges
 
 ### A1 — AMC Fundamentals
 
-- Report provides AMC charge history by account: charge dates, amounts, BSDA flag, demat type.
 - AMC charged quarterly — every 91 days from account opening date.
 - Advance payment option: Clients can prepay AMC for 1–5 years. This does not change the quarterly billing cycle or BSDA eligibility assessment.
 - Standard AMC: ₹300/year + 18% GST = ₹354/year, in quarterly installments.
@@ -35,7 +34,8 @@ TAGS: charges
 - AMC charged regardless of trading activity or holdings — as long as demat account is active.
 - AMC debited from trading account — may create debit balance if insufficient funds.
 - AMC is charged separately for each demat account (primary and secondary).
-- Format all amounts with ₹ and Indian comma notation. Format dates as DD MMM YYYY.
+- `charged_date` is the date the AMC charge is assessed. The actual ledger debit entry is recorded on a separate date.
+- Debit balance created by AMC attracts DPC interest at 0.05% per day until cleared.
 
 ### A2 — AMC Slabs
 
@@ -78,7 +78,7 @@ In client-facing language, express BSDA status as "eligible for BSDA benefits" o
 
 | Field | Classification |
 |---|---|
-| `charged_date` | Shareable |
+| `charged_date` | Shareable — assessment date; actual debit date is the ledger entry date for the billing period |
 | `previous_charge_date` | Shareable (use as billing period start) |
 | `charged_amount` | Shareable |
 | `charge_after_gst` | Shareable |
@@ -95,34 +95,31 @@ In client-facing language, express BSDA status as "eligible for BSDA benefits" o
 |---|---|
 | BSDA account opening / eligibility | https://support.zerodha.com/category/account-opening/resident-individual/ri-online/articles/how-to-open-a-basic-service-demat-account-at-zerodha |
 | Upfront / advance AMC payment | https://support.zerodha.com/category/account-opening/resident-individual/ri-charges/articles/upfront-amc |
-
-### A7 — Cross-Reference Protocols
-
-| Topic | Protocol |
-|---|---|
-| Debit balance from AMC → DPC interest risk | Delayed Payment Charges protocol |
-| AMC debit entry on ledger | Ledger Report protocol |
+| NRI PIS AMC and DP charges | https://support.zerodha.com/category/account-opening/nri-account-opening/nri-charges/articles/pis-amc-dp-charges |
 
 ---
 
 ## Section B: Decision Flow
 
-> Before routing: apply field rules from **A5**. Infer BSDA status and slab from `charge_after_gst` and `client_holdings` per **A4**.
+### Routing
 
 ```
-Query relates to AMC charges →
-│
-├─ Client asks what AMC was charged / wants a charge explanation → Rule 1
-├─ Client asks about billing cycle or charge frequency → Rule 2
-├─ Client questions the charged amount, asks why BSDA / why not BSDA, or asks about their slab → Rule 3
-├─ Client says no holdings / no activity but AMC was charged → Rule 4
-├─ Client has both primary and secondary demat / multiple AMC charges in the same period → Rule 5
-├─ Client account is NRI or non-individual → Rule 6
-├─ AMC has created a debit balance → Rule 7 (mandatory add-on to all routes above when a debit balance is detected)
-└─ Client asks about paying AMC upfront or annually → Rule 8
+Route by scenario
+   ├─ Client asks what AMC was charged / wants a charge explanation → Rule 1
+   ├─ Client asks about billing cycle or charge frequency → Rule 2
+   ├─ Client questions the charged amount, asks why BSDA / why not BSDA, or asks about their slab → Rule 3
+   ├─ Client says no holdings / no activity but AMC was charged → Rule 4
+   ├─ Client has both primary and secondary demat / multiple AMC charges in the same period → Rule 5
+   ├─ Client account is NRI or non-individual → Rule 6
+   ├─ AMC has created a debit balance → Rule 7 (mandatory add-on to all routes above when a debit balance is detected)
+   ├─ Client asks about paying AMC upfront or annually → Rule 8
+   ├─ Client claims AMC debited after closing other demat accounts → Rule 9
+   └─ NRI PIS account — AMC or DP charge payment query → Rule 10
 ```
 
-**Fallback:** If the AMC amount does not match any expected slab or data appears inconsistent, escalate with client ID, `charged_date`, `charged_amount`, and a description of the discrepancy.
+### Fallback
+
+If the query does not match any route above → escalate.
 
 ---
 
@@ -130,66 +127,102 @@ Query relates to AMC charges →
 
 ### Rule 1 — AMC Charge Explanation
 
-1. Respond: "AMC of ₹[charge_after_gst] was charged on [charged_date] for the billing period [previous_charge_date] to [charged_date]. This is for your [Primary/Secondary] demat account."
+1. Invoke `ledger_report` and locate the AMC debit entry for the billing period `previous_charge_date` to `charged_date`. Use the ledger entry date as the actual debit date.
 
-2. Check for a debit balance in the trading account resulting from the AMC charge. If present → apply Rule 7.
+2. Communicate: AMC amount (`charge_after_gst`), billing period (`previous_charge_date` to `charged_date`), actual debit date from ledger, and whether it is for the primary or secondary demat account.
+
+3. Check for a debit balance in the trading account resulting from the AMC charge. If present → apply Rule 7.
+
+---
 
 ### Rule 2 — AMC Billing Cycle
 
-1. Respond: "AMC is charged quarterly — every 91 days from your account opening date. The standard AMC is ₹300/year + 18% GST = ₹354/year, charged in quarterly installments."
+1. Communicate: billing cycle and standard AMC rate per **A1**.
+
+---
 
 ### Rule 3 — BSDA Eligibility and AMC Slab Explanation
 
 1. Infer BSDA status and slab from **A4**. Share `client_holdings` per field rules in **A5**.
 
-2. Respond based on the inferred combination:
+2. Communicate based on the inferred combination:
 
-   | Inferred Status | Inferred Slab | Response |
+   | Inferred Status | Inferred Slab | Communicate |
    |---|---|---|
-   | BSDA | Slab 1 | "No AMC was charged for the quarter as your account is eligible for Basic Services Demat Account (BSDA) benefits and your holdings were within the ₹4,00,000 limit." |
-   | BSDA | Slab 2 — holdings ₹4,00,001–₹10,00,000 | "AMC of ₹29.50 was charged as your account is eligible for BSDA benefits and your holdings reached ₹[client_holdings] during the quarter." |
-   | BSDA | Slab 2 — holdings ≤ ₹4,00,000 but peaked above | "AMC of ₹29.50 was charged as your holdings crossed ₹4,00,000 during the billing quarter, even though they may be lower now. AMC is based on the highest holdings value during the quarter." |
-   | Not BSDA | Standard | "AMC of ₹88.50 was charged for the quarter. Your account is not categorised as a Basic Services Demat Account (BSDA), so the standard AMC applies." |
-   | BSDA | Slab 3 | "AMC of ₹88.50 was charged as your holdings reached ₹[client_holdings] during the quarter, which exceeded ₹10,00,000." |
+   | BSDA | Slab 1 | Account is BSDA-eligible; no AMC charged as holdings were within the ₹4,00,000 limit per **A2**. |
+   | BSDA | Slab 2 — holdings ₹4,00,001–₹10,00,000 | Account is BSDA-eligible; AMC per **A2** Slab 2 charged because holdings reached `client_holdings` during the quarter. |
+   | BSDA | Slab 2 — holdings ≤ ₹4,00,000 but peaked above | Account is BSDA-eligible; AMC per **A2** Slab 2 charged because holdings crossed ₹4,00,000 during the billing quarter. AMC is based on peak holdings value per **A1**. |
+   | Not BSDA | Standard | Account is not categorised as BSDA; standard AMC per **A2** applies. |
+   | BSDA | Slab 3 | Account is BSDA-eligible; AMC per **A2** Slab 3 charged because holdings reached `client_holdings`, exceeding ₹10,00,000. |
 
-3. For the ambiguous ₹88.50 + > ₹10L case, apply the disambiguation logic from **A4**. If still unclear after checking adjacent quarters, explain both possibilities: the charge could reflect BSDA Slab 3 or standard non-BSDA AMC, and CDSL determines the categorisation.
+3. For the ambiguous ₹88.50 + > ₹10L case, apply the disambiguation logic from **A4**. If still unclear after checking adjacent quarters, communicate both possibilities: the charge could reflect BSDA Slab 3 or standard non-BSDA AMC, and CDSL determines the categorisation.
 
-4. If the client disputes the charge and says their investment was lower: "AMC is based on the highest value your holdings reached during the billing quarter, which was ₹[client_holdings]. Even if your current holdings are lower, the charge is calculated on this peak value."
+4. If the client disputes the charge and says their investment was lower: communicate that AMC is based on the peak holdings value during the billing quarter per **A1**; share `client_holdings` as the peak value that triggered the charge.
 
 5. If the client asks why they are not BSDA-eligible or how to qualify: share eligibility criteria from **A3** and the BSDA support article from **A6**.
 
-6. If the client asks specifically about nil-AMC eligibility: the nil-AMC threshold is ₹4,00,000 (Slab 1 per **A2**), applicable only to BSDA accounts. Lead with this figure and clarify that BSDA status is required first.
+6. If the client asks specifically about nil-AMC eligibility: the nil-AMC threshold is ₹4,00,000 (Slab 1 per **A2**), applicable only to BSDA accounts; BSDA status is required first.
 
-7. If the account has a debit balance: include a brief breakdown of all debit entries per the Ledger Report protocol (**A7**), explaining each debit entry separately (settlement charges, DP charges, etc.) before summarising the AMC portion.
+7. If the account has a debit balance: include a brief breakdown of all debit entries per the Ledger Report protocol, explaining each debit entry separately (settlement charges, DP charges, etc.) before summarising the AMC portion.
+
+8. If the client cites a specific demat account number: check `primary_dp_id` and `secondary_dp_id` from `get_all_client_data`. If the cited number does not match either → communicate that Zerodha can only address charges for the Zerodha-linked demat account; direct the client to the respective broker for charges on other accounts.
+
+---
 
 ### Rule 4 — AMC on Inactive / Zero Holdings Account
 
-1. Respond: "AMC is charged for maintaining an active demat account. This applies even if the account has zero holdings or no recent trading activity."
+1. Communicate: AMC is charged for maintaining an active demat account regardless of holdings or trading activity per **A1**.
 
-2. Add: "If you maintain a single demat account with a holdings value of less than ₹4,00,000, you can avail of BSDA (Basic Services Demat Account) benefits, where AMC is not charged. If you have demat accounts with other brokers, closing those accounts so that only one demat is registered against your PAN can help you qualify for BSDA." Share eligibility criteria from **A3** and the BSDA support article from **A6**.
+2. Communicate: BSDA eligibility criteria per **A3** — a single demat account across all brokers with holdings under ₹4,00,000 qualifies for nil AMC. Share the BSDA support article from **A6**.
+
+---
 
 ### Rule 5 — AMC for Primary and Secondary Demat
 
-1. Respond: "AMC is charged separately for each demat account — primary and secondary. If you see multiple AMC charges in the same period, verify whether they are for different demat accounts using the account type field."
+1. Communicate: AMC is charged per demat account per **A1**; if multiple charges appear in the same period, confirm each is for a different demat account using the `type_of_demat` field.
+
+---
 
 ### Rule 6 — NRI / Non-Individual AMC
 
-1. Respond: "NRI and non-individual accounts are not eligible for BSDA. The standard AMC of ₹88.50 per quarter applies."
+1. Communicate: NRI and non-individual accounts are not BSDA-eligible per **A3**; standard AMC per **A2** applies.
+
+2. If account is NRI PIS → apply Rule 10 for payment mechanics.
+
+---
 
 ### Rule 7 — AMC Creating Debit Balance
 
-This rule applies as a mandatory add-on whenever a debit balance is present in the account, regardless of the primary routing path.
+1. Invoke `cashier_payins` to check for recent fund additions.
 
-1. Check cashier payins to verify whether the client has added funds today or recently.
+2. If no recent payin → communicate: AMC charge (`charge_after_gst`) has created a debit balance; DPC interest at 0.05% per day per **A1** applies until cleared. Advise client to add funds.
 
-2. If no recent payin → respond: "The AMC charge of ₹[charge_after_gst] has resulted in a debit balance in your account. A debit balance may attract delayed payment charges (interest at 0.05% per day). To avoid further interest, please add funds to clear the debit balance."
+3. If a recent payin is found → communicate: payin amount and date observed; confirm it should cover the debit balance from the AMC charge.
 
-3. If a recent payin is found → respond: "We can see that you have added ₹[payin_amount] on [payin_date]. This should cover the debit balance created by the AMC charge."
+4. For DPC details, refer to the Delayed Payment Charges protocol.
 
-4. For DPC details, refer to the Delayed Payment Charges protocol per **A7**.
+---
 
 ### Rule 8 — Advance AMC Payment
 
 1. First apply Rule 3 to confirm the current AMC rate applicable to the account.
 
-2. Respond: "You can prepay your AMC for 1 to 5 years. This prepays future quarterly charges but does not change your billing cycle or BSDA eligibility." Share the upfront AMC article from **A6**.
+2. Communicate: advance payment covers 1–5 years of future quarterly charges without changing the billing cycle or BSDA eligibility. Share the upfront AMC article from **A6**.
+
+---
+
+### Rule 9 — BSDA Claim After Closing Other Demat Accounts
+
+Determine BSDA status per Rule 3.
+- Non-BSDA: communicate that if all other demat accounts registered against their PAN have been closed, BSDA status will apply from the upcoming billing quarter once CDSL updates the status; the current charge reflects the BSDA status at the time of billing. Zerodha cannot verify closure of other demat accounts — advise the client to confirm directly with CDSL.
+- BSDA: communicate that upcoming AMC will be per the applicable BSDA slab in **A2**.
+
+---
+
+### Rule 10 — NRI PIS AMC and DP Charge Payment
+
+From `get_all_client_data`, confirm all three conditions are true: `client_acc_type` is NRO, NRE, or NRI; `bo_sub_status` contains "RepatriableWith"; `pis_bank_1_name` or `pis_bank_2_name` is populated.
+
+If confirmed:
+- Communicate: AMC and DP charges must be paid by adding funds directly to the Kite trading account via NEFT or IMPS. The PIS bank account does not settle these charges through the PIS account.
+- Share the NRI PIS AMC and DP charges article from **A6**.
