@@ -119,7 +119,7 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 | Field | Interpretation |
 |---|---|
-| `status` | Internal payment status — use with A10 to interpret |
+| `status` | Internal payment status — interpret via Rule 2 (UPI) / Rule 3 (Netbanking) |
 | `nest_status` | Internal NEST update flag indicating push to trading account |
 | `cashier_reference` | Internal cashier reference identifier |
 | `bank_account_number` | Source bank account number |
@@ -152,16 +152,15 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 ---
 
-### A10: Payment Status Interpretation
+### A10: NRI / PIS Detection
 
-| Payment Mode | Status | Meaning |
-|---|---|---|
-| UPI | Success | Payment credited to the trading account |
-| UPI | Failed | Payment did not reach the trading account |
-| UPI | Unknown | Treat as Failed — payment did not reach the trading account |
-| Netbanking | Success | Payment credited to the trading account |
-| Netbanking | Failed | Payment did not reach the trading account |
-| Netbanking | Unknown | Payment is pending at the bank (not credited, not failed) |
+| Account Type | Detection |
+|---|---|
+| NRE PIS | `bo_sub_status` contains "RepatriableWith" AND (`pis_bank_1_name` OR `pis_bank_2_name` is populated) |
+| NRO PIS | `bo_sub_status` contains "NonRepatriableWith" AND (`pis_bank_1_name` OR `pis_bank_2_name` is populated) |
+| NRE non-PIS | `bo_sub_status` contains "RepatriableWith" AND no PIS bank populated |
+| NRO non-PIS | `bo_sub_status` contains "NonRepatriableWith" AND no PIS bank populated |
+| Resident | `bo_sub_status` contains "Individual-ResidentNegative Nomination" OR "Individual - Resident With Nomination" |
 
 ---
 
@@ -171,26 +170,29 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 ```
 Route by scenario
-├─ Early-exit / no-response conditions (e.g. NRI PIS) → Rule 1
-├─ UPI status interpretation (Success / Failed / Unknown) → Rule 2
-├─ Netbanking status (Success / Unknown / pending) → Rule 3
-├─ UPI failure troubleshooting (error codes, retries, alternatives) → Rule 4
-├─ Bank details request (NEFT/RTGS/IMPS) → Rule 16
-├─ NEFT / IMPS / RTGS payin not reflected (client says they transferred; UTR / bank receipt / screenshot) → Rule 5
-├─ Date mismatch (stated date has no match; amount-match on nearby dates) → Rule 6
-├─ Account / bank-type restriction (joint, HUF, current, IDFC 3-in-1, etc.) → Rule 7
-├─ Payin confirmed but "not visible" → Rule 8
-├─ Balance lower than expected / negative → Rule 9
-├─ Old payin not reflecting, balance = ₹0 → Rule 10
-├─ Multiple same-day transactions → Rule 11
-├─ Fresh account payin failures (≤24h since activation) → Rule 13
-├─ Penny drop / ₹1 test deposit from "ZERODHA BR" → Rule 14
-└─ Same-day withdrawal request after a deposit (T+1 restriction) → Rule 15
+├─ NRE PIS / NRO PIS account                                            → Rule 1
+├─ Cheque debited but no system entry                                   → escalate
+├─ Customer outside India / NRI conversion request                      → escalate
+├─ UPI status interpretation (Success / Failed / Unknown)               → Rule 2
+├─ Netbanking status (Success / Failed / Unknown / pending)             → Rule 3
+├─ UPI failure troubleshooting (error codes, retries, alternatives)     → Rule 4
+├─ Bank details request (NEFT / RTGS / IMPS)                            → Rule 15
+├─ Verify a Zerodha UPI ID is genuine (suspected fake / fraud check)    → share official UPI IDs from A6
+├─ NEFT / IMPS / RTGS payin not reflected (UTR / bank receipt provided) → Rule 5
+├─ Date mismatch (stated date has no match; amount-match on nearby)     → Rule 6
+├─ Account / bank-type restriction (joint, HUF, current, IDFC 3-in-1)   → Rule 7
+├─ Payin confirmed but "not visible"                                    → Rule 8
+├─ Balance lower than expected / negative                               → Rule 9
+├─ Old payin not reflecting, balance not as client expected             → Rule 10
+├─ Multiple same-day transactions                                       → Rule 11
+├─ Fresh account payin failures (≤24h since activation)                 → Rule 12
+├─ Penny drop / ₹1 test deposit from "ZERODHA BR"                       → Rule 13
+└─ Same-day withdrawal request after a deposit (T+1 restriction)        → Rule 14
 ```
 
 ### Fallback
 
-If no root cause is identified after completing all applicable rules, escalate.
+If no root cause is identified after completing all applicable rules → escalate.
 
 ---
 
@@ -198,7 +200,9 @@ If no root cause is identified after completing all applicable rules, escalate.
 
 ### Rule 1: Early Exit
 
-- If `account_type` = NRI PIS → escalate. Do not respond and do not share bank details.
+- Check `bo_sub_status`, `pis_bank_1_name`, and `pis_bank_2_name` per **A10**.
+- If account is **NRE PIS** or **NRO PIS** → escalate.
+- NRE / NRO non-PIS and resident accounts → continue with normal routing.
 
 ---
 
@@ -210,6 +214,8 @@ If no root cause is identified after completing all applicable rules, escalate.
 | Failed | Payment did not reach the trading account. Refund to source bank within 72 working hours (per **A1**). |
 | Unknown | Treat as Failed — payment did not reach the trading account. Refund to source bank within 72 working hours (per **A1**). |
 
+If client provides bank confirmation that the payment was successful at the bank but Zerodha shows Failed / Unknown → escalate.
+
 ---
 
 ### Rule 3: Netbanking Status
@@ -218,7 +224,7 @@ Applies when `transfer_mode` = netbanking.
 
 **Status = Success:** Funds are credited to the trading account. No further action required.
 
-**Status = Failed:** The payment failed. If the amount was debited from the source bank, it will be reversed within the netbanking refund timeline (per **A1**).
+**Status = Failed:** The payment failed. If the amount was debited from the source bank, it will be reversed within the netbanking refund timeline (per **A1**). If client provides bank confirmation that the payment was successful at the bank but Zerodha shows Failed → escalate.
 
 **Status = Unknown:** Pending at the bank — not failed. Evaluate the timeline state:
 
@@ -226,17 +232,16 @@ Applies when `transfer_mode` = netbanking.
 |---|---|
 | Credit deadline NOT passed | Payment pending at the bank. Will either be credited by 2:00 PM on T+1 banking working day or refunded to source bank by 5:00 PM on T+2 banking working day (per **A1**). |
 | Credit deadline PASSED, refund deadline NOT passed | Payment not credited within the processing window. If debited from source bank, refund by 5:00 PM on T+2 banking working day (per **A1**). If not debited, no action needed. |
-| Both deadlines PASSED | Payment unsuccessful. If debited and not yet refunded, request bank statement screenshot (debit proof) to investigate. If not debited, no action needed. |
-
-**Customer confirms debit or provides bank statement:** State both deadlines (credit + refund). If both deadlines already passed → escalate.
+| Both deadlines PASSED | Payment unsuccessful. If debited and not yet refunded, request bank statement screenshot (debit proof) → escalate. If not debited, no action needed. |
 
 ---
 
 ### Rule 4: UPI Failure Troubleshooting
 
 1. Identify cause from A5.
-2. Check A1 UPI limits (₹5L/txn, 35 txn/day).
-3. Alternatives in order:
+2. **U30 (bank-side failure)** → escalate.
+3. Check A1 UPI limits (₹5L/txn, 35 txn/day).
+4. Alternatives in order:
    - Suggest a different UPI app linked to the primary bank account (e.g., Google Pay, PhonePe, BHIM).
    - If UPI issues persist, suggest IMPS/NEFT/RTGS or netbanking; share the step-by-step link from A9.
    - Inactive registered bank → suggest adding another active bank via Console → Profile → Bank accounts.
@@ -246,25 +251,23 @@ Applies when `transfer_mode` = netbanking.
 
 ### Rule 5: Payment Not Reflected (NEFT / IMPS / RTGS)
 
-Applies when the client says they added funds via NEFT / IMPS / RTGS but the payin isn't reflected in the trading account — directly, in a screenshot, or with a UTR / bank receipt.
+Applies when the client says they added funds via NEFT / IMPS / RTGS but the payin isn't reflected — directly, in a screenshot, or with a UTR / bank receipt.
 
 UPI cases → **Rule 2**. Netbanking cases → **Rule 3**.
 
 **Step 1 — Get the UTR / reference number:**
 
-Check if the client has shared a UTR or bank reference number in the attachment or query text.
-
 - Provided → go to Step 2.
-- Not provided → escalate. Request the client to share the UTR or bank reference number for the transfer before proceeding.
+- Not provided → request the UTR / bank reference number from the client and escalate.
 
 **Step 2 — UTR re-query:**
 
-Invoke `cashier_payin` — leave **Client ID** blank and enter the UTR / reference number in the **Bank Reference** field. For NEFT / IMPS / RTGS, `status` is always Success when the transaction is located — only `nest_update` and the bank-account match determine the next step.
+Invoke `cashier_payins` with the UTR / reference number in **`bank_reference`**, and set the required `from_date` / `to_date` to a 30-day range (`from_date` = 30 days before the current date, `to_date` = current date). If the transaction isn't found, widen the range and retry. The `bank_reference` lookup needs only the date range — no client ID. For NEFT / IMPS / RTGS, `status` is always Success when the transaction is located — only `nest_update` and the bank-account match determine the next step.
 
 | Result | Action |
 |---|---|
-| Found — `nest_update` = N/A or Pending | Transfer has reached Zerodha but hasn't been pushed to the trading account yet. Go to Step 3 (bank account match). |
-| Not found | No record of this UTR in Zerodha's system. Request a bank statement screenshot showing: debit date, amount, UTR/reference number, and destination account + IFSC (to confirm the transfer was sent to Zerodha's correct bank account). Then escalate. Include client ID, UTR, amount, date, source bank account, destination account + IFSC, and bank statement screenshot. |
+| Found — `nest_update` = N/A or Pending | Transfer has reached Zerodha but hasn't been pushed to the trading account yet. Go to Step 3. |
+| Not found | Request a bank statement screenshot showing debit date, amount, UTR/reference, and destination account + IFSC → escalate. |
 
 **Step 3 — Bank account match:**
 
@@ -272,19 +275,19 @@ Check the source account against the client's registered bank accounts (`bank_1_
 
 | Status | Action |
 |---|---|
-| Matches a registered bank | Funds need a manual push to the trading account. Escalate. |
+| Matches a registered bank | Funds need a manual push to the trading account → escalate. |
 | Doesn't match any registered account | Transfer sent from an unlinked account. Per SEBI regulations, the amount will be reversed to the source bank within 2–3 days (per **A2**). Share **A9** unmapped transfer link. |
 
 ---
 
 ### Rule 6: Date Mismatch
 
-When no transaction matches the client's stated date, use **amount-matching** on nearby dates — clients typically share either a screenshot or the amount.
+When no transaction matches the client's stated date, use **amount-matching** on nearby dates.
 
-1. Check the amount the client has mentioned in their screenshot or query.
-2. Check if the same amount appears in `cashier_payin` on dates close to the stated date.
-3. If a matching-amount transaction is found on a nearby date → apply Rule 2, 3, or 5 per the matched transaction's `transfer_mode` and `Status`.
-4. If no matching-amount transaction is found on any nearby date → request a bank statement screenshot (amount, date, reference number) to investigate.
+1. Check the amount the client mentioned in their screenshot or query.
+2. Invoke `cashier_payins` with the required `from_date` / `to_date` set to the client's stated date ±5 days, and check whether the same amount appears in that window.
+3. Matching-amount transaction found on a nearby date → apply Rule 2, 3, or 5 per the matched transaction's `transfer_mode` and `Status`.
+4. No matching-amount transaction on any nearby date → request a bank statement screenshot (amount, date, reference number) → escalate.
 
 ---
 
@@ -292,7 +295,7 @@ When no transaction matches the client's stated date, use **amount-matching** on
 
 Apply A3 per account/bank type.
 
-**Dormant accounts:** If the account is dormant: dormancy does not restrict fund addition — all methods are available. Only trading and order placement are restricted. Inform the client that ReKYC is required to resume trading. Treat fund addition as unaffected by dormancy.
+**Dormant accounts:** Dormancy does not restrict fund addition — all methods are available. Only trading and order placement are restricted. Inform the client that ReKYC is required to resume trading. Treat fund addition as unaffected by dormancy.
 
 **Third-party / spouse:** Only bank accounts registered in the client's name and linked to their Zerodha account can be used for payins. Per SEBI regulations, transfers from third-party accounts are not accepted. Share the unmapped-transfer link from A9.
 
@@ -303,10 +306,9 @@ Apply A3 per account/bank type.
 ### Rule 8: Payin Confirmed but "Not Visible"
 
 1. Invoke `kite_margins` — authoritative source for available balance.
-2. **Weekend payin:** Payin recorded in the ledger. On Monday, it appears under the Payin line on Kite (not in opening balance, which carries forward from Friday's close).
-3. **Weekday payin:** Payin credited on the payin date/time with `bank_reference` available. Balance visible on Kite → Funds.
-4. Invoke `ledger_report`: found → verify via Console ledger. Not found → apply A8 timing guidance.
-5. Balance confirmed but client insists not visible → Privacy mode may be enabled on Kite (hides account details); disable via Kite → Settings.
+2. Apply the Kite-vs-Console timing in **A8** for the payin's day/time (weekday/weekend, before/after 7:30 AM), including the weekend "Payin line on Monday" behaviour. `bank_reference` available confirms the credit.
+3. Invoke `ledger_report`: found → verify via Console ledger; not found → apply A8 timing guidance.
+4. Balance confirmed but client insists not visible → Privacy mode may be enabled on Kite (hides account details); disable via Kite → Settings.
 
 ---
 
@@ -322,11 +324,14 @@ Apply A3 per account/bank type.
 
 ---
 
-### Rule 10: QS Check (Old Payin, Balance = ₹0)
+### Rule 10: QS Check (Old Payin, Balance Not As Expected)
 
-1. Invoke `crux_qs_payouts` and `ledger_report` for QS between the payin date and today. If the client hasn't stated the payin date, match by amount instead (when the client has shared an amount).
-2. QS found → the idle balance from the payin was transferred back to the client's bank account via Quarterly Settlement on the QS date.
-3. No QS found → escalate.
+Applies when an old payin is not reflecting, or the balance differs from what the client expected, and QS may have moved funds out.
+
+1. **Invoke `ledger_report` for the last 60 days** and check for any QS (Quarterly Settlement) entry.
+2. **QS entry found in the ledger** → invoke `crux_qs_payouts` for the date the QS entry is posted to the ledger.
+3. **QS confirmed in `crux_qs_payouts`** → the idle balance from the payin was transferred back to the client's bank account via Quarterly Settlement on the QS date.
+4. **No QS entry in the ledger, OR ledger entry found but not confirmed in `crux_qs_payouts`** → escalate.
 
 ---
 
@@ -342,17 +347,7 @@ Apply Rule 2 or Rule 3 per transaction based on `transfer_mode` and `Status`. Ad
 
 ---
 
-### Rule 12: Escalation Triggers
-
-Escalate
-- Bank success but Zerodha failed.
-- U30 error.
-- Cheque debited but no system entry — escalate immediately, no troubleshooting.
-- Direct NEFT / IMPS / RTGS located via UTR re-query, matched to a registered bank account (Rule 5).
-
----
-
-### Rule 13: Fresh Account Payin Failures
+### Rule 12: Fresh Account Payin Failures
 
 Applies: `account_activation_date` within last 24h AND payin date = activation date. New accounts only — not REKYC or segment activation.
 
@@ -360,7 +355,7 @@ Inform the client: your account was recently opened and it will take up to 24 wo
 
 ---
 
-### Rule 14: Penny Drop / Test Deposit
+### Rule 13: Penny Drop / Test Deposit
 
 If customer asks about a ₹1 credit from "ZERODHA BR" via IMPS:
 
@@ -368,12 +363,12 @@ Inform the client: the ₹1 credit is a standard test deposit that occurs when c
 
 ---
 
-### Rule 15: Same-Day Withdrawal after Deposit
+### Rule 14: Same-Day Withdrawal after Deposit
 
-If the client adds funds and asks about withdrawing the same day → same-day withdrawal is not permitted. A T+1 restriction applies; the withdrawal request can be placed from the next banking working day onwards.
+If the client adds funds and asks about withdrawing the same day → same-day withdrawal is not permitted; a T+1 restriction applies. Invoke `settlement_date_calculator` to identify the next settlement working day and tell the client the withdrawal request can be placed from that date onwards.
 
 ---
 
-### Rule 16: Bank Details Request
+### Rule 15: Bank Details Request
 
 Share Zerodha's bank details from A4. Lead with Primary; provide Alternate only if the client requests a numeric account number or cannot use "ZERNSE". HDFC account holders can also use the eCMS facility per A9.

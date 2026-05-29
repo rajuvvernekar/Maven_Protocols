@@ -193,6 +193,8 @@ When a stock enters F&O ban period, fresh positions that increase net delta expo
 | Long futures | Sell futures, buy puts, sell calls | Buy more futures, buy calls, sell puts |
 | Short futures | Buy futures, buy calls, sell puts | Sell more futures, sell calls, buy puts |
 
+---
+
 ## Section B: Decision Flow
 
 ### Routing
@@ -207,16 +209,19 @@ Route by scenario
    ├─ Margin call / shortfall / penalty → Rule 6
    ├─ F&O expiry & physical settlement → Rule 7
    ├─ Sold holdings showing as negative positions → Rule 8
-   ├─ When are profits available → Rule 9
+   ├─ Intraday profits not credited or unavailable → Rule 9
    ├─ Odd-lot quantity from lot size revision → Rule 10
    ├─ F&O ban period — what trades are allowed → Rule 11
    ├─ Position not found → Rule 12
-   └─ Client references previous-day trades → Rule 12
+   ├─ Client references previous-day trades → Rule 12
+   └─ NRI delivery credit (75/25 split) → Rule 13
 ```
 
 ### Fallback
 
 If no root cause found after completing all diagnostic steps → escalate.
+
+---
 
 ## Section C: Rules
 
@@ -275,11 +280,15 @@ If no root cause found after completing all diagnostic steps → escalate.
 1. Selling shares from holdings during the day shows as a negative position tagged HOLDING in Positions. Normal. Allows intraday traders to buy back. If no rebuy, ignore. Shares debited from demat by EOD per **A1**.
 2. If client asks about holdings status → invoke `kite_holdings`.
 
-### Rule 9 — Profit Availability
+### Rule 9 — Intraday Profit Not Credited
 
-1. Check `client_acc_type`, `pis_bank_1_name`, `pis_bank_2_name`, `pis_bank_3_name` from `get_all_client_data` — if NRI non-PIS per **A10**, apply NRI Non-PIS row from **A10**.
-2. Apply applicable row from **A10** based on trade type. Intraday profits from equity and F&O are available only after T+1 settlement — cannot be used same day. Share same-day profits link from **A11** if questioned.
-3. If client asks why balance doesn't reflect profit → invoke `kite_margins` to show `available_margin` and explain T+1 settlement.
+**Equity intraday check:**
+-Invoke `kite_order_history`. From the `type` field, aggregate total buy quantity and total sell quantity per instrument for the day. Net off using FIFO — matched buy and sell quantity on the same day = intraday. For the intraday-matched trades, calculate buy value and sell value using `filled_quantity` × `price` for each trade. Intraday P&L = sell value − buy value.
+
+**F&O intraday check:**
+-Invoke `console_fno_positions`. Identify F&O instruments by FUT, CE, or PE in the `instrument` name. For each instrument, `open_quantity` is the overnight carry-forward baseline. Apply FIFO: net today's opposing trades against `open_quantity` first — that portion is overnight closure, not intraday. Only the remaining matched buy and sell quantities from today = intraday. For the intraday-matched trades, calculate buy value and sell value using `filled_quantity` × `price` for each trade. Intraday P&L = sell value − buy value.
+
+-Per **A10**, intraday profits (equity and F&O) are not available on T day — available only after T+1 settlement. Share same-day profits link from **A11**.
 
 ### Rule 10 — Odd-Lot Quantity from Lot Size Revision
 
@@ -303,3 +312,7 @@ If no root cause found after completing all diagnostic steps → escalate.
 2. Invoke `kite_holdings` — check if CNC position moved to holdings.
 3. If still not found: confirm Privacy Mode is off in Kite settings.
 4. If still not found after steps 1–3 → escalate.
+
+### Rule 13 — NRI Delivery Credit
+
+Check `client_acc_type`, `pis_bank_1_name`, `pis_bank_2_name`, `pis_bank_3_name` from `get_all_client_data`. If NRI Non-PIS → per **A10**, 75% of delivery sale proceeds available same day; remaining 25% available T+1.

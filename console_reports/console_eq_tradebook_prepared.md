@@ -34,6 +34,7 @@ TAGS: orders, reports
 ### A1 — Fundamentals
 
 - Intraday vs delivery is not a stored field — it is inferred from trade patterns per A3.
+- **Product type (CNC / MIS / MTF / NRML / CO / BO) is not stored in the tradebook.** To identify the product type or order source (e.g., RMS auto-square-off), invoke `kite_order_history` for the trade date and match by `order_id`.
 
 ---
 
@@ -89,6 +90,8 @@ TAGS: orders, reports
 
 - **Tradebook vs Tax P&L difference:** Tradebook shows gross trade values (`price` × `quantity`) per individual fill. Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L — both are correct for their respective purposes. Tax P&L is the authoritative report for income tax filing.
 
+---
+
 ### A6 — Links
 
 | Topic | URL |
@@ -96,6 +99,8 @@ TAGS: orders, reports
 | Exchange toggle (NSE / BSE) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/exchange-toggle |
 | How to download trade and funds reports | https://support.zerodha.com/category/console/reports/other-queries/articles/how-to-download-trade-and-funds-reports-in-pdf |
 | Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |
+| SOT / SOH (Statement of Transactions / Statement of Holdings) | https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/cdsl-easi-easiest/articles/will-zerodha-send-me-holding-statements-for-my-investments |
+| Auto Square-Off | https://support.zerodha.com/category/account-opening/resident-individual/ri-charges/articles/auto-square-off |
 
 ---
 
@@ -125,7 +130,9 @@ Route by scenario
    ├─ Tax P&L numbers don't match the tradebook → Rule 9
    ├─ Need all trades for tax filing / audit / compliance → Rule 10
    ├─ Closed account — historical trade data needed → Rule 11
-   └─ Report won't open / loading errors → Rule 12
+   ├─ Report won't open / loading errors → Rule 12
+   ├─ SOT / SOH (Statement of Transactions / Holdings) download request → Rule 13
+   └─ Trade was sold / squared-off by RMS (not by the client) → Rule 14
 ```
 
 ### Fallback
@@ -180,11 +187,10 @@ Route by scenario
 
 ---
 
-### Rule 7 — Contract Note Charges / Obligation Query
+### Rule 7 — Charges / Obligation Query
 
-1. Charges and obligation data are out of scope per A1.
-2. For charges and obligations, the client should refer to their contract note directly — available on Console → Reports → Contract Notes.
-3. If the client believes there is a discrepancy in charges on the contract note → escalate.
+1. Any charges query → route to `ledger_report_protocol` for handling.
+2. If the client believes there is a discrepancy in charges → escalate.
 
 ---
 
@@ -219,3 +225,25 @@ Route by scenario
 1. Large date ranges with high trade volume may cause timeouts.
 2. Narrow the date range (e.g., one financial year at a time) and retry.
 3. If the issue persists → escalate.
+
+---
+
+### Rule 13 — SOT / SOH Download Request
+
+- Share the SOT / SOH article from A6 — guides the client on downloading the Statement of Transactions / Statement of Holdings directly.
+
+---
+
+### Rule 14 — RMS Auto-Square-Off Identification
+
+Applies when the client says a trade was sold / squared-off by the system rather than by them.
+
+1. Identify the buy and sell trades from the tradebook per Rule 1.
+2. Invoke `kite_order_history` for the trade date. Match the buy and sell `order_id` from the tradebook to the order book to obtain the `product` field and order source.
+3. Check the buy order's `product`:
+   - **MIS (Margin Intraday Square-off):** intraday product; position must be closed by the client before the intraday cutoff (3:20 PM for equity). If not closed, RMS auto-squares-off.
+   - **CO / BO:** similar intraday-only behavior.
+4. Check the sell order:
+   - Sell order source = RMS / Auto-square-off → confirm to client that the position was auto-squared-off per intraday product rules.
+5. Inform the client that a **Call and Trade / Auto Square-Off charge of ₹59 (₹50 + 18% GST) per square-off** is debited to the ledger (cross-reference: Ledger Report Protocol — A5 Call and Trade row, Rule 3 Call and Trade cross-reference).
+6. Share the Auto Square-Off article from A6.

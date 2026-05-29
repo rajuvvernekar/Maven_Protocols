@@ -148,8 +148,8 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 
 1. Check `quantity_available` in this tool.
 2. If `quantity_available` > 0 → display issue. Advise client to log out and back in, or try a different browser/device.
-3. If `quantity_available` = 0 → Invoke `console_eq_holdings` and Invoke `console_ledger` (MTF ledger type) before concluding no MTF holdings exist.
-   - If `console_ledger` MTF closing balance shows Debit → funded amount is outstanding; MTF holdings exist.
+3. If `quantity_available` = 0 → Invoke `console_eq_holdings` and Invoke `ledger_report` (MTF ledger type) before concluding no MTF holdings exist.
+   - If `ledger_report` MTF closing balance shows Debit → funded amount is outstanding; MTF holdings exist.
 4. If not found in either tool AND MTF interest is still being charged → Escalate.
 
 ---
@@ -159,7 +159,7 @@ If no route matches, interpret MTF holdings data using Section A. If no root cau
 1. Explain interest rate, accrual timing, and statement location per **A3** and **A6**.
 2. If client asks about weekend interest: interest accrues on all calendar days — funded amount remains outstanding regardless of market hours.
 3. If client says interest was charged after selling all MTF positions:
-   - Invoke `console_ledger` (MTF ledger type) and verify closing balance was zero on the claimed dates.
+   - Invoke `ledger_report` (MTF ledger type) and verify closing balance was zero on the claimed dates.
    - If balance was non-zero (e.g., due to settlement timing) → explain the timing.
    - If balance was zero and interest was still charged → Escalate.
 

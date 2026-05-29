@@ -131,7 +131,7 @@ Route by scenario
 
 ### Fallback
 
-- If no route matches, invoke `console_eq_holdings`, `console_eq_tradebook`, `console_eq_holdings_breakdown`, or `console_eq_pnl` for additional context. If no root cause is found → escalate.
+- If no route matches, invoke `console_eq_holdings`, `console_eq_tradebook_prepared`, `console_eq_holdings_breakdown`, or `console_eq_pnl` for additional context. If no root cause is found → escalate.
 
 ---
 

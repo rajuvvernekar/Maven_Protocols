@@ -89,8 +89,8 @@ TAGS: margins
 | Margin utilized (unpledge) | Unpledge on shares whose collateral is in use |
 | Overdue | CDSL confirmation delayed — request stuck in pending/overdue state |
 | Same-day unpledge | Securities pledged today cannot be unpledged on the same day. The pledge is processed on the same day and collateral is credited within 15 minutes. An unpledge request can only be submitted from the next working day onwards. The client can sell the pledged shares on the same day, provided the collateral is not being utilised. |
-| F&O segment not active — request pending | "Pledge is not allowed for your account" or similar; activation request already found in `account_modification` |
-| F&O segment not active — no request placed | "Pledge is not allowed for your account" or similar; no activation request found in `account_modification` |
+| F&O segment not active — request pending | "Pledge is not allowed for your account" or similar; activation request already found in `account_modification_report` |
+| F&O segment not active — no request placed | "Pledge is not allowed for your account" or similar; no activation request found in `account_modification_report` |
 
 ### A7 — Scenarios
 
@@ -165,7 +165,7 @@ Route by scenario
    - "Something went wrong" error → unapproved security.
    - T1 shares.
    - Insufficient qty → invoke `console_eq_holdings` for available qty.
-   - "Pledge is not allowed for your account" or similar account-level restriction → check Segments in `get_all_client_data`. If F&O is not active → invoke `account_modification` to check if an activation request is already placed:
+   - "Pledge is not allowed for your account" or similar account-level restriction → check Segments in `get_all_client_data`. If F&O is not active → invoke `account_modification_report` to check if an activation request is already placed:
      - Request found → per A7: F&O segment not active — request pending.
      - No request found → per A7: F&O segment not active — no request placed.
 2. If none of the above explains the failure → escalate.

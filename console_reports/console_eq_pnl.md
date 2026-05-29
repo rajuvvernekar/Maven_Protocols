@@ -96,6 +96,8 @@ Verified P&L report for ITR filing: see A7.
 | Merger | Shares swapped at defined ratio. P&L uses original acquisition cost carried over to new shares. |
 | Fractional shares (any CA) | Settled in cash → appears as a realized P&L entry for the fractional quantity. |
 
+---
+
 ### A6 — Scenarios & Interpretations
 
 **S1 — FIFO Causing Unexpected P&L:**
@@ -148,6 +150,7 @@ When all originally purchased shares have been sold via FIFO and the remaining o
 |---|---|
 | Verified P&L report (third-party verified, for ITR filing) | https://console.zerodha.com/verified |
 | What CNC, MIS, and NRML mean | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/what-does-cnc-mis-and-nrml-mean |
+| Tax filing guide for traders (brokerage / STT / charges exemption from income tax) | https://zerodha.com/z-connect/varsity/fy23-24-step-by-step-guide-on-filing-tax-return-for-traders |
 
 ---
 
@@ -173,7 +176,7 @@ Query relates to equity P&L →
 
 ### Fallback
 
-If no route matches, invoke relevant tools for additional context. If no root cause is found, escalate.
+If no route matches, invoke relevant tools for additional context. If no root cause is found → escalate.
 
 ---
 
@@ -219,7 +222,7 @@ If no route matches, invoke relevant tools for additional context. If no root ca
 
 Product type (CNC, MIS, Long-term, etc.) does not determine tax classification. Even if a client used CNC, same-day buy + sell of the same stock in EQ series is treated as intraday (speculative). What matters is whether offsetting trades exist on the same day — not the product type label. See A7 for the CNC/MIS/NRML explainer link.
 
-1. Invoke `console_eq_tradebook` to check the `series` field.
+1. Invoke `console_eq_tradebook_prepared` to check the `series` field.
 2. **Series EQ + same-day buy and sell** → classified as intraday (speculative), not delivery, regardless of product type used. See A6-S4.
 3. **Series BE / BT / BZ (T2T)** → same-day buy + sell in T2T is always delivery. See A6-S5.
 
@@ -244,10 +247,11 @@ Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shar
 
 1. Explain the difference: Console P&L is aggregate realized P&L; Tax P&L classifies for ITR with STCG/LTCG/speculative and charges. See A6-S6 and A4 for full comparison.
 2. If client wants to edit Tax P&L → edit path is Console → Reports → Tax P&L → Edit. See A6-S7 and A4.
+3. If client asks about exempting brokerage, STT, or other charges from income tax → share the tax filing guide link from A7.
 
 ---
 
 ### Rule 9 — Unrealized P&L Orphan Entry
 
 1. Invoke `console_eq_holdings` for that stock.
-2. If no holdings found but unrealized P&L still shows an entry → this is a data error (orphan lot). See A6-S13. escalate.
+2. If no holdings found but unrealized P&L still shows an entry → data error (orphan lot, see A6-S13) → escalate.
