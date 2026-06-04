@@ -1,15 +1,5 @@
 # get_all_client_data
 
-## Description
-
-WHEN TO USE:
-
-- To look up client profile, account status, PAN, DOB, category
-- To determine account type: NRI (NRE/NRO), PIS/Non-PIS, joint, minor, non-individual
-- To check bank details, segment status, dormancy, DDPI/POA, nominees, account blocks
-- To detect name/DOB mismatch before calling pan_status tool
-- To provide client context for: account_modification_report, cashier_payins, withdrawal_request, crux_qs_payouts
-
 ## Protocol
 
 # GET ALL CLIENT DATA PROTOCOL

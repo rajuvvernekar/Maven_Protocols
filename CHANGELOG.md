@@ -10,6 +10,17 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-06-04 — Tool-selection improvements (system prompt + get_all_client_data)
+
+Aimed at increasing tool-selection accuracy (reduce stopping early after the default client-data fetch).
+
+**system_prompt.md**
+- [Added]: `## Tool Use` section below Voice & Persona — call every relevant available tool; don't stop after `get_all_client_data` if another tool answers part of the query.
+- [Modified]: Moved `<thinking_summary>` out of `<response_format>` (now a sibling block, not nested) — it is a separate reasoning-trace channel, not part of the client-facing response.
+
+**miscellaneous/get_all_client_data.md**
+- [Removed]: Description block (WHEN TO USE). The tool is now fetched by default from code, so a selection description is redundant — removing it cuts token waste and routing noise. Protocol (field interpretation logic) retained.
+
 ### 2026-06-04 — Date range limit handling (11 tools + system prompt)
 
 Tools whose API caps a single call's date range now declare it, and the system prompt defines a bounded retry/chunk strategy so long-range queries don't hard-fail on `ValidationException`.
