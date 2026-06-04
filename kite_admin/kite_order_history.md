@@ -234,7 +234,8 @@ Route by scenario
    ├─ F&O buy average / intraday identification → Rule 13
    ├─ Multiple orders for same instrument → Rule 14
    ├─ No matching orders found → Rule 15
-   └─ app_id is numerical (third-party API) and rejection/rate limit query → Rule 16
+   ├─ app_id is numerical (third-party API) and rejection/rate limit query → Rule 16
+   └─ Sold stocks but funds not credited / available → Rule 17
 ```
 
 ### Fallback
@@ -273,7 +274,7 @@ If no root cause found after completing all diagnostic steps → escalate.
 
 ### Rule 4 — RMS / Admin Square-Off
 
-1. `placed_by` = ADMINSQF or starts with "rms" per **A8**.
+1. `placed_by` = ADMINSQF or starts with "rms" per **A8**. Do not share the raw value with the client.
 2. Invoke `kite_margins` to check margin shortfall.
 3. Check if MIS + near auto square-off time per **A6**.
 4. Check for negative cash balance.
@@ -349,3 +350,11 @@ If no root cause found after completing all diagnostic steps → escalate.
 3. MCX IOC rejection: MCX does not support IOC validity in the algo segment. Orders via third-party API on MCX with IOC validity will be rejected. Use DAY validity instead.
 4. Order slicing: API order slicing should be capped at a maximum of 10 slices to stay within the 10 orders-per-second rate limit.
 5. For details on all SEBI retail algo compliance, share link from **A13**.
+
+### Rule 17 — Sold Stocks but Funds Not Available
+
+1. Locate the CNC SELL order: if the client names an instrument, filter by that instrument with `product` = CNC and `type` = SELL. If no instrument is mentioned, filter all orders by `product` = CNC and `type` = SELL and apply the remaining steps to each matching order.
+2. Invoke `console_eq_holdings` for the sell date and check `t1` for this instrument — this is the definitive indicator:
+   - `t1` = 0 → no unsettled shares at the time of the sell. Normal CNC sale. 100% of proceeds available same day (policy effective October 7, 2024).
+   - `t1` > 0 and sold quantity ≤ `t1` → entirely BTST. All shares sold were purchased the previous trading day and had not settled. Invoke `settlement_date_calculator` with the sell date to determine the exact date proceeds will be available (T+1, accounting for weekends and holidays — e.g. a Friday sell settles Monday). Blocked amount = `t1` × `average_price` from the sell order.
+   - `t1` > 0 and sold quantity > `t1` → split sale: `t1` quantity is BTST (proceeds on T+1 — invoke `settlement_date_calculator` with the sell date for the exact date); the remaining quantity was from settled holdings (proceeds same day). Blocked amount = `t1` × `average_price` from the sell order.

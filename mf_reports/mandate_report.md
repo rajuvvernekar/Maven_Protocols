@@ -6,11 +6,14 @@ WHEN TO USE:
 
 When clients:
 - Ask about mandate status (created/pending/active/failed/cancelled)
-- Report mandate not activating or stuck
+- Report mandate not activating or stuck in pending/under-review
 - Ask about mandate activation timeline
-- Ask which bank mandate is linked to
+- Ask which bank mandate is linked to their account or SIP
+- Report mandate creation failing — eNACH, UPI autopay, or NPCI portal error during setup
+- Report UPI autopay approved on their UPI app or Google Pay but mandate not reflecting or not active on Coin
+- Report multiple or duplicate mandates created and want pending ones removed
 
-TRIGGER KEYWORDS: "mandate status", "mandate pending", "mandate failed", "eNACH", "autopay setup", "coin"
+TRIGGER KEYWORDS: "mandate status", "mandate pending", "mandate failed", "eNACH", "autopay setup", "UPI autopay", "nach mandate", "mandate not activating", "mandate active but not debited", "funds not debited", "bank not debited", "auto-debit not happening", "mandate not linked", "pending mandate", "duplicate mandate", "multiple mandates", "NPCI portal", "autopay approved but not reflecting", "mandate creation failed", "sip mandate", "coin"
 
 TAGS: investments, funds
 

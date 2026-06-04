@@ -197,6 +197,7 @@ Process: signup.zerodha.com/rekyc. Timeline: **A1** general processing. Acceptab
 - **Pending verification:** If a secondary/tertiary bank account is pending penny drop verification, withdrawals to that account will be available once verification completes (typically within 2 working days of approval). No charges apply for penny drop verification.
 - **Allowed account types:** Savings, Current, Cash Credit. Overdraft (OD) accounts are not allowed. PayTM Payments Bank cannot be linked.
 - **Relative's bank account:** Not allowed. SEBI mandates bank in client's name only.
+- **NRO/NRE bank account — individual account:** If `client_acc_type` = individual and the client requests to link an NRO or NRE bank account → NRO/NRE accounts cannot be linked to a resident individual account. If the client has become an NRI, they must convert their account to an NRI demat account first. Share the conversion article per **A14**.
 
 #### Primary Bank Change (Online)
 
@@ -441,7 +442,9 @@ Route by scenario
    ├─ Email or mobile modification status / request query → Rule 14
    ├─ Address change query → Rule 15
    ├─ MTF activation query → Rule 16
-   └─ Kill Switch query (segment enabled/disabled, unable to trade after Kill Switch) → Rule 17
+   ├─ Kill Switch query (segment enabled/disabled, unable to trade after Kill Switch) → Rule 17
+   ├─ Signature modification request → Rule 18
+   └─ Client unable to login / account inactive error despite active account → Rule 19
 ```
 
 ### Fallback
@@ -473,10 +476,15 @@ If query mentions name change, DOB mismatch, or PAN correction → escalate.
 | Status | Communicate |
 |---|---|
 | Request_pending / Processing | Modification type, `created` date, expected timeline per **A1**. |
-| Pending_eSign | Modification type is pending eSign on Console. |
+| Pending_eSign | Modification type is pending eSign on Console. Instruct the client to complete the eSign step — activation will be processed within 72 hours of completion. |
 | Approved | Invoke `settlement_date_calculator` with `created` to compute working days elapsed. Cross-check: elapsed working days must meet the relevant timeline per **A1**. Communicate: modification type, approval date, activation timeline per **A1**. |
 | Rejected | Check all relevant form_types (`rekyc`, `rekyc_fno`, `segment_addition`). Communicate: modification type, rejection reason, guidance to resolve and resubmit. |
 | No request found (count=0) despite client claim of submission | No matching request found; process may not have completed. Ask client to retry. If IPV and eSign were completed but request is absent, ask for confirmation screenshot. |
+
+**DDPI rejection — third-party Aadhaar:** When a DDPI modification request is rejected and the rejection reason contains "third party Aadhaar":
+1. Invoke `get_all_client_data` and compare `client_name` with `signer_name` from the modification record.
+   - Slight mismatch → inform the client of the name in our records (`client_name`) and the name used for eSign (`signer_name`), and guide to name change per **A14**.
+   - Completely different name → ask the client to use their own Aadhaar for eSign.
 
 ---
 
@@ -560,7 +568,7 @@ Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant". Check which segme
 
 ### Rule 7: Segment & Account Status Translations
 
-When a client queries about commodity trading (MCX, CRUDEOILM, commodity options, or any commodity product), check both `zbl_mcx_status` and `nse_com_status`. Report the status of each segment that is not fully active. Both segments may need to be active depending on the product the client wants to trade.
+When a client queries about commodity trading (MCX, CRUDEOILM, commodity options, or any commodity product), check both `zbl_mcx_status` and `nse_com_status`. Report the status of each segment that is not fully active. Both segments may need to be active depending on the product the client wants to trade. For MCX segment activation queries, the same activation process applies as for other commodity segments — guide per Rule 5 → A10.
 
 | Raw Status | Response |
 |---|---|
@@ -568,9 +576,9 @@ When a client queries about commodity trading (MCX, CRUDEOILM, commodity options
 | `Request_pending` | Invoke `settlement_date_calculator` with `created` to determine working days elapsed. Within 1 working day → being processed. 1 working day elapsed → escalate. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
 | `Blocked` | Communicate the `remarks` field content for this status. |
 | `Activated` | Confirm segment is active. Orders can be placed only after 24 hours from activation — use `*_updated_on` for the activation timestamp. If 24 hours have already passed and client still cannot place orders → escalate. |
-| Coin segment = `Generated` | Escalate. |
+| Coin segment = `Generated` | The segment cannot be activated by the client and requires backend intervention by the internal team. Escalate. |
 | `Dormant` | Apply Rule 6. |
-| `Inactivated` | Check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate. |
+| `Inactivated` | If segment is `starmf_status`: check `communication_country` from `get_all_client_data` first. If USA or Canada → communicate that US/Canada-based NRIs cannot invest in MFs on Coin due to technical restrictions. Otherwise → check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate. |
 | `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 8 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
 
 **Mixed NSE/BSE status (one Activated, one pending):**
@@ -700,3 +708,20 @@ If no record found or status ≠ Approved → apply Rule 2 status responses.
 If status = Approved: check segment fields per **A10** Kill Switch report fields.
 - "Segment disabled" on any field → Kill Switch is active on those segment(s); communicate which segments are disabled.
 - "Segment enabled" → Kill Switch has been turned off; segment is re-enabled. If client reports segment still disabled, check `modified` timestamp: if less than 10 minutes have elapsed → ask client to wait 10 minutes for segment sync; if 10 or more minutes have elapsed → escalate.
+
+---
+
+### Rule 18: Signature Modification
+
+If the client's query is related to signature modification → escalate.
+
+---
+
+### Rule 19: Login Issue (Account Active)
+
+When the client reports being unable to login or receiving an "account inactive" error and `get_all_client_data` confirms account status = Approved and segments are active:
+1. Ask the client to confirm they are using the correct Client ID and try logging in again.
+2. If the issue persists → ask the client to share a screenshot of the error.
+3. Escalate with the screenshot.
+
+---

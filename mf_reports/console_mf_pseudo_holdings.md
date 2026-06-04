@@ -90,11 +90,11 @@ TAGS: investments, holdings
 
 ### A5 — MF Unit Transfer (Inward and Outward)
 
-**Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 + 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: RTA may take up to 25 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
+- **Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 + 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: RTA may take up to 25 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
 
-**Inward — demat (CDSL Easiest):** For MF units held in demat with another broker. CDSL Easiest for CDSL-to-CDSL transfers. ELSS locked units: closure cum transfer process only (same account holder). Free (unlocked) ELSS units transferable without restriction. Timeline: up to 4 days after submitting documents. Link: transfer shares article from **A8**.
+- **Inward — demat (CDSL Easiest):** For MF units held in demat with another broker. CDSL Easiest for CDSL-to-CDSL transfers. ELSS locked units: closure cum transfer process only (same account holder). Free (unlocked) ELSS units transferable without restriction. Timeline: up to 4 days after submitting documents. Link: transfer shares article from **A8**.
 
-**Outward:** Three destination methods — another CDSL demat account (CDSL Easiest online), NSDL demat (off-market transfer), non-demat (rematerialisation required). ELSS lock-in: NSDL destination requires rematerialisation first; CDSL destination via closure cum transfer (same PAN only). Check `margin` > 0 before initiating — pledged units must be unpledged first: Console → Portfolio → Holdings → [fund] → Unpledge. Charges: ₹25 per security + 18% GST; 0.015% stamp duty on considered amount; rematerialisation ₹150 + 18% GST per scheme (₹150 per investment for ELSS); DIS booklet: first 10 slips free; additional booklets ₹100 + 18% GST + ₹100 + 18% GST courier. Link: outward transfer article from **A8**.
+- **Outward:** Three destination methods — another CDSL demat account (CDSL Easiest online), NSDL demat (off-market transfer), non-demat (rematerialisation required). ELSS lock-in: NSDL destination requires rematerialisation first; CDSL destination via closure cum transfer (same PAN only). Check `margin` > 0 before initiating — pledged units must be unpledged first: Console → Portfolio → Holdings → [fund] → Unpledge. Charges: ₹25 per security + 18% GST; 0.015% stamp duty on considered amount; rematerialisation ₹150 + 18% GST per scheme (₹150 per investment for ELSS); DIS booklet: first 10 slips free; additional booklets ₹100 + 18% GST + ₹100 + 18% GST courier. Link: outward transfer article from **A8**.
 
 ---
 
@@ -131,6 +131,17 @@ Link: CAS statement article from **A8**.
 | Transaction cum holding statement | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/transaction-cum-holding-statement |
 | Portfolio XIRR | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/portfolio-xirr |
 | Capital support team (LAS queries) | capitalsupport@zerodha.com |
+| CAS statement | https://support.zerodha.com/category/console/portfolio/statement/articles/what-is-cas |
+| Console holdings | https://console.zerodha.com/portfolio/holdings |
+| Transaction cum Holding Statement (CDSL Easi) | https://support.zerodha.com/category/console/portfolio/statement/articles/statement-of-transaction-sot-and-details-in-sot |
+| Redemption requisition form | https://s3.ap-south-1.amazonaws.com/staticassets.zerodha.net/support-portal/2021/12/07/Article/RBX5SU1C_RepurchaseRequest.pdf |
+
+---
+
+### A9 — Expense Ratio Facts
+
+- **TER vs BER:** The expense ratio shown on Coin is the Total Expense Ratio (TER), which includes the Base Expense Ratio (BER) plus additional expenses such as GST on investment management fees and other regulatory charges. TER is the actual expense charged to the fund and is the standard figure displayed across all platforms — Coin, AMC websites, and AMFI. BER is a component of TER and is communicated separately by AMCs when there are changes.
+- **SEBI revised reporting format:** TER now includes Base Expense, brokerage/transaction costs, and applicable taxes — annualized for disclosure. Because brokerage and STT are incurred only when the fund trades, the expense ratio may temporarily spike during portfolio rebalancing periods. This is a reporting change only — investors are not being charged higher expenses.
 
 ---
 
@@ -139,8 +150,7 @@ Link: CAS statement article from **A8**.
 ### Routing
 
 ```
-Query relates to MF holdings →
-│
+Route by scenario
 ├─ failure_date populated → Rule 1
 ├─ Discrepancy signals (discrepant > 0, "fix discrepancy" message, or "NA" invested amount) → Rule 2
 ├─ Client reports missing or incorrect units → Rule 2
@@ -149,6 +159,10 @@ Query relates to MF holdings →
 ├─ Client asks about transferring MF units to or from Zerodha (demat or non-demat) → Rule 7
 ├─ Fund still showing in portfolio after full redemption (residual decimal units) → Rule 8
 ├─ Client asks about verifying holdings outside Coin (CAS, SOH, CDSL statement) → Rule 11
+├─ SIP creation error — "Invalid initial_amount, no previous investment in fund" → Rule 12
+├─ Holdings not showing on RTA/CAMS/AMC websites → Rule 13
+├─ TER/BER or expense ratio query → Rule 14
+├─ Unable to redeem after NRI account conversion → Rule 15
 └─ General MF holdings query → Check data here first; invoke console_mf_holdings only if `available`, `holdings_date`, or `total_quantity` is needed
 ```
 
@@ -266,3 +280,47 @@ Redirect to the capital support team at the contact from **A8**.
 
 1. Holdings can be verified via monthly CAS email, Statement of Holdings (SOH sent monthly to registered email), or transaction cum holding statement from CDSL Easi. Per **A6**.
 2. Share the CAS statement link from **A8**.
+
+---
+
+### Rule 12 — SIP Error: NRI Initial Investment Required
+
+Triggered by error: "Invalid `initial_amount`. Client does not have previous investment in this fund."
+
+1. Check `client_acc_type` from `get_all_client_data`. If NRO or NRE:
+   - The client has converted from a resident account to an NRI account. Units were transferred to the NRI account but the system does not recognise them as a prior investment for SIP initial amount validation.
+   - Advise the client to place a lumpsum order for the fund first, as per the initial investment amount required for the fund. Once units are allotted, the SIP can be created.
+   - If the client does not wish to place the lumpsum at the minimum amount, an AMC SIP can be created instead.
+2. If `client_acc_type` is not NRO or NRE → escalate.
+
+---
+
+### Rule 13 — Holdings Not Showing on RTA/CAMS/AMC Websites
+
+1. Check `available` and `quantity` in `console_mf_pseudo_holdings`.
+
+If holdings exist:
+- Investments are held in demat mode with Zerodha. RTAs and AMCs do not have a well-defined structure to record modified details for demat mode investors — this causes inconsistencies when verifying holdings or contact details on RTA/AMC websites.
+- Direct the client to verify holdings via:
+  - Monthly CAS email from NSDL/CDSL — includes holdings from all RTAs (CAMS, KFintech, and others). Share CAS statement link from **A8**.
+  - Coin app or Console. Share Console holdings link from **A8**.
+  - Transaction cum Holding Statement from CDSL Easi portal. Share transaction cum holding statement link from **A8**.
+
+If no holdings exist → escalate.
+
+---
+
+### Rule 14 — TER/BER Expense Ratio Query
+
+Communicate per **A9**.
+
+---
+
+### Rule 15 — Unable to Redeem After NRI Account Conversion
+
+1. Check `client_acc_type` from `get_all_client_data`. If NRO or NRE:
+   - Check `communication_country`. If USA or Canada:
+     - Guide the client to submit a redemption requisition form. Share the redemption requisition form link from **A8**.
+     - Communicate that Zerodha will process the redemption request with the AMC and the proceeds will be credited to the primary bank account.
+   - Other countries → escalate.
+2. If `client_acc_type` is not NRO or NRE → apply Rule 5.

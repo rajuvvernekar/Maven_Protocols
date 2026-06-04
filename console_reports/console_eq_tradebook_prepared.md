@@ -90,6 +90,8 @@ TAGS: orders, reports
 
 - **Tradebook vs Tax P&L difference:** Tradebook shows gross trade values (`price` × `quantity`) per individual fill. Tax P&L applies FIFO matching across financial years and may exclude intraday trades from delivery P&L — both are correct for their respective purposes. Tax P&L is the authoritative report for income tax filing.
 
+- **P&L report charges are period-level, not per-scrip:** Filtering by one stock shows that stock's P&L but period-wide charges.
+
 ---
 
 ### A6 — Links
@@ -113,26 +115,32 @@ TAGS: orders, reports
 
 ---
 
+### A8 — MTF Brokerage
+
+- MTF orders: brokerage = lower of **₹20** or **0.3% of order value**, per executed order — same for intraday and delivery.
+
+---
+
 ## Section B: Decision Flow
 
 ### Routing
 
 ```
 Route by scenario
-   ├─ Trade existence / trade detail query → Rule 1
+   ├─ Trade existence / detail; bought but not in holdings; sold but no funds; offsetting trade client didn't place → Rule 1
    ├─ Execution price questioned → Rule 2
    ├─ Series-related query (T2T / compulsory delivery) → Rule 3
-   ├─ "Was this trade intraday or delivery?" → Rule 4
-   ├─ Buy average verification (tradebook-based) → Rule 5
-   ├─ Price differs between NSE and BSE → Rule 6
-   ├─ Charges, brokerage, or obligations queried from tradebook → Rule 7
-   ├─ Duplicate trade entries for the same order → Rule 8
-   ├─ Tax P&L numbers don't match the tradebook → Rule 9
-   ├─ Need all trades for tax filing / audit / compliance → Rule 10
-   ├─ Closed account — historical trade data needed → Rule 11
-   ├─ Report won't open / loading errors → Rule 12
-   ├─ SOT / SOH (Statement of Transactions / Holdings) download request → Rule 13
-   └─ Trade was sold / squared-off by RMS (not by the client) → Rule 14
+   ├─ "Was this trade intraday or delivery?" → Rule 3
+   ├─ Buy average verification (tradebook-based) → Rule 4
+   ├─ Price differs between NSE and BSE → Rule 5
+   ├─ Charges / brokerage queried from tradebook (incl. MTF brokerage, charged more brokerage for a stock, P&L charges high for one stock) → Rule 6
+   ├─ Duplicate trade entries for the same order → Rule 7
+   ├─ Tax P&L numbers don't match the tradebook → Rule 8
+   ├─ Need all trades for tax filing / audit / compliance → Rule 9
+   ├─ Closed account — historical trade data needed → Rule 10
+   ├─ Report won't open / loading errors → Rule 11
+   ├─ SOT / SOH (Statement of Transactions / Holdings) download request → Rule 12
+   └─ Trade was sold / squared-off by RMS (not by the client) → Rule 13
 ```
 
 ### Fallback
@@ -146,7 +154,9 @@ Route by scenario
 ### Rule 1 — Trade Existence Verification
 
 1. Trade found in the tradebook → share `trade_date`, `trade_type`, `quantity`, `price`, `exchange`, `order_id`, `trade_id` per A2.
-2. If the client questions whether sale proceeds were credited → invoke `ledger_report` for corroboration.
+2. **Shares bought but not in holdings / sold but no funds / an offsetting trade the client didn't place** → invoke `kite_order_history` and check `product` (not stored in tradebook, per A1):
+   - **MIS / CO / BO (intraday):** position auto-squared-off at the intraday cutoff (equity 3:20 PM). An MIS buy never settles to demat (won't appear in holdings); the square-off is the offsetting trade the client didn't place → apply Rule 13.
+   - **CNC / NRML / MTF (delivery):** not intraday. "Not in holdings" → route to holdings protocol (settlement / T1). "Sold but no funds" → invoke `ledger_report` and route to ledger protocol (T+1 settlement).
 3. Trade not in the tradebook → invoke `console_eq_external_trades` — may be an off-platform entry (IPO, transfer, buyback, gift, ESOP).
 4. Still not found after all sources → escalate.
 
@@ -160,19 +170,16 @@ Route by scenario
 
 ---
 
-### Rule 3 — Trade Series and T2T Behavior
+### Rule 3 — Trade Series, T2T & Intraday vs Delivery Identification
 
-- Apply A3 based on the `series` field.
-
----
-
-### Rule 4 — Intraday vs Delivery Identification
-
-- Apply A3 based on the `series` field.
+1. Series-related / T2T / compulsory-delivery query → apply A3 based on the `series` field (EQ standard equity vs BE / BT / BZ Trade-to-Trade).
+2. "Was this trade intraday or delivery?" → apply the A3 same-day buy+sell treatment:
+   - **EQ:** same-day buy and sell that net the position to 0 at EOD → intraday (speculative); if shares are still held → buy treated as delivery.
+   - **BE / BT / BZ (T2T):** no intraday exception — both legs are separate delivery trades.
 
 ---
 
-### Rule 5 — Buy Average Verification via Tradebook
+### Rule 4 — Buy Average Verification via Tradebook
 
 1. Direct client to Console for the full FIFO breakdown per A7 (Buy average calculation).
 2. Do not list all individual trade entries in the response — there may be many.
@@ -180,47 +187,49 @@ Route by scenario
 
 ---
 
-### Rule 6 — NSE vs BSE Price Difference
+### Rule 5 — NSE vs BSE Price Difference
 
 1. Explain NSE vs BSE pricing per A7.
 2. If the client wants to trade on the other exchange → share the exchange toggle link from A6.
 
 ---
 
-### Rule 7 — Charges / Obligation Query
+### Rule 6 — Charges / Obligation Query
 
-1. Any charges query → route to `ledger_report_protocol` for handling.
-2. If the client believes there is a discrepancy in charges → escalate.
+1. **Charged more brokerage for a stock / P&L charges high for one stock:** per A5, the filtered P&L report shows period-wide charges, not per-scrip.
+2. **MTF trade brokerage:** confirm the order's product = MTF via `kite_order_history` (A1), then brokerage = lower of ₹20 or 0.3% of order value, per executed order (A8).
+3. Other charges queries → `ledger_report_protocol`.
+4. Genuine discrepancy after this → escalate.
 
 ---
 
-### Rule 8 — Duplicate Trade Entries
+### Rule 7 — Duplicate Trade Entries
 
 1. Same `order_id` with identical trade details appearing more than once → known system issue on specific dates.
-2. Escalate.
+2. escalate.
 
 ---
 
-### Rule 9 — Tradebook vs Tax P&L Value Difference
+### Rule 8 — Tradebook vs Tax P&L Value Difference
 
 - Refer to A5 (Tradebook vs Tax P&L difference) for scenario context and interpretation.
 
 ---
 
-### Rule 10 — Full Tradebook Request (Tax / Audit / Compliance)
+### Rule 9 — Full Tradebook Request (Tax / Audit / Compliance)
 
 1. Refer to A5 (Full tradebook request) for scenario context. Guide client to self-service download using links from A6.
 2. If client specifically requests PDF format → same links from A6.
 
 ---
 
-### Rule 11 — Closed Account Trade Data
+### Rule 10 — Closed Account Trade Data
 
-- Escalate.
+- escalate.
 
 ---
 
-### Rule 12 — Report Fails to Load / Times Out
+### Rule 11 — Report Fails to Load / Times Out
 
 1. Large date ranges with high trade volume may cause timeouts.
 2. Narrow the date range (e.g., one financial year at a time) and retry.
@@ -228,22 +237,22 @@ Route by scenario
 
 ---
 
-### Rule 13 — SOT / SOH Download Request
+### Rule 12 — SOT / SOH Download Request
 
 - Share the SOT / SOH article from A6 — guides the client on downloading the Statement of Transactions / Statement of Holdings directly.
 
 ---
 
-### Rule 14 — RMS Auto-Square-Off Identification
+### Rule 13 — RMS Auto-Square-Off Identification
 
 Applies when the client says a trade was sold / squared-off by the system rather than by them.
 
 1. Identify the buy and sell trades from the tradebook per Rule 1.
-2. Invoke `kite_order_history` for the trade date. Match the buy and sell `order_id` from the tradebook to the order book to obtain the `product` field and order source.
-3. Check the buy order's `product`:
-   - **MIS (Margin Intraday Square-off):** intraday product; position must be closed by the client before the intraday cutoff (3:20 PM for equity). If not closed, RMS auto-squares-off.
-   - **CO / BO:** similar intraday-only behavior.
-4. Check the sell order:
-   - Sell order source = RMS / Auto-square-off → confirm to client that the position was auto-squared-off per intraday product rules.
-5. Inform the client that a **Call and Trade / Auto Square-Off charge of ₹59 (₹50 + 18% GST) per square-off** is debited to the ledger (cross-reference: Ledger Report Protocol — A5 Call and Trade row, Rule 3 Call and Trade cross-reference).
+2. Invoke `kite_order_history` for the trade date. Match the buy and sell `order_id` from the tradebook to the order book to obtain the `product` and `placed_by` fields.
+3. Check the `placed_by` field on the order. If `placed_by` = `ADMINSQF` or `RMS<number>` → the order was closed by the RMS team. Reasons:
+   - MIS / intraday position (incl. CO / BO) squared off at end of day (intraday cutoff 3:20 PM for equity), or
+   - Position closed due to margin shortfall (client would have already received a margin call), or
+   - Pending MIS order cancelled from Zerodha's end.
+4. Confirm to the client that the position was auto-squared-off / the order was cancelled by RMS per the applicable reason above.
+5. Inform the client that a **Call and Trade / Auto Square-Off charge of ₹59 (₹50 + 18% GST) per square-off** is debited to the ledger (cross-reference: Ledger Report Protocol — A5 Call and Trade row, Standard Transaction Inquiry rule's Call and Trade cross-reference).
 6. Share the Auto Square-Off article from A6.

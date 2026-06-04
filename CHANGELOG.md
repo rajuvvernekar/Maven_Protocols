@@ -10,6 +10,18 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-06-04 — Feedback batch from "Protocols - Changes to Push (2)" (16 tools + 1 description)
+
+Applied June-1 Protocol-body feedback to 16 tools + a new Description for mandate_report. Team-confirmed final, no regression.
+
+Tools: mf_order_history, account_modification_report, console_mf_pseudo_holdings, kite_margins, kite_order_history, kite_positions, kite_orders, sip_report, console_eq_holdings, pan_status, withdrawal_request, stock_gift_requests, ledger_report, console_instant_pledge, console_eq_tradebook_prepared, console_eq_pnl. Description: mandate_report (WHEN TO USE + TRIGGER KEYWORDS; TAGS retained).
+
+Re-applied this thread's prior work that the June-1 doc predated:
+- Re-added `Date range limit` A1 bullets the doc omitted: mf_order_history (180d), kite_order_history (30d), withdrawal_request (30d), console_instant_pledge (30d).
+- console_eq_holdings: re-grafted 4 `settlement_date_calculator` invocations the doc dropped (A4 eligibility, Rule 3 t1, Rule 5 T1 rollover, Rule 8 short-delivery auction) — team confirmed these "got missed". Migrated a reverted `console_eq_tradebook` → `console_eq_tradebook_prepared`.
+- ledger_report: normalised `Settlement_date_calculator` → lowercase `settlement_date_calculator` (3×). Rule 7/BTST removal (and its calculator ref) is intentional per team; Rule 4/5 retain it.
+- console_eq_pnl: migrated reverted `console_eq_tradebook` → `_prepared`.
+
 ### 2026-06-04 — Tool-selection improvements (system prompt + get_all_client_data)
 
 Aimed at increasing tool-selection accuracy (reduce stopping early after the default client-data fetch).

@@ -33,6 +33,10 @@ TAGS: margins
 
 - MTF shares are auto-pledged and are separate from client-initiated pledges.
 
+- **Same-day re-pledge:** quantity already in PENDING, SUCCESS, or OVERDUE status cannot be pledged again the same day — retry from the next trading day.
+
+- **Pledge window:** pledging is allowed only between 8 a.m. and 6 p.m. on trading days. No restriction on unpledging.
+
 ---
 
 ### A2 — Field Usage Rules
@@ -78,6 +82,7 @@ TAGS: margins
 | Success | Request processed by CDSL — collateral margin should be reflected |
 | Failure | Request rejected — security not approved, insufficient qty, or CDSL rejection |
 | Pending | Awaiting CDSL confirmation — usually resolves within 30 minutes |
+| Overdue | Request not successful — CDSL confirmation delayed (possible share lock-in or an intermittent issue). Same quantity cannot be re-pledged today; client must retry on the next trading day. |
 
 ---
 
@@ -89,7 +94,7 @@ TAGS: margins
 | T1 holdings | Shares purchased today |
 | Insufficient qty | Pledging more than available free holdings |
 | Margin utilized (unpledge) | Unpledge on shares whose collateral is in use |
-| Overdue | CDSL confirmation delayed — request stuck in pending/overdue state |
+| Overdue | CDSL confirmation delayed — request stuck in overdue state; not successful, retry next trading day |
 | Same-day unpledge | Securities pledged today cannot be unpledged on the same day. The pledge is processed on the same day and collateral is credited within 15 minutes. An unpledge request can only be submitted from the next working day onwards. The client can sell the pledged shares on the same day, provided the collateral is not being utilised. |
 | F&O segment not active — request pending | "Pledge is not allowed for your account" or similar; activation request already found in `account_modification_report` |
 | F&O segment not active — no request placed | "Pledge is not allowed for your account" or similar; no activation request found in `account_modification_report` |
@@ -103,8 +108,7 @@ TAGS: margins
 | Pledge failure: T1 shares | Shares purchased today are not yet settled (T+1) — cannot be pledged until the next trading day |
 | Pledge failure: insufficient qty | Client is attempting to pledge more than the available free quantity |
 | Unpledge rejected: margin utilized | Collateral margin from pledged shares is currently in use against open positions — cannot unpledge until positions are closed or equivalent margin is available from another source |
-| Overdue < 30 mins | Request is still being processed — within normal window |
-| Overdue > 30 mins, < 24 hours | Request has been pending too long and is likely to fail — client should retry on next trading day or pledge a different approved security |
+| Overdue | Request not successful (possible share lock-in or intermittent issue). Same quantity cannot be re-pledged today — client should retry on the next trading day. |
 | Holdings showing zero after pledge | Pledged shares do not appear in standard holdings view — shares are safe and pledged as collateral; visible on Console |
 | MTF auto-pledge | Shares purchased under MTF are automatically pledged as collateral — these are separate from client-initiated pledges |
 | F&O segment not active — request pending | F&O activation request is already in progress — client should wait for it to be processed |
@@ -151,6 +155,7 @@ Route by scenario
    - Success → per A4.
    - Failure → route to Rule 4 for diagnosis.
    - Pending → per A4.
+   - Overdue → route to Rule 6.
 
 ---
 
@@ -182,8 +187,8 @@ Route by scenario
 
 ### Rule 6 — Overdue Pledge Request
 
-1. Check status and `pledge_creation` timestamp and apply per A7.
-2. If overdue > 24 hours → escalate.
+1. Status = Overdue → request not successful (possible share lock-in or intermittent issue). Inform client the same quantity cannot be pledged again today; retry on the next trading day (per A4 / A7).
+2. If it recurs on the next trading day → escalate.
 
 ---
 

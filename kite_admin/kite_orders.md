@@ -251,7 +251,8 @@ Route by scenario
    ├─ placed_by = ADMINSQF or "rms" prefix → Rule 7
    ├─ "I didn't place this order" → Rule 8
    ├─ Circuit / ban period impact → Rule 9
-   └─ Order book display issues → Rule 10
+   ├─ Order book display issues → Rule 10
+   └─ Sold stocks but funds not credited / available → Rule 11
 ```
 
 ### Fallback
@@ -338,3 +339,12 @@ If no root cause found after completing all diagnostic steps → escalate.
 1. Rejected order not in order book → some orders rejected by Zerodha pre-validation before reaching exchange. Won't appear in order book; rejection reason shows in order status notification on Kite per **A1**.
 2. Downloaded file shows dates instead of quantities → Excel formatting issue. Open in Notepad or Notepad++ to see correct values.
 3. Execution time beyond market hours → Zerodha reconciles with exchange after a brief disconnection. Actual execution happened during market hours. Direct client to tradebook for real execution time.
+
+### Rule 11 — Sold Stocks but Funds Not Available
+
+1. Locate the CNC SELL order: if the client names an instrument, filter by that instrument with `product` = CNC and `type` = SELL. If no instrument is mentioned, filter all orders by `product` = CNC and `type` = SELL and apply the remaining steps to each matching order.
+2. Invoke `kite_order_history` for the previous trading day to retrieve the trades from that day.
+3. Invoke `console_eq_holdings` for today and check `t1` for this instrument — this is the definitive indicator:
+   - `t1` = 0 → no unsettled shares at the time of the sell. Normal CNC sale. 100% of proceeds available same day (policy effective October 7, 2024).
+   - `t1` > 0 and sold quantity ≤ `t1` → entirely BTST. All shares sold were purchased the previous trading day and had not settled. Invoke `settlement_date_calculator` with today's date to determine the exact date proceeds will be available (T+1, accounting for weekends and holidays — e.g. a Friday sell settles Monday). Blocked amount = `t1` × `average_price` from the sell order.
+   - `t1` > 0 and sold quantity > `t1` → split sale: `t1` quantity is BTST (proceeds on T+1 — invoke `settlement_date_calculator` with today's date for the exact date); the remaining quantity was from settled holdings (proceeds same day). Blocked amount = `t1` × `average_price` from the sell order.

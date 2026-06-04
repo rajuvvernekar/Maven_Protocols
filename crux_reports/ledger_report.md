@@ -41,11 +41,8 @@ TAGS: funds, charges, reports
 
 ## Section A: Reference Data
 
----
-
 ### A1 — Ledger Fundamentals
 
-- Two views: **"Without Margin"** shows the actual cash balance (deposits, withdrawals, trade settlements, charges); **"With Margin"** additionally shows margin blocked/reversed for F&O positions. Use "Without Margin" for actual cash balance, "With Margin" for margin utilisation.
 - `net_balance` suffix: **Cr** = credit (client has funds), **Dr** = debit (client owes). Cr does not mean crores.
 - Opening balance of day N = closing balance of day N−1. Differences arise only from late-posted entries (charges, interest, settlement adjustments).
 - Single ledger system: equity and commodity share the same ledger — no separate commodity funds needed.
@@ -56,7 +53,7 @@ TAGS: funds, charges, reports
 
 - Same-day deposits and unsettled trade proceeds block withdrawals until the next settlement working day.
 - Settlement entries: net obligation credited/debited per settlement cycle — combines buy/sell obligations for that trading day.
-- Each trading day settles under a distinct settlement number, posted the next settlement working day (T+1). Trades from different trading days always have different settlement numbers.
+- Each trading day settles under a distinct settlement number, posted the same day (T-day). Trades from different trading days always have different settlement numbers.
 - "Next trading day" and "next settlement working day" are usually the same but differ on settlement holidays. A settlement holiday is a day when exchanges are open for trading but clearing and settlement operations are closed (no payin/payout of stocks and funds). When settlement holidays exist, T+1 refers to the next settlement working day, not the next trading day.
 - Impact of settlement holidays: Trade proceeds from the trading day immediately before a settlement holiday (and from the settlement holiday itself, if trading occurred) are not settled until the next settlement working day.
 
@@ -96,23 +93,16 @@ TAGS: funds, charges, reports
 
 | Charge Type | Ledger Remark Pattern | Amount | Notes |
 |---|---|---|---|
-| DP charges (Male primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.34** = ₹9.50 Zerodha + ₹3.50 CDSL + 18% GST | Per scrip per transaction whenever stock is debited from demat — applies to regular sale, SLB lending, and MTF unpledge sales |
-| DP charges (Female primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.045** = ₹9.50 Zerodha + ₹3.25 CDSL + 18% GST | Same as above — CDSL gives a reduced depository charge when the primary demat holder is female |
+| DP charges (Male primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.34** = ₹9.50 Zerodha + ₹3.50 CDSL + 18% GST | Per scrip per transaction whenever stock is debited from demat — applies to regular sale, SLB lending, and MTF unpledge sales. Confirm via `gender` field in `Get_all_client_data` |
+| DP charges (Female primary holder) | "DP Charges for Sale of [STOCK]" | **₹15.045** = ₹9.50 Zerodha + ₹3.25 CDSL + 18% GST | Same as above — CDSL gives a reduced depository charge when the primary demat holder is female. Confirm via `gender` field in `Get_all_client_data` |
 | Pledge / unpledge charges | "Being pledge charges for [STOCK]" (non-MTF) or "MTF pledge charges for [STOCK]" / "MTF unpledge charges for [STOCK]" | **₹35.40** = ₹30 + 18% GST per scrip per action | Pledging or unpledging a stock (for collateral margin or MTF). Each pledge and each unpledge is charged separately |
 | AMC for Demat Account | "AMC for Demat Account for [period]" | ₹88.50 quarterly (standard) or ₹29.50 for small/BSDA-eligible accounts | Demat account maintenance, billed quarterly |
 | Account opening fee | "Account opening fee" | **₹500** | One-time, typically for Non-individual, Corporate, or NRI accounts. Resident individual accounts are usually opened for free |
 | DDPI activation charge | "Charges for enabling DDPI" | **₹118** = ₹100 + 18% GST | One-time, when DDPI is enabled on the account |
 | Modification Charges | Remark reflects the specific modification type (e.g., "Bank Modification Charges", "Address Modification Charges") | **₹29.50** | Any account-detail modification — bank account change, address change, or other KYC/profile modifications. The ledger remark will reflect the actual modification type |
 | Payment gateway charges | "Being payment gateway charges debited for [CLIENT_ID]" | **₹10.62** = ₹9 + 18% GST | Each time funds are added via Payment Gateway (Netbanking). UPI deposits do NOT attract this charge |
-| Call and Trade / Auto Square-Off | "Call and Trade charges(Auto Square Off) for [date]" or "Call and Trade charges for [date]" | **₹59** = ₹50 + 18% GST per order | Orders placed via phone, or RMS auto-square-off triggered by margin shortfall or end-of-day intraday close |
+| Call and Trade / Auto Square-Off | "Call and Trade charges(Auto Square Off) for [date]" or "Call and Trade charges for [date]" | **₹59** = ₹50 + 18% GST per order | Orders placed via phone, or RMS auto-square-off triggered by margin shortfall or end-of-day intraday close. Auto Square-Off article: https://support.zerodha.com/category/account-opening/resident-individual/ri-charges/articles/auto-square-off |
 | Delayed Payment Charges (DPC) | "Delayed payment charges for [month] - [year]" | Variable — interest on debit balance | Monthly, posted early in the following month. Invoke `delayed_payment_charges` for day-wise breakdown |
-
----
-
-### A6 — Margin Entries (With Margin view only)
-
-- Span/Exposure/Delivery margin blocked — reversed next day and re-blocked at new levels.
-- `cost_center` identifies segment: NSE-EQ = equity, NSE-F&O = F&O, MCX-F&O = commodity. Internal use only — see A7.
 
 ---
 
@@ -133,7 +123,7 @@ TAGS: funds, charges, reports
 
 | Field | Interpretation |
 |---|---|
-| `cost_center` | Segment identifier (NSE-EQ, NSE-F&O, MCX-F&O) — use for internal segment reasoning per A6 |
+| `cost_center` | Segment identifier (NSE-EQ, NSE-F&O, MCX-F&O) — internal use only |
 | `account` | Internal account reference |
 | `voucher_type` | Internal voucher type — translate via A3 before communicating |
 | `voucher_no` | Internal voucher number |
@@ -212,20 +202,20 @@ T+1 refers to the next settlement working day per the settlement calendar.
 
 ```
 Route by scenario
-├─ With Margin vs Without Margin view explanation → answer directly from A1
 ├─ Dr / Cr / negative balance interpretation → Rule 1
 ├─ Specific ledger entry inquiry → Rule 2
 ├─ Withdrawal issue
-│  ├─ Bank reference number / UTR provided (status of a submitted payout) → Rule 3
-│  └─ Blocked / partial / failed / low withdrawable balance (incl. unwithdrawable sale proceeds) → Rule 4
-├─ Quarterly Settlement (QS) — any query → Rule 5
+│  ├─ Bank reference number / UTR provided → Rule 3
+│  ├─ Withdrawal processed less than requested (including ₹0) despite positive net balance → Rule 4
+│  └─ Zero / low withdrawable balance despite ledger funds → Rule 5
+├─ Quarterly Settlement (QS) — any query → Rule 6
 ├─ Balance mismatch
-│  ├─ Opening vs closing mismatch → Rule 6
-│  └─ Ledger vs Kite funds page mismatch → Rule 7
+│  ├─ Opening vs closing mismatch → Rule 7
+│  └─ Ledger vs Kite funds page mismatch → Rule 8
 ├─ MTF-related entries
-│  ├─ MTF interest charges (total, date range, or specific date) → Rule 9
-│  └─ Other MTF entries (MTM, margin, settlement) → Rule 8
-└─ No matching rule / unexplained entry / data discrepancy → escalate
+│  ├─ MTF interest charges (total, date range, or specific date) → Rule 10
+│  └─ Other MTF entries (MTM, margin, settlement) → Rule 9
+└─ Ledger statement download request → Rule 11
 ```
 
 ### Fallback
@@ -236,13 +226,13 @@ If no root cause is identified after checking all relevant rules → escalate.
 
 ## Section C: Rules
 
----
-
 ### Rule 1 — Dr vs Cr Balance Explanation
 
-1. Reference A1 for Dr/Cr definitions — Cr = credit (client has funds), Dr = debit (client owes).
-2. Present the actual `net_balance` value and its Dr/Cr status.
-3. If Dr balance: flag that interest may be charged on debit balances.
+1. Reference A1 — Dr = client owes funds to Zerodha (negative balance).
+2. Present the actual `net_balance` value and its Dr status.
+3. From the ledger, scan back to find the first entry where `net_balance` turned Dr.
+4. Identify the entry that caused it and explain to the client.
+5. Flag that interest may be charged on debit balances (DPC).
 
 ---
 
@@ -263,12 +253,16 @@ When the entry is a settlement or net obligation (`voucher_type` = "Book Voucher
    - **Status = "CANCELLED":** If filled quantity > 0, partially executed — trade value = filled quantity × average price. If filled quantity = 0, fully cancelled — does not contribute to settlement.
    - Other statuses (REJECTED, etc.): Do not contribute to settlement.
 3. Present each executed/partially executed trade: stock name, transaction type, filled quantity, average price, and trade value.
-4. Confirm sum of trade values (net of buys and sells) aligns with the settlement debit/credit. For any difference between trade values and the settlement amount → invoke `contract_note_charges` to explain the charges included in the net obligation (brokerage, STT, GST, exchange transaction charges, SEBI charges, stamp duty).
+4. Confirm sum of trade values (net of buys and sells) aligns with the settlement debit/credit. If the difference exceeds ₹0.02, invoke `contract_note_charges` to explain the charges included in the net obligation (brokerage, STT, GST, exchange transaction charges, SEBI charges, stamp duty). Differences of ₹0.02 or less are rounding artefacts and can be ignored.
 
 **Cross-references for specific entry types:**
 - DPC / interest entries → invoke `delayed_payment_charges` for day-wise breakdown
 - Pledge / unpledge entries → invoke `pledge_request_report`
-- MTF interest entries → Rule 9
+- Trade charge breakdowns → invoke `contract_note_charges`
+- Call and Trade / Auto Square-Off entries → invoke `kite_order_history` for the posting date; check the `placed_by` field on the relevant orders. If `placed_by` = `ADMINSQF` or `RMS<number>`, the order was closed by the RMS team — reasons: MIS/intraday position squared off at end of day, position closed due to margin shortfall (client would have already received a margin call), or pending MIS order cancelled from Zerodha's end. Share the Auto Square-Off article (link in A5).
+- AMC entries → invoke `amc_charges` for the posting date; provide the necessary information (billing period, rate applied, account type / BSDA eligibility, GST breakup) from the report.
+- DP charge entries → check `gender` field on the primary holder from `Get_all_client_data`. If male, applicable rate is ₹15.34; if female, ₹15.045 per A5. Confirm the ledger debit matches the expected rate.
+- MTF interest entries → Rule 10
 
 **Charges without a corresponding event:** If a charge appears in the ledger without a corresponding trade, event, or expected schedule → escalate.
 
@@ -286,36 +280,40 @@ When the entry is a settlement or net obligation (`voucher_type` = "Book Voucher
 
 ---
 
-### Rule 4 — Withdrawal Shortfall / Eligibility Diagnosis
+### Rule 4 — Withdrawal Processed Less Than Requested (Including ₹0)
 
-Covers any withdrawal that was blocked, partially processed, failed, or shows a low/zero withdrawable balance despite a positive ledger balance — including sale proceeds not yet withdrawable. (UTR / bank reference for an already-submitted payout → Rule 3 instead.)
-
-**Step 1 — From `ledger_report` for date T, identify per A11:**
-- A = opening settled balance (prior day's closing balance).
-- B = unsettled credits posted on T (same-day payin, equity / FNO / MTF / MCX / CDS settlement credits).
-- D = unsettled debits posted on T (equity / FNO / MTF / MCX / CDS obligation debits).
-- Collateral on a closed position → apply the A8 adjustment.
-
-**Step 2 — Withdrawal-eligible = A − D [+ A8 collateral]** (FIFO per A11).
-The client's visible ledger balance is A + B − D; the portion they can't withdraw is the unsettled credit B.
-
-**Step 3 — Diagnose by where eligible lands vs requested:**
-
-| eligible vs requested | Cause |
-|---|---|
-| ≤ 0 | Settled funds exhausted by unsettled debits — fails / ₹0 though net balance is positive. |
-| 0 < eligible < requested | Partial — only the settled portion (A − D) released; remainder is unsettled credit B. |
-| ≥ requested, yet client sees low/zero withdrawable | Locked amount is unsettled credit B (same-day payin or Book Voucher trade credit, incl. sale proceeds). |
-
-**Step 4 —** Invoke `settlement_date_calculator` for the next settlement working day; the unavailable portion becomes withdrawable that morning — give the client that date and have them place a fresh request if needed.
-
-**Step 5 —** If that date has passed, confirm funds are now available or whether a subsequent request already exists.
-
-**Escalate if:** eligible and the processed/failed figure can't be reconciled after taxes, charges (A5), and A8.
+1. From `ledger_report` for the withdrawal date (T), identify:
+   - Opening settled balance = A (prior day's closing balance).
+   - Total unsettled credits posted on T day = B: sum of same-day payin, equity / FNO / MTF / MCX / CDS settlement credits per A11.
+   - Total unsettled debits posted on T day = D: sum of equity / FNO / MTF / MCX / CDS obligation debits per A11.
+2. Compute:
+   - Net account balance = A + B − D (what the client sees — likely positive).
+   - Withdrawal-eligible = A − D (FIFO: debits consume settled funds first per A11).
+3. Confirm the processed amount:
+   - If processed amount ≈ A − D (and > 0) → partial processing. Opening settled balance minus unsettled debits was the only eligible amount. Minor differences from taxes and charges on the day are expected.
+   - If processed amount = 0 → withdrawal-eligible ≤ 0. Unsettled credits (B) cannot offset obligation debits (D) under FIFO, leaving no eligible funds.
+4. Invoke `settlement_date_calculator` to identify the next settlement working day.
+5. Explain to the client: the full net balance (A + B − D) becomes withdrawable on the next settlement working day — advise them to place a new withdrawal request from that date.
+6. If the next settlement working day has already passed, confirm whether funds are now available or check if a subsequent withdrawal request already exists.
 
 ---
 
-### Rule 5 — Quarterly Settlement
+### Rule 5 — Zero / Low Withdrawable Balance
+
+Check for same-day "Bank Receipts" or recent "Book Voucher" settlement entries:
+
+**5a — Same-day deposit found:**
+`voucher_type` = "Bank Receipts" on the same posting date — funds added on the same day are subject to T+1 per A2 and not available for withdrawal until the next settlement working day. Invoke `settlement_date_calculator` to confirm the next settlement working day.
+
+**5b — Unsettled trades found:**
+"Book Voucher" settlement credits on or near the query date are subject to T+1 per A2 — invoke `settlement_date_calculator` to confirm the next settlement working day; withdrawable balance updates that morning.
+
+**5c — Collateral involved:**
+Apply the applicable formula from A8. Formulas apply only when the position is closed and the collateral is not actively being used as margin.
+
+---
+
+### Rule 6 — Quarterly Settlement
 
 1. Check ledger for "Bank Payments" + "quarterly settlement" entry per A3.
 2. If QS entry found: present date, amount, and balance after. Reference A4 for schedule and regulatory context.
@@ -328,34 +326,51 @@ The client's visible ledger balance is A + B − D; the portion they can't withd
 
 ---
 
-### Rule 6 — Opening vs Closing Balance Mismatch
+### Rule 7 — Opening vs Closing Balance Mismatch
 
-1. Opening balance of day N = closing balance of day N−1 per A1. If mismatch, check for late-posted entries between the two dates (charges, interest, settlement adjustments).
-2. If still unexplained → escalate.
+1. From the ledger, check for late-posted entries (charges, interest, settlement adjustments) between yesterday's closing and today's opening.
+2. Invoke `contract_note_charges` report for the relevant date.
+3. From the ledger, identify any DP charge entries (per A5 remark pattern "DP Charges for Sale of [STOCK]").
+4. Check if: contract note charges + DP charges = the balance difference.
+   - If yes → present the breakdown to the client (charge type, amount, date).
+   - If no → escalate.
 
 ---
 
-### Rule 7 — Ledger vs Kite Funds Page Mismatch
+### Rule 8 — Ledger vs Kite Funds Page Mismatch
 
 1. Invoke `kite_margins` to fetch current Kite funds data.
 2. Compare ledger closing balance against "Available Cash" from `kite_margins`. The ledger closing balance corresponds to "Available Cash" on Kite, not "Available Margin" (which includes collateral).
-3. If they differ: invoke `settlement_date_calculator` to check if a settlement holiday falls between the trade date and current date per A2. On a settlement holiday, the ledger shows the sale credit (posted on T day, 7–9 PM) but Kite only reflects settled funds — the mismatch equals the unsettled proceeds and resolves on the next settlement working day.
+3. If they differ: check if a settlement holiday falls between the trade date and current date per A2. On a settlement holiday, the ledger shows the sale credit (posted on T day, 7–9 PM) but Kite only reflects settled funds — the mismatch equals the unsettled proceeds and resolves on the next settlement working day.
 4. If still unexplained after ruling out settlement holidays and pending entries → escalate.
 
 ---
 
-### Rule 8 — MTF Ledger Entries (Non-Interest)
+### Rule 9 — MTF Ledger Entries (Non-Interest)
 
 1. Explain relevant MTF entries using A9.
-2. For MTF interest queries, apply Rule 9. Invoke `console_mtf_holdings` if needed.
+2. For MTF interest queries, apply Rule 10. Invoke `console_mtf_holdings` if needed.
 3. If client raises any calculation dispute related to MTF MTM amounts or claims funds were credited less than expected for MTF trades → escalate. Do not attempt to calculate or verify MTF MTM manually.
 
 ---
 
-### Rule 9 — MTF Interest Charges
+### Rule 10 — MTF Interest Charges
 
 1. From the ledger, filter entries per A9 where `voucher_type` = "Journal Entry" AND `remarks` contains "Interest for MTF funded value". Each matching entry represents one day's interest charge. The date in the remark (e.g., "Interest for MTF funded value on 2026-01-20") is the accrual date — `posting_date` may differ by 1–2 days due to processing.
 2. Specific date query: locate the entry where the remark contains that date and present the debit amount and posting date.
 3. Multi-day / range query: sum all matching debit entries within the period and present the total with entry count.
 4. No entries found: either no MTF positions were held during the period or entries have not yet been posted.
 5. If client disputes the interest amount → escalate.
+
+---
+
+### Rule 11 — Ledger Statement Download
+
+1. Log in to Console.
+2. Click on **Funds**.
+3. Click on **Statement**.
+4. Select the **Category**.
+5. Select the **date range** and click on **View**.
+6. Download in **XLSX or CSV** format by clicking on **Download XLSX|CSV**.
+
+Support article: https://support.zerodha.com/category/console/ledger/articles/where-can-i-see-a-statement-of-all-my-transactions-with-zerodha

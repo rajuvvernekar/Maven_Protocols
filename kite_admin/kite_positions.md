@@ -47,6 +47,8 @@ TAGS: holdings, margins
 
 - Zerodha does not square off for freak trades — unrealised loss lasts only a fraction of a second.
 
+---
+
 ### A2 — Field Usage Rules
 
 **Shareable with client:**
@@ -80,6 +82,8 @@ TAGS: holdings, margins
 | `day_sell_price` | Internal |
 | `day_sell_value` | Internal |
 
+---
+
 ### A3 — P&L Timing Rules
 
 | Time Window | Equity P&L Source | F&O P&L Source |
@@ -92,6 +96,8 @@ TAGS: holdings, margins
 - Settlement price = 0 for OTM options regardless of LTP — this is normal.
 
 - Funds page uses MTM settlement price for futures/short options — will differ from positions P&L.
+
+---
 
 ### A4 — Auto Square-Off
 
@@ -107,6 +113,8 @@ TAGS: holdings, margins
 
 - Failure consequence: MIS converts to CNC (equity) or NRML (F&O). Client responsible for closing. Zerodha may square off at discretion without margin call.
 
+---
+
 ### A5 — Product Conversion Rules
 
 | Conversion | Allowed? | Notes |
@@ -117,12 +125,15 @@ TAGS: holdings, margins
 | CO → anything | No | Cover Order positions cannot be converted. |
 | Agricultural commodity → MIS | No | Blocked 1 day before tender period (cardamom, mentha oil). |
 
+---
+
 ### A6 — Expiry & Physical Settlement
 
 | Scenario | Outcome |
 |---|---|
-| Stock F&O — ITM | Compulsory physical delivery of underlying stock. Stocks credited T+1. Short delivery: up to T+2. |
-| Stock F&O — OTM | Expire worthless — no obligation. |
+| Stock options — ITM | Compulsory physical delivery of underlying stock. Stocks credited T+1. Short delivery: up to T+2. |
+| Stock futures | Always physically settled at expiry — no manual action required. Long futures: shares credited to demat T+1. Short futures: shares debited from demat T+1. |
+| Stock options — OTM | Expire worthless — no obligation. |
 | Index F&O | Cash-settled (no physical delivery). ITM auto-exercised. OTM/ATM expire worthless. |
 | Margin increase | 4 days before expiry for ITM long options. Expiry day for futures/short options. |
 | Fresh OTM long buy blocked | Last 2 days before expiry for stock options (physical settlement risk). |
@@ -139,6 +150,8 @@ TAGS: holdings, margins
 
 - This margin is blocked progressively for ITM stock options and futures positions approaching expiry. It can cause the available cash / fund balance to go negative.
 
+---
+
 ### A7 — Margin Shortfall & Penalty
 
 - Causes: Exiting hedge leg (remaining leg needs full margin), expiry of hedge leg, MTM loss exceeding 50% of funds, pledged stock value drop, haircut increase.
@@ -146,11 +159,15 @@ TAGS: holdings, margins
 - Penalty rate: 0.5% of shortfall (< ₹1L), 1% (≥ ₹1L). Up to 5% for 3+ instances/month.
 - Snapshots: 4 random intraday snapshots (all segments except commodity). 8 for commodity. Peak margin penalty if snapshot catches one leg open.
 
+---
+
 ### A8 — Hedged Positions
 
 - Cannot close hedge leg unless sufficient margin for remaining unhedged position.
 - Hedged margin < unhedged margin. Closing low-risk leg increases margin requirement.
 - Order sequence matters: buy hedge first → lower margin. Sell/short first → full margin until hedge placed.
+
+---
 
 ### A9 — Circuit Limit Impact on MIS
 
@@ -159,6 +176,8 @@ TAGS: holdings, margins
 | MIS sell + upper circuit | Cannot buy back → converts to delivery. No shares in demat → short delivery + auction penalty. |
 | MIS buy + lower circuit | Cannot sell → converts to CNC. Must maintain margin for delivery. |
 
+---
+
 ### A10 — Profit Availability
 
 | Source | When Available |
@@ -166,6 +185,8 @@ TAGS: holdings, margins
 | NRI Non-PIS delivery sale | 75% same day; remaining 25% available T+1 |
 | Intraday profits (equity/F&O) | Not usable on T day. Available after T+1 settlement. |
 | Options sold/exited | Usable only for buying options in same segment same day. Available for all trades from T+1. |
+
+---
 
 ### A11 — Links
 
@@ -179,6 +200,8 @@ TAGS: holdings, margins
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 | Options on expiry day | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day |
 | Same-day profits | https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits |
+
+---
 
 ### A13 — F&O Ban Period Delta Rules
 
@@ -212,8 +235,8 @@ Route by scenario
    ├─ Intraday profits not credited or unavailable → Rule 9
    ├─ Odd-lot quantity from lot size revision → Rule 10
    ├─ F&O ban period — what trades are allowed → Rule 11
-   ├─ Position not found → Rule 12
-   ├─ Client references previous-day trades → Rule 12
+   ├─ F&O position not found → Rule 12
+   ├─ Client references previous-day F&O trades → Rule 12
    └─ NRI delivery credit (75/25 split) → Rule 13
 ```
 
@@ -232,9 +255,13 @@ If no root cause found after completing all diagnostic steps → escalate.
 3. Positions P&L ≠ funds page → Per **A3**, positions and funds page use different P&L calculations. If client wants funds breakdown → invoke `kite_margins`.
 4. Settlement price = 0 for options → option expired OTM. Per **A3**, settlement price = 0 is normal. Settlement price is based on the underlying's weighted average in the last 30 minutes.
 
+---
+
 ### Rule 2 — Net vs Day Positions
 
 1. Per **A1**, net includes carry-forward + today's trades; day = today's activity only. Example: carried forward 75 NIFTY FUT and squared off today → net shows 0, day shows -75.
+
+---
 
 ### Rule 3 — Auto Square-Off
 
@@ -245,16 +272,22 @@ If no root cause found after completing all diagnostic steps → escalate.
    b. Buy + lower circuit → MIS buy at lower circuit converts to CNC; must maintain delivery margin per **A9**.
    c. If client asks about holdings for delivery → invoke `kite_holdings`.
 
+---
+
 ### Rule 4 — Product Conversion
 
 1. MIS ↔ CNC or MIS ↔ NRML → convert via Kite: Positions → tap/click on position → Convert Position. Requires sufficient margin per **A5**. If margin insufficient → invoke `kite_margins`.
 2. CO conversion → Per **A5**, CO cannot be converted — communicate.
 3. Agricultural commodity restriction → Per **A5**, communicate restriction.
 
+---
+
 ### Rule 5 — Hedged Positions & Margin
 
 1. Can't close hedge leg → need sufficient margin to cover remaining unhedged position. Closing hedge leg increases margin requirement per **A8**. Options: add funds first, or exit both legs simultaneously. Invoke `kite_margins` to check `available_margin` and `used_margin`.
 2. Peak margin penalty from exiting one leg → Per **A7**, peak margin penalty may apply from snapshot timing.
+
+---
 
 ### Rule 6 — Margin Call / Shortfall / Penalty
 
@@ -262,12 +295,14 @@ If no root cause found after completing all diagnostic steps → escalate.
 2. Margin penalty charged → Per **A7**, communicate penalty rate.
 3. Shortfall despite positions closed → Per **A7**, snapshot captured shortfall at that moment — closure after snapshot does not remove the penalty.
 
+---
+
 ### Rule 7 — F&O Expiry & Physical Settlement
 
-1. Check whether instrument is index or stock F&O. NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, or any index → cash-settled. ITM index options auto-exercised; P&L settled in cash. OTM/ATM expire worthless. Physical delivery rules (Steps 2, 3, 5, 6, 7) apply only to stock F&O.
-2. Stock F&O ITM → compulsory physical delivery. Need full cash or shares. Stocks credited T+1 after expiry. If client asks about delivery shares → invoke `kite_holdings`.
-3. Stock F&O OTM → expires worthless. No delivery obligation, no action needed.
-4. Index F&O → cash-settled. ITM auto-exercised; P&L settled in cash. OTM/ATM expire worthless.
+1. Check whether instrument is index or stock F&O. NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX, or any index → cash-settled. ITM index options auto-exercised; P&L settled in cash. OTM/ATM expire worthless. Physical delivery rules (Steps 2, 3, 5, 6, 7) apply only to stock F&O.
+2. Stock futures → always physically settled at expiry regardless of price. No manual action required — the position auto-converts to delivery at expiry. Long futures: shares credited to demat on T+1. Short futures: shares debited from demat on T+1. Client must have sufficient cash (long) or shares (short) to meet the delivery obligation.
+3. Stock options — OTM → expires worthless. No delivery obligation, no action needed.
+4. Stock options — ITM → compulsory physical delivery. Need full cash or shares. Stocks credited T+1 after expiry. If client asks about delivery shares → invoke `kite_holdings`.
 5. OTM buy blocked near expiry → Per **A6**, fresh long OTM stock option positions blocked — communicate.
 6. Higher margins near expiry → Per **A6**, share delivery margin schedule. Reference physical settlement policy per **A11**. Invoke `kite_margins` for current `delivery_margin`.
 7. Balance went negative due to physical delivery margin near expiry:
@@ -275,20 +310,26 @@ If no root cause found after completing all diagnostic steps → escalate.
    b. If found → physical delivery margin blocked for ITM stock option position approaching expiry. Share margin schedule from **A6** and the debit amount. Reference physical settlement policy per **A11**.
    c. If not found → invoke `kite_margins` to investigate other causes of negative balance. If no cause identified → escalate.
 
+---
+
 ### Rule 8 — Sold Holdings as Negative Positions
 
 1. Selling shares from holdings during the day shows as a negative position tagged HOLDING in Positions. Normal. Allows intraday traders to buy back. If no rebuy, ignore. Shares debited from demat by EOD per **A1**.
 2. If client asks about holdings status → invoke `kite_holdings`.
 
+---
+
 ### Rule 9 — Intraday Profit Not Credited
 
 **Equity intraday check:**
--Invoke `kite_order_history`. From the `type` field, aggregate total buy quantity and total sell quantity per instrument for the day. Net off using FIFO — matched buy and sell quantity on the same day = intraday. For the intraday-matched trades, calculate buy value and sell value using `filled_quantity` × `price` for each trade. Intraday P&L = sell value − buy value.
+Invoke `kite_order_history`. From the `type` field, aggregate total buy quantity and total sell quantity per instrument for the day. Net off using FIFO — matched buy and sell quantity on the same day = intraday. For the intraday-matched trades, calculate buy value and sell value using `filled_quantity` × `price` for each trade. Intraday P&L = sell value − buy value.
 
 **F&O intraday check:**
--Invoke `console_fno_positions`. Identify F&O instruments by FUT, CE, or PE in the `instrument` name. For each instrument, `open_quantity` is the overnight carry-forward baseline. Apply FIFO: net today's opposing trades against `open_quantity` first — that portion is overnight closure, not intraday. Only the remaining matched buy and sell quantities from today = intraday. For the intraday-matched trades, calculate buy value and sell value using `filled_quantity` × `price` for each trade. Intraday P&L = sell value − buy value.
+Invoke `console_fno_positions`. Identify F&O instruments by FUT, CE, or PE in the `instrument` name. For each instrument, `open_quantity` is the overnight carry-forward baseline. Apply FIFO: net today's opposing trades against `open_quantity` first — that portion is overnight closure, not intraday. Only the remaining matched buy and sell quantities from today = intraday. For the intraday-matched trades, calculate buy value and sell value using `filled_quantity` × `price` for each trade. Intraday P&L = sell value − buy value.
 
--Per **A10**, intraday profits (equity and F&O) are not available on T day — available only after T+1 settlement. Share same-day profits link from **A11**.
+Per **A10**, intraday profits (equity and F&O) are not available on T day — available only after T+1 settlement. Share same-day profits link from **A11**.
+
+---
 
 ### Rule 10 — Odd-Lot Quantity from Lot Size Revision
 
@@ -298,6 +339,8 @@ If no root cause found after completing all diagnostic steps → escalate.
    c. 5% extra margin applies on odd-lot positions.
 2. If client asks about margin for odd-lot position → invoke `kite_margins`.
 
+---
+
 ### Rule 11 — F&O Ban Period (Delta Exposure Rules)
 
 1. If client holds F&O position in a stock in ban period and asks what trades are permitted:
@@ -306,12 +349,50 @@ If no root cause found after completing all diagnostic steps → escalate.
 2. If order rejected due to ban period → invoke `kite_orders` to confirm rejection reason. Apply **A13** delta context.
 3. If client asks when ban will lift → OI must fall below 80% of market-wide position limit. Direct client to bulletin per **A11** for current ban list.
 
-### Rule 12 — Position or Order Not Found
+---
 
-1. Invoke `kite_order_history` — check if position was squared off today, or locate previous-day trade records.
-2. Invoke `kite_holdings` — check if CNC position moved to holdings.
-3. If still not found: confirm Privacy Mode is off in Kite settings.
-4. If still not found after steps 1–3 → escalate.
+### Rule 12 — F&O Position Not Found
+
+1. Invoke `kite_order_history` — check if the position was squared off today or
+   closed on the previous trading day.
+
+**If no closing trade found — check for expiry:**
+
+2. Invoke `console_fno_tradebook_prepared` for the contract the client mentions.
+   - If both a BUY and SELL entry exist → position was closed. Share the closing
+     trade details.
+   - If only a BUY or only a SELL entry is found and the contract is not visible
+     in `console_fno_positions` → position was held to expiry without being closed.
+     Proceed to step 3.
+
+3. Identify the expiry date from the contract name:
+   - Monthly contract: expiry month is spelled out —
+     e.g., BANKNIFTY26JUN52300PE expires in June 2026.
+   - Weekly contract: expiry date encoded as YYMMDD —
+     e.g., NIFTY2660923250CE = year 26, month 06 (June), date 09.
+   - NSE contracts expire on the last Tuesday of the month.
+   - BSE contracts expire on the last Thursday of the month.
+   - Invoke `settlement_date_calculator` with the expected expiry date to confirm
+     whether it falls on a trading holiday — if so, expiry moves one trading day
+     earlier.
+
+4. Cross-check expiry:
+   - Invoke `console_fno_positions` for the day before the expiry date →
+     the instrument should be visible.
+   - Invoke `console_fno_positions` for the expiry date (or next trading day) →
+     the instrument should be gone.
+   - Both confirm the position expired without a closing order.
+
+5. Settlement:
+   - Index contracts (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX) →
+     cash-settled.
+   - All other stock contracts → physically settled.
+   - Invoke `ledger_report` for the expiry date and locate the settlement entry.
+     Share the settlement amount and date with the client.
+
+6. If still not resolved → escalate.
+
+---
 
 ### Rule 13 — NRI Delivery Credit
 
