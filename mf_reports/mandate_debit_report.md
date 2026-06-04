@@ -24,6 +24,8 @@ TAGS: investments, funds
 
 ### A1 — Fundamentals
 
+- **Date range limit:** 100 days per call.
+
 - Failed debits are not retried automatically — the client must add funds manually for that cycle. The mandate must be active before debits can be processed.
 
 -`order_id` on this protocol's data maps to `cashier_reference` in `fund_allocation_report`.

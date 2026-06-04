@@ -29,6 +29,8 @@ TAGS: investments
 
 ### A1 — Order Lifecycle and Status Values
 
+- **Date range limit:** 180 days per call.
+
 ```
 New → Placed → Processing → Allotted / Redeemed / Cancel / Failed
                     ↘ TPV Pending (auto-revalidates next working day)

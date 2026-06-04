@@ -10,6 +10,21 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-06-04 — Date range limit handling (11 tools + system prompt)
+
+Tools whose API caps a single call's date range now declare it, and the system prompt defines a bounded retry/chunk strategy so long-range queries don't hard-fail on `ValidationException`.
+
+**system_prompt.md**
+- [Added]: `## Date Range Limit Handling` section (between Escalation Output Format and Final Reminder). On a date-range cap or `ValidationException`, fetch the most recent chunk within the cap, backdate for previous chunks, max 3 chunks, merge; escalate if 3 chunks still don't cover the window.
+
+**Per-tool `Date range limit` bullet added to A1:**
+- 30 days: console_instant_pledge, withdrawal_request, tradewise_charges_report, kite_order_history, crux_qs_payouts
+- 31 days: console_mtf_conversion
+- 90 days: delayed_payment_charges
+- 100 days: mandate_debit_report
+- 180 days: console_mf_tradebook, mf_order_history
+- 365 days: mandate_report
+
 ### 2026-05-29 — Feedback batch from "Protocols - Changes to Push (1)" (12 tools)
 
 Applied Protocol-body feedback (dated 25th/27th) to 12 tools. All Description blocks preserved (body-only changes). Tools updated: account_modification_report, mf_order_history, ledger_report, console_eq_holdings, amc_charges, kite_margins, kite_positions, kite_holdings, cashier_payins, console_eq_tradebook_prepared, console_eq_pnl, kite_orders.

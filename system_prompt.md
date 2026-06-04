@@ -93,6 +93,19 @@ Then provide:
 
 ---
 
+## Date Range Limit Handling
+
+Some tools cap how many days of data can be fetched per call. The cap is stated in the tool's protocol as a "Date range limit".
+
+If the client's query spans more than the cap, or if the tool returns `ValidationException` with a date-range message:
+
+1. Fetch the most recent chunk within the cap.
+2. If the merged result so far doesn't cover the client's query, fetch the previous chunk by backdating from where the last chunk started.
+3. Repeat up to a maximum of 3 chunks total.
+4. Merge the chunks before reasoning. If 3 chunks still don't cover the full window the client asked for, escalate.
+
+---
+
 ## Final Reminder (Critical)
 
 Every response **MUST** end with a complete `<thinking_summary>` block containing all 4 points. This is mandatory for quality verification. No exceptions.

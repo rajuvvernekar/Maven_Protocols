@@ -26,6 +26,8 @@ TAGS: margins, holdings
 
 ### A1 — Fundamentals
 
+- **Date range limit:** 31 days per call.
+
 - Conversion requires the funded amount as free cash. If free cash is less than the funded amount, only the affordable portion converts (`converted_quantity` < `request_quantity`); the rest stays under MTF.
 - **Funded amount:** the portion Zerodha contributed during the original MTF purchase. Equals total purchase value minus initial margin paid.
 - **MTM margin** is separate from the funded amount — MTM covers daily price fluctuations and does not reduce the conversion cost.

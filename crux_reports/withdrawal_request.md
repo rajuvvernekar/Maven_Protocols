@@ -30,6 +30,8 @@ TAGS: funds
 
 ### A1 — Withdrawal Types
 
+- **Date range limit:** 30 days per call.
+
 | Field Value | Label | Amount Range | Frequency | Window | Credit Timeline | Cancellable |
 |---|---|---|---|---|---|---|
 | `Instant_Payout` | Instant | ₹100–₹2,00,000 | Once per day (regardless of outcome) | 09:00–16:00 daily (incl. weekends; intermittent before 09:25) | Within minutes | No |

@@ -28,6 +28,8 @@ TAGS: charges, margins
 
 ### A1 — DPC Fundamentals
 
+- **Date range limit:** 90 days per call.
+
 - DPC report provides a daily breakdown of interest calculation for a selected date range.
 - Three types of interest: debit balance interest, excess collateral interest, margin shortfall interest.
 - `interest_amount` = total daily interest = sum of `debit_balance_interest` + `margin_shortfall_interest` + `excess_collateral_interest`.

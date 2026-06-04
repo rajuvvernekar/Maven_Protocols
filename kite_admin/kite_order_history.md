@@ -36,6 +36,8 @@ TAGS: orders
 
 ### A1 — Fundamentals
 
+- **Date range limit:** 30 days per call.
+
 - For today's live orders, invoke `kite_orders`.
 - Orders follow price-time priority: first come, first served at same price.
 - Zerodha pre-validates orders — some rejections won't appear in order book (shown in status notification only).

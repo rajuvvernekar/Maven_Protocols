@@ -24,6 +24,8 @@ TAGS: investments, funds
 
 ### A1 — Mandate Fundamentals
 
+- **Date range limit:** 365 days per call.
+
 -A Coin mandate must be linked to a SIP for auto-debit to work. The mandate limit (typically ₹1,00,000 for UPI autopay, ₹1,00,00,000 for eNACH) is the maximum permissible debit per transaction — not the actual debit amount. The actual debit equals the sum of linked SIP instalments for that cycle.
 
 -To delete a Coin mandate, all active or paused SIPs linked to it must be unlinked first. See A5 for the full deletion process.

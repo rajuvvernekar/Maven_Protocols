@@ -23,6 +23,8 @@ TAGS: investments, reports
 
 ### A1 — Fundamentals
 
+- **Date range limit:** 180 days per call.
+
 - P&L is calculated from this tool's data using FIFO.
 - Zerodha fund house WhatsApp orders → trade entries posted here if allotted.
 

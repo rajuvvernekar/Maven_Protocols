@@ -44,6 +44,8 @@ TAGS: funds
 
 ### A1 — Settlement Fundamentals
 
+- **Date range limit:** 30 days per call.
+
 - Settlement is mandatory; frequency (monthly/quarterly) set at account opening, cannot be changed.
 - Transfers to primary bank account only, free of charge.
 - Bank transfer completes within 24 hours; settlement statement emailed.

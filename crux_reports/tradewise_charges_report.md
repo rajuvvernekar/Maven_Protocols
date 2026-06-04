@@ -27,6 +27,8 @@ TAGS: charges, reports
 
 ### A1 — Report Fundamentals
 
+- **Date range limit:** 30 days per call.
+
 - With "View orderwise" selected, each row represents one complete order with charges already consolidated across all fills — no manual summing needed.
 - Trade value = quantity × price (from tradebook). Charges are calculated on this value.
 - CN (Contract Note) charges may not include later adjustments posted directly to ledger.

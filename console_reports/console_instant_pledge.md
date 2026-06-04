@@ -27,6 +27,8 @@ TAGS: margins
 
 ### A1 — Fundamentals
 
+- **Date range limit:** 30 days per call.
+
 - `previous_quantity` shows pledged qty before the transaction — used to track incremental pledges.
 
 - MTF shares are auto-pledged and are separate from client-initiated pledges.
