@@ -10,6 +10,10 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
+### 2026-06-05 — Date range limit bullet added to console_eq_tradebook_prepared
+
+- [Added]: `Date range limit: 100 days per call.` to A1. Completes the date-range coverage from the 2026-06-04 rollout — this tool was in the original error CSV (100-day cap) but omitted from that batch's tool list.
+
 ### 2026-06-04 — Feedback batch from "Protocols - Changes to Push (2)" (16 tools + 1 description)
 
 Applied June-1 Protocol-body feedback to 16 tools + a new Description for mandate_report. Team-confirmed final, no regression.

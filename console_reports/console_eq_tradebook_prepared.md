@@ -33,6 +33,8 @@ TAGS: orders, reports
 
 ### A1 — Fundamentals
 
+- **Date range limit:** 100 days per call.
+
 - Intraday vs delivery is not a stored field — it is inferred from trade patterns per A3.
 - **Product type (CNC / MIS / MTF / NRML / CO / BO) is not stored in the tradebook.** To identify the product type or order source (e.g., RMS auto-square-off), invoke `kite_order_history` for the trade date and match by `order_id`.
 
