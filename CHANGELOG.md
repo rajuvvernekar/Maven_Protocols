@@ -25,6 +25,38 @@ While applying, re-applied this session's earlier cleanups so the feedback did n
 New: feedback introduces `settlement_date_calculator` as an invokable tool (working-day / holiday-shift computation) across several protocols — kept verbatim per product confirmation that it is now a live tool.
 >>>>>>> a5745855296b465ccc5927bbaf6deed02a21e046
 
+### 2026-06-01 — Feedback pipeline run (Feedback_Downvotes.tsv · 811 tickets · 94 clusters)
+
+**Purpose:** Diagnostic analysis run. No protocol files were modified. Verdicts written to `pipeline_output/diagnostic_report.md` in the Feedback_Fixing_Trial_2 working directory.
+
+**Pipeline:** `run_pipeline_2.py` on `Feedback_Downvotes.tsv` → semantic clustering via sentence-transformers (all-MiniLM-L6-v2) → 94 clusters across 19 tools → Claude Code diagnostic analysis.
+
+**Why clustering:** Semantic grouping of similar failure tickets surfaces compound protocol gaps (multiple tickets sharing the same root cause) for higher ROI fixes. Clusters with ≥5 tickets and HIGH confidence are prioritised.
+
+**Verdict breakdown:**
+- RULE_MISSING: 47 clusters
+- HALLUCINATION: 25 clusters
+- RULE_AMBIGUOUS: 20 clusters
+- RULE_CONTRADICTION: 2 clusters
+
+**Top issues identified (by ticket volume + confidence):**
+- `mf_order_history` — 6 HALLUCINATION clusters: `payment_confirmed` field ignored (Rules 2/3), `settlement_date_calculator` not invoked for redemption timelines (Rule 5), NFO listing date not fetched (Rule 1), `mandate_debit_report` skipped for cancelled SIP debits (Rule 10)
+- `console_eq_holdings` — Demerger queries answered without checking `communications` field for credit confirmation (50 tickets, cluster 9)
+- `get_all_client_data` — Nominee Rule 9 ("offline only") contradicts A11 online process; needs reconciliation (clusters 65, 80 — RULE_CONTRADICTION)
+- `withdrawal` — Instant withdrawal eligibility rule outdated post recent policy change (cluster 93)
+- `kite_positions` — Stock futures described as "cash-settled" contradicting A4 physical delivery rule (cluster 44 — HALLUCINATION)
+- `kite_orders` — Zerodha SMS notification policy misrepresented (cluster 42 — HALLUCINATION)
+
+**New product/segment gaps (RULE_MISSING, no existing protocol):**
+- EGR (Electronic Gold Receipt) segment launched May 4, 2026
+- SIF (Structured Investment Funds) available on Coin
+- SEBI revised expense reporting format (TER vs BER — Coin vendor lag)
+- Kite App Code (TOTP) vs Client ID terminology
+- NRO eMandate creation from outside India (VPN requirement)
+- Cross-exchange same-day buy/sell intraday netting rule
+
+**Next step:** Review `pipeline_output/diagnostic_report.md` and select clusters for protocol fixes. Apply changes via the standard proposed_changes → approval → apply workflow.
+
 ### 2026-05-21 — Escalation handoff consolidation (full rollout, 55 tools)
 
 Completes the consolidation begun in the account_modification_report pilot. System prompt now owns the escalation handoff format; tool rules just say `escalate`.

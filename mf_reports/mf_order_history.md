@@ -332,73 +332,82 @@ If no rule matches and no root cause is identified → escalate.
 
 ### Rule 1 — Processing Orders
 
-**NEFT/RTGS payment:**
+**1 — NEFT/RTGS payment:**
+If `status_message` contains "Pending payment via NEFT/RTGS" → go to Rule 8.
 
--If `status_message` contains "Pending payment via NEFT/RTGS" → go to Rule 8.
+**2 — NFO order:**
+If `tag` contains `"product": "nfo"`, the order follows NFO logic:
+- **Allotted** → communicate that units have been allotted. For MF/FOF NFO: units appear in Coin only after the fund is listed — typically within 5 working days of allotment; after listing, units are visible on Coin within T+2 working days. For ETF NFO (`fund` name contains "ETF"): units appear in Kite/Console equity holdings, not Coin — invoke `console_eq_external_trades` and check for an 'ipo' entry matching the fund per A8.
+- **Still Processing — ETF NFO** → invoke `console_eq_external_trades`. If an 'IPO' entry exists → communicate that units are in Kite holdings under the scrip name, even though order status on Coin shows Processing.
+- **Still Processing — non-ETF NFO** → communicate that the NFO order is being processed and status updates within T+2 after listing. Rejection remarks for NFO orders update only after the allotment window closes. Share allotment quantities only if `mf_order_history` shows order status as 'Allotted'. Invoke `console_mf_pseudo_holdings` to check quantities — for NFO orders, these may be preliminary until allotment is officially confirmed.
+- **Cannot determine** → escalate.
 
-**NFO order:**
+---
 
--If `tag` contains `"product": "nfo"`, the order follows NFO logic:
+**3 — payment_confirmed = true**
 
-- **Allotted** → Communicate that units have been allotted. For MF/FOF NFO: units appear in Coin only after the fund is listed — typically within 5 working days of allotment; after listing, units are visible on Coin within T+2 working days. For ETF NFO (if `fund` name contains "ETF"): units appear in Kite/Console equity holdings, not Coin — invoke `console_eq_external_trades` and check for an 'ipo' entry matching the fund per A8.
-- **Still Processing — ETF NFO:** Invoke `console_eq_external_trades`. If an 'IPO' entry exists → communicate that units are in Kite holdings under the scrip name, even though order status on Coin shows Processing.
-- **Still Processing — non-ETF NFO:** Communicate that the NFO order is being processed and status updates within T+2 after listing. Rejection remarks for NFO orders update only after the allotment window closes. Share allotment quantities only if `mf_order_history` shows order status as 'Allotted'. Invoke `console_mf_pseudo_holdings` to check quantities — for NFO orders, these may be preliminary until allotment is officially confirmed.
-- **Cannot determine** → Escalate.
+**3.1 — Map the order to `fund_allocation_report`:**
+Map each order to its `fund_allocation_report` entry using either `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) or `settlement_id` (mf_order_history) = `settlement_number` (fund_allocation_report). Both columns should typically be populated for a mapped payment.
 
-**Payment not yet confirmed (`payment_confirmed` = false):**
+Check `error_remarks` first:
+- "INVALID BANK ACCOUNT DETAIL" → escalate.
 
--For non-SIP orders (`variety` = regular):
+**3.2 — T-day and cutoff:**
 
-1. Check `payment_error_code` and `payment_error_description`. If either is populated → payment failed. Communicate that the payment was not confirmed and advise placing a new order. Apply A4 refund language.
-2. If no error code is present, invoke `fund_allocation_report` using the order mapping per A7. If an entry exists, use its data to confirm what happened to the payment.
-3. If `fund_allocation_report` has no matching entry, the data is inconclusive. Apply A4 refund language conditionally (if the client's bank was debited, the refund will apply).
+If `fund_allocation_report` has a matching entry → use `payment_date` from the report as T-day. Compare against NAV cutoff per A2 and communicate whether payment was confirmed before or after cutoff and the applicable NAV.
 
--For SIP orders (`variety` = sip):
+If no matching entry → determine T-day from payment method:
 
--Invoke `sip_report` and check `fund_source`:
-- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the order date.
-- Otherwise → no mandate linked.
+- **Netbanking** → identify the client's bank per A10:
+  - Non-direct settlement bank → T = next working day from `payment_updated_at` (invoke `settlement_date_calculator` to confirm). State the non-working day(s) and reason. Communicate that the bank is non-direct, payment was reported to the exchange on the next working day, and that became T-day. Allotment expected by T+1.
+  - Direct settlement bank → invoke `settlement_date_calculator` with `payment_updated_at` to confirm it is a working day. If on a weekend or settlement holiday → T = next working day returned by the tool. State the non-working day(s) and reason. Apply NAV cutoff per A2:
+    - Before cutoff → T = that day. Allotment expected by T+1. Communicate T-day NAV will be applicable.
+    - After cutoff → invoke `settlement_date_calculator` to get the next working day as T (for liquid funds, NAV moves from T-1 to T-day). Further shift if that day is also non-working. Communicate that payment was confirmed after the cutoff, state the exact `payment_updated_at` time, and state the resulting T-day and NAV per A2. Share cutoff link from A9.
+- **UPI** → invoke `settlement_date_calculator` with `payment_updated_at` to confirm it is a working day. If on a weekend or settlement holiday → T = next working day returned by the tool. State the non-working day(s) and reason. Apply NAV cutoff per A2:
+  - Before cutoff → T = that day. Allotment expected by T+1. Communicate T-day NAV will be applicable.
+  - After cutoff → invoke `settlement_date_calculator` to get the next working day as T (for liquid funds, NAV moves from T-1 to T-day). Further shift if that day is also non-working. Communicate that payment was confirmed after the cutoff, state the exact `payment_updated_at` time, and state the resulting T-day and NAV per A2. Share cutoff link from A9.
 
-**T-day determination (`payment_confirmed` = true):**
+If `payment_updated_at` is not yet populated → use `payment_initiated_at` as reference. Share cutoff link from A9. Communicate that NAV depends on when payment is updated at ICCL.
 
--Invoke `settlement_date_calculator` with `payment_updated_at` to check working days elapsed. If beyond T+2 → invoke `fund_allocation_report` using the order mapping per A7.
+**3.3 — Exchange timestamp cross-check:**
+- If `exchange_timestamp` is populated and differs from the T-day above → use `exchange_timestamp` as actual T-day. Verify against `payment_date` in `fund_allocation_report`. Invoke `settlement_date_calculator` to identify any holidays within the allotment window and name them.
+- If `exchange_timestamp` is not yet populated → do not state an allotment date. Communicate that the order is still being processed at the exchange.
 
--If within T+2:
-- Invoke `settlement_date_calculator` with `payment_updated_at` to confirm it is a working day. If on a weekend or settlement holiday → T = next working day returned by the tool. State the non-working day(s) and reason.
-- `payment_updated_at` on a working day:
-  - Netbanking + non-direct settlement bank (per A10) → T = next working day. Communicate that the bank is non-direct, payment was reported to the exchange on the next working day, and that became T-day. Allotment expected by T+1.
-  - Netbanking + direct settlement bank or UPI → apply NAV cutoff per A2:
-    - Before cutoff → T = that day. Allotment expected by T+1.
-    - After cutoff → invoke `settlement_date_calculator` to get the next working day as T (for liquid funds, NAV moves from T-1 to T-day). Further shift if that day is also non-working.
-    - `payment_updated_at` not yet populated → use `payment_initiated_at` as reference. Share cutoff link from A9. Communicate that NAV depends on when payment is updated at ICCL.
-
--Cross-check T-day against `exchange_timestamp`. If they differ, use `exchange_timestamp` as actual T-day. Verify against `payment_date` in `fund_allocation_report`. Invoke `settlement_date_calculator` to identify any holidays within the allotment window and name them.
-
-**Invoke `fund_allocation_report`:**
-
--Map the order per A7.
-
--Check `error_remarks` first:
-- "INVALID BANK ACCOUNT DETAIL" → Escalate.
-
--Then check flags:
+**3.4 — Allotment status — fund_allocation_report flags:**
 
 - `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted by the AMC. Invoke `settlement_date_calculator` with `exchange_timestamp` to check whether the current date is within T+3 working days. Within T+3 → late delivery: holdings credit may take up to T+3 working days; NA is shown on Coin on T+2 for one day only, rectified on T+3. Communicate as late delivery of units, not standard allotment duration. Share MF units settlement timeline link from A9. Beyond T+3 → escalate.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status = "Allotted" → allotment is finalised; units will be credited.
-- `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status ≠ "Allotted" → Communicate: "Payment settled. Allotment expected by [date]." — date = T+1 working day from `exchange_timestamp` per A8.
-- `settled_flag` = N → check the mapping columns first. If both `order_number` AND `settlement_number` are null or empty, the payment was received but never mapped to an order — this is a failed payment regardless of timeline. Apply A4 refund language. If either column is populated, the payment is mapped. Invoke `settlement_date_calculator` with `payment_date` to count working days elapsed:
-  - Within T+1 → Communicate: "Payment pending settlement. Allow one working day."
+- `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status ≠ "Allotted" → if `exchange_timestamp` is populated: communicate "Payment settled. Allotment expected by [date]." — date = T+1 working day from `exchange_timestamp` per A8. If not yet populated: communicate payment is settled; allotment pending exchange processing.
+- `settled_flag` = N → check the mapping columns first. If both `order_number` AND `settlement_number` are null or empty → payment received but never mapped to any order; this is a failed payment regardless of timeline. Apply A4 refund language. If either column is populated → payment is mapped; invoke `settlement_date_calculator` with `payment_date` to count working days elapsed:
+  - Within T+1 → communicate: "Payment pending settlement. Allow one working day."
   - Beyond T+2 → order has failed. Check `refund_utr`:
-    - Populated → Communicate that the refund of ₹[amount] has been processed; share the reference to track with the bank.
-    - Empty → Apply A4 refund language.
+    - Populated → communicate that the refund of ₹[amount] has been processed; share the reference to track with the bank.
+    - Empty → apply A4 refund language.
 
-**Beyond T+3:**
+**3.5 — Beyond T+3:**
+If no `fund_allocation_report` entry and beyond T+3 → escalate.
 
--Cross-check `fund_allocation_report`. If no entry → escalate.
+**3.6 — `payment_confirmed` = true, `settled_flag` = N, beyond T+2 (working days, excluding weekends and trading/settlement holidays):**
+Invoke `settlement_date_calculator` to compute T+2 from `payment_updated_at` excluding weekends and settlement holidays before concluding the window has been breached. If genuinely beyond T+2: communicate that the order is likely to fail and advise placing a lumpsum order for the current cycle. Apply A4 refund language.
 
-**`payment_confirmed` = true, `settled_flag` = N, beyond T+2 (working days, excluding weekends and trading/settlement holidays):**
+---
 
--Invoke `settlement_date_calculator` to compute T+2 from `payment_updated_at` excluding weekends and settlement holidays before concluding the window has been breached. If genuinely beyond T+2: communicate that the order is likely to fail and advise placing a lumpsum order for the current cycle. Apply A4 refund language.
+**4 — payment_confirmed = false**
+
+**4.1 — Non-SIP orders (`variety` = regular):**
+1. Check `payment_error_code` and `payment_error_description`. If either is populated → payment failed. Communicate that the payment was not confirmed and advise placing a new order. Apply A4 refund language conditionally.
+2. No error code → invoke `fund_allocation_report`, mapping using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) or `settlement_id` (mf_order_history) = `settlement_number` (fund_allocation_report). If an entry exists → use its data to confirm what happened to the payment.
+3. No matching entry → data is inconclusive. Apply A4 refund language conditionally (if the client's bank was debited, the refund will apply).
+
+**4.2 — SIP orders (`variety` = sip):**
+Invoke `sip_report` and check `fund_source`:
+- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check the debit entry on the order date:
+  - `success` → bank was debited; payment is in processing. Apply A4 refund language.
+  - `draft` → debit instruction sent to the bank, not yet executed. Communicate debit is scheduled.
+  - `pending` → debit has an issue at the bank level. Check `remark` per mandate_debit_report A4 for the cause. This is not an exchange or order status.
+  - `failed` → bank rejected the debit. Communicate the reason from `remark` per mandate_debit_report A4. No payment was debited this cycle.
+  - No debit record → no mandate debit was initiated for this cycle.
+- Otherwise → no mandate linked. No payment was debited.
 
 ---
 
@@ -417,7 +426,7 @@ For cancelled orders, apply A1 status interpretation based on `payment_confirmed
 - `payment_confirmed` = false → proceed to the SIP check below before concluding no payment was debited.
 
 **SIP cancelled with `payment_confirmed` = false:** For SIP orders (`variety` = sip) cancelled after placement, invoke `sip_report` and check `fund_source`:
-- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the same date. If debit status = Success or Created and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply A4 refund language.
+- `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check for a debit entry on the same date. If debit status = `success` or `draft` and funds were debited → a debit was initiated even though `payment_confirmed` has not updated. Apply A4 refund language.
 - Otherwise → no mandate linked. No payment was debited.
 
 ---
