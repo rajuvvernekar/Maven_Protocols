@@ -22,9 +22,8 @@ TAGS: funds
 
 ## Protocol
 
-# WITHDRAWAL PROTOCOL
 
----
+# WITHDRAWAL PROTOCOL
 
 ## Section A: Reference Data
 
@@ -38,6 +37,10 @@ TAGS: funds
 | `Payout` | Regular | ₹1 to available balance (up to ₹5 crore via Console) | No daily limit | At applicable cutoff (per A5) | Within 24h of processing | Yes — while Pending, via Console → Funds → Withdrawal history |
 
 - One instant and one regular can be pending simultaneously. A pending regular withdrawal has no effect on instant availability. Regular withdrawals are automated and cannot be expedited.
+
+- **`Bank_Reconciliation_Pending` (Instant only):** Instant withdrawal is awaiting EOD bank reconciliation. Two possible outcomes:
+  - Reconciliation succeeds → funds credited to client's bank account
+  - Reconciliation fails → funds reversed to trading account ledger within 24 working hours from the withdrawal request `creation` date
 
 ---
 
@@ -158,7 +161,8 @@ Read from `ledger_report` (`voucher_type`, `remarks`, `posting_date`, `debit`, `
 | Book Voucher | "Net obligation for CDS FNO" | CDS currency trade settlement | T+1 per A6 |
 | Journal Entry | "DP (depository participant) Charges for Sale of [STOCK] on [DATE]" | Stock sold that day | T+1 per A6 |
 | Journal Entry | "Delayed payment charges for [Month] - [Year]" | Delayed payment charges | Client must add funds to clear dues |
-| Bank Payments | Remarks containing "quarterly settlement" | Quarterly settlement payout | Funds transferred to client's primary bank account via mandatory quarterly settlement; trading account balance reduced accordingly |
+| Bank Payments | "Funds auto-settled to the primary bank account" | Regular QS payout — client-chosen frequency | Funds transferred to client's primary bank account via quarterly settlement; trading account balance reduced accordingly |
+| Bank Payments | "Funds transferred back as part of quarterly settlement (inactive)" | Inactivity-triggered monthly settlement | Funds transferred to client's primary bank account; account was inactive for 30+ days |
 | — | Time 19:00–21:00, no other signals | Balance update window | Retry after 21:00 |
 
 ---
@@ -274,14 +278,13 @@ Route by scenario
 ├─ Multiple or repeat withdrawal question                          → Rule 7
 ├─ Existing withdrawal — status, timeline, expedite, or cancel    → Rule 8
 ├─ App or UI issue on withdrawal page                              → Rule 9
-├─ Funds deposited same day but not available for withdrawal       → Rule 10
-├─ Zero / low / negative balance                                   → Rule 10
+├─ Zero / low / negative balance (including same-day deposit)      → Rule 10
 └─ No withdrawal records / charges query                           → Rule 11
 ```
 
 ### Fallback
 
-If no route matches after all checks, escalate.
+If no route matches after all checks → escalate.
 
 ---
 
@@ -293,8 +296,8 @@ If any condition below matches, escalate immediately. Do not share any account o
 
 | Condition | How to identify | Action |
 |---|---|---|
-| NRI PIS account | Verify `bo_sub_status` (from `get_all_client_data`) | Escalate |
-| Withdrawal request > ₹5 crore | Requested amount > ₹5,00,00,000 | Escalate |
+| NRI PIS account | Verify `bo_sub_status` (from `get_all_client_data`) | → escalate |
+| Withdrawal request > ₹5 crore | Requested amount > ₹5,00,00,000 | → escalate |
 
 ---
 
@@ -348,8 +351,9 @@ Confirm withdrawable balance covers the remaining amount. If cause is same-day d
 Invoke `ledger_report` (±3 days from creation date). Two cases:
 
 **Case A — Failed: withdrawal amount not available (funds never left the trading account):**
-Compute withdrawal-eligible (A − D) per A14. The request failed because withdrawal-eligible ≤ 0 — settled funds (A) were exhausted by unsettled debits (D), even though the visible ledger balance (A + B − D) is positive (A14). Use A7 framing: the request did not go through; funds remained in the trading account. The unsettled credit B becomes withdrawable on the next settlement working day — invoke `settlement_date_calculator`, give the client that date, and have them place a fresh request then.
+Compute withdrawal-eligible (A − D) per A14. Cross-check the computed value against the `remarks` field (e.g., "Withdrawal balance - -1517.34") — if they differ, use the `remarks` value as the authoritative figure and re-examine the ledger rows used for A and D. The request failed because withdrawal-eligible ≤ 0 — settled funds (A) were exhausted by unsettled debits (D), even though the visible ledger balance (A + B − D) is positive (A14). Use A7 framing: the request did not go through; funds remained in the trading account. The unsettled credit B becomes withdrawable on the next settlement working day — invoke `settlement_date_calculator`, give the client that date, and have them place a fresh request then.
 (If the client traded with the credited/deposited funds in the same period, identify the net remaining balance after trading.)
+If the client's balance remains negative and the cause cannot be fully explained from the ledger → escalate.
 
 **Case B — Processed, then failed by the bank (funds reversed to the ledger):**
 `bank_response_status` = failed:
@@ -359,35 +363,39 @@ Compute withdrawal-eligible (A − D) per A14. The request failed because withdr
 4. If `bank_response_remarks` contains "NPCI" per A8 → rejection from the client's bank payment network; if `Instant_Payout`, today's instant attempt is consumed (only regular available).
 5. Cross-check with CMR (Console → Profile) and bank statement.
 6. NRI/NRE: NRE PIS details must match bank records exactly (Console → Profile → Bank accounts); bank update requires courier form + bank proof, or e-sign if Aadhaar-linked. *(NRI PIS accounts are escalated at Rule 1; this applies to non-PIS NRI or resident accounts with an NRE bank mapped.)*
+7. If the rejection reason is not listed in A12/A13, or resolution steps do not resolve the issue → escalate.
 
 ---
 
 ### Rule 5: Funds Not Received (Status = Processed)
 
-Timeline is measured from `payout_date`; `modified` and `bank_ref_no` per A2, evaluated against the query date per A3.
+`modified` and `bank_ref_no` per A2, evaluated against the query date per A3.
 
 | Scenario | Action |
 |---|---|
-| Within timeline (Instant: within minutes per A1; Regular: within 24h of processing per A5) | Processing within expected window — no action |
-| Past timeline + `bank_ref_no` present + < 3 days since `modified` | Share `bank_ref_no`; refer client to their bank |
-| Past timeline + `bank_ref_no` present + ≥ 3 days since `modified` | Share `bank_ref_no`; client to request bank statement from `payout_date` to today |
-| Past timeline + no `bank_ref_no` | Escalate |
+| `bank_ref_no` present (regardless of timeline) | First check if `processed_amount` < `amount` — if yes, address the partial shortfall per **Rule 3** before proceeding. Then share `bank_ref_no` for the processed portion and refer client to their bank. |
+| `status` = `Bank_Reconciliation_Pending` (`Instant_Payout` only) | Inform client per A1 — `Bank_Reconciliation_Pending` |
+| No `bank_ref_no` + within 24h of `payout_date` | Funds still being processed — within expected window; no action |
+| No `bank_ref_no` + past 24h of `payout_date` | → escalate |
 
 ---
 
 ### Rule 6: Stock Sale — Funds Not Available
 
-**Step 1:** Invoke `ledger_report` (5 days) and `kite_holdings`. Check if a withdrawal request has already been placed.
+**Step 1:** Invoke `kite_order_history` for the stated sale date and verify sell trades actually exist.
+   - No sell trades found → check `ledger_report` for a DP charge entry ("DP Charges for Sale of [STOCK]") for the stock in question to confirm whether a sale actually occurred; explain to client what the ledger shows; clarify that share sale proceeds do not auto-credit the bank account — a withdrawal request must be placed manually after T+1 settlement.
 
-**Step 2:** Identify cause from ledger per A9. T+1 per A6 applies if a settlement entry is found. Root cause is T+1 settlement — not a balance shortfall or unrelated charge.
+**Step 2:** Invoke `ledger_report` for the stated sale date ±3 days. Check if a withdrawal request has already been placed.
 
-**Step 3 — No withdrawal placed, settlement complete:** Direct to place a withdrawal request. If eligible per A1 and A4, suggest instant.
+**Step 3:** From the ledger, identify the settlement entry (Book Voucher — "Net settlement for Equity") for the sale date — confirms sale proceeds were credited to the trading account. T+1 per A6 applies — funds not withdrawable until next settlement working day. Invoke `settlement_date_calculator` to confirm the exact date.
 
-**Step 4 — Withdrawal already placed:** Route to Rule 2, 3, or 4 as applicable.
+**Step 4 — No withdrawal placed, settlement complete:** Direct to place a withdrawal request. If eligible per A1 and A4, suggest instant.
 
-**Step 5 — Holdings confusion:** If withdrawable balance ≤ ₹0 and `kite_holdings` value approximates the requested amount → amount is held as equity, not cash. Client must sell first; T+1 per A6 applies after sale.
+**Step 5 — Withdrawal already placed:** Route to Rule 2, 3, or 4 as applicable.
 
-**Step 6 — Negative "used margin" after stock sale:** Negative "used margin" on Kite funds page reflects sale proceeds pending T+1 settlement per A6.
+**Step 6 — Holdings confusion:** If withdrawable balance ≤ ₹0 and `kite_holdings` value approximates the requested amount → amount is held as equity, not cash. Client must sell first; T+1 per A6 applies after sale.
+
+**Step 7 — Negative "used margin" after stock sale:** Invoke `kite_margins` and check the `used_margin` field — negative "used margin" on Kite funds page reflects sale proceeds pending T+1 settlement per A6.
 
 ---
 
@@ -434,7 +442,7 @@ Regular withdrawals cannot be expedited. Inform the client of the applicable pro
 Invoke `kite_margins` and check the `payin` field — same-day payins reflect immediately (per A10), reliable even before the EOD ledger update. If `payin` shows a same-day deposit (or the ledger shows a Bank Receipts entry on the query date) → apply the instant/regular availability per A9 (weekday / Saturday–Sunday / settlement holiday).
 
 **Step 3 — Quarterly settlement:**
-If ledger contains a "quarterly settlement" entry (Bank Payments voucher type per A9) → funds were paid out to the client's bank as part of Zerodha's mandatory quarterly settlement. Client should check their bank account for the credited amount.
+If ledger contains a "Bank Payments" entry matching either QS remark per A9 ("Funds auto-settled to the primary bank account" or "Funds transferred back as part of quarterly settlement (inactive)") → funds were paid out to the client's bank as part of quarterly settlement. Client should check their bank account for the credited amount.
 
 **Step 4 — Delayed payment charges:**
 If ledger shows "Delayed payment charges" (Journal Entry per A9) → client has outstanding dues. They must add funds to clear the balance before a withdrawal can be placed.

@@ -20,9 +20,8 @@ TAGS: general
 
 ## Protocol
 
-# STOCK GIFT REQUESTS PROTOCOL
 
----
+# STOCK GIFT REQUESTS PROTOCOL
 
 ## Section A: Reference Data
 

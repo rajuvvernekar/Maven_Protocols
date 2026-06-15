@@ -24,9 +24,8 @@ TAGS: orders, reports
 
 ## Protocol
 
-# CONSOLE FNO TRADEBOOK PREPARED PROTOCOL
 
----
+# CONSOLE FNO TRADEBOOK PREPARED PROTOCOL
 
 ## Section A: Reference Data
 
@@ -108,6 +107,45 @@ When a corporate action occurs on the underlying stock (e.g., stock split, bonus
 | Where to see trades for a particular period | https://support.zerodha.com/category/console/reports/other-queries/articles/where-can-i-see-all-the-trades-i-ve-taken-for-a-particular-period |
 | Corporate action impact on derivatives | https://support.zerodha.com/category/console/corporate-actions/ca-others/articles/impact-of-corporate-actions-on-derivatives |
 
+---
+
+### A7 — Charges Reference
+
+**Equity F&O (segment = FO):**
+
+| Charge | F&O — Futures | F&O — Options |
+|---|---|---|
+| Brokerage | 0.03% or ₹20/executed order (whichever is lower) | Flat ₹20 per executed order |
+| STT/CTT | 0.05% on sell side | 0.15% of intrinsic value on options bought and exercised; 0.15% on sell side (on premium) |
+| Transaction charges | NSE: 0.00193%; BSE: 0 | NSE: 0.03553% (on premium); BSE: 0.03255% (on premium) |
+| GST | 18% on brokerage + SEBI charges + transaction charges | 18% on brokerage + SEBI charges + transaction charges |
+| SEBI charges | ₹10 / crore | ₹10 / crore |
+| Stamp charges | 0.003% or ₹300 / crore on buy side | 0.003% or ₹300 / crore on buy side |
+
+**Currency Derivatives (segment = CDS):**
+
+| Charge | Currency Futures | Currency Options |
+|---|---|---|
+| Brokerage | 0.03% or ₹20/executed order (whichever is lower) | Flat ₹20 per executed order |
+| STT/CTT | No STT | No STT |
+| Transaction charges | NSE: 0.00035%; BSE: 0.00045% | NSE: 0.0311%; BSE: 0.001% |
+| GST | 18% on brokerage + SEBI charges + transaction charges | 18% on brokerage + SEBI charges + transaction charges |
+| SEBI charges | ₹10 / crore | ₹10 / crore |
+| Stamp charges | 0.0001% or ₹10 / crore on buy side | 0.0001% or ₹10 / crore on buy side |
+
+**Commodities (segment = COM):**
+
+| Charge | Commodity Futures | Commodity Options |
+|---|---|---|
+| Brokerage | 0.03% or ₹20/executed order (whichever is lower) | Flat ₹20 per executed order |
+| STT/CTT | 0.01% on sell side (Non-Agri) | 0.05% on sell side |
+| Transaction charges | MCX: 0.0021%; NSE: 0.0001% | MCX: 0.0418%; NSE: 0.001% |
+| GST | 18% on brokerage + SEBI charges + transaction charges | 18% on brokerage + SEBI charges + transaction charges |
+| SEBI charges | Agri: ₹1 / crore; Non-Agri: ₹10 / crore | ₹10 / crore |
+| Stamp charges | 0.002% or ₹200 / crore on buy side | 0.003% or ₹300 / crore on buy side |
+
+---
+
 ## Section B: Decision Flow
 
 ### Routing
@@ -142,7 +180,7 @@ Route by scenario
 
 ### Rule 2 — Closed Account — Historical F&O Trade Data
 
-- Escalate.
+- → escalate.
 
 ---
 
@@ -156,7 +194,7 @@ Route by scenario
 
 1. Search by date, segment (per A3), and tradingsymbol.
 2. If found → confirm trade details per Rule 3.
-3. If not found → verify correct segment is selected (per A3).
+3. Invoke `get_all_client_data` and check `segments` to confirm the client's enabled segments, then verify correct segment is selected (per A3).
 4. If still not found after correct segment → escalate.
 
 ---
@@ -183,10 +221,10 @@ Route by scenario
 
 ---
 
-### Rule 8 — Contract Note Queries (Charges / MTM)
+### Rule 8 — Charge Queries (Brokerage / STT / Stamp Duty / GST / SEBI)
 
-1. This tool provides trade-level execution data only — no charge, MTM, or obligation data.
-2. Escalate.
+1. For charge queries (any segment) → share applicable charges from A7 per segment (FO / CDS / COM) and instrument type (futures or options).
+2. For MTM or obligation queries → contract note must be referred; this tool provides trade-level execution data only → escalate.
 
 ---
 

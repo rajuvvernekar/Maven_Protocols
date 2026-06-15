@@ -18,6 +18,7 @@ TAGS: funds, investments
 
 ## Protocol
 
+
 # AUTO DEBIT PAYINS PROTOCOL
 
 ## Section A: Reference Data
@@ -108,10 +109,10 @@ If no route matches, escalate.
 
 1. Determine status per **A3**:
    a. Success → invoke `ledger_report` and check `remarks` for "Funds added using auto debit" matching the amount. If found, confirm credit. If missing, funds reflect by end of day.
-   b. Failed → auto-debit could not be completed. Insufficient opening balance or vendor issue. Not retried — client must add funds manually.
+   b. Failed → invoke `get_all_client_data` and check `bank account` to confirm the registered bank account against which the debit was attempted. Auto-debit could not be completed. Insufficient opening balance or vendor issue. Not retried — client must add funds manually.
    c. Created → debit request sent to bank. Funds credit to Kite by next working day per **A4**.
 2. If no matching record:
-   a. Invoke `e_mandate_report` — check if an active mandate exists.
+   a. Invoke `get_all_client_data` and check `account type/category`, then invoke `e_mandate_report` — check if an active mandate exists.
    b. If active → invoke `e_mandate_schedule_report` — check if a schedule was created.
    c. If mandate is active but no schedule exists → suggest creating a schedule per **A5**.
 

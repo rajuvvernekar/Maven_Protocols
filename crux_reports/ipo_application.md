@@ -21,9 +21,8 @@ TAGS: ipo
 
 ## Protocol
 
-# IPO PROTOCOL
 
----
+# IPO PROTOCOL
 
 ## Section A: Reference Data
 
@@ -90,7 +89,7 @@ For standard IPOs, category is determined by bid amount (below ₹2L = Retail, �
 |---|---|---|
 | cancelled | "Your application was cancelled." | Apply reapply guidance per A4 for customer's category. |
 | failed | "Your application failed." | Apply reapply guidance per A4 for customer's category. Inform: "Funds will be unblocked by your bank (timeline varies)." |
-| allotted | "Your shares have been allotted and will be credited on [share credit date]." | Visible in Kite holdings from listing date. Customer notified via CDSL credit email/SMS. |
+| allotted | "Your shares have been allotted and will be credited on [share credit date]." | Visible in Kite holdings from listing date. Customer notified via CDSL credit email/SMS. If shares are not visible on the listing date, ask the client for a screenshot and escalate. |
 | not allotted | "Your application was not allotted. Your bank will unblock the blocked funds." | May take until mandate end date. |
 | other (submitted, pending, placed, etc.) | "Check your UPI app for the mandate and accept it. If you have accepted the mandate and funds are blocked, the RTA will consider your application. Verify your application number matches the UPI mandate." | Verify at NSE or BSE status page (per A8) after 1 day. |
 
@@ -309,7 +308,7 @@ If REIT/InvIT, add: "For REIT IPOs, if the UPI mandate was not completed, you co
 2. Provide the next action per A5:
    - **cancelled:** "Your application was cancelled." Apply reapply guidance from A4 for customer's category.
    - **failed:** "Your application failed." Apply reapply guidance from A4. Inform: "Funds will be unblocked by your bank (timeline varies)."
-   - **allotted:** "Your shares have been allotted and will be credited on [share credit date from schedule]." Visible in Kite holdings from listing date.
+   - **allotted:** "Your shares have been allotted and will be credited on [share credit date from schedule]." Visible in Kite holdings from listing date. If the client says shares are not visible on the listing date → ask for a screenshot and escalate.
    - **not allotted:** "Your application was not allotted. Your bank will unblock the blocked funds." May take until mandate end date.
    - **other (submitted, pending, placed, etc.):** "Check your UPI app for the mandate and accept it. If you have accepted the mandate and funds are blocked, the RTA will consider your application. Verify your application number matches the UPI mandate." Direct to NSE or BSE status page (A8) after 1 day.
 
@@ -335,19 +334,23 @@ Add urgency: "The UPI mandate deadline is 5:00 PM today. You must approve the ne
 ### Rule 9 — ASBA Process
 
 1. If customer has no UPI or wants to apply via netbanking → "Kite supports UPI only. You can apply via ASBA through your bank's internet banking portal or via an offline form." (Per A1.)
-2. Share demat details from A7: Demat ID (16-digit, from console.zerodha.com/account/demat), Depository: CDSL, DP Name: Zerodha.
-3. **Online ASBA:** Log in to bank's internet banking portal → fill demat details above.
-4. **Offline ASBA:** Download form from NSE or BSE ASBA form page (A8) → fill demat details → submit to SCSB bank (list at A8).
+2. Invoke `get_all_client_data` and check `dp / demat status` to confirm the demat account is active.
+3. Share demat details from A7: Demat ID (16-digit, from console.zerodha.com/account/demat), Depository: CDSL, DP Name: Zerodha.
+4. **Online ASBA:** Log in to bank's internet banking portal → fill demat details above.
+5. **Offline ASBA:** Download form from NSE or BSE ASBA form page (A8) → fill demat details → submit to SCSB bank (list at A8).
 
 ---
 
 ### Rule 10 — Special Accounts
+
+Invoke `get_all_client_data` and check `account type/category` to confirm the account type before applying the relevant rules.
 
 Apply rules from A9 for the customer's account type.
 
 **Minor:** Own bank/demat required — cannot use parent/guardian bank. Can apply via UPI (if bank enabled) or ASBA.
 
 **NRI:**
+- Invoke `get_all_client_data` and check `pan` to confirm the PAN on record.
 - UPI on NRE/NRO with Indian mobile number (up to ₹5L per A2) or ASBA.
 - Cannot apply from both NRE and NRO accounts (same PAN).
 - NRE demat holders must use NRE bank account only — not NRO.
@@ -375,7 +378,7 @@ Apply rules from A9 for the customer's account type.
 
 **Post-closure gate:** If IPO closing date is earlier than current date → "Since the IPO closed on [closing date], it is no longer possible to modify or reapply. If the mandate was not approved or funds were not blocked, the application will not be considered. If funds were blocked, they will be unblocked by your bank before the mandate end date [mandate end date]."
 
-1. "The mandate was sent to your old bank's UPI. Your new bank will not receive it."
+1. Invoke `get_all_client_data` and check `bank account` to confirm the currently registered bank account details. The mandate was sent to the old bank's UPI — the new bank will not receive it.
 2. Apply the customer's category from A4:
    - **Retail:** Cancel, update bank on Console if needed, reapply with new UPI.
    - **HNI Mainboard:** Cannot cancel. Apply via ASBA with new bank (warn: one per PAN). Guide per Rule 9.
@@ -404,9 +407,10 @@ Do not ask clarifying questions. Respond directly:
 
 ### Rule 16 — Technical Errors
 
-1. Troubleshoot in order: internet connection, cache clear, alternate device, app update, web version at Kite IPO page (A8), market hours (per A3), category restrictions (per A4).
-2. UPI ID not showing: suggest entering manually, verify bank support at UPI partners page (A8), or use ASBA per Rule 9.
-3. If issue persists after all troubleshooting: collect screenshot, IPO name, action attempted, device type. Escalate. If closing day → treat as urgent.
+1. Invoke `get_all_client_data` and check `account blocks` to identify any account-level restrictions that may be causing the issue.
+2. Troubleshoot in order: internet connection, cache clear, alternate device, app update, web version at Kite IPO page (A8), market hours (per A3), category restrictions (per A4).
+3. UPI ID not showing: suggest entering manually, verify bank support at UPI partners page (A8), or use ASBA per Rule 9.
+4. If issue persists after all troubleshooting: collect screenshot, IPO name, action attempted, device type. Escalate. If closing day → treat as urgent.
 
 ---
 

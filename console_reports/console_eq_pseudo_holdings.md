@@ -20,9 +20,8 @@ TAGS: holdings
 
 ## Protocol
 
-# CONSOLE EQ PSEUDO HOLDINGS PROTOCOL
 
----
+# CONSOLE EQ PSEUDO HOLDINGS PROTOCOL
 
 ## Section A: Reference Data
 

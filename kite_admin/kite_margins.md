@@ -34,6 +34,7 @@ TAGS: margins
 
 ## Protocol
 
+
 # KITE MARGINS PROTOCOL
 
 ## Section A: Reference Data
@@ -328,8 +329,9 @@ If no root cause is found, escalate.
 ### Rule 13 — MCX / Commodity Margin and Single Ledger
 
 1. No separate funds are needed for MCX and Equity — the same funds cover both segments when the single ledger is active.
-2. If `zbl_mcx_status` = active → single ledger is active; the same funds are available for trading across both Equity and Commodity (MCX) segments.
-3. If `zbl_mcx_status` is not active and client wants to trade in commodities → guide to activate the single ledger; invoke `account_modification_report`.
+2. Invoke `get_all_client_data` and check `segments` to confirm whether the COM segment is enabled for the client.
+3. If `zbl_mcx_status` = active → single ledger is active; the same funds are available for trading across both Equity and Commodity (MCX) segments.
+4. If `zbl_mcx_status` is not active and client wants to trade in commodities → guide to activate the single ledger; invoke `account_modification_report`.
 
 ---
 

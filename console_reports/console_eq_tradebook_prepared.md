@@ -25,9 +25,8 @@ TAGS: orders, reports
 
 ## Protocol
 
-# CONSOLE EQ TRADEBOOK PREPARED PROTOCOL
 
----
+# CONSOLE EQ TRADEBOOK PREPARED PROTOCOL
 
 ## Section A: Reference Data
 
@@ -123,6 +122,19 @@ TAGS: orders, reports
 
 ---
 
+### A9 — Equity Charges Reference
+
+| Charge | Equity Delivery | Equity Intraday |
+|---|---|---|
+| Brokerage | Zero brokerage | 0.03% or ₹20/executed order (whichever is lower) |
+| STT/CTT | 0.1% on buy & sell | 0.025% on sell side |
+| Transaction charges | NSE: 0.00307%; BSE: 0.00375% | NSE: 0.00307%; BSE: 0.00375% |
+| GST | 18% on brokerage + SEBI charges + transaction charges | 18% on brokerage + SEBI charges + transaction charges |
+| SEBI charges | ₹10 / crore | ₹10 / crore |
+| Stamp charges | 0.015% or ₹1500 / crore on buy side | 0.003% or ₹300 / crore on buy side |
+
+---
+
 ## Section B: Decision Flow
 
 ### Routing
@@ -200,7 +212,7 @@ Route by scenario
 
 1. **Charged more brokerage for a stock / P&L charges high for one stock:** per A5, the filtered P&L report shows period-wide charges, not per-scrip.
 2. **MTF trade brokerage:** confirm the order's product = MTF via `kite_order_history` (A1), then brokerage = lower of ₹20 or 0.3% of order value, per executed order (A8).
-3. Other charges queries → `ledger_report_protocol`.
+3. For standard equity charge queries → share applicable charges from A9 per trade type (delivery or intraday per A3). For other charges → `ledger_report_protocol`.
 4. Genuine discrepancy after this → escalate.
 
 ---
@@ -208,7 +220,7 @@ Route by scenario
 ### Rule 7 — Duplicate Trade Entries
 
 1. Same `order_id` with identical trade details appearing more than once → known system issue on specific dates.
-2. escalate.
+2. → escalate.
 
 ---
 
@@ -227,7 +239,7 @@ Route by scenario
 
 ### Rule 10 — Closed Account Trade Data
 
-- escalate.
+- → escalate.
 
 ---
 

@@ -27,9 +27,8 @@ TAGS: orders
 
 ## Protocol
 
-# KITE GTT PROTOCOL
 
----
+# KITE GTT PROTOCOL
 
 ## Section A: Reference Data
 
@@ -175,7 +174,10 @@ If no rule matches, escalate.
 ### Rule 3 — Status: Triggered
 
 1. Check `order_result_status`:
-   a. failed → match `order_result_rejection_reason` against A5 (buy) or A6 (sell); share the explanation and resolution from the matching row. Invoke `kite_margins` or `kite_holdings` and answer accordingly.
+   a. failed → match `order_result_rejection_reason` against A5 (buy) or A6 (sell); share the explanation and resolution from the matching row. Additionally:
+      - Insufficient margin: invoke `kite_margins` and answer accordingly.
+      - TPIN not authorised: invoke `get_all_client_data` and check `dp / demat status` to confirm whether DDPI is enabled. Explain per A6 and share A8 links as applicable.
+      - Insufficient holdings: invoke `kite_holdings` and answer accordingly.
    b. success → use `order_result_id` → invoke `kite_order_history` → match against `order_id`. If `order_result_id` unavailable, use GTT `id` → match against `gtt` field in `kite_order_history`. Check `order_status` and share details accordingly.
 2. If triggered GTT not visible in `kite_order_history` → reference DAY-validity behaviour per A1; direct client to email for trigger and order details.
 

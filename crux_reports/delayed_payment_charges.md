@@ -20,9 +20,8 @@ TAGS: charges, margins
 
 ## Protocol
 
-# DELAYED PAYMENT CHARGES PROTOCOL
 
----
+# DELAYED PAYMENT CHARGES PROTOCOL
 
 ## Section A: Reference Data
 

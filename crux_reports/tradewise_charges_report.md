@@ -19,9 +19,8 @@ TAGS: charges, reports
 
 ## Protocol
 
-# TRADEWISE CHARGES PROTOCOL
 
----
+# TRADEWISE CHARGES PROTOCOL
 
 ## Section A: Reference Data
 
@@ -94,6 +93,8 @@ TAGS: charges, reports
 | `exchange` | Exchange and segment identifier — used for charge rate lookup per A3 |
 | `igst` | Inter-state GST — typically null; only applicable for inter-state transactions |
 
+---
+
 ## Section B: Decision Flow
 
 ### Routing
@@ -109,12 +110,13 @@ Query relates to tradewise charges →
 ├─ Client says charges differ from Zerodha calculator         → Rule 6
 ├─ Client reports contract note vs tradewise mismatch         → Rule 7
 ├─ Auction trade charges                                      → Rule 8
-└─ Data mismatch / no root cause found                        → Rule 9
+└─ Data mismatch / no root cause found after checking all
+   applicable rules                                           → escalate
 ```
 
 ### Fallback
 
-If no rule matches, Escalate.
+If the query does not match any route above → escalate.
 
 ---
 
@@ -129,7 +131,7 @@ If no rule matches, Escalate.
 
 ### Rule 2 — Brokerage Verification
 
-1. From `get_all_client_data`, confirm account type per A2.
+1. Invoke `get_all_client_data` and confirm account type per A2.
 2. Verify delivery brokerage against the applicable rate per A3 for the client's account type:
    - If Individual account + delivery trade + brokerage ≠ ₹0 → flag discrepancy, escalate.
    - If Non-Individual or NRI account + delivery trade + brokerage = null/0 → brokerage may have been incorrectly waived, escalate.
@@ -179,20 +181,4 @@ If no rule matches, Escalate.
 ### Rule 8 — Auction Trade Charges
 
 1. If `trade_process_type` = "auction" OR client asks about auction charges: auction trades have a different charge structure arising when a trade goes to exchange auction (for example, due to short delivery) and may include additional penalties beyond standard trade charges.
-2. Escalate.
-
----
-
-### Rule 9 — Escalation
-
-Escalate
-
-- Brokerage exceeds the applicable cap per order (per A3 and A2).
-- Individual account is charged delivery brokerage that is not ₹0.
-- Non-Individual or NRI delivery trade shows null/0 brokerage (possible incorrect waiver).
-- Exchange transaction charge rate significantly differs from the published rate for that segment (per A3).
-- Contract note charges differ from the tradewise charges sum for the same date/exchange/segment and no ledger adjustment entry is found.
-- Auction trade requiring detailed charge calculation — manual handling required.
-- Data mismatch with no root cause found after checking all applicable rules.
-
-Include all fields per A5 when escalating.
+2. Auction charge calculations require manual handling → escalate.

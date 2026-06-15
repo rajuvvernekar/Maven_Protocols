@@ -21,9 +21,8 @@ TAGS: reports, holdings
 
 ## Protocol
 
-# CONSOLE EQ P&L PROTOCOL
 
----
+# CONSOLE EQ P&L PROTOCOL
 
 ## Section A: Reference Data
 

@@ -19,9 +19,8 @@ TAGS: reports, holdings
 
 ## Protocol
 
-# CONSOLE FNO PNL PROTOCOL
 
----
+# CONSOLE FNO PNL PROTOCOL
 
 ## Section A: Reference Data
 
@@ -139,7 +138,7 @@ If no root cause is found → escalate.
 
 ### Rule 5 — Expired Contract Not in P&L
 
-1. Verify:
+1. Invoke `get_all_client_data` and check `segments` to confirm the client's enabled segments, then verify:
    - Correct segment is selected per A3.
    - Date range covers the expiry date.
 2. Both correct and contract still missing → escalate.

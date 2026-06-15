@@ -18,9 +18,8 @@ TAGS: demat
 
 ## Protocol
 
-# STOCK TRANSFER PROTOCOL
 
----
+# STOCK TRANSFER PROTOCOL
 
 ## Section A: Reference Data
 

@@ -21,9 +21,8 @@ TAGS: account
 
 ## Protocol
 
-# PAN STATUS PROTOCOL
 
----
+# PAN STATUS PROTOCOL
 
 ## Section A: Reference Data
 
@@ -33,7 +32,7 @@ TAGS: account
 
 - Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
 
-- **pan_status inputs:** `client_name`, `pan`, `dob` — must be sourced from `get_all_client_data`. The client's self-reported name must not be used as input; the client may reference an updated name not yet reflected in Zerodha's system.
+- **pan_status inputs:**: client_name, pan, dob — must be sourced from get_all_client_data via an explicit call with fields=[client_name, pan, dob]; these are not returned by the mandatory fetch.
 
 ---
 
@@ -98,11 +97,12 @@ TAGS: account
 
 | Topic | URL / Reference |
 |---|---|
-| Name change / Re-KYC process (online + offline) | https://support.zerodha.com/category/your-zerodha-account/your-profile/general-profile-questions/articles/why-is-the-name-on-my-zerodha-account-different-than-on-the-documents-i-ve-submitted |
+| Name change / Re-KYC process (online + offline) | https://support.zerodha.com/category/your-zerodha-account/your-profile/general-profile-questions/articles/why-is-the-name-on-my-zerodha-account-different-than-on-the-documents-i-ve-submitted#:~:text=Zerodha%20updates%20the%20name%20on,raising%20a%20request%20with%20Zerodha |
 | Update name / details on PAN at ITD (incl. DOB) | https://tradingqna.com/t/how-do-i-update-and-correct-my-name-and-other-details-on-pan-card/146151 |
 | ITD portal (verify name/DOB) | https://www.incometax.gov.in/iec/foportal/ |
 | Aadhaar–PAN linking | https://support.zerodha.com/category/account-opening/resident-individual/ri-online/articles/i-have-not-linked-my-pan-with-my-aadhaar |
-| Update DOB at Zerodha | https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/update-dob-gender-pep-marital-status-occupation |
+| Update DOB at Zerodha | https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/update-dob-gender-pep-marital-status-occupation#:~:t
+  ext=You%20can%20update%20your%20DOB,by%20completing%20the%20KYC%20process |
 
 **Courier address:** Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
 
@@ -144,7 +144,7 @@ If no rule matches, check `get_all_client_data` for other account remarks or blo
 ### Rule 1 — PAN Invalid
 
 1. `pan_status` ≠ "E" (per A3).
-2. escalate.
+2. Escalate.
 
 ---
 
@@ -167,8 +167,7 @@ If no rule matches, check `get_all_client_data` for other account remarks or blo
 ### Rule 3 — Name and DOB Both Match
 
 1. `name_status` = "Y" AND `dob_status` = "Y" AND `pan_status` = "E" (per A3, A4) — A8-S3.
-2. If the client is requesting a name/DOB update but status is already "Y": Zerodha already matches current ITD. Either the change is already reflected (compare `client_name`/`dob` from `get_all_client_data` with what the client expects — if it matches, no action needed) or the ITD change has not yet propagated. Do not initiate the A6 name-change process while status = "Y".
-   - If the client wants a name change and ITD has not yet been updated: share [A7 — Update name / details on PAN at ITD] and explain they must update ITD first. Once ITD propagates the change, `name_status` will flip to "N" — they should contact support again at that point, and Rule 2 will apply.
+2. If the client is requesting a name/DOB update but status is already "Y": Zerodha already matches current ITD. Either the change is already reflected (compare `client_name`/`dob` from `get_all_client_data` with what the client expects — if it matches, no action needed) or the ITD change has not yet propagated (status flips to "N" once ITD updates → ask the client to retry then, which routes to Rule 2). Do not initiate the A6 name-change process while status = "Y".
 3. If client still faces issues after all-clear (e.g., segment rejection, account block):
    - Check `get_all_client_data` for other remarks or blocks on the account.
    - If no root cause found, escalate.

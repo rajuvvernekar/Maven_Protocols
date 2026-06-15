@@ -16,9 +16,8 @@ TAGS: charges, reports
 
 ## Protocol
 
-# CONTRACT NOTE CHARGES PROTOCOL
 
----
+# CONTRACT NOTE CHARGES PROTOCOL
 
 ## Section A: Reference Data
 

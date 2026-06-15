@@ -19,9 +19,8 @@ TAGS: margins
 
 ## Protocol
 
-# CONSOLE INSTANT PLEDGE PROTOCOL
 
----
+# CONSOLE INSTANT PLEDGE PROTOCOL
 
 ## Section A: Reference Data
 
@@ -48,7 +47,6 @@ TAGS: margins
 | `pledge_date` | Date the pledge action was processed |
 | `tradingsymbol` | Trading symbol of the pledged instrument |
 | `isin` | ISIN code of the pledged instrument |
-| `status` | Current status of the pledge request |
 | `pledge_type` | Type of pledge action (e.g., pledge, unpledge) |
 | `quantity` | Current quantity pledged |
 | `previous_quantity` | Quantity pledged before the latest change |
@@ -62,7 +60,7 @@ TAGS: margins
 | `uid` | Internal unique identifier for the pledge record |
 | `psnstatus` | Internal pledge sequence status |
 | `client_id` | Internal client identifier |
-
+| `status` | Current status of the pledge request |
 ---
 
 ### A3 — Pledge Types

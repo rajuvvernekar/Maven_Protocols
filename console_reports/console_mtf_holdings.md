@@ -23,9 +23,8 @@ TAGS: margins, holdings
 
 ## Protocol
 
-# CONSOLE MTF HOLDINGS PROTOCOL
 
----
+# CONSOLE MTF HOLDINGS PROTOCOL
 
 ## Section A: Reference Data
 

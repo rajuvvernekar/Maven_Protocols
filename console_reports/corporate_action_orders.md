@@ -19,9 +19,8 @@ TAGS: corporate-actions, orders
 
 ## Protocol
 
-# CORPORATE ACTION ORDERS PROTOCOL
 
----
+# CORPORATE ACTION ORDERS PROTOCOL
 
 ## Section A: Reference Data
 
@@ -144,7 +143,7 @@ If no route matches and no root cause is found → escalate.
 
 ### Rule 2 — Buyback Order (Processed)
 
-1. Apply buyback processed details per A6. Use `allotment_price` if populated; otherwise use `price` per A2.
+1. Invoke `get_all_client_data` and check `bank account` to confirm the registered primary bank account where buyback proceeds will be credited. Apply buyback processed details per A6. Use `allotment_price` if populated; otherwise use `price` per A2.
 2. If client says shares still showing in holdings despite status = Processed → invoke `console_eq_holdings`. If shares still present → escalate.
 
 ---
@@ -159,7 +158,7 @@ Apply A1:
 
 ### Rule 4 — Delisting / Takeover Order (Processed)
 
-1. Apply delisting/takeover processed details per A6. Use `allotment_price` if populated; otherwise use `price` per A2.
+1. Invoke `get_all_client_data` and check `bank account` to confirm the registered bank account where proceeds will be credited. Apply delisting/takeover processed details per A6. Use `allotment_price` if populated; otherwise use `price` per A2.
 
 ---
 

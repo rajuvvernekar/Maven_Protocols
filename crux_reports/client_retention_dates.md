@@ -18,9 +18,8 @@ TAGS: funds
 
 ## Protocol
 
-# CLIENT RETENTION DATES PROTOCOL
 
----
+# CLIENT RETENTION DATES PROTOCOL
 
 ## Section A: Reference Data
 
@@ -128,13 +127,13 @@ Not all funds are released during QS. Funds are retained for open F&O or commodi
 
 ### Rule 4 — QS Payout Not Received in Bank
 
-`funds_released` > 0 but the client has not received the payout in their bank account. Credit timing is 1–2 working days per A1. If more than 3 working days have passed and the amount has not been credited → escalate.
+`funds_released` > 0 but the client has not received the payout in their bank account. Invoke `get_all_client_data` and check `bank account` to confirm the registered bank account details. Credit timing is 1–2 working days per A1. If more than 3 working days have passed and the amount has not been credited → escalate.
 
 ---
 
 ### Rule 5 — Multiple Segment Settlements
 
-Client has positions across equity/F&O and commodity segments, resulting in entries under both Zerodha and Zerodha Commodities. Present the settlement breakdown for each segment separately. Total QS payout is the sum of `funds_released` across both segments.
+Invoke `get_all_client_data` and check `segments` to confirm which segments the client is enabled for. Client has positions across equity/F&O and commodity segments, resulting in entries under both Zerodha and Zerodha Commodities. Present the settlement breakdown for each segment separately. Total QS payout is the sum of `funds_released` across both segments.
 
 ---
 
@@ -146,4 +145,4 @@ Apply A2.
 
 ### Rule 7 — Escalation
 
-Any trigger in A4 is met, or no root cause identified after checking all relevant rules. Escalate. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.
+Any trigger in A4 is met, or no root cause identified after checking all relevant rules. Escalate. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue. client retension statement
