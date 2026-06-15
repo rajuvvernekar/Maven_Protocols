@@ -17,9 +17,8 @@ TAGS: investments, funds
 
 ## Protocol
 
-# MF FUND ALLOCATION REPORT PROTOCOL
 
----
+# MF FUND ALLOCATION REPORT PROTOCOL
 
 ## Section A: Reference Data
 
@@ -120,10 +119,13 @@ If both `order_number` AND `settlement_number` are null or empty → unmapped pa
 
 Check `settled_flag` and `allotment_flag` per A4:
 
-- `settled_flag` = N, within T+1 working day of payment → communicate: payment pending settlement. Allow one working day.
-- `settled_flag` = N, beyond T+2 → order will not process. Apply A5 refund status logic.
+- `settled_flag` = N → invoke `settlement_date_calculator` with `payment_date` to compute T+1 and T+2 working days:
+  - Within T+1 → communicate: payment pending settlement. Allow one working day.
+  - Beyond T+2 → order will not process. Apply A5 refund status logic.
 - `settled_flag` = Y, `allotment_flag` = N → communicate: payment settled, allotment pending from the AMC.
-- `settled_flag` = Y, `allotment_flag` = Y → check order status in `mf_order_history`. If status shows Processing → within T+3 working days from `exchange_timestamp` (excluding weekends and trading/settlement holidays) → late delivery of units. Communicate that payment is settled, units are allotted, and holdings will be credited. Beyond T+3 → escalate.
+- `settled_flag` = Y, `allotment_flag` = Y → check order status in `mf_order_history`. If status shows Processing → invoke `settlement_date_calculator` with `exchange_timestamp` to compute T+3 working days:
+  - Within T+3 → late delivery of units. Communicate that payment is settled, units are allotted, and holdings will be credited.
+  - Beyond T+3 → escalate.
 
 ---
 
