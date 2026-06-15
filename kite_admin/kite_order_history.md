@@ -30,6 +30,7 @@ TAGS: orders
 
 ## Protocol
 
+
 # KITE ORDER HISTORY PROTOCOL
 
 ## Section A: Reference Data
@@ -213,6 +214,13 @@ TAGS: orders
 | Market intelligence bulletin | zerodha.com/marketintel/bulletin |
 | SEBI retail algo compliance | https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest |
 
+### A14 — SL Order Mechanics
+
+| order_type | Fields | Behaviour |
+|---|---|---|
+| SL-M | `trigger_price` present, `price` absent | Stop-loss market: when trigger price is reached, a market order is placed immediately. |
+| SL | `trigger_price` and `price` both present | Stop-loss limit: when trigger price is reached, a limit order at `price` is placed. The limit order stays open until filled or session end — if unfilled, it is auto-cancelled by the exchange per **A7**. |
+
 ## Section B: Decision Flow
 
 ### Routing
@@ -246,7 +254,7 @@ If no root cause found after completing all diagnostic steps → escalate.
 
 ### Rule 1 — Order Status Check
 
-1. Locate by instrument + date.
+1. Locate by instrument + date. If the client references an F&O contract by name, decode the tradingsymbol: monthly contracts spell out the expiry month (BANKNIFTY26JUN52300PE = June 2026 expiry); weekly contracts encode expiry as YYMMDD (NIFTY2660923250CE = year 26, month 06, date 09 → June 9, 2026). NSE expires last Tuesday of the month; BSE last Thursday; holiday → one trading day earlier.
 2. Share: `instrument`, `type`, `order_type`, `order_status`, `total_quantity`, `filled_quantity`, `average_price` (if COMPLETE), `exchange_timestamp`.
 3. Check `placed_by` internally → ADMINSQF/rms → Rule 4.
 4. Check `gtt` internally → GTT ID present → invoke `kite_gtt` or `kite_gtt_archived` scoped to the trigger date.
@@ -262,11 +270,11 @@ If no root cause found after completing all diagnostic steps → escalate.
    c. Client wanted breakout → use SL or GTT instead. Invoke `kite_gtt` if interested.
    d. SL trigger dispute → charts show snapshots; actual market price determines execution.
 3. Partial fill → check `filled_quantity` < `total_quantity`; share `cancelled_quantity`.
-4. Where are bought shares? → invoke `kite_holdings` (settled) or `kite_positions` (same day / F&O).
+4. Where are bought shares? → invoke `get_all_client_data` and check `dp / demat status`, then invoke `kite_holdings` (settled) or `kite_positions` (same day / F&O).
 
 ### Rule 3 — Order Rejected
 
-1. Read `rejection_reason`, match against **A9**.
+1. Read `rejection_reason`, match against **A9**. Invoke `get_all_client_data` and check `segments` to confirm the client is enabled for the segment in which the rejected order was placed. For exchange restricted rejections, also check `account blocks`, `account type/category`, and `pan`.
 2. For margin rejections → invoke `kite_margins`.
 3. For ban period → if client asks about current position → invoke `kite_positions`.
 4. If `app_id` is numerical and rejection relates to market protection, rate limit, or IOC on MCX → route to Rule 16.
@@ -293,6 +301,9 @@ If no root cause found after completing all diagnostic steps → escalate.
 2. LPP/price range → exchange cancelled order — price was outside the allowed range. Retry closer to market price.
 3. Partial fill + cancelled remainder → partially filled, share `filled_quantity` of `total_quantity` at `average_price`. Remaining `cancelled_quantity` was cancelled.
 4. IOC → IOC orders auto-cancel any unfilled portion immediately.
+5. SL order — trigger activated but limit not filled:
+   - Applies when: `order_type` = SL, `trigger_price` and `price` both present.
+   - Check `order_status` — if CANCELLED, check `exchange_timestamp`. If `exchange_timestamp` is after market hours per **A7**: the stop-loss trigger was reached and a limit order at `price` was placed; the market did not return to the limit price before session close; the limit order was auto-cancelled by the exchange at session end per **A7**. The underlying position remains open.
 
 ### Rule 7 — Unauthorized ("I Didn't Place This")
 
