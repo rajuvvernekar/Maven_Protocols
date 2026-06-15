@@ -19,9 +19,8 @@ TAGS: investments, funds
 
 ## Protocol
 
-# MANDATE REPORT PROTOCOL
 
----
+# MANDATE REPORT PROTOCOL
 
 ## Section A: Reference Data
 
@@ -96,7 +95,7 @@ Identify type using the `type` and `provider` fields:
 
 -Before deleting a Coin mandate, all active or paused SIPs linked to it must be unlinked. Deleting a mandate with linked SIPs will cause those SIPs to fail in future cycles.
 
--To unlink and delete the mandate: Coin → Account → Mandates → Select the Mandate → Unlink the SIPs linked (Click on “Unlink” mentioned below the fund name) → Delete the mandate once the SIPs are unlinked by choosing the “Delete Mandate”.
+-To unlink and delete the mandate: Coin → Account → Mandates → Select the Mandate → Unlink the SIPs linked (Click on "Unlink" mentioned below the fund name) → Delete the mandate once the SIPs are unlinked by choosing the "Delete Mandate".
 
 -If no SIPs are linked: delete directly from Coin → Mandates.
 
@@ -161,7 +160,7 @@ Apply the status meaning per A3. Communicate the current state to the client.
 
 For pending status, branch by mandate type per A4:
 
-- **eNACH** (`type` = `enach`): calculate working days since `created_at`. If 5 working days or fewer → communicate that eNACH activation takes up to 3 working days. If more than 5 working days → communicate that the mandate has been pending beyond the normal window; banks sometimes delay confirmation. Escalate.
+- **eNACH** (`type` = `enach`): invoke `settlement_date_calculator` with `created_at` to calculate working days elapsed. If 5 working days or fewer → communicate that eNACH activation takes up to 3 working days. If more than 5 working days → communicate that the mandate has been pending beyond the normal window; banks sometimes delay confirmation. Escalate.
 - **UPI autopay** (`type` = `autopay`): check time elapsed since `created_at`. If within 2 minutes → mandate is still being activated; communicate to wait. If more than 2 minutes → the UPI PIN confirmation step was likely not completed. Communicate that the mandate will be auto-cancelled by 11 PM the same day, and advise creating a new mandate with the PIN confirmation step completed.
 
 -For failed status, communicate that the mandate registration could not be completed. Suggest creating a new mandate; UPI autopay activates within 2 minutes if the client wants faster activation.
