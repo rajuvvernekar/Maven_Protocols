@@ -42,6 +42,7 @@ TAGS: account, nri, non-individual
 ## Protocol
 
 
+
 # ACCOUNT MODIFICATION REPORT PROTOCOL
 
 ## Section A: Reference Data
@@ -171,6 +172,7 @@ Context extracted from `get_all_client_data`:
 | PAN/Name/DOB | `pan`, `client_name`, `dob` |
 | Demat status | `primary_dp_status` |
 | Third-party demat | `third_party_demat` |
+| Demat activation date | `primary_dp_activation_date` |
 
 ---
 
@@ -458,6 +460,7 @@ Route by scenario
    ├─ Nominee query (modification, rejection, CAS nominee mismatch) → Rule 9
    ├─ Pledging / collateral margin query → Rule 10
    ├─ Segment deactivation (disable / deactivate F&O, Currency, or Commodity) → Rule 11
+   ├─ Order rejected with "Exchange segment is not enabled" → Rule 22
    ├─ Client reports app/web error message → Rule 12
    ├─ Unpaid dividend / RTA CML query → Rule 13
    ├─ Email or mobile modification status / request query → Rule 14
@@ -768,3 +771,10 @@ For direct status queries with no modification intent:
 5. **Nominee details:** Check `nominee_1_first_name`, `nominee_2_first_name`, `nominee_3_first_name` per **A5**. Communicate nominee names and share percentages. If client wants to modify → Rule 9.
 
 ---
+
+### Rule 22 — "Exchange Segment Not Enabled" Order Rejection
+
+1. Invoke `get_all_client_data`. Identify the segment(s) the client attempted to trade. Check `*_updated_on` for those segments (per **A4** field pairs) and `primary_dp_activation_date`.
+2. Invoke `settlement_date_calculator` with each timestamp to determine working hours elapsed, excluding weekends and trading holidays.
+3. If `*_updated_on` or `primary_dp_activation_date` is less than 24 hours elapsed → order placement is enabled only after 24 hours from segment activation or account opening; ask the client to place orders from the next trading day.
+4. Both are 24 or more hours elapsed → escalate.
