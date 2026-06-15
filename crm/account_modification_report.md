@@ -33,15 +33,9 @@ When clients:
 
 TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "change bank", "modify bank", "DDPI", "MTF", "margin", "address update", "Aadhar", "status of request", "DOB", "date of birth", "gender", "marital status", "occupation", "PEP", "politically exposed", "nominee", "add nominee", "change nominee", "update nominee", "remove nominee", "nominee details", "nominee percentage", "nominee address", "mobile number", "change mobile", "update mobile", "unable to change mobile", "already registered mobile", "email", "change email", "update email", "email address", "email-id", "income proof", "income details", "update income", "secondary demat", "secondary account", "open secondary demat", "secondary account opening", "secondary account rejected", "secondary account status", "secondary account on hold", "contact details", "CERSAI", "close account", "close demat", "account closure", "close trading account", "deactivate account", "submit account closure", "cancel closure request", "closure request submitted by mistake", "open positions", "account closure status", "closure process", "invalid IFSC", "IFSC code error", "IFSC not working", "wrong IFSC", "KYC", "ReKYC", "dormant", "no activity", "inactivity", "segment activated but can't trade", "activated today", "just activated MCX", "MCX not working after activation", "currency not working", "segment sync", "SLB", "SLBM", "stock lending", "securities lending", "EGR", "electronic gold receipt", "is my account active", "check account status", "is F&O active", "is segment active", "is SLB active", "DDPI status", "POA status", "who is my nominee", "nominee name", "segment status", "is commodity enabled", "is currency enabled", "joint account", "add joint holder", "joint demat",  "MTF not working", "cannot place MTF orders", "MTF order failed", "DDPI pending", "DDPI not activating"
 
-# ACCOUNT MODIFICATION REPORT PROTOCOL
-
----
-
 TAGS: account, nri, non-individual
 
 ## Protocol
-
-
 
 # ACCOUNT MODIFICATION REPORT PROTOCOL
 
