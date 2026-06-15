@@ -28,6 +28,7 @@ TAGS: orders, margins
 
 ## Protocol
 
+
 # KITE ORDERS PROTOCOL
 
 ## Section A: Reference Data
@@ -39,6 +40,7 @@ TAGS: orders, margins
 - Orders follow price-time priority: first come, first served at same price.
 - Zerodha pre-validates orders — some rejections won't appear in the order book (shown in status notification only).
 - When the client references a specific instrument or order, match by `instrument` field first. If multiple orders exist for the same instrument, use `order_status` and `time` to identify the order the client is referring to.
+- `count: 0` in the response → no orders were placed for the queried period. Confirm with the client that no order was placed.
 
 ### A2 — Field Usage Rules
 
@@ -230,6 +232,7 @@ TAGS: orders, margins
 | NSE trade verification | https://www.nseindia.com/static/invest/first-time-investor-trade-verification |
 | SL execution explained | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger |
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
+| Market Protection | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/market-price-protection-on-the-order-window |
 
 ### A18 — Negative Opening Balance with Negative Option Premium
 
@@ -294,14 +297,15 @@ If no root cause found after completing all diagnostic steps → escalate.
    a. Check if client has multiple pending sell orders for same instrument. Excess orders treated as fresh short positions requiring full margin. Direct client to cancel excess pending sells and place a single sell matching position quantity.
    b. Invoke `kite_margins`. Check `opening_balance` first. Per **A18**, negative opening balance blocks all fresh positions — direct client to add funds. If `option_premium` is also negative, include option premium context per **A18**.
    c. If `opening_balance` is not negative, identify specific shortfall from `available_margin`, `used_margin`, `available_cash`.
-3. For market order blocks → match against **A10**, respond with reason + resolution.
-4. For MIS blocks → match against **A11**, respond with reason + resolution.
+3. For market order blocks → match against **A10** for the reason. Advise the client to either use a limit order or enable Market Protection on the order window (link per **A16**) to place the order. For index options via AMO, Market Protection is not available — limit order is the only option.
+4. For MIS blocks → invoke `get_all_client_data` and check `segments` to confirm the client is enabled for the relevant segment, then match against **A11**, respond with reason + resolution.
 5. For quantity/value limits → refer to **A7**.
-6. For trigger price errors, ban period, OI restrictions, BSE SL-M, exchange restricted, MTF conflicts → use matching row in **A12**.
+6. For trigger price errors, ban period, OI restrictions, BSE SL-M, MTF conflicts → use matching row in **A12**.
+   For exchange restricted → invoke `get_all_client_data` and check `account blocks` and `account type/category`, then use matching row in **A12**.
 7. For CO on ETF or other restricted instruments → use matching row in **A12**.
 8. For invalid quantity / odd lot from lot size revision → use matching row in **A12**.
 9. For any rejection not matching **A12** → share `rejection_reason` text verbatim and suggest retry or contact support.
-10. If `rejection_reason` = "KYC verification required" → invoke `pan_status` to check for name or DOB mismatch.
+10. If `rejection_reason` = "KYC verification required" → invoke `get_all_client_data` and check `pan`, then invoke `pan_status` to check for name or DOB mismatch.
 
 ### Rule 5 — AMO (After Market Orders)
 
