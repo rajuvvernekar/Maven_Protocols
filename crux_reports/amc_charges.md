@@ -163,7 +163,7 @@ If the query does not match any route above → escalate.
 
 6. If the client asks specifically about nil-AMC eligibility: the nil-AMC threshold is ₹4,00,000 (Slab 1 per **A2**), applicable only to BSDA accounts; BSDA status is required first.
 
-7. If the account has a debit balance: include a brief breakdown of all debit entries per the Ledger Report protocol, explaining each debit entry separately (settlement charges, DP charges, etc.) before summarising the AMC portion.
+7. If the account has a debit balance: include a brief breakdown of all debit entries by invoking `ledger_report`, explaining each debit entry separately (settlement charges, DP charges, etc.) before summarising the AMC portion.
 
 8. If the client cites a specific demat account number: invoke `get_all_client_data` and check `primary_dp_id` and `secondary_dp_id`. If the cited number does not match either → communicate that Zerodha can only address charges for the Zerodha-linked demat account; direct the client to the respective broker for charges on other accounts.
 
@@ -199,7 +199,7 @@ If the query does not match any route above → escalate.
 
 3. If a recent payin is found → communicate: payin amount and date observed; confirm it should cover the debit balance from the AMC charge.
 
-4. For DPC details, refer to the Delayed Payment Charges protocol.
+4. For DPC details, invoke `delayed_payment_charges`.
 
 ---
 

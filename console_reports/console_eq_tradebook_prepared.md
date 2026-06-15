@@ -170,7 +170,7 @@ Route by scenario
 1. Trade found in the tradebook → share `trade_date`, `trade_type`, `quantity`, `price`, `exchange`, `order_id`, `trade_id` per A2.
 2. **Shares bought but not in holdings / sold but no funds / an offsetting trade the client didn't place** → invoke `kite_order_history` and check `product` (not stored in tradebook, per A1):
    - **MIS / CO / BO (intraday):** position auto-squared-off at the intraday cutoff (equity 3:20 PM). An MIS buy never settles to demat (won't appear in holdings); the square-off is the offsetting trade the client didn't place → apply Rule 13.
-   - **CNC / NRML / MTF (delivery):** not intraday. "Not in holdings" → route to holdings protocol (settlement / T1). "Sold but no funds" → invoke `ledger_report` and route to ledger protocol (T+1 settlement).
+   - **CNC / NRML / MTF (delivery):** not intraday. "Not in holdings" → invoke `console_eq_holdings` (settlement / T1). "Sold but no funds" → invoke `ledger_report` (T+1 settlement).
 3. Trade not in the tradebook → invoke `console_eq_external_trades` — may be an off-platform entry (IPO, transfer, buyback, gift, ESOP).
 4. Still not found after all sources → escalate.
 

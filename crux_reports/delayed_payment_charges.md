@@ -103,8 +103,8 @@ TAGS: charges, margins
 
 | Topic | Refer to |
 |---|---|
-| DPC debit entry on ledger (actual posting) | Ledger Report protocol |
-| Collateral holdings verification (if client disputes collateral in DPC) | Pledge Request Report protocol |
+| DPC debit entry on ledger (actual posting) | invoke `ledger_report` |
+| Collateral holdings verification (if client disputes collateral in DPC) | invoke `pledge_request_report` |
 
 ## Section B: Decision Flow
 
@@ -178,7 +178,7 @@ If no root cause is identified after checking all relevant rules → escalate.
 ### Rule 8 — Monthly DPC Debit on Ledger
 
 1. Explain monthly debit timing per A1.
-2. For the actual ledger entry, use the Ledger Report protocol per A7.
+2. For the actual ledger entry, invoke `ledger_report` per A7.
 
 ### Rule 9 — Collateral Amount Dispute
 
