@@ -383,7 +383,7 @@ If the client's balance remains negative and the cause cannot be fully explained
 ### Rule 6: Stock Sale — Funds Not Available
 
 **Step 1:** Invoke `kite_order_history` for the stated sale date and verify sell trades actually exist.
-   - No sell trades found → check `ledger_report` for a DP charge entry ("DP Charges for Sale of [STOCK]") for the stock in question to confirm whether a sale actually occurred; explain to client what the ledger shows; clarify that share sale proceeds do not auto-credit the bank account — a withdrawal request must be placed manually after T+1 settlement.
+   - No sell trades found → invoke `ledger_report` for a DP charge entry ("DP Charges for Sale of [STOCK]") for the stock in question to confirm whether a sale actually occurred; explain to client what the ledger shows; clarify that share sale proceeds do not auto-credit the bank account — a withdrawal request must be placed manually after T+1 settlement.
 
 **Step 2:** Invoke `ledger_report` for the stated sale date ±3 days. Check if a withdrawal request has already been placed.
 

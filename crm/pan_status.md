@@ -135,7 +135,7 @@ Route by scenario
 
 ### Fallback
 
-If no rule matches, check `get_all_client_data` for other account remarks or blocks. If `account_blocks` is non-empty, escalate.
+If no rule matches, invoke `get_all_client_data` for other account remarks or blocks. If `account_blocks` is non-empty, escalate.
 
 ---
 
@@ -169,7 +169,7 @@ If no rule matches, check `get_all_client_data` for other account remarks or blo
 1. `name_status` = "Y" AND `dob_status` = "Y" AND `pan_status` = "E" (per A3, A4) — A8-S3.
 2. If the client is requesting a name/DOB update but status is already "Y": Zerodha already matches current ITD. Either the change is already reflected (compare `client_name`/`dob` from `get_all_client_data` with what the client expects — if it matches, no action needed) or the ITD change has not yet propagated (status flips to "N" once ITD updates → ask the client to retry then, which routes to Rule 2). Do not initiate the A6 name-change process while status = "Y".
 3. If client still faces issues after all-clear (e.g., segment rejection, account block):
-   - Check `get_all_client_data` for other remarks or blocks on the account.
+   - Invoke `get_all_client_data` for other remarks or blocks on the account.
    - If no root cause found, escalate.
 
 ---

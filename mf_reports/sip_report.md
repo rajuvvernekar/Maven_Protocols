@@ -78,7 +78,7 @@ Authoritative source for SIP-mandate linkage is `fund_source` on the SIP record.
 
 ### A5 — Mandate Debit Status Values
 
-When checking `mandate_debit_report` for a SIP's debit attempt:
+When invoking `mandate_debit_report` for a SIP's debit attempt:
 
 | Status | Meaning |
 |---|---|
@@ -91,7 +91,7 @@ When checking `mandate_debit_report` for a SIP's debit attempt:
 
 ### A6 — Mandate Status Check
 
-When checking `mandate_report`, only `status` = `success` indicates a usable, active mandate. Any other status means the mandate is not currently active. An active mandate does not mean it is linked to a specific SIP — linkage is confirmed only via `fund_source` on the SIP record per A4.
+When invoking `mandate_report`, only `status` = `success` indicates a usable, active mandate. Any other status means the mandate is not currently active. An active mandate does not mean it is linked to a specific SIP — linkage is confirmed only via `fund_source` on the SIP record per A4.
 
 ---
 

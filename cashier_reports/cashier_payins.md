@@ -41,7 +41,7 @@ TAGS: funds
 
 - **Unregistered bank transfer reversal:** 2–3 days.
 - **Batch window:** Transfers between 12 AM–7:30 AM reflect in Kite only after 7:30 AM (daily, including weekends).
-- **Cashier Payin report visibility:** Netbanking (gateway) is visible for 7 days only — use `ledger_report` for older transactions. UPI and NEFT/IMPS are available beyond 7 days.
+- **Cashier Payin report visibility:** Netbanking (gateway) is visible for 7 days only — invoke `ledger_report` for older transactions. UPI and NEFT/IMPS are available beyond 7 days.
 
 ---
 

@@ -202,7 +202,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. P symbol / `collateral_quantity` → client has pledged shares as collateral. P symbol shows pledged quantity. Remaining (total minus collateral) is available for trading per **A1**.
 2. Can pledged shares be sold? → yes, can be sold instantly without unpledge request. Selling pledged holdings reduces collateral margin.
-3. Collateral reduced after selling → cross-check `kite_margins` for current `equity_collateral` and `total_collateral`.
+3. Collateral reduced after selling → invoke `kite_margins` for current `equity_collateral` and `total_collateral`.
 4. For pledge/unpledge process or why pledge fails for a stock → invoke `pledge_request_report`.
 5. Can collateral margin be used for CNC purchases? → collateral margin from pledged shares can be used for equity intraday trading, futures, and options (buying and writing). For CNC purchases, available cash or cash-equivalent margin is required — collateral alone is not sufficient.
 
@@ -256,7 +256,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 10 — Short Delivery Investigation
 
 1. **Confirm short delivery occurred:**
-   Use `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery" or "Upper Circuit". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details.
+   Invoke `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery" or "Upper Circuit". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details.
 
 2. **Determine buy-side or sell-side:**
    Invoke `ledger_report` (last 2 weeks) and search for `remarks` "Short delivery margin blocked for sale of till exchange auction settlement".
