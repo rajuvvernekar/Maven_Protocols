@@ -33,6 +33,7 @@ TAGS: holdings, margins
 
 ## Protocol
 
+
 # KITE POSITIONS PROTOCOL
 
 ## Section A: Reference Data
@@ -185,6 +186,8 @@ TAGS: holdings, margins
 | NRI Non-PIS delivery sale | 75% same day; remaining 25% available T+1 |
 | Intraday profits (equity/F&O) | Not usable on T day. Available after T+1 settlement. |
 | Options sold/exited | Usable only for buying options in same segment same day. Available for all trades from T+1. |
+| CNC delivery sell (normal, non-BTST) | Available same day for placing new trades on Zerodha (effective Oct 7, 2024). |
+| CNC delivery sell (BTST — bought previous trading day, sold today) | T+1 for trading and bank withdrawal. |
 
 ---
 
@@ -200,6 +203,7 @@ TAGS: holdings, margins
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 | Options on expiry day | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/options-on-expiry-day |
 | Same-day profits | https://support.zerodha.com/category/trading-and-markets/margins/margin-leverage-and-product-and-order-types/articles/same-day-profits |
+| T1 holdings proceeds | https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds |
 
 ---
 
@@ -237,7 +241,8 @@ Route by scenario
    ├─ F&O ban period — what trades are allowed → Rule 11
    ├─ F&O position not found → Rule 12
    ├─ Client references previous-day F&O trades → Rule 12
-   └─ NRI delivery credit (75/25 split) → Rule 13
+   ├─ NRI delivery credit (75/25 split) → Rule 13
+   └─ Sold holdings (CNC), proceeds or balance not updated → Rule 14
 ```
 
 ### Fallback
@@ -397,3 +402,17 @@ Per **A10**, intraday profits (equity and F&O) are not available on T day — av
 ### Rule 13 — NRI Delivery Credit
 
 Check `client_acc_type`, `pis_bank_1_name`, `pis_bank_2_name`, `pis_bank_3_name` from `get_all_client_data`. If NRI Non-PIS → per **A10**, 75% of delivery sale proceeds available same day; remaining 25% available T+1.
+
+---
+
+### Rule 14 — Stock Sold but Funds Not Credited
+
+**BTST detection:**
+1. Invoke `kite_order_history` for the sell date and the previous trading day (accounting for holidays).
+2. If the stock was bought on the previous trading day and sold today → BTST trade. Funds are available from T+1 only per **A10**. Share T1 holdings proceeds link from **A11**.
+3. For additional confirmation, invoke `console_eq_holdings` for the sell date. Only quantity under `t1` is BTST — remaining quantity is from older settled holdings.
+4. Blocked value for BTST = `filled_quantity` × `average_price` from the sell order.
+
+**Normal CNC sale (non-BTST — settled holdings):**
+- 100% of proceeds are available same day for placing new trades on Zerodha per **A10** (effective Oct 7, 2024).
+- If client asks about specific holdings sold → invoke `kite_holdings`.
