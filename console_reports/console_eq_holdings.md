@@ -24,6 +24,7 @@ TAGS: holdings, demat, corporate-actions
 ## Protocol
 
 
+
 # CONSOLE EQ HOLDINGS PROTOCOL
 
 ## Section A: Reference Data
@@ -290,7 +291,7 @@ Escalate immediately for all triggers below. Include client ID, `tradingsymbol`(
 **2a. Buy average differs from expected**
 1. Explain FIFO basis (A3). Point to View breakdown on Kite / Console.
 2. Sold + bought back same day → intraday exception (A3).
-3. Same-day change in invested value / buy average → check Kite Order History and Kite Positions for today's executed sell trades. If found → partial sell FIFO impact (A3).
+3. Same-day change in invested value / buy average → invoke `kite_order_history` and `kite_positions` for today's executed sell trades. If found → partial sell FIFO impact (A3).
 
 **2b. `buy_average` is null / N/A**
 - `discrepant` > 0:

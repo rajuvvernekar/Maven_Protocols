@@ -28,6 +28,7 @@ TAGS: holdings, demat, corporate-actions
 ## Protocol
 
 
+
 # KITE HOLDINGS PROTOCOL
 
 ## Section A: Reference Data
@@ -106,7 +107,7 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 | Reason | Explanation |
 |---|---|
 | Privacy Mode enabled | Client has Privacy Mode turned on — hides holdings, positions, P&L, and balances on screen. Data is intact; only display is hidden. To disable: tap user ID (top-right on Kite web, or profile icon on the app) → toggle Privacy Mode off. Links per **A9**. |
-| Shares already sold | Client may have sold shares — verify via tradebook before other checks. Share the FIFO buy/sell trail. |
+| Shares already sold | Client may have sold shares — per **Rule 4**. |
 | Short delivery by seller | Investigate per **Rule 10**. Zerodha notifies via SMS/email. |
 | Pending settlement (T1) | Check `t1_t2_holdings` field. |
 | Corporate action in progress | Wait per **A5** timelines. P&L may show a temporary drop until new shares are credited — auto-corrects. |
