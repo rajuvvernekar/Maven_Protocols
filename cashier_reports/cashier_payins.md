@@ -19,6 +19,7 @@ TAGS: funds
 
 ## Protocol
 
+
 # CASHIER PAYINS PROTOCOL
 
 ## Section A: Reference Data
@@ -28,7 +29,7 @@ TAGS: funds
 | Method | Charge | Credit Timeline | Refund Timeline | Limits / Notes |
 |---|---|---|---|---|
 | UPI | ₹0 | Instant | 72 working hours | Max ₹5,00,000/txn (NPCI/gateway limit, not Zerodha) · Max 35 txn/day · Must use "Add Funds" in Kite — direct UPI transfers fail |
-| Netbanking | ₹10.62 (₹9 + 18% GST) | By 2:00 PM on T+1 banking working day (or instant) | By 5:00 PM on T+2 banking working day | Min ₹50 · Up to 25 transfers/day · No amount limit |
+| Netbanking | ₹10.62 (₹9 + 18% GST) | By 1:00 PM on T+1 banking working day (or instant) | By 5:00 PM on T+2 banking working day | Min ₹50 · Up to 25 transfers/day · No amount limit |
 | IMPS | ₹0 | 10 min | — | No Zerodha-imposed limits (banks typically cap ₹2L/txn) |
 | NEFT | ₹0 | 2 hours | — | No Zerodha-imposed limits |
 | RTGS | ₹0 | 2 hours | — | No Zerodha-imposed limits |
@@ -40,7 +41,7 @@ TAGS: funds
 
 - **Unregistered bank transfer reversal:** 2–3 days.
 - **Batch window:** Transfers between 12 AM–7:30 AM reflect in Kite only after 7:30 AM (daily, including weekends).
-- **Cashier Payin report visibility:** Netbanking (gateway) is visible for 7 days only — use `ledger_report` for older transactions. UPI and NEFT/IMPS are available beyond 7 days.
+- **Cashier Payin report visibility:** Netbanking (gateway) is visible for 7 days only — invoke `ledger_report` for older transactions. UPI and NEFT/IMPS are available beyond 7 days.
 
 ---
 
@@ -50,7 +51,7 @@ TAGS: funds
 |---|---|
 | Current account | No gateway (UPI/netbanking). IMPS/NEFT/RTGS only. |
 | Joint account | UPI/gateway only. IMPS/NEFT/RTGS auto-reversed. |
-| IDFC 3-in-1 block enabled | Secondary bank accounts cannot be used for payins. Disable at console.zerodha.com/account/bank. |
+| IDFC 3-in-1 block enabled | Secondary bank accounts cannot be used for payins. Detected via `idfc_3_in_1_status` = "Yes" in `get_all_client_data`. Disable at console.zerodha.com/account/bank. |
 | Third-party accounts (spouse, family, others) | Not accepted. Only the account holder's own registered bank accounts. Transfers from others → rejected/auto-reversed. |
 | HUF | No UPI. Use netbanking, NEFT, RTGS, IMPS, or cheque. |
 
@@ -131,10 +132,10 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 | Scenario | Kite Balance | Console Ledger |
 |---|---|---|
-| Weekday, after 7:30 AM | Instant | EOD |
-| Weekday, 12 AM–7:30 AM | After 7:30 AM | EOD |
-| Weekend, after 7:30 AM | Instant | Monday morning |
-| Weekend, 12 AM–7:30 AM | After 7:30 AM | Monday morning |
+| Weekday, after 7:30 AM | Instant | EOD (7–9 PM) |
+| Weekday, 12 AM–7:30 AM | After 7:30 AM | EOD (7–9 PM) |
+| Weekend, after 7:30 AM | Instant | Monday EOD (7–9 PM) |
+| Weekend, 12 AM–7:30 AM | After 7:30 AM | Monday EOD (7–9 PM) |
 
 - **Weekend payin on Monday:** Funds added Sat/Sun appear under the "Payin" line in `kite_margins` on Monday (not in opening balance, which carries forward from Friday's close).
 - **Single ledger:** The fund balance in the Equity segment is available across Equity, F&O, and Commodity trades.
@@ -149,6 +150,8 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 | IDFC 3-in-1 facility | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/idfc-3-in-1-with-blocking-facility |
 | Adding funds via IMPS / NEFT / RTGS (step-by-step) | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/how-do-i-add-money-to-my-trading-account-using-imps-neft-or-rtgs |
 | HDFC eCMS facility | https://support.zerodha.com/category/funds/adding-bank-accounts/other-bank-related-queries/articles/how-do-i-add-money-through-hdfc-netbanking |
+| Payment gateway charge explanation | https://support.zerodha.com/category/account-opening/resident-individual/ri-charges/articles/i-see-a-deduction-of-rs-10-62-on-my-ledger-what-is-this-for |
+| Payment gateway pending / not showing up | https://support.zerodha.com/category/funds/adding-funds/fund-addition-timeline/articles/money-added-on-payment-gateway-not-showing-up |
 
 ---
 
@@ -166,6 +169,10 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 ## Section B: Decision Flow
 
+### Mandatory Pre-Check (Every Query)
+
+Before routing by scenario, always invoke `get_all_client_data` and check `bo_sub_status`, `pis_bank_1_name`, `pis_bank_2_name` per A10. If account is NRE PIS or NRO PIS → Rule 1 (escalate immediately). Only proceed to scenario routing if account is resident or non-PIS NRI.
+
 ### Routing
 
 ```
@@ -176,7 +183,6 @@ Route by scenario
 ├─ UPI status interpretation (Success / Failed / Unknown)               → Rule 2
 ├─ Netbanking status (Success / Failed / Unknown / pending)             → Rule 3
 ├─ UPI failure troubleshooting (error codes, retries, alternatives)     → Rule 4
-├─ Bank details request (NEFT / RTGS / IMPS)                            → Rule 15
 ├─ Verify a Zerodha UPI ID is genuine (suspected fake / fraud check)    → share official UPI IDs from A6
 ├─ NEFT / IMPS / RTGS payin not reflected (UTR / bank receipt provided) → Rule 5
 ├─ Date mismatch (stated date has no match; amount-match on nearby)     → Rule 6
@@ -187,12 +193,13 @@ Route by scenario
 ├─ Multiple same-day transactions                                       → Rule 11
 ├─ Fresh account payin failures (≤24h since activation)                 → Rule 12
 ├─ Penny drop / ₹1 test deposit from "ZERODHA BR"                       → Rule 13
-└─ Same-day withdrawal request after a deposit (T+1 restriction)        → Rule 14
+├─ Same-day withdrawal request after a deposit (T+1 restriction)        → Rule 14
+└─ Bank details request (NEFT / RTGS / IMPS)                            → Rule 15
 ```
 
 ### Fallback
 
-If no root cause is identified after completing all applicable rules → escalate.
+If no root cause is identified → escalate.
 
 ---
 
@@ -200,7 +207,7 @@ If no root cause is identified after completing all applicable rules → escalat
 
 ### Rule 1: Early Exit
 
-- Check `bo_sub_status`, `pis_bank_1_name`, and `pis_bank_2_name` per **A10**.
+- Invoke `get_all_client_data` and check `bo_sub_status`, `pis_bank_1_name`, and `pis_bank_2_name` per **A10**.`
 - If account is **NRE PIS** or **NRO PIS** → escalate.
 - NRE / NRO non-PIS and resident accounts → continue with normal routing.
 
@@ -222,17 +229,21 @@ If client provides bank confirmation that the payment was successful at the bank
 
 Applies when `transfer_mode` = netbanking.
 
-**Status = Success:** Funds are credited to the trading account. No further action required.
+**Status = Success:** Funds are credited to the trading account. Netbanking payins carry a ₹10.62 (₹9 + 18% GST) gateway charge per transaction — share the A9 payment gateway charge article. For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no amount limit per A1).
 
-**Status = Failed:** The payment failed. If the amount was debited from the source bank, it will be reversed within the netbanking refund timeline (per **A1**). If client provides bank confirmation that the payment was successful at the bank but Zerodha shows Failed → escalate.
+**Status = Failed:** The payment failed. If the amount was debited from the source bank, it will be reversed within the netbanking refund timeline (per **A1**). If client provides bank confirmation that the payment was successful at the bank but Zerodha shows Failed → escalate. For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no amount limit per A1).
 
 **Status = Unknown:** Pending at the bank — not failed. Evaluate the timeline state:
 
 | Timeline state | Meaning |
 |---|---|
-| Credit deadline NOT passed | Payment pending at the bank. Will either be credited by 2:00 PM on T+1 banking working day or refunded to source bank by 5:00 PM on T+2 banking working day (per **A1**). |
+| Credit deadline NOT passed | Payment pending at the bank. Will either be credited by 1:00 PM on T+1 banking working day or refunded to source bank by 5:00 PM on T+2 banking working day (per **A1**). |
 | Credit deadline PASSED, refund deadline NOT passed | Payment not credited within the processing window. If debited from source bank, refund by 5:00 PM on T+2 banking working day (per **A1**). If not debited, no action needed. |
 | Both deadlines PASSED | Payment unsuccessful. If debited and not yet refunded, request bank statement screenshot (debit proof) → escalate. If not debited, no action needed. |
+
+For Unknown status, share **A9** — payment gateway pending / not showing up.
+
+For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no amount limit per A1).
 
 ---
 
@@ -243,7 +254,7 @@ Applies when `transfer_mode` = netbanking.
 3. Check A1 UPI limits (₹5L/txn, 35 txn/day).
 4. Alternatives in order:
    - Suggest a different UPI app linked to the primary bank account (e.g., Google Pay, PhonePe, BHIM).
-   - If UPI issues persist, suggest IMPS/NEFT/RTGS or netbanking; share the step-by-step link from A9.
+   - Always suggest NEFT/IMPS/RTGS as free alternatives; share the step-by-step link from A9.
    - Inactive registered bank → suggest adding another active bank via Console → Profile → Bank accounts.
    - Customer outside India → escalate.
 
@@ -262,17 +273,17 @@ UPI cases → **Rule 2**. Netbanking cases → **Rule 3**.
 
 **Step 2 — UTR re-query:**
 
-Invoke `cashier_payins` with the UTR / reference number in **`bank_reference`**, and set the required `from_date` / `to_date` to a 30-day range (`from_date` = 30 days before the current date, `to_date` = current date). If the transaction isn't found, widen the range and retry. The `bank_reference` lookup needs only the date range — no client ID. For NEFT / IMPS / RTGS, `status` is always Success when the transaction is located — only `nest_update` and the bank-account match determine the next step.
+Invoke `cashier_payins` with the UTR / reference number in **`bank_reference`**, and set the required `from_date` / `to_date` to a 30-day range (`from_date` = 30 days before the current date, `to_date` = current date). If the transaction isn't found, widen the range and retry. The `bank_reference` lookup needs only the date range — no client ID. For NEFT / IMPS / RTGS, `status` is always Success when the transaction is located — only `nest_status` and the bank-account match determine the next step.
 
 | Result | Action |
 |---|---|
-| Found — `nest_update` = N/A or Pending | Transfer has reached Zerodha but hasn't been pushed to the trading account yet. Go to Step 3. |
+| Found — `nest_status` = N/A or Pending | Transfer has reached Zerodha but hasn't been pushed to the trading account yet. Go to Step 3. |
 | Not found | Request a bank statement screenshot showing debit date, amount, UTR/reference, and destination account + IFSC → escalate. |
 
 **Step 3 — Bank account match:**
 
-Check the source account against the client's registered bank accounts (`bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number`):
-
+`Invoke `get_all_client_data` and check the source account against the client's registered bank accounts (`bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number`):`
+Against the Bank account from which client transferred the funds
 | Status | Action |
 |---|---|
 | Matches a registered bank | Funds need a manual push to the trading account → escalate. |
@@ -299,7 +310,7 @@ Apply A3 per account/bank type.
 
 **Third-party / spouse:** Only bank accounts registered in the client's name and linked to their Zerodha account can be used for payins. Per SEBI regulations, transfers from third-party accounts are not accepted. Share the unmapped-transfer link from A9.
 
-**IDFC 3-in-1 block:** If `idfc_3_in_1_status` = "Yes" → inform the client that the IDFC 3-in-1 block facility prevents adding funds from secondary bank accounts and direct them to disable it at console.zerodha.com/account/bank → "Disable IDFC 3-in-1 account." Share the IDFC link from A9.
+`**IDFC 3-in-1 block:** Invoke `get_all_client_data` and check `idfc_3_in_1_status`. If "Yes" → inform the client that the IDFC 3-in-1 block facility prevents adding funds from secondary bank accounts and direct them to disable it at console.zerodha.com/account/bank → "Disable IDFC 3-in-1 account." Share the IDFC link from A9.`
 
 ---
 
@@ -307,8 +318,9 @@ Apply A3 per account/bank type.
 
 1. Invoke `kite_margins` — authoritative source for available balance.
 2. Apply the Kite-vs-Console timing in **A8** for the payin's day/time (weekday/weekend, before/after 7:30 AM), including the weekend "Payin line on Monday" behaviour. `bank_reference` available confirms the credit.
-3. Invoke `ledger_report`: found → verify via Console ledger; not found → apply A8 timing guidance.
-4. Balance confirmed but client insists not visible → Privacy mode may be enabled on Kite (hides account details); disable via Kite → Settings.
+3. Invoke `ledger_report`: found → verify via Console ledger; not found → funds are available in Kite but ledger entry is not yet posted (posted between 7–9 PM EOD per **A8**). Inform the client that funds are reflected in Kite and available for trading — the ledger will update by EOD. Do not treat a missing ledger entry as a failed payin.
+4. Balance confirmed but client insists not visible → Privacy mode may be enabled on Kite (hides account details). To disable: tap the user ID in the Kite app → tap the Privacy mode toggle. Disabling requires biometric authentication or 2FA.
+5. When confirming a successful payin, state that funds are available for **trading only**. Do NOT say "available for withdrawal" — same-day withdrawal is not permitted (T+1 restriction per **Rule 14**). Withdrawal can be placed from the next working day onwards.
 
 ---
 

@@ -16,9 +16,8 @@ TAGS: charges, reports
 
 ## Protocol
 
-# CONTRACT NOTE CHARGES PROTOCOL
 
----
+# CONTRACT NOTE CHARGES PROTOCOL
 
 ## Section A: Reference Data
 
@@ -90,8 +89,8 @@ If no root cause is identified after checking all relevant rules → escalate.
 
 ### Rule 2 — Per-Trade Redirect
 
-1. Direct client to the Tradewise Charges Report protocol for per-trade breakdown.
-2. If client confirms, route to that protocol.
+1. For a per-trade breakdown, invoke `tradewise_charges_report`.
+2. If client confirms, invoke `tradewise_charges_report`.
 
 ### Rule 3 — Charge Component Explanation
 

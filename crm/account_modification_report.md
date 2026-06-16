@@ -2,10 +2,11 @@
 
 ## Description
 
+
 WHEN TO USE:
 
 When clients:
-- Want to activate a segment or exchange (NSE, BSE, MCX, etc.) on their inactive account
+- Want to activate a segment or exchange (NSE, BSE, MCX, SLB, EGR, etc.) on their inactive account
 - Want to activate Coin or enable trading on their account
 - Want to change their primary or secondary bank account
 - Want to activate MTF (Margin Trading Facility) or DDPI features
@@ -23,8 +24,14 @@ When clients:
 - Ask about status of a pending account modification request
 - Report an invalid IFSC code error while adding or changing a bank account
 - Report inability to place orders immediately after a segment (MCX, currency) was activated
+- Want to check if their account or a specific segment is currently active
+- Want to verify their DDPI or POA status
+- Want to know their registered nominee details
+- Want to add a joint account holder or open a new joint demat account
+- Unable to place MTF orders even after DDPI is confirmed active or pending activation
+- DDPI activation is pending and client wants to know when MTF will be available
 
-TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "change bank", "modify bank", "DDPI", "MTF", "margin", "address update", "Aadhar", "status of request", "DOB", "date of birth", "gender", "marital status", "occupation", "PEP", "politically exposed", "nominee", "add nominee", "change nominee", "update nominee", "remove nominee", "nominee details", "nominee percentage", "nominee address", "mobile number", "change mobile", "update mobile", "unable to change mobile", "already registered mobile", "email", "change email", "update email", "email address", "email-id", "income proof", "income details", "update income", "secondary demat", "secondary account", "open secondary demat", "secondary account opening", "secondary account rejected", "secondary account status", "secondary account on hold", "contact details", "CERSAI", "close account", "close demat", "account closure", "close trading account", "deactivate account", "submit account closure", "cancel closure request", "closure request submitted by mistake", "open positions", "account closure status", "closure process", "invalid IFSC", "IFSC code error", "IFSC not working", "wrong IFSC", "KYC", "ReKYC", "dormant", "no activity", "inactivity", "segment activated but can't trade", "activated today", "just activated MCX", "MCX not working after activation", "currency not working", "segment sync"
+TRIGGER KEYWORDS: "activate", "segment activation", "Coin", "bank account", "change bank", "modify bank", "DDPI", "MTF", "margin", "address update", "Aadhar", "status of request", "DOB", "date of birth", "gender", "marital status", "occupation", "PEP", "politically exposed", "nominee", "add nominee", "change nominee", "update nominee", "remove nominee", "nominee details", "nominee percentage", "nominee address", "mobile number", "change mobile", "update mobile", "unable to change mobile", "already registered mobile", "email", "change email", "update email", "email address", "email-id", "income proof", "income details", "update income", "secondary demat", "secondary account", "open secondary demat", "secondary account opening", "secondary account rejected", "secondary account status", "secondary account on hold", "contact details", "CERSAI", "close account", "close demat", "account closure", "close trading account", "deactivate account", "submit account closure", "cancel closure request", "closure request submitted by mistake", "open positions", "account closure status", "closure process", "invalid IFSC", "IFSC code error", "IFSC not working", "wrong IFSC", "KYC", "ReKYC", "dormant", "no activity", "inactivity", "segment activated but can't trade", "activated today", "just activated MCX", "MCX not working after activation", "currency not working", "segment sync", "SLB", "SLBM", "stock lending", "securities lending", "EGR", "electronic gold receipt", "is my account active", "check account status", "is F&O active", "is segment active", "is SLB active", "DDPI status", "POA status", "who is my nominee", "nominee name", "segment status", "is commodity enabled", "is currency enabled", "joint account", "add joint holder", "joint demat",  "MTF not working", "cannot place MTF orders", "MTF order failed", "DDPI pending", "DDPI not activating"
 
 TAGS: account, nri, non-individual
 
@@ -32,11 +39,9 @@ TAGS: account, nri, non-individual
 
 # ACCOUNT MODIFICATION REPORT PROTOCOL
 
----
-
 ## Section A: Reference Data
 
-### A1: Timelines
+### A1 — Timelines
 
 | Action | Timeline |
 |---|---|
@@ -54,18 +59,28 @@ TAGS: account, nri, non-individual
 
 ---
 
-### A2: Charges
+### A2 — Charges
 
-| Action | Charge |
-|---|---|
-| Standard modification | ₹25 + 18% GST |
-| DDPI activation (online and offline) | ₹100 + 18% GST |
-| Secondary demat transfer | ₹13 + 18% GST per transaction |
-| Secondary demat AMC | ₹300 + 18% GST per account |
+**Charged (₹25 + 18% GST):**
+- Address change
+- Primary bank change
+- Secondary to primary bank conversion
+- Nominee addition or modification
+- DOB / gender / marital status / occupation / PEP update
+
+**Charged (other amounts):**
+- DDPI activation (online and offline): ₹100 + 18% GST
+- Secondary demat transfer: ₹13 + 18% GST per transaction
+- Secondary demat AMC: ₹300 + 18% GST per account
+
+**No charge:**
+- Segment activation (all segments)
+- ReKYC (any path — equity, F&O/currency/commodity, dormancy reactivation)
+- Secondary bank add, change, or remove
 
 ---
 
-### A3: Common Requirements
+### A3 — Common Requirements
 
 - **Aadhaar-linked mobile:** Mobile number must be linked to Aadhaar — required to eSign.
 - **Income proof (any one):** Bank statement (6 months, avg ₹10k+) | Salary slip (gross monthly ₹15k+) | ITR (gross annual ₹1.2L+) | Form 16 (gross annual ₹1.2L+) | Net worth certificate (₹10L+) | Demat holdings (₹10k+, unpledged) | FD receipt (₹1L+)
@@ -76,7 +91,7 @@ TAGS: account, nri, non-individual
 
 ---
 
-### A4: Field Rules
+### A4 — Field Rules
 
 **Non-shareable:**
 
@@ -99,7 +114,7 @@ TAGS: account, nri, non-individual
 | `primary_ddpi_flag` | DDPI status — if active, communicate as "DDPI is active" |
 | `primary_ddpi_agreement_date` | Date the DDPI agreement was signed |
 | `poa_consent` | Internal POA consent status |
-| `primary_poa_for_securities` | Internal POA field for securities |
+| `primary_poa_for_securities` | Legacy POA field. Shows PENDING for accounts where POA was not activated before DDPI replaced it (Nov 2022). For DDPI/POA status, use `primary_ddpi_flag` and `poa_consent`. |
 | `primary_dp_status` | Internal demat account status |
 | `third_party_demat` | Indicates third-party demat linkage |
 | `client_id` | Internal client identifier |
@@ -134,7 +149,7 @@ Segments with — in the label column are internal systems. Use their status and
 
 ---
 
-### A5: Account Context
+### A5 — Account Context
 
 Context extracted from `get_all_client_data`:
 
@@ -147,14 +162,15 @@ Context extracted from `get_all_client_data`:
 | PIS | `pis_bank_1_name`, `pis_bank_2_name` (value present = PIS) |
 | Orbis | `custodial_participant_code` (value present = Orbis) |
 | Account status | `status` |
-| DDPI/POA | `primary_ddpi_flag`, `poa_consent`, `primary_poa_for_securities` |
+| DDPI/POA | `primary_ddpi_flag`, `poa_consent` |
 | PAN/Name/DOB | `pan`, `client_name`, `dob` |
 | Demat status | `primary_dp_status` |
 | Third-party demat | `third_party_demat` |
+| Demat activation date | `primary_dp_activation_date` |
 
 ---
 
-### A6: Modification Processes
+### A6 — Modification Processes
 
 #### Address Change
 
@@ -191,12 +207,13 @@ Process: signup.zerodha.com/rekyc. Timeline: **A1** general processing. Acceptab
 
 ---
 
-### A7: Bank Account Processes
+### A7 — Bank Account Processes
 
 - **Limits:** Max 3 accounts: 1 primary (payin + withdrawal) + 2 secondary (payin + withdrawal). All linked bank accounts support both deposits and withdrawals once verified.
 - **Pending verification:** If a secondary/tertiary bank account is pending penny drop verification, withdrawals to that account will be available once verification completes (typically within 2 working days of approval). No charges apply for penny drop verification.
 - **Allowed account types:** Savings, Current, Cash Credit. Overdraft (OD) accounts are not allowed. PayTM Payments Bank cannot be linked.
 - **Relative's bank account:** Not allowed. SEBI mandates bank in client's name only.
+- **NRO/NRE bank account — individual account:** If `client_acc_type` = individual and the client requests to link an NRO or NRE bank account → NRO/NRE accounts cannot be linked to a resident individual account. If the client has become an NRI, they must convert their account to an NRI demat account first. Share the conversion article per **A14**.
 
 #### Primary Bank Change (Online)
 
@@ -247,7 +264,7 @@ Condition: bank_type = "Primary" AND request_type = "update" AND bank validation
 
 ---
 
-### A8: Account Closure
+### A8 — Account Closure
 
 - **Methods:** Online: resident Indians, NRIs, minors with Kite. Offline: non-individual only.
 - **Timeline:** **A1** account closure.
@@ -261,7 +278,7 @@ Condition: bank_type = "Primary" AND request_type = "update" AND bank validation
 
 ---
 
-### A9: Demat (DDPI / POA / Secondary Demat)
+### A9 — Demat (DDPI / POA / Secondary Demat)
 
 #### DDPI
 
@@ -285,7 +302,7 @@ Availability: free, online. Eligibility: Aadhaar-linked mobile (see **A3**), res
 
 ---
 
-### A10: Segments
+### A10 — Segments
 
 #### F&O / Currency / Commodity Activation
 
@@ -326,7 +343,7 @@ Kite app: Client ID → Profile. Kite web: Client ID → Name. Click segment →
 
 ---
 
-### A11: Nomination
+### A11 — Nomination
 
 - **Verification:** Console → Account → Nominees | CMR copy.
 - **Minor nominees:** The minor's PAN is mandatory for the online nomination process. If the minor does not have a PAN, the offline process must be used. Refer to nomination update article per **A14**.
@@ -341,7 +358,7 @@ Kite app: Client ID → Profile. Kite web: Client ID → Name. Click segment →
 
 ---
 
-### A12: KYC & Reactivation
+### A12 — KYC & Reactivation
 
 #### ReKYC Process Details
 
@@ -382,14 +399,14 @@ Applies to voluntarily deactivated accounts only. Dormant accounts: complete ReK
 
 ---
 
-### A13: Utilities
+### A13 — Utilities
 
 - **eSign documents:** Platform: see **A14** (Digilocker). Requires: Aadhaar-linked mobile (see **A3**). Cost: free. Steps: Login → Drive → Documents → Upload → Sign → Enter Aadhaar → OTP → Download.
 - **Trade alerts not received:** Cause: incorrect contact details or DND blocking. Exchange contacts per **A14** for platform-level issues.
 
 ---
 
-### A14: Links
+### A14 — Links
 
 | Topic | URL |
 |---|---|
@@ -415,6 +432,7 @@ Applies to voluntarily deactivated accounts only. Dormant accounts: complete ReK
 | NSE exchange contact | nseindia.com/contact/corporate-office |
 | BSE exchange contact | bseindia.com/static/about/contact_us.aspx |
 | MCX exchange contact | mcxindia.com/contact-us/department-contacts |
+| Open a joint demat account | https://support.zerodha.com/category/account-opening/resident-individual/ri-offline/articles/can-i-open-a-joint-demat-account-at-zerodha |
 
 ---
 
@@ -436,12 +454,17 @@ Route by scenario
    ├─ Nominee query (modification, rejection, CAS nominee mismatch) → Rule 9
    ├─ Pledging / collateral margin query → Rule 10
    ├─ Segment deactivation (disable / deactivate F&O, Currency, or Commodity) → Rule 11
+   ├─ Order rejected with "Exchange segment is not enabled" → Rule 22
    ├─ Client reports app/web error message → Rule 12
    ├─ Unpaid dividend / RTA CML query → Rule 13
    ├─ Email or mobile modification status / request query → Rule 14
    ├─ Address change query → Rule 15
    ├─ MTF activation query → Rule 16
-   └─ Kill Switch query (segment enabled/disabled, unable to trade after Kill Switch) → Rule 17
+   ├─ Kill Switch query (segment enabled/disabled, unable to trade after Kill Switch) → Rule 17
+   ├─ Signature modification request → Rule 18
+   ├─ Client unable to login / account inactive error despite active account → Rule 19
+   ├─ Client wants to add a joint account holder or convert existing account to joint → Rule 20
+   └─ Direct status query (segment status, DDPI/POA status, nominee details, account status) → Rule 21
 ```
 
 ### Fallback
@@ -452,13 +475,13 @@ If the query does not match any route above → escalate.
 
 ## Section C: Rules
 
-### Rule 1: Name / DOB / PAN Updates
+### Rule 1 — Name / DOB / PAN Updates
 
 If query mentions name change, DOB mismatch, or PAN correction → escalate.
 
 ---
 
-### Rule 2: Modification Status
+### Rule 2 — Modification Status
 
 - **Check request:** For segment activation → query `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. For Coin/MF → query `form_type` = `rekyc`, most recent within 3 months. If no request found OR last request > 3 months → communicate: `created` date (if any) and guide to submit a new request at account portal per **A14**.
 
@@ -466,34 +489,41 @@ If query mentions name change, DOB mismatch, or PAN correction → escalate.
 
 - **Multi-row processing:** When the query returns multiple rows (e.g., both `rekyc` and `rekyc_fno` from the same submission), evaluate each row's status independently. A single ReKYC submission can result in equity segments approved while F&O segments are rejected. Match the row to the client's query — if the client is asking about F&O/currency/commodity, check the `rekyc_fno` row specifically. Report only the status relevant to what the client asked.
 
-- **Segment status check:** For segment activation queries, check all `*_status` fields in `get_all_client_data` using the field pairs in **A4**. If any segment shows Rejected, Activation_rejected, Deactivated, or Inactivated → check the corresponding remarks field (per **A4**) and apply Rule 7 before any other response.
+- **Segment status check:** For segment activation queries, invoke `get_all_client_data` and check all `*_status` fields using the field pairs in **A4**. If any segment shows Rejected, Activation_rejected, Deactivated, or Inactivated → check the corresponding remarks field (per **A4**) and apply Rule 7 before any other response.
 
 **Status responses:**
 
 | Status | Communicate |
 |---|---|
 | Request_pending / Processing | Modification type, `created` date, expected timeline per **A1**. |
-| Pending_eSign | Modification type is pending eSign on Console. |
+| Pending_eSign | Modification type is pending eSign on Console. Instruct the client to complete the eSign step — activation will be processed within 72 hours of completion. |
 | Approved | Invoke `settlement_date_calculator` with `created` to compute working days elapsed. Cross-check: elapsed working days must meet the relevant timeline per **A1**. Communicate: modification type, approval date, activation timeline per **A1**. |
 | Rejected | Check all relevant form_types (`rekyc`, `rekyc_fno`, `segment_addition`). Communicate: modification type, rejection reason, guidance to resolve and resubmit. |
 | No request found (count=0) despite client claim of submission | No matching request found; process may not have completed. Ask client to retry. If IPV and eSign were completed but request is absent, ask for confirmation screenshot. |
 
+**DDPI rejection — third-party Aadhaar:** When a DDPI modification request is rejected and the rejection reason contains "third party Aadhaar":
+1. Invoke `get_all_client_data` and compare `client_name` with `signer_name` from the modification record.
+   - Slight mismatch → inform the client of the name in our records (`client_name`) and the name used for eSign (`signer_name`), and guide to name change per **A14**.
+   - Completely different name → ask the client to use their own Aadhaar for eSign.
+
 ---
 
-### Rule 3: ReKYC
+### Rule 3 — ReKYC
+
+If the query mentions name change, name mismatch, or name correction intent → Rule 1 (escalate).
 
 Check `account_modification_report` for an existing ReKYC request (`form_type` IN (`rekyc`, `rekyc_fno`)) within the last 3 months.
 
 - **Found → apply Rule 2** for that request.
 - **Rejected with "Invalid IPV"** → guide to complete ReKYC again at account portal per **A14**.
 - **Rejected with any other reason** → communicate rejection reason and escalate.
-- **Not found OR > 3 months** → guide to account portal per **A14**; complete ReKYC with Aadhaar eSign. Requires: Aadhaar-linked mobile (see **A3**). Share the reactivation support article from **A14**. Authentication per **A12**.
+- **Not found OR > 3 months** → guide to account portal per **A14**; complete ReKYC. Authentication per **A12**. Share the reactivation support article from **A14**.
 
 **Charges:** **A2** standard — applicable only if client selects "Update as per Aadhaar". Mention only if this option is selected.
 
 ---
 
-### Rule 4: Account Closure
+### Rule 4 — Account Closure
 
 Query mentions "secondary demat" / "employer policy" / "employer restriction" / "empanelment" / "company policy" / "IL&FS" / "ILFS" / "closure cum transfer" / "cancel account opening" / "don't want to proceed with account opening" / "cancel closure request" / "cancel account closure" → escalate.
 
@@ -519,33 +549,25 @@ No closure request found → escalate.
 
 ---
 
-### Rule 5: Segment Activation Queries
+### Rule 5 — Segment Activation Queries
 
-**Demat prerequisite:**
-From `get_all_client_data`, check `primary_dp_status`. If ≠ "Active" → the client will see an error and cannot activate any segment until the demat account is active; share the demat account opening and single ledger facility articles per **A14**. Stop.
+1. Invoke `get_all_client_data`.
+   - Check `primary_dp_status`. If ≠ "Active" → demat not active; client cannot activate any segment until demat is active. Share the demat account opening and single ledger facility articles per **A14**. Stop.
+   - Check segment `*_status` for the segment the client is asking about (field pairs per **A4**). If status = "Activated" → defer to Rule 7.
 
-**Existing activation request:**
-Check `account_modification_report` for `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. If multiple rows exist, match each row to the segment the client is asking about — evaluate independently per Rule 2 multi-row processing. If a request exists:
-- In progress or approved: if `form_type = rekyc_fno`, F&O/currency/commodity activation is included in the ReKYC request. Confirm the existing request covers the segment and provide the processing timeline per **A1**.
-- Rejected: apply Rule 2 for the rejection before providing any new activation guidance.
+2. Check `account_modification_report` for `form_type` IN (`rekyc`, `rekyc_fno`, `segment_addition`), most recent within 3 months. If multiple rows exist, match each row to the segment the client is asking about — evaluate independently per Rule 2 multi-row processing. If a request exists:
+   - In progress or approved: if `form_type = rekyc_fno`, F&O/currency/commodity activation is included in the ReKYC request. Confirm the existing request covers the segment and provide the processing timeline per **A1**.
+   - Rejected: apply Rule 2 for the rejection before providing any new activation guidance.
 
-**No existing request:**
-Guide per **A10** based on account type.
+3. No existing request → guide per **A10** based on account type.
 
-**UI error during activation:**
-If client reports a UI error (e.g., "Service unavailable", "Unknown exchange segment", page not loading, repeated errors) during the activation flow:
-1. Clear browsing history completely.
-2. Clear cookies and cache.
-3. Try in incognito/private mode.
-4. Try on a different device and different network.
-
-If error persists after troubleshooting → escalate.
+4. If client reports a UI error during the activation flow → Rule 12.
 
 ---
 
-### Rule 6: Dormancy
+### Rule 6 — Dormancy
 
-Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant". Check which segments are dormant (equity vs. F&O/commodity) using the field pairs in **A4**.
+Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant". Invoke `get_all_client_data`. Check which segments are dormant (equity vs. F&O/commodity) using the field pairs in **A4**.
 
 - **Equity dormant:** Check `account_modification_report` for `form_type` IN (`rekyc`, `rekyc_fno`):
   - In progress (Request_pending / Processing / Reactivation_pending) → ReKYC in process; account reactivates within 1–2 working days.
@@ -558,19 +580,21 @@ Triggered when `nse_eq_status` OR `bse_eq_status` = "Dormant". Check which segme
 
 ---
 
-### Rule 7: Segment & Account Status Translations
+### Rule 7 — Segment & Account Status Translations
 
-When a client queries about commodity trading (MCX, CRUDEOILM, commodity options, or any commodity product), check both `zbl_mcx_status` and `nse_com_status`. Report the status of each segment that is not fully active. Both segments may need to be active depending on the product the client wants to trade.
+Invoke `get_all_client_data`.
+
+When a client queries about commodity trading (MCX, CRUDEOILM, commodity options, or any commodity product), check both `zbl_mcx_status` and `nse_com_status`. Report the status of each segment that is not fully active. Both segments may need to be active depending on the product the client wants to trade. For MCX segment activation queries, the same activation process applies as for other commodity segments — guide per Rule 5 → A10.
 
 | Raw Status | Response |
 |---|---|
 | `Reactivation_pending` | Invoke `settlement_date_calculator` with `created` to determine working days elapsed. Within 1 working day → segment/account being processed; active within 1 working day of submission. 1 working day elapsed → escalate. |
 | `Request_pending` | Invoke `settlement_date_calculator` with `created` to determine working days elapsed. Within 1 working day → being processed. 1 working day elapsed → escalate. Cross-check: ReKYC → verify rekyc or rekyc_fno form status; segment → verify segment_addition form status (Rule 2). |
 | `Blocked` | Communicate the `remarks` field content for this status. |
-| `Activated` | Confirm segment is active. Orders can be placed only after 24 hours from activation — use `*_updated_on` for the activation timestamp. If 24 hours have already passed and client still cannot place orders → escalate. |
-| Coin segment = `Generated` | Escalate. |
+| `Activated` | Check if 24 hours have elapsed since `*_updated_on`. Within 24 hours → segment is active; communicate that orders will be available once the 24-hour activation window passes and ask the client to wait. 24 hours elapsed and client still cannot place orders → escalate. |
+| Coin segment = `Generated` | The segment cannot be activated by the client and requires backend intervention by the internal team. Escalate. |
 | `Dormant` | Apply Rule 6. |
-| `Inactivated` | Check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate. |
+| `Inactivated` | If segment is `starmf_status`: check `communication_country` from the `get_all_client_data` result. If USA or Canada → communicate that US/Canada-based NRIs cannot invest in MFs on Coin due to technical restrictions. Otherwise → check the corresponding remarks field (per **A4**). Name mismatch in remarks → guide per name change article **A14**. Other reason → escalate. |
 | `Activation_rejected` | Treat as Rejected. Check the corresponding remarks field (per **A4**). Apply Rule 8 if remarks contain "PAN Verification Failed." For other rejection reasons, inform client of the specific reason and guide to resubmission. |
 
 **Mixed NSE/BSE status (one Activated, one pending):**
@@ -578,7 +602,7 @@ When NSE and BSE statuses for the same segment type differ — one shows Activat
 
 ---
 
-### Rule 8: Segment Rejection — PAN Verification
+### Rule 8 — Segment Rejection — PAN Verification
 
 If any segment (per **A4** field pairs) shows as Rejected, Activation_rejected, or Deactivated AND the corresponding remarks field contains "PAN Verification Failed":
 
@@ -588,11 +612,11 @@ If any segment (per **A4** field pairs) shows as Rejected, Activation_rejected, 
 
 ---
 
-### Rule 9: Nominee Queries
+### Rule 9 — Nominee Queries
 
 Nominee modifications are handled through the nominee process only — direct to **A11** support article per **A14**.
 
-From `get_all_client_data`, check `nominee_1_first_name`, `nominee_2_first_name`, `nominee_3_first_name`.
+Invoke `get_all_client_data`. Check `nominee_1_first_name`, `nominee_2_first_name`, `nominee_3_first_name`.
 
 **Client wants to modify / change / add a nominee:**
 - Nominee present → modification is offline only; guide per **A14** nomination update article.
@@ -609,17 +633,17 @@ From `get_all_client_data`, check `nominee_1_first_name`, `nominee_2_first_name`
 
 ---
 
-### Rule 10: Pledging / Collateral Margin Queries
+### Rule 10 — Pledging / Collateral Margin Queries
 
 If the client is unable to pledge or has a query about pledging holdings for collateral margin:
 
-1. Check `nse_fo_status` (per **A4**). Pledging for margin purposes requires an active F&O segment.
+1. Invoke `get_all_client_data`. Check `nse_fo_status` (per **A4**). Pledging for margin purposes requires an active F&O segment.
 2. If `nse_fo_status` = "Activated" but the client is still unable to pledge → share the unable to pledge article per **A14**.
 3. If `nse_fo_status` ≠ "Activated" → guide client to activate F&O first per Rule 5.
 
 ---
 
-### Rule 11: Segment Deactivation
+### Rule 11 — Segment Deactivation
 
 If the client wants to disable or deactivate an F&O, Currency, or Commodity segment:
 
@@ -630,11 +654,11 @@ If the client wants to disable or deactivate an F&O, Currency, or Commodity segm
 
 ---
 
-### Rule 12: UI / App Error
+### Rule 12 — UI / App Error
 
-When the client reports an error message in the app or web platform (e.g., "account is inactive," "service unavailable," "account not found") not related to segment activation:
+When the client reports an error message in the app or web platform (e.g., "account is inactive," "service unavailable," "account not found," UI errors during segment activation):
 
-1. From `get_all_client_data`, check account status, segment statuses, and `account_blocks`. If any underlying account issue is found → apply the relevant rule for that issue.
+1. Invoke `get_all_client_data`. Check account status, segment statuses, and `account_blocks`. If any underlying account issue is found → apply the relevant rule for that issue.
 2. If account data shows no issues (account status = Approved, segments Activated, no account blocks):
    a. Ask the client to verify they are entering the correct User ID during login.
    b. If User ID is correct, ask the client to retry after clearing the app cache or using a different browser/device.
@@ -643,15 +667,15 @@ When the client reports an error message in the app or web platform (e.g., "acco
 
 ---
 
-### Rule 13: RTA / Unpaid Dividend
+### Rule 13 — RTA / Unpaid Dividend
 
-1. Check `bank_details` in `get_all_client_data` — verify `bank_1_dividend` = YES.
+1. Invoke `get_all_client_data`. Check `bank_1_dividend` = YES.
 2. If bank details are correct and dividend enabled: communicate that Zerodha shares updated CML data with CDSL; CDSL forwards it to RTAs in their regular update cycle, typically within a few business days. If not credited within 10 business days, follow up with RTA directly. Share the primary bank change article per **A14** only if bank details need updating. Charge of ₹25 + GST applies for primary bank change.
 3. If bank details missing, incorrect, or dividend ≠ YES: guide client to update bank details per **A7** Primary Bank Change. Confirm that the updated CML will be shared with CDSL after the change is processed.
 
 ---
 
-### Rule 14: Email / Mobile Modification
+### Rule 14 — Email / Mobile Modification
 
 | Query type | `form_type` to check |
 |---|---|
@@ -669,9 +693,9 @@ Communicate status per Rule 2 status responses. If status = Rejected → communi
 
 ---
 
-### Rule 15: Address Change
+### Rule 15 — Address Change
 
-From `get_all_client_data`, check `client_acc_type`.
+Invoke `get_all_client_data`. Check `client_acc_type`.
 
 **Account type = individual:**
 Check `primary_dp_joint_account`.
@@ -683,15 +707,20 @@ Offline process only per **A6** Address Change.
 
 ---
 
-### Rule 16: MTF Activation
+### Rule 16 — MTF Activation
 
-1. From `get_all_client_data`, check `primary_ddpi_flag` and `poa_consent`.
-2. `primary_ddpi_flag` active OR `poa_consent` = YES → MTF can be used via Kite per **A10** MTF subsection.
-3. Both inactive → check `account_modification_report` for a pending DDPI request and apply Rule 2 to report its status. Guide client to activate DDPI per **A9**.
+1. Invoke `get_all_client_data`. Check `primary_ddpi_flag` and `poa_consent`.
+2. `primary_ddpi_flag` = "PENDING" → invoke `settlement_date_calculator` with `primary_ddpi_agreement_date`.
+   - Within 24 hours → DDPI is being processed. Communicate that DDPI will be active within 24 hours of signing; MTF will be available once DDPI is fully active.
+   - 24 hours elapsed → escalate.
+3. `primary_ddpi_flag` = active OR `poa_consent` = YES → MTF can be used via Kite per **A10** MTF subsection. Invoke `kite_orders` to check if any order with `product` = `MTF` has been placed.
+   - MTF order found → MTF is working; confirm with client and address any specific order issue.
+   - No MTF order found → guide client to select the MTF product type when placing orders per **A10** MTF section.
+4. Both inactive → check `account_modification_report` for a pending DDPI request and apply Rule 2 to report its status. Guide client to activate DDPI per **A9**.
 
 ---
 
-### Rule 17: Kill Switch
+### Rule 17 — Kill Switch
 
 Check `account_modification_report` for `form_type = kill_switch`, most recent record.
 
@@ -700,3 +729,46 @@ If no record found or status ≠ Approved → apply Rule 2 status responses.
 If status = Approved: check segment fields per **A10** Kill Switch report fields.
 - "Segment disabled" on any field → Kill Switch is active on those segment(s); communicate which segments are disabled.
 - "Segment enabled" → Kill Switch has been turned off; segment is re-enabled. If client reports segment still disabled, check `modified` timestamp: if less than 10 minutes have elapsed → ask client to wait 10 minutes for segment sync; if 10 or more minutes have elapsed → escalate.
+
+---
+
+### Rule 18 — Signature Modification
+
+If the client's query is related to signature modification → escalate.
+
+---
+
+### Rule 19 — Login Issue (Account Active)
+
+When the client reports being unable to login or receiving an "account inactive" error:
+1. Invoke `get_all_client_data`. Confirm account status = Approved and segments are active. If an underlying account issue is found → apply the relevant rule.
+2. Ask the client to confirm they are using the correct Client ID and try logging in again.
+3. If the issue persists → ask the client to share a screenshot of the error.
+4. Escalate with the screenshot.
+
+---
+
+### Rule 20 — Joint Account Holder Query
+
+A joint holder cannot be added to an existing individual account. To open a new joint demat account, share the link per **A14** (Open a joint demat account).
+
+---
+
+### Rule 21 — Account & Segment Status Lookup
+
+For direct status queries with no modification intent:
+
+1. Invoke `get_all_client_data`.
+2. **Account status:** Report `status` per **A5**. If Dormant → Rule 6. If Inactivated → **A6** deactivated account reactivation.
+3. **Segment status:** Check the relevant `*_status` field per **A4** segment field pairs. If not Activated → apply Rule 7.
+4. **DDPI/POA status:** Check `primary_ddpi_flag` and `poa_consent` per **A5**. Communicate whether DDPI is active. If client wants to activate → Rule 16.
+5. **Nominee details:** Check `nominee_1_first_name`, `nominee_2_first_name`, `nominee_3_first_name` per **A5**. Communicate nominee names and share percentages. If client wants to modify → Rule 9.
+
+---
+
+### Rule 22 — "Exchange Segment Not Enabled" Order Rejection
+
+1. Invoke `get_all_client_data`. Identify the segment(s) the client attempted to trade. Check `*_updated_on` for those segments (per **A4** field pairs) and `primary_dp_activation_date`.
+2. Invoke `settlement_date_calculator` with each timestamp to determine working hours elapsed, excluding weekends and trading holidays.
+3. If `*_updated_on` or `primary_dp_activation_date` is less than 24 hours elapsed → order placement is enabled only after 24 hours from segment activation or account opening; ask the client to place orders from the next trading day.
+4. Both are 24 or more hours elapsed → escalate.

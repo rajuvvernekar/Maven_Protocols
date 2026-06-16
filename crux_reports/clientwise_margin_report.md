@@ -23,9 +23,8 @@ TAGS: margins, charges
 
 ## Protocol
 
-# CLIENTWISE MARGIN REPORT PROTOCOL
 
----
+# CLIENTWISE MARGIN REPORT PROTOCOL
 
 ## Section A: Reference Data
 
@@ -196,7 +195,7 @@ If no root cause is identified after checking all relevant rules → escalate.
 ### Rule 2 — Non-Upfront Penalty Calculation
 
 1. If `{seg}_collected_short_delivery_margin` = "Not available" → inform client that T+1 collection data is not yet available and non-upfront penalty cannot be calculated yet.
-2. If available: calculate non-upfront shortfall per **A3**.
+2. If available: invoke `get_all_client_data` and check `segments` to confirm the client's active segment, then calculate non-upfront shortfall per **A3**.
 3. If shortfall ≤ 0 → inform client there is no non-upfront penalty.
 4. If shortfall > 0 → determine penalty rate per **A4**, calculate penalty + 18% GST, and present the full breakdown to the client.
 
@@ -234,7 +233,7 @@ If no root cause is identified after checking all relevant rules → escalate.
 
 ### Rule 9 — Expiry Day / Physical Delivery Margin
 
-1. Explain the physical delivery margin schedule per **A6**.
+1. Invoke `get_all_client_data` and check `account type/category`, then explain the physical delivery margin schedule per **A6**.
 2. Advise client to either close ITM positions before delivery margins apply or add funds to cover the increased requirement.
 3. Share physical settlement link from **A9**.
 

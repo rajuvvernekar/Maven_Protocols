@@ -19,9 +19,8 @@ TAGS: charges
 
 ## Protocol
 
-# AMC CHARGES PROTOCOL
 
----
+# AMC CHARGES PROTOCOL
 
 ## Section A: Reference Data
 
@@ -114,7 +113,8 @@ Route by scenario
    ├─ AMC has created a debit balance → Rule 7 (mandatory add-on to all routes above when a debit balance is detected)
    ├─ Client asks about paying AMC upfront or annually → Rule 8
    ├─ Client claims AMC debited after closing other demat accounts → Rule 9
-   └─ NRI PIS account — AMC or DP charge payment query → Rule 10
+   ├─ NRI PIS account — AMC or DP charge payment query → Rule 10
+   └─ AMC amount does not match any expected slab / data inconsistent → escalate
 ```
 
 ### Fallback
@@ -163,9 +163,9 @@ If the query does not match any route above → escalate.
 
 6. If the client asks specifically about nil-AMC eligibility: the nil-AMC threshold is ₹4,00,000 (Slab 1 per **A2**), applicable only to BSDA accounts; BSDA status is required first.
 
-7. If the account has a debit balance: include a brief breakdown of all debit entries per the Ledger Report protocol, explaining each debit entry separately (settlement charges, DP charges, etc.) before summarising the AMC portion.
+7. If the account has a debit balance: include a brief breakdown of all debit entries by invoking `ledger_report`, explaining each debit entry separately (settlement charges, DP charges, etc.) before summarising the AMC portion.
 
-8. If the client cites a specific demat account number: check `primary_dp_id` and `secondary_dp_id` from `get_all_client_data`. If the cited number does not match either → communicate that Zerodha can only address charges for the Zerodha-linked demat account; direct the client to the respective broker for charges on other accounts.
+8. If the client cites a specific demat account number: invoke `get_all_client_data` and check `primary_dp_id` and `secondary_dp_id`. If the cited number does not match either → communicate that Zerodha can only address charges for the Zerodha-linked demat account; direct the client to the respective broker for charges on other accounts.
 
 ---
 
@@ -199,7 +199,7 @@ If the query does not match any route above → escalate.
 
 3. If a recent payin is found → communicate: payin amount and date observed; confirm it should cover the debit balance from the AMC charge.
 
-4. For DPC details, refer to the Delayed Payment Charges protocol.
+4. For DPC details, invoke `delayed_payment_charges`.
 
 ---
 
@@ -221,7 +221,7 @@ Determine BSDA status per Rule 3.
 
 ### Rule 10 — NRI PIS AMC and DP Charge Payment
 
-From `get_all_client_data`, confirm all three conditions are true: `client_acc_type` is NRO, NRE, or NRI; `bo_sub_status` contains "RepatriableWith"; `pis_bank_1_name` or `pis_bank_2_name` is populated.
+Invoke `get_all_client_data` and confirm all three conditions are true: `client_acc_type` is NRO, NRE, or NRI; `bo_sub_status` contains "RepatriableWith"; `pis_bank_1_name` or `pis_bank_2_name` is populated.
 
 If confirmed:
 - Communicate: AMC and DP charges must be paid by adding funds directly to the Kite trading account via NEFT or IMPS. The PIS bank account does not settle these charges through the PIS account.

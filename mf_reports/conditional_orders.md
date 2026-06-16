@@ -22,6 +22,7 @@ TAGS: investments
 
 ## Protocol
 
+
 # CONDITIONAL ORDERS PROTOCOL
 
 ## Section A: Reference Data
@@ -30,7 +31,7 @@ TAGS: investments
 
 - Available for lumpsum only.
 - Trigger check uses T-1 day NAV. Actual allotment/redemption NAV = T day NAV (will differ from trigger price).
-- Once triggered, the order moves to ‘mf_order_history’. No longer visible in this tool.
+- Once triggered, the order moves to 'mf_order_history'. No longer visible in this tool.
 - Valid for 365 days. Auto-rejected after expiry.
 - Payment is not debited at placement. Client must pay manually (UPI/Netbanking) after trigger notification. No payment held = no refund on expiry/cancellation.
 - "Redeem all" is not available with conditional orders — client must enter exact unit count manually.
@@ -109,7 +110,8 @@ If no root cause found after completing all diagnostic steps → escalate.
 
 ### Rule 4 — CDSL Authorization (Sell)
 
-1. Communicate per **A3**.
+1. Invoke `get_all_client_data` and check `dp / demat status` to confirm DDPI status and `bank account` to confirm the primary bank account where redemption proceeds will be credited.
+2. Communicate per **A3**.
 
 ### Rule 5 — Triggered Order: Cross-Tool Lookup
 

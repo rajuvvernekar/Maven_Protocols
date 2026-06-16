@@ -19,9 +19,8 @@ TAGS: holdings, demat
 
 ## Protocol
 
-# CONSOLE EQ EXTERNAL TRADES PROTOCOL
 
----
+# CONSOLE EQ EXTERNAL TRADES PROTOCOL
 
 ## Section A: Reference Data
 
@@ -188,7 +187,7 @@ Route by scenario
 ### Rule 6 — Buyback Entry Verification
 
 1. Invoke `console_eq_external_trades` with `external_trade_type` = buyback.
-2. Entry found → `trade_type` will always be SELL. Share `trade_date`, `quantity`, `price`. Buyback proceeds are credited to the client's primary bank account directly by the company — not through Zerodha.
+2. Entry found → invoke `get_all_client_data` and check `bank account` and `account type/category` to confirm the registered bank account and account type. `trade_type` will always be SELL. Share `trade_date`, `quantity`, `price`. Buyback proceeds are credited to the client's primary bank account directly by the company — not through Zerodha.
 3. No entry found → invoke `ledger_report`; buyback entries are posted on the day the "Net settlement for buyback with settlement number" entry appears there, after the company processes and confirms acceptance (A4).
 4. No entry AND client confirms acceptance was completed more than 5 trading days ago → escalate.
 

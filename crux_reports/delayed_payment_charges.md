@@ -20,13 +20,14 @@ TAGS: charges, margins
 
 ## Protocol
 
-# DELAYED PAYMENT CHARGES PROTOCOL
 
----
+# DELAYED PAYMENT CHARGES PROTOCOL
 
 ## Section A: Reference Data
 
 ### A1 — DPC Fundamentals
+
+- **Date range limit:** 90 days per call.
 
 - DPC report provides a daily breakdown of interest calculation for a selected date range.
 - Three types of interest: debit balance interest, excess collateral interest, margin shortfall interest.
@@ -102,8 +103,8 @@ TAGS: charges, margins
 
 | Topic | Refer to |
 |---|---|
-| DPC debit entry on ledger (actual posting) | Ledger Report protocol |
-| Collateral holdings verification (if client disputes collateral in DPC) | Pledge Request Report protocol |
+| DPC debit entry on ledger (actual posting) | invoke `ledger_report` |
+| Collateral holdings verification (if client disputes collateral in DPC) | invoke `pledge_request_report` |
 
 ## Section B: Decision Flow
 
@@ -177,7 +178,7 @@ If no root cause is identified after checking all relevant rules → escalate.
 ### Rule 8 — Monthly DPC Debit on Ledger
 
 1. Explain monthly debit timing per A1.
-2. For the actual ledger entry, use the Ledger Report protocol per A7.
+2. For the actual ledger entry, invoke `ledger_report` per A7.
 
 ### Rule 9 — Collateral Amount Dispute
 

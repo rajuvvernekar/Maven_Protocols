@@ -30,11 +30,14 @@ TAGS: orders
 
 ## Protocol
 
+
 # KITE ORDER HISTORY PROTOCOL
 
 ## Section A: Reference Data
 
 ### A1 — Fundamentals
+
+- **Date range limit:** 30 days per call.
 
 - For today's live orders, invoke `kite_orders`.
 - Orders follow price-time priority: first come, first served at same price.
@@ -211,6 +214,13 @@ TAGS: orders
 | Market intelligence bulletin | zerodha.com/marketintel/bulletin |
 | SEBI retail algo compliance | https://kite.trade/forum/discussion/15912/preparing-to-comply-with-sebis-retail-algo-rules-static-ip-ratelimits-order-types#latest |
 
+### A14 — SL Order Mechanics
+
+| order_type | Fields | Behaviour |
+|---|---|---|
+| SL-M | `trigger_price` present, `price` absent | Stop-loss market: when trigger price is reached, a market order is placed immediately. |
+| SL | `trigger_price` and `price` both present | Stop-loss limit: when trigger price is reached, a limit order at `price` is placed. The limit order stays open until filled or session end — if unfilled, it is auto-cancelled by the exchange per **A7**. |
+
 ## Section B: Decision Flow
 
 ### Routing
@@ -232,7 +242,8 @@ Route by scenario
    ├─ F&O buy average / intraday identification → Rule 13
    ├─ Multiple orders for same instrument → Rule 14
    ├─ No matching orders found → Rule 15
-   └─ app_id is numerical (third-party API) and rejection/rate limit query → Rule 16
+   ├─ app_id is numerical (third-party API) and rejection/rate limit query → Rule 16
+   └─ Sold stocks but funds not credited / available → Rule 17
 ```
 
 ### Fallback
@@ -243,7 +254,7 @@ If no root cause found after completing all diagnostic steps → escalate.
 
 ### Rule 1 — Order Status Check
 
-1. Locate by instrument + date.
+1. Locate by instrument + date. If the client references an F&O contract by name, decode the tradingsymbol: monthly contracts spell out the expiry month (BANKNIFTY26JUN52300PE = June 2026 expiry); weekly contracts encode expiry as YYMMDD (NIFTY2660923250CE = year 26, month 06, date 09 → June 9, 2026). NSE expires last Tuesday of the month; BSE last Thursday; holiday → one trading day earlier.
 2. Share: `instrument`, `type`, `order_type`, `order_status`, `total_quantity`, `filled_quantity`, `average_price` (if COMPLETE), `exchange_timestamp`.
 3. Check `placed_by` internally → ADMINSQF/rms → Rule 4.
 4. Check `gtt` internally → GTT ID present → invoke `kite_gtt` or `kite_gtt_archived` scoped to the trigger date.
@@ -259,11 +270,11 @@ If no root cause found after completing all diagnostic steps → escalate.
    c. Client wanted breakout → use SL or GTT instead. Invoke `kite_gtt` if interested.
    d. SL trigger dispute → charts show snapshots; actual market price determines execution.
 3. Partial fill → check `filled_quantity` < `total_quantity`; share `cancelled_quantity`.
-4. Where are bought shares? → invoke `kite_holdings` (settled) or `kite_positions` (same day / F&O).
+4. Where are bought shares? → invoke `get_all_client_data` and check `dp / demat status`, then invoke `kite_holdings` (settled) or `kite_positions` (same day / F&O).
 
 ### Rule 3 — Order Rejected
 
-1. Read `rejection_reason`, match against **A9**.
+1. Read `rejection_reason`, match against **A9**. Invoke `get_all_client_data` and check `segments` to confirm the client is enabled for the segment in which the rejected order was placed. For exchange restricted rejections, also check `account blocks`, `account type/category`, and `pan`.
 2. For margin rejections → invoke `kite_margins`.
 3. For ban period → if client asks about current position → invoke `kite_positions`.
 4. If `app_id` is numerical and rejection relates to market protection, rate limit, or IOC on MCX → route to Rule 16.
@@ -271,7 +282,7 @@ If no root cause found after completing all diagnostic steps → escalate.
 
 ### Rule 4 — RMS / Admin Square-Off
 
-1. `placed_by` = ADMINSQF or starts with "rms" per **A8**.
+1. `placed_by` = ADMINSQF or starts with "rms" per **A8**. Do not share the raw value with the client.
 2. Invoke `kite_margins` to check margin shortfall.
 3. Check if MIS + near auto square-off time per **A6**.
 4. Check for negative cash balance.
@@ -290,6 +301,9 @@ If no root cause found after completing all diagnostic steps → escalate.
 2. LPP/price range → exchange cancelled order — price was outside the allowed range. Retry closer to market price.
 3. Partial fill + cancelled remainder → partially filled, share `filled_quantity` of `total_quantity` at `average_price`. Remaining `cancelled_quantity` was cancelled.
 4. IOC → IOC orders auto-cancel any unfilled portion immediately.
+5. SL order — trigger activated but limit not filled:
+   - Applies when: `order_type` = SL, `trigger_price` and `price` both present.
+   - Check `order_status` — if CANCELLED, check `exchange_timestamp`. If `exchange_timestamp` is after market hours per **A7**: the stop-loss trigger was reached and a limit order at `price` was placed; the market did not return to the limit price before session close; the limit order was auto-cancelled by the exchange at session end per **A7**. The underlying position remains open.
 
 ### Rule 7 — Unauthorized ("I Didn't Place This")
 
@@ -347,3 +361,11 @@ If no root cause found after completing all diagnostic steps → escalate.
 3. MCX IOC rejection: MCX does not support IOC validity in the algo segment. Orders via third-party API on MCX with IOC validity will be rejected. Use DAY validity instead.
 4. Order slicing: API order slicing should be capped at a maximum of 10 slices to stay within the 10 orders-per-second rate limit.
 5. For details on all SEBI retail algo compliance, share link from **A13**.
+
+### Rule 17 — Sold Stocks but Funds Not Available
+
+1. Locate the CNC SELL order: if the client names an instrument, filter by that instrument with `product` = CNC and `type` = SELL. If no instrument is mentioned, filter all orders by `product` = CNC and `type` = SELL and apply the remaining steps to each matching order.
+2. Invoke `console_eq_holdings` for the sell date and check `t1` for this instrument — this is the definitive indicator:
+   - `t1` = 0 → no unsettled shares at the time of the sell. Normal CNC sale. 100% of proceeds available same day (policy effective October 7, 2024).
+   - `t1` > 0 and sold quantity ≤ `t1` → entirely BTST. All shares sold were purchased the previous trading day and had not settled. Invoke `settlement_date_calculator` with the sell date to determine the exact date proceeds will be available (T+1, accounting for weekends and holidays — e.g. a Friday sell settles Monday). Blocked amount = `t1` × `average_price` from the sell order.
+   - `t1` > 0 and sold quantity > `t1` → split sale: `t1` quantity is BTST (proceeds on T+1 — invoke `settlement_date_calculator` with the sell date for the exact date); the remaining quantity was from settled holdings (proceeds same day). Blocked amount = `t1` × `average_price` from the sell order.

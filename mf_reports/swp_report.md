@@ -16,6 +16,7 @@ TAGS: investments
 
 ## Protocol
 
+
 # SWP REPORT PROTOCOL
 
 ## Section A: Reference Data
@@ -28,7 +29,7 @@ TAGS: investments
 
 ### A2 — T-PIN / DDPI Authorization
 
-To verify DDPI status: check `primary_ddpi_flag` in `get_all_client_data` — Active = DDPI enabled.
+To verify DDPI status: invoke `get_all_client_data` and check `primary_ddpi_flag` = `Active` → DDPI enabled.
 
 | Account Type | Requirement |
 |---|---|
@@ -111,5 +112,6 @@ If no root cause found after completing all diagnostic steps → suggest manual 
 
 ### Rule 3 — T-PIN Authorization Required
 
-1. Per **A1**: CDSL T-PIN authorization must be completed on the same day SWP triggers, between 10:00 AM and 3:00 PM. Order was rejected because not completed on time. Direct client to place a fresh manual redemption request for this cycle.
-2. Recommend DDPI: enabling DDPI allows automatic debit of units without T-PIN authorization each time. Share activation link per **A4**.
+1. Invoke `get_all_client_data` and check `primary_ddpi_flag` per **A2**:
+   - Active → DDPI is already enabled; T-PIN authorisation is not required. Escalate — SWP should not have been rejected.
+   - Not active → Per **A1**: T-PIN authorisation must be completed between 10:00 AM and 3:00 PM on the trigger day. If window has passed, direct client to place a fresh manual redemption for this cycle. Recommend enabling DDPI via **A4** to avoid T-PIN authorisation in future.

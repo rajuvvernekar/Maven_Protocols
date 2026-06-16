@@ -19,9 +19,8 @@ TAGS: holdings, demat
 
 ## Protocol
 
-# CONSOLE EQ HOLDINGS BREAKDOWN PROTOCOL
 
----
+# CONSOLE EQ HOLDINGS BREAKDOWN PROTOCOL
 
 ## Section A: Reference Data
 
@@ -82,6 +81,8 @@ TAGS: holdings, demat
 | Split | Immediate (on record date) |
 | Demerger | 30–45 days from record date |
 
+---
+
 ## Section B: Decision Flow
 
 ### Routing
@@ -100,7 +101,7 @@ Route by scenario
 
 ### Fallback
 
-- If no rule matches → escalate.
+If no rule matches → escalate.
 
 ---
 
@@ -131,8 +132,10 @@ Route by scenario
 
 ### Rule 4 — Entry Missing from Breakdown
 
-1. If the trade was executed within the last 1 trading day → inform client per A1; trade is in the tradebook and will appear in the breakdown shortly. Buy average and P&L are not affected.
-2. If trade was 2+ trading days ago and still not in breakdown → escalate.
+1. Invoke `console_eq_tradebook_prepared` for the stock the client is asking about.
+2. No trades found for the stock → communicate that no trades are found in the tradebook for this stock.
+3. Trades found from the previous trading day (relative to `current_handling_time`) → ask the client to wait up to 24 hours per **A1**; the entry will appear in the breakdown shortly.
+4. Trades found but older than the previous trading day → escalate.
 
 ---
 

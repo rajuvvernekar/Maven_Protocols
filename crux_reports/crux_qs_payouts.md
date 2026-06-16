@@ -44,6 +44,8 @@ TAGS: funds
 
 ### A1 — Settlement Fundamentals
 
+- **Date range limit:** 30 days per call.
+
 - Settlement is mandatory; frequency (monthly/quarterly) set at account opening, cannot be changed.
 - Transfers to primary bank account only, free of charge.
 - Bank transfer completes within 24 hours; settlement statement emailed.
@@ -71,7 +73,7 @@ First Friday of January, April, July, and October. If that Friday is a bank holi
 ### A4 — Outstanding Positions
 
 - If client has outstanding positions: 225% of EOD margins blocked, remaining balance transferred.
-- Check `client_retention_dates` for the specific funds retained and breakdown for the client.
+- Invoke `client_retention_dates` for the specific funds retained and breakdown for the client.
 
 ### A5 — Inactivity QS Detection Logic
 
@@ -79,7 +81,7 @@ Apply layered detection in this order:
 
 1. `ledger_report` text contains "quarterly settlement (inactive)" → Inactivity QS.
 2. Payout date does not match **A2** settlement dates (first Friday of Jan/Apr/Jul/Oct, or any date listed in the **A2** operational note) → Inactivity QS.
-3. If still ambiguous (payout date matches **A2** + no "(inactive)" marker): call `kite_order_history` for the 30 calendar days before the payout date. No trades found → Inactivity QS. Trades found → Regular QS.
+3. If still ambiguous (payout date matches **A2** + no "(inactive)" marker): invoke `kite_order_history` for the 30 calendar days before the payout date. No trades found → Inactivity QS. Trades found → Regular QS.
 4. Fallback: if `kite_order_history` is unavailable or inconclusive → default to Regular QS, use general language accurate for both types.
 
 If both conditions apply (inactive during regular QS period), mention inactivity first.

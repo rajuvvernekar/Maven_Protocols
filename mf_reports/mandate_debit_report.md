@@ -16,13 +16,14 @@ TAGS: investments, funds
 
 ## Protocol
 
-# MANDATE DEBIT REPORT PROTOCOL
 
----
+# MANDATE DEBIT REPORT PROTOCOL
 
 ## Section A: Reference Data
 
 ### A1 — Fundamentals
+
+- **Date range limit:** 100 days per call.
 
 - Failed debits are not retried automatically — the client must add funds manually for that cycle. The mandate must be active before debits can be processed.
 
@@ -53,7 +54,7 @@ TAGS: investments, funds
 | `umrn` | Bank-assigned mandate registration number |
 | `transaction_id` | Internal transaction identifier |
 | `provider_transaction_id` | Payment provider's transaction identifier |
-| `bank_reference` | Bank-assigned reference for the debit transaction |
+| `bank_reference` | Bank-assigned reference for the debit transaction; matches `utr_no` in `fund_allocation_report` — use to trace a debit to its corresponding order |
 | `tag` | Internal tag |
 | `merchant` | Mandate issuer entity (Coin/Zerodha) |
 | `type` | Mandate type — `autopay` (UPI) or `enach` |
@@ -143,7 +144,7 @@ Compare today's date to the scheduled date and `created_at`:
 
 **Scheduled date passed, draft persists beyond T+2 from `created_at`:**
 
-- This typically indicates the mandate was revoked or cancelled from the client's UPI app or bank portal. Communicate this and advise checking mandate status in `mandate_report`; if no active mandate exists, advise creating a new one. Share the relevant link from A6.
+- Invoke `settlement_date_calculator` with `created_at` to compute T+2 working days. If the current date is beyond that T+2 → this typically indicates the mandate was revoked or cancelled from the client's UPI app or bank portal. Communicate this and advise checking mandate status in `mandate_report`; if no active mandate exists, advise creating a new one. Share the relevant link from A6.
 
 **Scheduled date passed, within T+2 window:**
 
@@ -161,7 +162,8 @@ If the client reports the order has not been allotted yet:
 
 1. Use `order_id` to look up `cashier_reference` in `fund_allocation_report` for payment mapping.
 2. If payment is mapped → invoke `mf_order_history` for the corresponding order status. Communicate the order status.
-3. If payment is not yet mapped → communicate that payment mapping takes T+1 to T+2 business days.
+3. If payment is not yet mapped → use `bank_reference` to look up `utr_no` in `fund_allocation_report`. If a match is found → use `order_number` from that record to invoke `mf_order_history` via `exchange_order_id` and identify the exact order. Communicate the order status.
+4. If neither mapping resolves → communicate that payment mapping takes T+1 to T+2 business days.
 
 ---
 

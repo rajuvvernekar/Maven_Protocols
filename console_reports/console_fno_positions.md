@@ -18,9 +18,8 @@ TAGS: holdings
 
 ## Protocol
 
-# CONSOLE FNO POSITIONS PROTOCOL
 
----
+# CONSOLE FNO POSITIONS PROTOCOL
 
 ## Section A: Reference Data
 
@@ -104,14 +103,16 @@ If no route matches → escalate.
 
 ### Rule 1 — Position Verification
 
+- Invoke `get_all_client_data` and check `segments` to confirm the client is enabled for the relevant segment per A3.
 - Identify direction from `open_quantity` (positive = long, negative = short) and communicate the position details using shareable fields per A2.
 
 ---
 
 ### Rule 2 — MTM Obligation Explanation
 
-1. Explain MTM mechanics per A4.
-2. If client asks for detailed day-by-day MTM calculation → escalate.
+1. Invoke `get_all_client_data` and check `bank account` to confirm the registered bank account where MTM credits and debits are settled.
+2. Explain MTM mechanics per A4.
+3. If client asks for detailed day-by-day MTM calculation → escalate.
 
 ---
 
@@ -148,6 +149,7 @@ If no route matches → escalate.
 
 ### Rule 7 — Margin Shortfall Queries
 
+- Invoke `get_all_client_data` and check `account blocks` to identify any account-level restrictions.
 - Margin requirements and penalty calculations are not available in this tool per A1 → escalate.
 
 ---

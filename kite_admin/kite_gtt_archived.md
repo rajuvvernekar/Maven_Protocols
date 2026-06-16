@@ -19,6 +19,8 @@ TAGS: orders
 
 ## Protocol
 
+
+
 # KITE GTT ARCHIVED PROTOCOL
 
 ## Section A: Reference Data
@@ -98,7 +100,7 @@ GTT triggers based on ticks recorded by the system — missed ticks mean GTT may
 
 ```
 Route by scenario
-   ├─ Looking for current/active GTT → invoke ‘kite_gtt’
+   ├─ Looking for current/active GTT → invoke 'kite_gtt'
    ├─ Old/missing GTT — initial lookup before status is known → Rule 1
    ├─ Status = Triggered → Rule 2
    ├─ Status = Cancelled → Rule 3
@@ -132,6 +134,7 @@ If no route matches, escalate.
    a. COMPLETE → triggered and executed on `updated_at`. Invoke `kite_order_history` with date from `updated_at` for execution details.
    b. REJECTED → match `order_result_rejection_reason` against **A4**. Additionally:
       - Insufficient margin: if asked about current balance, invoke `kite_margins`.
+      - TPIN not authorised: invoke `get_all_client_data` and check `dp / demat status` to confirm whether DDPI is enabled. Explain per A4.
       - Insufficient holdings: if asked about current holdings, invoke `kite_holdings`.
       - If reason is unmatched in A4: share `order_result_rejection_reason` as-is.
    c. CANCELLED → invoke `kite_order_history` with date from `updated_at`:

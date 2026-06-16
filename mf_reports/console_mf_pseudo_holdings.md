@@ -12,18 +12,18 @@ When clients:
 - Ask about free units available for redemption/SWP
 - Report "Fix discrepancy" message on Coin
 - Report P&L calculation failure
+- Cannot see mutual fund holdings or details on Coin app
 
 This is the PRIMARY tool for ALL MF holdings queries. Always check this tool first.
 
-TRIGGER KEYWORDS: "holdings", "units", "buy average", "portfolio", "pledged", "not visible", "XIRR", "invested value", "discrepancy", "fix discrepancy", "PnL calculation failed", "coin"
+TRIGGER KEYWORDS: "holdings", "units", "buy average", "portfolio", "pledged", "not visible", "XIRR", "invested value", "discrepancy", "fix discrepancy", "PnL calculation failed", "coin", "can't see mutual funds", "MF not showing on Coin", "mutual fund not visible", "cannot see my mutual fund"
 
 TAGS: investments, holdings
 
 ## Protocol
 
-# CONSOLE MF PSEUDO HOLDINGS PROTOCOL
 
----
+# CONSOLE MF PSEUDO HOLDINGS PROTOCOL
 
 ## Section A: Reference Data
 
@@ -90,11 +90,11 @@ TAGS: investments, holdings
 
 ### A5 — MF Unit Transfer (Inward and Outward)
 
-**Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 + 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: RTA may take up to 25 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
+- **Inward — non-demat:** Dematerialization required before transfer to Zerodha. Units in physical mode or Statement of Account must be dematerialised before transfer. Charges: ₹150 + 18% GST per scheme (ELSS: ₹150 per investment within scheme); ₹100 courier charges (one-time). Timeline: RTA may take up to 25 days after submitting documents. Links: transfer MF article and dematerialization article from **A8**.
 
-**Inward — demat (CDSL Easiest):** For MF units held in demat with another broker. CDSL Easiest for CDSL-to-CDSL transfers. ELSS locked units: closure cum transfer process only (same account holder). Free (unlocked) ELSS units transferable without restriction. Timeline: up to 4 days after submitting documents. Link: transfer shares article from **A8**.
+- **Inward — demat (CDSL Easiest):** For MF units held in demat with another broker. CDSL Easiest for CDSL-to-CDSL transfers. ELSS locked units: closure cum transfer process only (same account holder). Free (unlocked) ELSS units transferable without restriction. Timeline: up to 4 days after submitting documents. Link: transfer shares article from **A8**.
 
-**Outward:** Three destination methods — another CDSL demat account (CDSL Easiest online), NSDL demat (off-market transfer), non-demat (rematerialisation required). ELSS lock-in: NSDL destination requires rematerialisation first; CDSL destination via closure cum transfer (same PAN only). Check `margin` > 0 before initiating — pledged units must be unpledged first: Console → Portfolio → Holdings → [fund] → Unpledge. Charges: ₹25 per security + 18% GST; 0.015% stamp duty on considered amount; rematerialisation ₹150 + 18% GST per scheme (₹150 per investment for ELSS); DIS booklet: first 10 slips free; additional booklets ₹100 + 18% GST + ₹100 + 18% GST courier. Link: outward transfer article from **A8**.
+- **Outward:** Three destination methods — another CDSL demat account (CDSL Easiest online), NSDL demat (off-market transfer), non-demat (rematerialisation required). ELSS lock-in: NSDL destination requires rematerialisation first; CDSL destination via closure cum transfer (same PAN only). Check `margin` > 0 before initiating — pledged units must be unpledged first: Console → Portfolio → Holdings → [fund] → Unpledge. Charges: ₹25 per security + 18% GST; 0.015% stamp duty on considered amount; rematerialisation ₹150 + 18% GST per scheme (₹150 per investment for ELSS); DIS booklet: first 10 slips free; additional booklets ₹100 + 18% GST + ₹100 + 18% GST courier. Link: outward transfer article from **A8**.
 
 ---
 
@@ -131,6 +131,18 @@ Link: CAS statement article from **A8**.
 | Transaction cum holding statement | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/transaction-cum-holding-statement |
 | Portfolio XIRR | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/portfolio-xirr |
 | Capital support team (LAS queries) | capitalsupport@zerodha.com |
+| CAS statement | https://support.zerodha.com/category/console/portfolio/statement/articles/what-is-cas |
+| Console holdings | https://console.zerodha.com/portfolio/holdings |
+| Transaction cum Holding Statement (CDSL Easi) | https://support.zerodha.com/category/console/portfolio/statement/articles/statement-of-transaction-sot-and-details-in-sot |
+| Redemption requisition form | https://s3.ap-south-1.amazonaws.com/staticassets.zerodha.net/support-portal/2021/12/07/Article/RBX5SU1C_RepurchaseRequest.pdf |
+
+---
+
+### A9 — Expense Ratio Facts
+
+- **TER vs BER:** The expense ratio shown on Coin is the Total Expense Ratio (TER), which includes the Base Expense Ratio (BER) plus additional expenses such as GST on investment management fees and other regulatory charges. TER is the actual expense charged to the fund and is the standard figure displayed across all platforms — Coin, AMC websites, and AMFI. BER is a component of TER and is communicated separately by AMCs when there are changes.
+- **SEBI revised reporting format:** TER now includes Base Expense, brokerage/transaction costs, and applicable taxes — annualized for disclosure. Because brokerage and STT are incurred only when the fund trades, the expense ratio may temporarily spike during portfolio rebalancing periods. This is a reporting change only — investors are not being charged higher expenses.
+- **Expense ratio update source:** The expense ratio displayed on Coin is updated from the AMC's latest published factsheet. If a client sees a different figure on another website or platform, advise them to check the AMC's latest factsheet for the current figure — Coin's figure will reflect that factsheet once it is processed.
 
 ---
 
@@ -139,16 +151,20 @@ Link: CAS statement article from **A8**.
 ### Routing
 
 ```
-Query relates to MF holdings →
-│
+Route by scenario
 ├─ failure_date populated → Rule 1
 ├─ Discrepancy signals (discrepant > 0, "fix discrepancy" message, or "NA" invested amount) → Rule 2
+├─ Client cannot see mutual fund details on Coin app → Rule 2
 ├─ Client reports missing or incorrect units → Rule 2
 ├─ Mismatch between this tool and console_mf_holdings → Rule 3
 ├─ Pledged units blocking redemption/SWP, or collateral margin query → Rule 5
 ├─ Client asks about transferring MF units to or from Zerodha (demat or non-demat) → Rule 7
 ├─ Fund still showing in portfolio after full redemption (residual decimal units) → Rule 8
 ├─ Client asks about verifying holdings outside Coin (CAS, SOH, CDSL statement) → Rule 11
+├─ SIP creation error — "Invalid initial_amount, no previous investment in fund" → Rule 12
+├─ Holdings not showing on RTA/CAMS/AMC websites → Rule 13
+├─ TER/BER or expense ratio query → Rule 14
+├─ Unable to redeem after NRI account conversion → Rule 15
 └─ General MF holdings query → Check data here first; invoke console_mf_holdings only if `available`, `holdings_date`, or `total_quantity` is needed
 ```
 
@@ -178,12 +194,12 @@ Invoke `console_mf_tradebook` for the fund. Sum all BUY `quantity` entries; subt
 **Payout dividend check:**
 If `dividend_type` = payout AND `discrepant` > 0 → escalate.
 
-1. **Late allotment:** Recent order found in `mf_order_history` with `exchange_timestamp` within T+3 working days (excluding weekends and trading/settlement holidays). If no Coin purchase history exists and the fund is present, ask whether units were transferred from another platform before continuing.
+1. **Late allotment:** Invoke `settlement_date_calculator` with `exchange_timestamp` to compute T+3 working days. If the current date is within T+3: If no Coin purchase history exists and the fund is present, ask whether units were transferred from another platform before continuing.
    - Units may arrive late to demat. NA shows on T+2 for one day; rectified on T+3. This is late delivery of units, not a longer allotment window.
    - If units are confirmed allotted (in `mf_order_history` or `console_mf_tradebook`) but invested value is NA or incorrect: settlement files are processed in stages; resolves within 24–48 hours.
    - Share the late allotment link from **A8**.
 
-2. **Late allotment — escalation:** `exchange_timestamp` beyond T+3 working days (excluding weekends and trading/settlement holidays) → escalate.
+2. **Late allotment — escalation:** If `settlement_date_calculator` confirms current date is beyond T+3 working days from `exchange_timestamp` → escalate.
 
 3. **Wrongly entered external trades:** All purchases through Coin but external entries exist in `console_mf_external_trades` → escalate.
 
@@ -203,6 +219,9 @@ If `dividend_type` = payout AND `discrepant` > 0 → escalate.
 ---
 
 ### Rule 4 — Buy Average / Investment Value
+
+**Total investment check:**
+If the client disputes the total investment amount shown → sum all `buy_value` entries for the fund across this tool's holdings records. This is the total amount invested. If the sum does not match the client's expectation, proceed with:
 
 1. If values differ from the client's expectation → invoke `console_mf_external_trades` for missing or incorrect external entries.
 2. If investment value has not updated → settlement delay (liquid: T-day by 7 PM; non-liquid: T+1 by 7 PM).
@@ -236,7 +255,6 @@ If `dividend_type` = payout AND `discrepant` > 0 → escalate.
 
 4. Check `margin` > 0. If pledged → advise unpledging first per **A5** (outward).
 5. Guide per **A5** (outward) based on destination (CDSL demat / NSDL demat / non-demat), including lock-in and PAN conditions. Share charges and link from **A5**.
-6. Share the client's DP ID and Client ID from `get_all_client_data`.
 
 ---
 
@@ -266,3 +284,49 @@ Redirect to the capital support team at the contact from **A8**.
 
 1. Holdings can be verified via monthly CAS email, Statement of Holdings (SOH sent monthly to registered email), or transaction cum holding statement from CDSL Easi. Per **A6**.
 2. Share the CAS statement link from **A8**.
+
+---
+
+### Rule 12 — SIP Error: NRI Initial Investment Required
+
+Triggered by error: "Invalid `initial_amount`. Client does not have previous investment in this fund."
+
+1. Check `client_acc_type` from `get_all_client_data`. If NRO or NRE:
+   - The client has converted from a resident account to an NRI account. Units were transferred to the NRI account but the system does not recognise them as a prior investment for SIP initial amount validation.
+   - Advise the client to place a lumpsum order for the fund first, as per the initial investment amount required for the fund. Once units are allotted, the SIP can be created.
+   - If the client does not wish to place the lumpsum at the minimum amount, an AMC SIP can be created instead.
+2. If `client_acc_type` is not NRO or NRE → escalate.
+
+---
+
+### Rule 13 — Holdings Not Showing on RTA/CAMS/AMC Websites
+
+1. Check `available` and `quantity` in `console_mf_pseudo_holdings`.
+
+If holdings exist:
+- Investments are held in demat mode with Zerodha. RTAs and AMCs do not have a well-defined structure to record modified details for demat mode investors — this causes inconsistencies when verifying holdings or contact details on RTA/AMC websites.
+- Direct the client to verify holdings via:
+  - Monthly CAS email from NSDL/CDSL — includes holdings from all RTAs (CAMS, KFintech, and others). Share CAS statement link from **A8**.
+  - Coin app or Console. Share Console holdings link from **A8**.
+  - Transaction cum Holding Statement from CDSL Easi portal. Share transaction cum holding statement link from **A8**.
+
+If no holdings exist → escalate.
+
+---
+
+### Rule 14 — TER/BER Expense Ratio Query
+
+Communicate per **A9**.
+
+If the client reports the expense ratio shown on Coin differs from another website or platform: the expense ratio is updated from the AMC's latest published factsheet per **A9**. Advise the client to check the AMC's latest factsheet for the current figure.
+
+---
+
+### Rule 15 — Unable to Redeem After NRI Account Conversion
+
+1. Check `client_acc_type` from `get_all_client_data`. If NRO or NRE:
+   - Check `communication_country`. If USA or Canada:
+     - Guide the client to submit a redemption requisition form. Share the redemption requisition form link from **A8**.
+     - Communicate that Zerodha will process the redemption request with the AMC and the proceeds will be credited to the primary bank account.
+   - Other countries → escalate.
+2. If `client_acc_type` is not NRO or NRE → apply Rule 5.

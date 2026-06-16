@@ -27,6 +27,8 @@ TAGS: holdings, demat, corporate-actions
 
 ## Protocol
 
+
+
 # KITE HOLDINGS PROTOCOL
 
 ## Section A: Reference Data
@@ -68,7 +70,7 @@ TAGS: holdings, demat, corporate-actions
 
 | Field | Interpretation |
 |---|---|
-| `ltp` | Use as "current market price" |
+| `ltp` | Internal current price — use for P&L reasoning only; not updated in real time |
 
 ### A3 — Settlement Schedule
 
@@ -105,7 +107,7 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 | Reason | Explanation |
 |---|---|
 | Privacy Mode enabled | Client has Privacy Mode turned on — hides holdings, positions, P&L, and balances on screen. Data is intact; only display is hidden. To disable: tap user ID (top-right on Kite web, or profile icon on the app) → toggle Privacy Mode off. Links per **A9**. |
-| Shares already sold | Client may have sold shares — verify via tradebook before other checks. Share the FIFO buy/sell trail. |
+| Shares already sold | Client may have sold shares — per **Rule 4**. |
 | Short delivery by seller | Investigate per **Rule 10**. Zerodha notifies via SMS/email. |
 | Pending settlement (T1) | Check `t1_t2_holdings` field. |
 | Corporate action in progress | Wait per **A5** timelines. P&L may show a temporary drop until new shares are credited — auto-corrects. |
@@ -127,7 +129,8 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 - Day's P&L = (LTP − previous close) × quantity.
 - Net change = ((LTP − avg_cost) / avg_cost) × 100.
 - After 3:30 PM: Kite switches from LTP to official closing price (weighted avg of last 30 min). P&L shifts slightly — normal.
-- If LTP is N/A: Invested value excluded from total to avoid incorrect P&L. Client should update buy average on Console to fix total P&L calculation.
+- LTP is N/A with avg_cost = 0 or N/A: invested value for that holding excluded from portfolio total. Direct client to update buy average on Console per **A7**, link in **A9**.
+- LTP is N/A with avg_cost populated: stock has no recent trades (illiquid). Stock is listed and tradeable on Kite. Current value for that holding is unavailable only.
 - Smallcase vs Kite: Kite uses FIFO, Smallcase uses simple average — prices may differ. If client sold Smallcase stocks directly on Kite, Smallcase platform may not reflect this — contact help@smallcase.com for Smallcase-specific discrepancies.
 
 ### A9 — Links
@@ -142,6 +145,7 @@ Example: Client had 50 shares (settled) and bought 100 more yesterday. Today the
 | T1 holdings proceeds | https://support.zerodha.com/category/trading-and-markets/general-kite/kite-holdings/articles/t1-holdings-proceeds |
 | Privacy Mode (Kite web) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-web |
 | Privacy Mode (Kite app) | https://support.zerodha.com/category/trading-and-markets/general-kite/others-kite/articles/privacy-mode-on-kite-app |
+| Transfer shares from Zerodha account | https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/transfer-securities/articles/different-ways-to-transfer-shares-from-my-zerodha-account |
 
 ## Section B: Decision Flow
 
@@ -163,7 +167,8 @@ Route by scenario
    ├─ Short delivery notification received / shares not credited post-auction → Rule 10
    ├─ Holdings quantity doesn't match trade history (discrepant shares) → Rule 11
    ├─ Unable to sell T1 shares / shares bought yesterday → Rule 12
-   └─ Stock sold but funds not credited → Rule 13
+   ├─ Stock sold but funds not credited → Rule 13
+   └─ Client wants to transfer delisted/suspended/unlisted shares to another demat account → Rule 14
 ```
 
 ### Fallback
@@ -178,7 +183,9 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. Day's P&L vs Net P&L confusion → Day's P&L shows today's change from yesterday's closing price. Net change shows total change from buy average. Different calculations per **A8**.
 2. P&L changed after 3:30 PM → Kite switches from last traded price to the official closing price (weighted average of trades 3:00–3:30 PM). P&L shifts slightly — normal per **A8**.
-3. Total P&L seems wrong → check for `avg_cost` = 0 or N/A. Some holdings have no buy average recorded, so invested value is excluded from the total. Direct client to update buy average on Console per **A7**, **A8**, link in **A9**.
+3. Total P&L seems wrong or current value shows N/A for a holding:
+   a. `avg_cost` = 0 or N/A → invested value excluded from portfolio total per **A8**. Direct client to update buy average on Console per **A7**, link in **A9**.
+   b. `avg_cost` populated, current value N/A → stock is illiquid (no recent trades); listed and tradeable on Kite per **A8**. No action needed for the shares.
 4. If client asks about intraday or F&O position P&L → invoke `kite_positions`.
 
 ### Rule 2 — Buy Average Issues
@@ -196,7 +203,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 1. P symbol / `collateral_quantity` → client has pledged shares as collateral. P symbol shows pledged quantity. Remaining (total minus collateral) is available for trading per **A1**.
 2. Can pledged shares be sold? → yes, can be sold instantly without unpledge request. Selling pledged holdings reduces collateral margin.
-3. Collateral reduced after selling → cross-check `kite_margins` for current `equity_collateral` and `total_collateral`.
+3. Collateral reduced after selling → invoke `kite_margins` for current `equity_collateral` and `total_collateral`.
 4. For pledge/unpledge process or why pledge fails for a stock → invoke `pledge_request_report`.
 5. Can collateral margin be used for CNC purchases? → collateral margin from pledged shares can be used for equity intraday trading, futures, and options (buying and writing). For CNC purchases, available cash or cash-equivalent margin is required — collateral alone is not sufficient.
 
@@ -209,15 +216,17 @@ If no route matches, investigate using Section A reference data. If no root caus
    Invoke `console_eq_tradebook_prepared` for the instrument within the relevant date range. Compute net quantity using FIFO: sum all BUY quantities and subtract all SELL quantities chronologically. If net remaining ≤ 0 → client has sold all shares. Share buy/sell summary (dates, quantities, prices) so client can see the FIFO trail. If net remaining is positive but less than expected → inform client of actual remaining quantity, then investigate the missing portion.
 
 3. Systematically check causes from **A6**:
-   a. Recently purchased → shares bought today appear under Positions per **A1**, **A3**. Invoke `kite_positions`.
+   a. Recently purchased → invoke `kite_orders` to check whether the order was placed today.
+      - Orders found and executed → shares bought today appear under Positions per **A1**, **A3**; they move to Holdings from the next trading day. Invoke `kite_positions` to show current position.
+      - `count: 0` → no order was placed today. Confirm with the client that the order was not placed.
    b. CA in progress → new shares credited within timelines per **A5**. For split shares not credited after 4 working days → escalate. P&L may show temporary drop until credited per **A6**.
    c. Short delivery → complete **Rule 10**. Respond based on buy-side or sell-side findings.
    d. ESOP with lock-in → may not appear on Kite; still in demat — verify via CDSL statement (SOT/SOH) per **A6**.
-   e. Suspended/delisted → may not appear on Kite. Check Console for complete view per **A1**, **A6**.
+   e. Suspended/delisted/unlisted → invoke `console_eq_holdings` and compare the instrument list against `kite_holdings`. Stocks present in `console_eq_holdings` but absent from `kite_holdings` are typically delisted, suspended, or unlisted — these are not actively trading and cannot be sold on an exchange. If client asks about transferring or moving these shares → Rule 14.
    f. Transfer from another broker → check CDSL Easiest status. Once credited, appears in holdings. Update buy average manually on Console per **A6**, link in **A9**.
    g. IPO allotment → appears after listing. Check CDSL SMS/email for credit confirmation. If confirmed but not visible on Kite, wait until end of listing day per **A3**, **A6**.
 
-4. If client confirms order was placed → invoke `kite_order_history` to verify execution.
+4. If client believes the order was placed on a prior trading day → invoke `kite_order_history` to verify execution.
 
 ### Rule 5 — CDSL TPIN / DDPI (Can't Sell)
 
@@ -239,6 +248,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 8 — Console vs Kite Mismatch
 
 1. Kite shows only actively traded, listed instruments. Console shows everything including suspended, delisted, unlisted, GSM 3+ stocks, and locked-in ESOP. Value difference is typically from these instruments per **A1**.
+2. To identify specific missing stocks → invoke `console_eq_holdings` and compare the instrument list against `kite_holdings`. Stocks present in Console but absent from Kite are delisted, suspended, or unlisted. For client guidance on these stocks → see Rule 4 step 3e.
 
 ### Rule 9 — Smallcase vs Kite Mismatch
 
@@ -247,7 +257,7 @@ If no route matches, investigate using Section A reference data. If no root caus
 ### Rule 10 — Short Delivery Investigation
 
 1. **Confirm short delivery occurred:**
-   Use `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery" or "Upper Circuit". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details.
+   Invoke `get_all_client_data` and check `communications` for a `campaign_name` containing "Short delivery" or "Upper Circuit". The date in the communication (format: DDMMYYYY, e.g., 20032026 = 20th March 2026) identifies when the short delivery occurred. The `content` field provides details.
 
 2. **Determine buy-side or sell-side:**
    Invoke `ledger_report` (last 2 weeks) and search for `remarks` "Short delivery margin blocked for sale of till exchange auction settlement".
@@ -288,10 +298,19 @@ If no route matches, investigate using Section A reference data. If no root caus
 
 **BTST detection:**
 1. Invoke `kite_order_history` for the sell date and the previous trading day (accounting for holidays).
-2. If the stock was bought on the previous trading day and sold today → BTST trade. Funds are available from T+1 only per **A4**. Share T1 holdings proceeds link from **A9**.
+2. If the stock was bought on the previous trading day and sold today → BTST trade. Proceeds are not available for trading or withdrawal on the same day — funds available from T+1 only per **A4**. Share T1 holdings proceeds link from **A9**.
 3. For additional confirmation, invoke `console_eq_holdings` for the sell date. Only quantity under `t1` is BTST — remaining quantity is from older settled holdings.
 4. Blocked value for BTST = `filled_quantity` × `average_price` from the sell order.
 
 **Normal CNC sale (non-BTST — settled holdings):**
-- 100% of proceeds are available same day for all trades (effective Oct 7, 2024).
+- Proceeds are available same day for placing new trades on Zerodha (effective Oct 7, 2024).
+- **Withdrawal to bank:** proceeds from any stock sale — whether regular CNC or BTST — can only be withdrawn to the bank from the next trading day, not the same day.
 - If client asks about specific holdings sold → invoke `kite_holdings`.
+
+### Rule 14 — Transfer of Delisted/Suspended/Unlisted Shares
+
+If the client asks about transferring or moving shares that are not visible on `kite_holdings`:
+
+1. Confirm the shares are present in `console_eq_holdings` but absent from `kite_holdings` — this confirms they are delisted, suspended, or unlisted and cannot be traded on an exchange.
+2. Inform the client that the only option to move these shares is an off-market transfer to another demat account, provided the ISIN is still active.
+3. Share the transfer link per **A9**.

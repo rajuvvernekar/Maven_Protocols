@@ -21,19 +21,18 @@ TAGS: account
 
 ## Protocol
 
-# PAN STATUS PROTOCOL
 
----
+# PAN STATUS PROTOCOL
 
 ## Section A: Reference Data
 
 ### A1 — Fundamentals
 
--PAN verification checks name/DOB validity across ITD, Exchange, Depository, and KRA. All intermediary records must match for trading — SEBI requirement.
+- PAN verification checks name/DOB validity across ITD, Exchange, Depository, and KRA. All intermediary records must match for trading — SEBI requirement.
 
--Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
+- Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
 
-- **pan_status inputs:** `client_name`, `pan`, `dob` — must be sourced from `get_all_client_data`. The client's self-reported name must not be used as input; the client may reference an updated name not yet reflected in Zerodha's system.
+- **pan_status inputs:**: client_name, pan, dob — must be sourced from get_all_client_data via an explicit call with fields=[client_name, pan, dob]; these are not returned by the mandatory fetch.
 
 ---
 
@@ -43,10 +42,10 @@ TAGS: account
 
 | Field | Interpretation |
 |---|---|
-| `pan_valid_status` | PAN validation result from IT department records — use to determine if PAN is valid |
-| `name_match` | Whether the name on PAN matches KYC records |
-| `dob_match` | Whether the date of birth on PAN matches KYC records |
-| `aadhaar_pan_seeding` | Whether Aadhaar is linked with PAN in IT department records |
+| `pan_status` | PAN validation result from ITD records — use to determine if PAN is valid (per A3) |
+| `name_status` | Whether the name matches ITD records (per A4) |
+| `dob_status` | Whether the DOB matches ITD records (per A4) |
+| `seeding_status` | Whether Aadhaar is linked with PAN in ITD records (per A5) |
 
 ---
 
@@ -88,9 +87,9 @@ TAGS: account
 | Personal preference | No | Yes |
 | Removing middle / last name | No | Yes |
 
-**Online process:** Re-KYC [A7 — Re-KYC] [A7 — Name change process] (requires Aadhaar linked to mobile number).
+**Online process:** Re-KYC via [A7 — Name change / Re-KYC process] (requires Aadhaar linked to mobile number).
 
-**Offline process:** Courier documents to Zerodha. Charges: ₹25 + GST. Updated within 72 working hours. Resolution may take up to 7 working days after documents received. [A7 — Name change process] [A7 — Courier address]
+**Offline process:** Courier documents to Zerodha. Charges: ₹25 + GST. Updated within 72 working hours. Resolution may take up to 7 working days after documents received. [A7 — Name change / Re-KYC process] [A7 — Courier address]
 
 ---
 
@@ -98,9 +97,12 @@ TAGS: account
 
 | Topic | URL / Reference |
 |---|---|
-| Re-KYC (online fix) | https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/how-do-i-change-the-registered-address-on-my-account-online |
-| ITD portal (verify name/DOB) | incometax.gov.in |
-| Name change process | https://support.zerodha.com/category/your-zerodha-account/your-profile/general-profile-questions/articles/why-is-the-name-on-my-zerodha-account-different-than-on-the-documents-i-ve-submitted |
+| Name change / Re-KYC process (online + offline) | https://support.zerodha.com/category/your-zerodha-account/your-profile/general-profile-questions/articles/why-is-the-name-on-my-zerodha-account-different-than-on-the-documents-i-ve-submitted#:~:text=Zerodha%20updates%20the%20name%20on,raising%20a%20request%20with%20Zerodha |
+| Update name / details on PAN at ITD (incl. DOB) | https://tradingqna.com/t/how-do-i-update-and-correct-my-name-and-other-details-on-pan-card/146151 |
+| ITD portal (verify name/DOB) | https://www.incometax.gov.in/iec/foportal/ |
+| Aadhaar–PAN linking | https://support.zerodha.com/category/account-opening/resident-individual/ri-online/articles/i-have-not-linked-my-pan-with-my-aadhaar |
+| Update DOB at Zerodha | https://support.zerodha.com/category/your-zerodha-account/account-modification-and-segment-addition/account-modification/articles/update-dob-gender-pep-marital-status-occupation#:~:t
+  ext=You%20can%20update%20your%20DOB,by%20completing%20the%20KYC%20process |
 
 **Courier address:** Zerodha Customer Support Centre, 192A 4th Floor, Kalyani Vista, 3rd Main Road, JP Nagar 4th Phase, Bengaluru, 560076
 
@@ -116,24 +118,24 @@ TAGS: account
 
 ---
 
----
-
 ## Section B: Decision Flow
 
 ### Routing
 
 ```
 Route by scenario
-├─ PAN validity ≠ "E" (invalid / deactivated / blocked) → Rule 1
-├─ Name match = "N" OR DOB match = "N" → Rule 2
-├─ Name match = "Y" AND DOB match = "Y" AND PAN valid = "E" → Rule 3
+├─ pan_status ≠ "E" (invalid / deactivated / blocked) → Rule 1
+├─ seeding_status = "R" or "N" (Aadhaar–PAN not linked) → Rule 6
+├─ name_status = "N" OR dob_status = "N" → Rule 2
+├─ name_status = "Y" AND dob_status = "Y" AND pan_status = "E" → Rule 3
 ├─ Minor account — PAN verification failed → Rule 4
-└─ Single ledger activation error (name/DOB mismatch) → Rule 5
+├─ Single ledger activation error (name/DOB mismatch) → Rule 5
+└─ Segment rejected with "PAN Verification Failed" → diagnose the name/DOB mismatch via Rule 2 (segment re-activation itself follows the segment-activation protocol)
 ```
 
 ### Fallback
 
-If no rule matches, check `get_all_client_data` for other account remarks or blocks, If `account_blocks` is non-empty, escalate.
+If no rule matches, invoke `get_all_client_data` for other account remarks or blocks. If `account_blocks` is non-empty, escalate.
 
 ---
 
@@ -141,26 +143,33 @@ If no rule matches, check `get_all_client_data` for other account remarks or blo
 
 ### Rule 1 — PAN Invalid
 
-1. PAN validity ≠ "E" (per A3).
+1. `pan_status` ≠ "E" (per A3).
 2. Escalate.
 
 ---
 
 ### Rule 2 — Name and/or DOB Mismatch
 
-1. Name match = "N" OR DOB match = "N" (per A4).
-2. If client states their name has already been updated at ITD:
-   - Direct client to update Zerodha records via online or offline process per A6. Links per A7.
-3. If client has not yet updated at ITD:
-   - Direct client to first update ITD via [A7 — ITD portal], then update Zerodha records per A6. Links per A7.
+1. `name_status` = "N" or `dob_status` = "N" (per A4) — Zerodha's record differs from current ITD records (A8-S2 / A8-S5).
+
+**Name mismatch (`name_status` = N):**
+2. ITD already reflects the new name → direct client to update Zerodha to match ITD (A8-S5). Online (re-KYC) only for A6 online-eligible categories; all others are offline only (per A6). Online additionally needs Aadhaar linked to the registered mobile for OTP — `seeding_status` = Y confirms only Aadhaar–PAN linkage, not Aadhaar–mobile.
+3. ITD not yet updated → client updates the name at ITD first ([A7 — Update name / details on PAN at ITD]; verify on [A7 — ITD portal]), then updates Zerodha per step 2.
+
+**DOB mismatch (`dob_status` = N):**
+4. A DOB mismatch is a data-entry error on one side — identify which record is wrong:
+   - Zerodha DOB wrong (ITD correct) → client updates the DOB at Zerodha to match ITD ([A7 — Update DOB at Zerodha]).
+   - ITD DOB wrong → client corrects DOB at ITD first ([A7 — Update name / details on PAN at ITD]; verify on [A7 — ITD portal]), then updates Zerodha.
+5. Repeated re-KYC will not resolve the mismatch until the underlying record is corrected — advise the client to stop re-submitting and fix the mismatch first.
 
 ---
 
 ### Rule 3 — Name and DOB Both Match
 
-1. Name match = "Y" AND DOB match = "Y" AND PAN valid = "E" (per A3, A4).
-2. If client still faces issues after all-clear (e.g., segment rejection, account block):
-   - Check `get_all_client_data` for other remarks or blocks on the account.
+1. `name_status` = "Y" AND `dob_status` = "Y" AND `pan_status` = "E" (per A3, A4) — A8-S3.
+2. If the client is requesting a name/DOB update but status is already "Y": Zerodha already matches current ITD. Either the change is already reflected (compare `client_name`/`dob` from `get_all_client_data` with what the client expects — if it matches, no action needed) or the ITD change has not yet propagated (status flips to "N" once ITD updates → ask the client to retry then, which routes to Rule 2). Do not initiate the A6 name-change process while status = "Y".
+3. If client still faces issues after all-clear (e.g., segment rejection, account block):
+   - Invoke `get_all_client_data` for other remarks or blocks on the account.
    - If no root cause found, escalate.
 
 ---
@@ -176,3 +185,11 @@ If no rule matches, check `get_all_client_data` for other account remarks or blo
 
 1. Client reports "name and/or date of birth do not match" error during single ledger activation.
 2. Apply Rule 2 in full. The name/DOB mismatch must be resolved before single ledger activation can proceed.
+
+---
+
+### Rule 6 — Aadhaar–PAN Not Linked
+
+1. `seeding_status` = "R" or "N" (per A5) — Aadhaar is not linked with PAN; the PAN is inoperative and blocks transactions.
+2. `seeding_status` = "NA" → exempt category (per A5); no linking required.
+3. Direct the client to link Aadhaar with PAN — see [A7 — Aadhaar–PAN linking] (linking is done on the ITD portal, [A7 — ITD portal]); once linked, re-verify PAN status.

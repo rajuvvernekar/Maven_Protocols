@@ -10,9 +10,48 @@ All protocol changes are logged here. Each entry links back to the proposed_chan
 - Archive: archive/YYYY-MM-DD_tool_name.md
 ```
 
-<<<<<<< HEAD
-**Before adding a new entry for a tool:** check `REGRESSION_LOG.md` to see if that tool + section was previously modified. If yes, note it there before applying.
-=======
+### 2026-06-05 — Date range limit bullet added to console_eq_tradebook_prepared
+
+- [Added]: `Date range limit: 100 days per call.` to A1. Completes the date-range coverage from the 2026-06-04 rollout — this tool was in the original error CSV (100-day cap) but omitted from that batch's tool list.
+
+### 2026-06-04 — Feedback batch from "Protocols - Changes to Push (2)" (16 tools + 1 description)
+
+Applied June-1 Protocol-body feedback to 16 tools + a new Description for mandate_report. Team-confirmed final, no regression.
+
+Tools: mf_order_history, account_modification_report, console_mf_pseudo_holdings, kite_margins, kite_order_history, kite_positions, kite_orders, sip_report, console_eq_holdings, pan_status, withdrawal_request, stock_gift_requests, ledger_report, console_instant_pledge, console_eq_tradebook_prepared, console_eq_pnl. Description: mandate_report (WHEN TO USE + TRIGGER KEYWORDS; TAGS retained).
+
+Re-applied this thread's prior work that the June-1 doc predated:
+- Re-added `Date range limit` A1 bullets the doc omitted: mf_order_history (180d), kite_order_history (30d), withdrawal_request (30d), console_instant_pledge (30d).
+- console_eq_holdings: re-grafted 4 `settlement_date_calculator` invocations the doc dropped (A4 eligibility, Rule 3 t1, Rule 5 T1 rollover, Rule 8 short-delivery auction) — team confirmed these "got missed". Migrated a reverted `console_eq_tradebook` → `console_eq_tradebook_prepared`.
+- ledger_report: normalised `Settlement_date_calculator` → lowercase `settlement_date_calculator` (3×). Rule 7/BTST removal (and its calculator ref) is intentional per team; Rule 4/5 retain it.
+- console_eq_pnl: migrated reverted `console_eq_tradebook` → `_prepared`.
+
+### 2026-06-04 — Tool-selection improvements (system prompt + get_all_client_data)
+
+Aimed at increasing tool-selection accuracy (reduce stopping early after the default client-data fetch).
+
+**system_prompt.md**
+- [Added]: `## Tool Use` section below Voice & Persona — call every relevant available tool; don't stop after `get_all_client_data` if another tool answers part of the query.
+- [Modified]: Moved `<thinking_summary>` out of `<response_format>` (now a sibling block, not nested) — it is a separate reasoning-trace channel, not part of the client-facing response.
+
+**miscellaneous/get_all_client_data.md**
+- [Removed]: Description block (WHEN TO USE). The tool is now fetched by default from code, so a selection description is redundant — removing it cuts token waste and routing noise. Protocol (field interpretation logic) retained.
+
+### 2026-06-04 — Date range limit handling (11 tools + system prompt)
+
+Tools whose API caps a single call's date range now declare it, and the system prompt defines a bounded retry/chunk strategy so long-range queries don't hard-fail on `ValidationException`.
+
+**system_prompt.md**
+- [Added]: `## Date Range Limit Handling` section (between Escalation Output Format and Final Reminder). On a date-range cap or `ValidationException`, fetch the most recent chunk within the cap, backdate for previous chunks, max 3 chunks, merge; escalate if 3 chunks still don't cover the window.
+
+**Per-tool `Date range limit` bullet added to A1:**
+- 30 days: console_instant_pledge, withdrawal_request, tradewise_charges_report, kite_order_history, crux_qs_payouts
+- 31 days: console_mtf_conversion
+- 90 days: delayed_payment_charges
+- 100 days: mandate_debit_report
+- 180 days: console_mf_tradebook, mf_order_history
+- 365 days: mandate_report
+
 ### 2026-05-29 — Feedback batch from "Protocols - Changes to Push (1)" (12 tools)
 
 Applied Protocol-body feedback (dated 25th/27th) to 12 tools. All Description blocks preserved (body-only changes). Tools updated: account_modification_report, mf_order_history, ledger_report, console_eq_holdings, amc_charges, kite_margins, kite_positions, kite_holdings, cashier_payins, console_eq_tradebook_prepared, console_eq_pnl, kite_orders.
@@ -23,39 +62,6 @@ While applying, re-applied this session's earlier cleanups so the feedback did n
 - `cashier_payin` → `cashier_payins`; `console_eq_tradebook` → `console_eq_tradebook_prepared` (disabled tool).
 
 New: feedback introduces `settlement_date_calculator` as an invokable tool (working-day / holiday-shift computation) across several protocols — kept verbatim per product confirmation that it is now a live tool.
->>>>>>> a5745855296b465ccc5927bbaf6deed02a21e046
-
-### 2026-06-01 — Feedback pipeline run (Feedback_Downvotes.tsv · 811 tickets · 94 clusters)
-
-**Purpose:** Diagnostic analysis run. No protocol files were modified. Verdicts written to `pipeline_output/diagnostic_report.md` in the Feedback_Fixing_Trial_2 working directory.
-
-**Pipeline:** `run_pipeline_2.py` on `Feedback_Downvotes.tsv` → semantic clustering via sentence-transformers (all-MiniLM-L6-v2) → 94 clusters across 19 tools → Claude Code diagnostic analysis.
-
-**Why clustering:** Semantic grouping of similar failure tickets surfaces compound protocol gaps (multiple tickets sharing the same root cause) for higher ROI fixes. Clusters with ≥5 tickets and HIGH confidence are prioritised.
-
-**Verdict breakdown:**
-- RULE_MISSING: 47 clusters
-- HALLUCINATION: 25 clusters
-- RULE_AMBIGUOUS: 20 clusters
-- RULE_CONTRADICTION: 2 clusters
-
-**Top issues identified (by ticket volume + confidence):**
-- `mf_order_history` — 6 HALLUCINATION clusters: `payment_confirmed` field ignored (Rules 2/3), `settlement_date_calculator` not invoked for redemption timelines (Rule 5), NFO listing date not fetched (Rule 1), `mandate_debit_report` skipped for cancelled SIP debits (Rule 10)
-- `console_eq_holdings` — Demerger queries answered without checking `communications` field for credit confirmation (50 tickets, cluster 9)
-- `get_all_client_data` — Nominee Rule 9 ("offline only") contradicts A11 online process; needs reconciliation (clusters 65, 80 — RULE_CONTRADICTION)
-- `withdrawal` — Instant withdrawal eligibility rule outdated post recent policy change (cluster 93)
-- `kite_positions` — Stock futures described as "cash-settled" contradicting A4 physical delivery rule (cluster 44 — HALLUCINATION)
-- `kite_orders` — Zerodha SMS notification policy misrepresented (cluster 42 — HALLUCINATION)
-
-**New product/segment gaps (RULE_MISSING, no existing protocol):**
-- EGR (Electronic Gold Receipt) segment launched May 4, 2026
-- SIF (Structured Investment Funds) available on Coin
-- SEBI revised expense reporting format (TER vs BER — Coin vendor lag)
-- Kite App Code (TOTP) vs Client ID terminology
-- NRO eMandate creation from outside India (VPN requirement)
-- Cross-exchange same-day buy/sell intraday netting rule
-
-**Next step:** Review `pipeline_output/diagnostic_report.md` and select clusters for protocol fixes. Apply changes via the standard proposed_changes → approval → apply workflow.
 
 ### 2026-05-21 — Escalation handoff consolidation (full rollout, 55 tools)
 

@@ -28,6 +28,7 @@ TAGS: orders, margins
 
 ## Protocol
 
+
 # KITE ORDERS PROTOCOL
 
 ## Section A: Reference Data
@@ -39,6 +40,7 @@ TAGS: orders, margins
 - Orders follow price-time priority: first come, first served at same price.
 - Zerodha pre-validates orders — some rejections won't appear in the order book (shown in status notification only).
 - When the client references a specific instrument or order, match by `instrument` field first. If multiple orders exist for the same instrument, use `order_status` and `time` to identify the order the client is referring to.
+- `count: 0` in the response → no orders were placed for the queried period. Confirm with the client that no order was placed.
 
 ### A2 — Field Usage Rules
 
@@ -230,6 +232,7 @@ TAGS: orders, margins
 | NSE trade verification | https://www.nseindia.com/static/invest/first-time-investor-trade-verification |
 | SL execution explained | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/why-was-my-sl-order-executed-even-though-the-price-did-not-breach-my-trigger |
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
+| Market Protection | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/market-price-protection-on-the-order-window |
 
 ### A18 — Negative Opening Balance with Negative Option Premium
 
@@ -251,7 +254,8 @@ Route by scenario
    ├─ placed_by = ADMINSQF or "rms" prefix → Rule 7
    ├─ "I didn't place this order" → Rule 8
    ├─ Circuit / ban period impact → Rule 9
-   └─ Order book display issues → Rule 10
+   ├─ Order book display issues → Rule 10
+   └─ Sold stocks but funds not credited / available → Rule 11
 ```
 
 ### Fallback
@@ -293,14 +297,15 @@ If no root cause found after completing all diagnostic steps → escalate.
    a. Check if client has multiple pending sell orders for same instrument. Excess orders treated as fresh short positions requiring full margin. Direct client to cancel excess pending sells and place a single sell matching position quantity.
    b. Invoke `kite_margins`. Check `opening_balance` first. Per **A18**, negative opening balance blocks all fresh positions — direct client to add funds. If `option_premium` is also negative, include option premium context per **A18**.
    c. If `opening_balance` is not negative, identify specific shortfall from `available_margin`, `used_margin`, `available_cash`.
-3. For market order blocks → match against **A10**, respond with reason + resolution.
-4. For MIS blocks → match against **A11**, respond with reason + resolution.
+3. For market order blocks → match against **A10** for the reason. Advise the client to either use a limit order or enable Market Protection on the order window (link per **A16**) to place the order. For index options via AMO, Market Protection is not available — limit order is the only option.
+4. For MIS blocks → invoke `get_all_client_data` and check `segments` to confirm the client is enabled for the relevant segment, then match against **A11**, respond with reason + resolution.
 5. For quantity/value limits → refer to **A7**.
-6. For trigger price errors, ban period, OI restrictions, BSE SL-M, exchange restricted, MTF conflicts → use matching row in **A12**.
+6. For trigger price errors, ban period, OI restrictions, BSE SL-M, MTF conflicts → use matching row in **A12**.
+   For exchange restricted → invoke `get_all_client_data` and check `account blocks` and `account type/category`, then use matching row in **A12**.
 7. For CO on ETF or other restricted instruments → use matching row in **A12**.
 8. For invalid quantity / odd lot from lot size revision → use matching row in **A12**.
 9. For any rejection not matching **A12** → share `rejection_reason` text verbatim and suggest retry or contact support.
-10. If `rejection_reason` = "KYC verification required" → invoke `pan_status` to check for name or DOB mismatch.
+10. If `rejection_reason` = "KYC verification required" → invoke `get_all_client_data` and check `pan`, then invoke `pan_status` to check for name or DOB mismatch.
 
 ### Rule 5 — AMO (After Market Orders)
 
@@ -338,3 +343,12 @@ If no root cause found after completing all diagnostic steps → escalate.
 1. Rejected order not in order book → some orders rejected by Zerodha pre-validation before reaching exchange. Won't appear in order book; rejection reason shows in order status notification on Kite per **A1**.
 2. Downloaded file shows dates instead of quantities → Excel formatting issue. Open in Notepad or Notepad++ to see correct values.
 3. Execution time beyond market hours → Zerodha reconciles with exchange after a brief disconnection. Actual execution happened during market hours. Direct client to tradebook for real execution time.
+
+### Rule 11 — Sold Stocks but Funds Not Available
+
+1. Locate the CNC SELL order: if the client names an instrument, filter by that instrument with `product` = CNC and `type` = SELL. If no instrument is mentioned, filter all orders by `product` = CNC and `type` = SELL and apply the remaining steps to each matching order.
+2. Invoke `kite_order_history` for the previous trading day to retrieve the trades from that day.
+3. Invoke `console_eq_holdings` for today and check `t1` for this instrument — this is the definitive indicator:
+   - `t1` = 0 → no unsettled shares at the time of the sell. Normal CNC sale. 100% of proceeds available same day (policy effective October 7, 2024).
+   - `t1` > 0 and sold quantity ≤ `t1` → entirely BTST. All shares sold were purchased the previous trading day and had not settled. Invoke `settlement_date_calculator` with today's date to determine the exact date proceeds will be available (T+1, accounting for weekends and holidays — e.g. a Friday sell settles Monday). Blocked amount = `t1` × `average_price` from the sell order.
+   - `t1` > 0 and sold quantity > `t1` → split sale: `t1` quantity is BTST (proceeds on T+1 — invoke `settlement_date_calculator` with today's date for the exact date); the remaining quantity was from settled holdings (proceeds same day). Blocked amount = `t1` × `average_price` from the sell order.

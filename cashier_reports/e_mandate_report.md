@@ -115,7 +115,7 @@ If no route matches, escalate.
 
 ### Rule 2 — Cannot Create Mandate (Account Restrictions)
 
-Check `get_all_client_data`:
+Invoke `get_all_client_data`:
 
 1. **Current account:**
    If `bank_1_account_type`, `bank_2_account_type`, or `bank_3_account_type` is "Current" → cannot create eMandate per **A4**.

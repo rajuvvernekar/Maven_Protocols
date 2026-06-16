@@ -17,9 +17,8 @@ TAGS: account
 
 ## Protocol
 
-# MINOR ACCOUNT OPENING PROTOCOL
 
----
+# MINOR ACCOUNT OPENING PROTOCOL
 
 ## Section A: Reference Data
 
@@ -154,7 +153,7 @@ If no rule matches, escalate.
 ### Rule 2 — Application Processing — Correction Required
 
 1. `status` = "Processing" AND `reasons` is not empty.
-2. Application needs corrections — communicate reasons per A6.
+2. Application needs corrections — invoke `get_all_client_data` and check `bank account` to confirm the currently linked bank account, then communicate reasons per A6.
 
 ---
 
@@ -183,18 +182,18 @@ If no rule matches, escalate.
 ### Rule 6 — PAN Verification Failed
 
 1. `reasons` contains a PAN verification failure entry (per A6) OR client reports PAN verification failed during account opening.
-2. PAN or DOB doesn't match ITD records — direct to verify at ITD portal (A7). Note it may take a few days if PAN was recently issued.
+2. Invoke `get_all_client_data` and check `pan` to confirm the PAN on record. PAN or DOB doesn't match ITD records — direct to verify at ITD portal (A7). Note it may take a few days if PAN was recently issued.
 
 ---
 
 ### Rule 7 — NRI-Minor Account
 
 1. Client is an NRI enquiring about opening a minor account.
-2. Offline only — direct to email documents to forms@zerodha.com and courier to Bengaluru office (A7). Processed within 72 working hours (A3).
+2. Invoke `get_all_client_data` and check `account type/category` to confirm NRI account type, then direct to email documents to forms@zerodha.com and courier to Bengaluru office (A7). Processed within 72 working hours (A3).
 
 ---
 
 ### Rule 8 — Trading Capabilities / Restrictions
 
 1. Client asks about what a minor account can or cannot trade.
-2. Refer to A4 for full list of allowed and restricted activities.
+2. Refer to A4 for full list of allowed and restricted activities. minor

@@ -19,9 +19,8 @@ TAGS: investments
 
 ## Protocol
 
-# SIP REPORT PROTOCOL
 
----
+# SIP REPORT PROTOCOL
 
 ## Section A: Reference Data
 
@@ -29,7 +28,7 @@ TAGS: investments
 
 - SIP types: `sip` (Zerodha — modifiable), `amc_sip` (BSE — delete-only).
 - Zerodha SIP triggers at 1:30 AM. AMC SIP triggers at 3:15 AM.
-- Standard SIP trigger: 2 days prior to `preferred_date`. UPI mandate SIPs (`fund_source` = `upi-mandates`): trigger on T-1 instead of T-2.
+- Standard SIP trigger: 2 days prior to `preferred_date`. UPI mandate SIPs (`fund_source` = `upi-mandates`): trigger on T-1 instead of T-2. The mandate debit request is initiated on the trigger day, but the actual bank debit occurs on `preferred_date` (the SIP scheduled date).
 - **Microsavings SIP:** Zerodha Nifty Largemidcap 250 Index Fund supports daily SIP frequency only. `sip_type` = `amc_sip`. See Rule 9.
 
 ---
@@ -79,7 +78,7 @@ Authoritative source for SIP-mandate linkage is `fund_source` on the SIP record.
 
 ### A5 — Mandate Debit Status Values
 
-When checking `mandate_debit_report` for a SIP's debit attempt:
+When invoking `mandate_debit_report` for a SIP's debit attempt:
 
 | Status | Meaning |
 |---|---|
@@ -92,7 +91,7 @@ When checking `mandate_debit_report` for a SIP's debit attempt:
 
 ### A6 — Mandate Status Check
 
-When checking `mandate_report`, only `status` = `success` indicates a usable, active mandate. Any other status means the mandate is not currently usable for SIP debits.
+When invoking `mandate_report`, only `status` = `success` indicates a usable, active mandate. Any other status means the mandate is not currently active. An active mandate does not mean it is linked to a specific SIP — linkage is confirmed only via `fund_source` on the SIP record per A4.
 
 ---
 
@@ -126,7 +125,7 @@ When checking `mandate_report`, only `status` = `success` indicates a usable, ac
 | `tag` | Internal tag |
 | `sip_reg_num` | SIP registration number assigned by the exchange/AMC |
 | `mandate_details` | Raw mandate data linked to the SIP |
-| `fund_source` | Mandate linkage check per A4 |
+| `fund_source` | Internal — mandate linkage check per A4 |
 | `public_id` | Input for `sip_modification_log` (mapped to `sip_id` there) |
 | `remarks` | Cancellation cause and other system notes |
 
@@ -157,7 +156,9 @@ Route by scenario
    ├─ Account type conversion suspected → Rule 7
    ├─ Client asks about refund / getting money back after cancelling SIP → Rule 8
    ├─ Client wants to create SIP in Zerodha Nifty Largemidcap 250 Index Fund → Rule 9
-   └─ SIP cancelled but payment was still debited → Rule 10
+   ├─ SIP cancelled but payment was still debited → Rule 10
+   ├─ Client reports bank penalty or charge after failed mandate debit → Rule 11
+   └─ SIP creation error "trading is blocked for your account" → Rule 12
 ```
 
 ### Fallback
@@ -176,7 +177,9 @@ If status from `get_all_client_data` ≠ "approved" → account type conversion 
 
 **SIP status check:**
 
-If `sip_status` ≠ Active → communicate the status per A3 and stop. The SIP will not trigger while in a non-active state.
+If `sip_status` ≠ Active → the SIP will not trigger while in a non-active state.
+- If `sip_status` = Cancelled → invoke `sip_modification_log` with `public_id`; find the record where `type` = `sip_delete` and use its `timestamp` as the actual cancellation date and time. If no `sip_delete` record exists, the cancellation was system-initiated, not client-initiated. Communicate the cancellation per A3 and stop.
+- Any other non-Active status → communicate the status per A3 and stop.
 
 **AMC SIP — auto-cancel check:**
 
@@ -189,6 +192,12 @@ If `sip_type` = `amc_sip` AND `created_at` is less than 2 days before `preferred
 **Future trigger date:**
 
 Compare `next_sip_date` to today. SIPs trigger 2 days prior to `next_sip_date` (1 day prior for UPI mandates per A1). If today is still before the trigger day (i.e., `next_sip_date` is more than 2 days away, or more than 1 day away for UPI mandates) → the SIP has not reached its trigger date yet. Communicate the next trigger date and stop.
+
+**Upcoming or recent trigger:**
+
+If `next_sip_date` is within 5 days, or the client asks about a missed/recent instalment → invoke `mf_order_history` and check for orders on that fund around that date. For each order found, check `variety`:
+- `variety` = sip → this is the SIP instalment. Report the status and apply the relevant rule for the status found.
+- `variety` = regular → this is a manual lumpsum order placed by the client, not the SIP instalment. Communicate that no SIP instalment was placed for this cycle. Proceed to the mandate linkage check below.
 
 **Stale `next_sip_date`:**
 
@@ -209,7 +218,7 @@ Invoke `console_mf_pseudo_holdings` for the specific fund:
 - **Units found** → initial investment is confirmed. Invoke `mf_order_history` to verify the FRESH order timing. If the FRESH order was allotted on or after the SIP's `preferred_date`, or `preferred_date` is within 2 days of FRESH allotment, the current cycle was skipped due to allotment timing. Check `next_sip_date`: if it has updated to the next month's expected date → SIP is reset and will trigger next cycle. If `next_sip_date` has not updated → advise the client to pause and resume the Zerodha SIP to reset the trigger date.
 
 - **No units found** → invoke `mf_order_history` for a FRESH order (`purchase_type` = FRESH) for that fund:
-  - **FRESH Processing/Placed** → the initial investment is still being processed. Communicate that the SIP will trigger once units are allotted and settled. If `next_sip_date` falls before the expected allotment+settlement date (T+2 from `exchange_timestamp` or `payment_updated_at`), the upcoming instalment will be skipped — communicate this and advise the client to pause and resume the Zerodha SIP once settlement completes.
+  - **FRESH Processing/Placed** → the initial investment is still being processed. Communicate that the SIP will trigger once units are allotted and settled. Invoke `settlement_date_calculator` with `exchange_timestamp` (or `payment_updated_at` if `exchange_timestamp` is not yet populated) to compute T+2 working days. If `next_sip_date` falls before that T+2 date, the upcoming instalment will be skipped — communicate this and advise the client to pause and resume the Zerodha SIP once settlement completes.
   - **FRESH Failed/Cancelled** → initial investment was not completed. Advise placing a fresh lumpsum order; once allotted, pause and resume the Zerodha SIP to reset the trigger date.
   - **No FRESH order found** → invoke `console_mf_tradebook` for an allotment entry (`trade_type` = BUY, `purchase_type` = FRESH) for this fund. If found → initial investment is confirmed; proceed to the mandate linkage check below. If not found → initial investment was never placed. Advise placing a lumpsum order; once allotted and settled (T+2), pause and resume the Zerodha SIP on Coin to reset the trigger date.
 
@@ -305,6 +314,8 @@ If status from `get_all_client_data` ≠ "approved" → account type conversion 
 
 Cancelling a SIP stops future instalments only — it does not redeem existing units or credit funds back to the bank account. To receive the invested money, the client must place a separate redemption request.
 
+Invoke `sip_modification_log` with `public_id`; find the record where `type` = `sip_delete` and use its `timestamp` as the actual cancellation date and time. If no `sip_delete` record exists, the cancellation was system-initiated.
+
 1. Invoke `console_mf_pseudo_holdings` for the fund linked to the cancelled SIP.
 2. Units found → guide client to place a redemption request per the Redeem on Coin link from A8.
 3. No units found → inform client that no units are held in this fund; nothing to redeem.
@@ -319,8 +330,26 @@ This fund supports daily SIP frequency only. The client must select daily when c
 
 ### Rule 10 — Cancelled SIP: Payment Still Debited
 
-1. Confirm `sip_status` = Cancelled for the SIP the client is referring to.
-2. Check `fund_source` per A4. If no mandate was linked (`fund_source` = `rp-pg`, `pool`, or blank) → no auto-debit could have occurred; inform client accordingly.
-3. If mandate was linked (`fund_source` = `digio-mandates` or `upi-mandates`) → invoke `mandate_debit_report` for the date the client reports the debit. Apply A5 status interpretation.
+1. Confirm `sip_status` = Cancelled for the SIP the client is referring to. Invoke `sip_modification_log` with `public_id`; find the record where `type` = `sip_delete` and use its `timestamp` to confirm when the SIP was cancelled. If no `sip_delete` record exists, the cancellation was system-initiated, not client-initiated.
+2. Check `fund_source` per A4. If no mandate was linked → no auto-debit could have occurred; inform client accordingly.
+3. If mandate was linked → invoke `mandate_debit_report` for the date the client reports the debit. Apply A5 status interpretation.
 4. Debit not initiated (no record or `draft`) → no payment was processed; inform client.
-5. Debit initiated (`success`, `pending`, or `failed`) → invoke `mf_order_history` for the fund and guide based on order status
+5. Debit initiated (`success`, `pending`, or `failed`) → invoke `mf_order_history` for the fund and guide based on order status.
+
+---
+
+### Rule 11 — Bank Penalty Charges on Failed Mandate Debit
+
+When a client reports being charged a penalty or fee by their bank after a failed mandate debit:
+
+- Confirm the debit failure by invoking `mandate_debit_report` and checking `status` per A5. If `status` = `failed`, check `remark` for the failure cause (e.g., insufficient funds).
+- Communicate that Zerodha has no control over charges levied by the bank. The bank may charge a penalty when a debit transaction fails due to insufficient funds or other bank-side reasons. For any queries regarding these charges, the client must contact their bank directly.
+
+---
+
+### Rule 12 — SIP Creation Error: Trading Blocked
+
+If the client reports getting "trading is blocked for your account" when trying to create a SIP:
+
+1. Invoke `get_all_client_data` and check `account_blocks`.
+2. If `account_blocks` has any value → escalate.

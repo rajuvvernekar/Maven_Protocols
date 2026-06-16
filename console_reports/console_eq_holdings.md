@@ -23,11 +23,13 @@ TAGS: holdings, demat, corporate-actions
 
 ## Protocol
 
+
+
 # CONSOLE EQ HOLDINGS PROTOCOL
 
----
-
 ## Section A: Reference Data
+
+---
 
 ### A1 — Field Usage Rules
 
@@ -73,7 +75,6 @@ TAGS: holdings, demat, corporate-actions
 | Split share buy average update | 2–3 working days after split shares are credited |
 | G-Sec / NCD / bond interest credit | Semi-annually to primary bank; typically within 5–7 working days of payment date |
 | G-Sec interest eligibility | Must hold the G-Sec at least 15 days before the interest date |
-| NCD maturity proceeds credit | 15 working days from maturity date; credited to primary bank |
 
 ---
 
@@ -108,7 +109,7 @@ TAGS: holdings, demat, corporate-actions
 | Bonus | Free shares in a ratio (e.g., 2:1 = 2 bonus shares for every 1 share held). Qty increases; price adjusts proportionally so total value is unchanged; bonus shares at cost ₹0. Credit under temporary ISIN. |
 | Split | Shares divided by reducing face value (e.g., 1:5 = 1 becomes 5). Qty multiplied; price divided by ratio; total value unchanged. Client can sell original qty immediately; newly credited shares tradeable after credit. |
 | Consolidation (Reverse Split) | Shares combined in a ratio (e.g., 1:5 = 1 new share for every 5 shares held). Qty reduces; price increases proportionally so total value is unchanged; fractional shares settled in cash. |
-| Merger | Two companies combine; shares exchanged at defined swap ratio. Old debited, new credited per ratio. |
+| Merger (Amalgamation) | Two companies combine; shares of the amalgamating entity exchanged at a defined allotment ratio for shares of the surviving entity. Old shares debited, new credited per ratio. Fractional shares settled in cash to primary bank. Also known as amalgamation. |
 | Demerger | Company splits into separate entities; new shares credited proportionally. Original retained; new entity credited. Buy average split per Cost of Acquisition (COA) ratio announced by the company. |
 
 ---
@@ -119,7 +120,7 @@ Short delivery occurs when the seller of shares does not deliver by settlement d
 
 Two scenarios:
 
-- **Counter-party default:** Buyer purchased shares, but the counter-party was a short seller and did not deliver. Delivery does not happen to the buyer on the usual settlement date — in this case, the holding shows with a **"short" tag in Kite holdings**. Exchange conducts an auction on T+1 to source the shares. **Shares are credited to the buyer's demat by T+2 EOD; the buyer can see and sell these shares only from the T+3 working day onwards.** Buyer may raise a query in this window about missing shares.
+- **Counter-party default:** Buyer purchased shares, but the counter-party (seller) had no shares and defaulted. The holding shows with a **"short" tag in the client's Kite holdings — this is client-visible only and not available in internal tools**; if the client mentions this or shares a screenshot, use it as confirmation of counter-party default. Exchange conducts an auction on T+1 to source the shares; shares are credited to the buyer's demat by T+2 EOD. **Buyer can see and sell these shares only from the T+3 working day onwards.** Buyer may raise a query in this window about missing shares.
 - **Intraday short sell stuck in upper circuit:** Trader short sold intraday but could not buy back to close the position because the stock hit an upper circuit (no sellers available). Exchange conducts an auction on T+1; Zerodha blocks 120% of the settlement value (closing price on the day of short sell × qty). Auction settlement entry is posted on T+2. If the exchange cannot source shares in the auction → close-out procedure applies and cash settlement is done at close-out price.
 
 ---
@@ -145,10 +146,9 @@ Two scenarios:
 | Event | Behavior |
 |---|---|
 | Gift transfer in | Closing price on transfer date used as entry price. System auto-posts entry (`console_eq_external_trades`, `external_trade_type` = gift). |
-| Zerodha-gifted shares (shares gifted by Zerodha to client) | Buy average updated automatically by Zerodha. Verify via `stock_gift_requests`. If client has also added an external trades entry for the same ISIN → double entry risk; escalate. Do not draft any client-facing response. |
 | Gift transfer out | Gift transfer date = exit date; closing price on that date = exit price. |
 | Off-market transfer in | No automatic buy price assigned. Purchase details must be added manually via discrepancy flow. |
-| Off-market transfer out | No automatic exit entry. Escalate. |
+| Off-market transfer out | No automatic exit entry. Share A13 — Share transfer via CDSL Easiest; escalate if further assistance needed. |
 
 ---
 
@@ -174,16 +174,14 @@ Two scenarios:
   - **Non-receipt / processing:** Contact the company's Registrar and Transfer Agent (RTA). Zerodha does not process dividend payments and does not receive credit details.
   - **RTA lookup:** See A13 — NSE / BSE (search company → Corporate information → Transfer Agent Details).
   - **Failed credit:** RTA issues dividend warrant by courier to registered address.
-  - **TDS:** Any TDS-related query → escalate.
+  - **TDS:** Resident 10% above ₹10,000/FY (from FY25-26) | NRI 20%, no threshold | No PAN 20%.
   - **Tracking:**
     - Kite: Portfolio → select stock → View dividends
     - Console: Reports → Downloads → Dividend statement
 
-- **G-Sec / NCD / Bond Interest and Maturity**
+- **G-Sec / NCD / Bond Interest**
 
-  - **Credit (interest):** Credited directly by RBI or paying agent to primary bank; not through Zerodha. Timeline and eligibility per A2.
-  - **Maturity proceeds (NCD):** Credited to primary bank within **15 working days from maturity date** (per A2).
-  - **Bond information lookup:** Visit nseindia.com or bseindia.com → search for the company name → select the series. Bonds are listed in the **N series from N1 to N9 and NA to NZ**. Source for maturity date, coupon rate, and bond type.
+  - **Credit:** Credited directly by RBI or paying agent to primary bank; not through Zerodha. Timeline and eligibility per A2.
   - **RBI interest schedule:** See A13 — RBI G-Sec interest schedule → "Auction for Sale (Issue/Re-issue) of Government Stock (GS)" under Notifications (Archives for older issues).
   - **Client tracking options:** (1) Bank statements | (2) CDSL Consolidated Account Statement (CAS) | (3) RBI Retail Direct portal (if applicable).
 
@@ -193,8 +191,7 @@ Two scenarios:
 
 - Fractional units cannot be sold on the secondary market.
 - Redeemable only via off-market transfer to the AMC's demat account through CDSL Easiest. Share A13 — LIQUIDBEES fractional redemption for step-by-step process.
-- **Account closure with fractional units only → Re-KYC NOT required, even if the account is dormant.** Off-market transfer to AMC can proceed regardless of dormancy status.
-- **Re-KYC is required only when the client wants to sell whole number LIQUIDBEES units** (on the secondary market) from a dormant account (> 24 months inactive). Reactivation takes 24–48 working hours after IPV.
+- Dormant account (inactive > 24 months) → Re-KYC required before initiating off-market transfer (reactivation takes 24–48 working hours after IPV).
 
 ---
 
@@ -207,13 +204,24 @@ Two scenarios:
 | Discrepancy explanation | https://support.zerodha.com/category/trading-and-markets/alerts-and-nudges/kite-error-messages/articles/discrepant-holdings |
 | Add external trades on Console | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/how-to-update-buy-average |
 | LIQUIDBEES fractional redemption | https://support.zerodha.com/category/mutual-funds/understanding-mutual-funds/selling/articles/redeeming-fractional-units |
-| SOT / SOH holding statement | https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/cdsl-easi-easiest/articles/will-zerodha-send-me-holding-statements-for-my-investments |
 | NSE historical prices | nseindia.com (search company → Historical Data) |
 | BSE historical prices | bseindia.com (search company → Historical Prices) |
 | RBI G-Sec interest schedule | rbi.org.in/Scripts/NotificationUser.aspx |
 | Short delivery explanation | https://support.zerodha.com/category/trading-and-markets/trading-faqs/general/articles/what-is-short-delivery-and-what-are-its-consequences |
-| SGB premature redemption | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/premature-redemption-sgb |
-| SGB maturity amount credit | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/amount-credit-on-sgb-maturity |
+| Portfolio XIRR explanation | https://support.zerodha.com/category/console/portfolio/console-holdings/articles/portfolio-xirr |
+| Share transfer via CDSL Easiest | https://support.zerodha.com/category/your-zerodha-account/transfer-of-shares-and-conversion-of-shares/transfer-securities/articles/transfer-shares-from-my-zerodha-account-using-cdsl-easiest |
+
+---
+
+### A14 — BSDA Eligibility
+
+BSDA eligibility requires **both** conditions:
+1. Only 1 demat account registered with the client's PAN across all brokers and depositories, AND
+2. Holdings value in the demat account has not exceeded ₹10,00,000.
+
+BSDA status is determined and updated periodically by the depository (CDSL). Clients are enrolled automatically when eligible.
+
+Eligible account types: individual resident accounts only. NRI and non-individual accounts fall under standard (non-BSDA) AMC.
 
 ---
 
@@ -223,128 +231,180 @@ Two scenarios:
 
 ```
 Route by scenario
-   ├─ failure_date populated (any value)                                    → escalate
-   ├─ tradingsymbol appears as ISIN-format alphanumeric string in holdings
-   │    data (shares are unlisted)                                          → escalate
-   ├─ Employer-mandated account deactivation / closure                      → escalate
-   ├─ Rights issue query                                                    → escalate
-   ├─ Rights entitlement (RE) / Partly Paid (PP) share query                → escalate
-   ├─ TDS query (any — dividend / NCD / G-Sec / bond / rate /
-   │    deduction / certificate)                                            → escalate
+   ├─ failure_date populated (any value)                                    → Rule 1
+   ├─ tradingsymbol contains ISIN-format alphanumeric entry
+   │    (non-demerger context)                                              → Rule 1
+   ├─ Account closure query (client wants to close / mentions closing
+   │    account, any reason other than employer-mandated)                   → Rule 1
+   ├─ Employer-mandated account deactivation / closure                      → Rule 1
+   ├─ Rights issue query                                                    → Rule 1
+   ├─ Rights entitlement (RE) query                                         → Rule 1
+   ├─ Unlisted / suspended stock discrepancy (confirmed)                    → Rule 1
    ├─ Buy average query
-   │    (differs from expected / N/A / ₹0 / wrong post-CA / invested value) → Rule 1
+   │    (differs from expected / N/A / ₹0 / wrong post-CA / invested value) → Rule 2
    ├─ Corporate action query
-   │    (bonus / split / consolidation / demerger / merger / eligibility)   → Rule 2
-   ├─ Holdings not visible / qty mismatch                                   → Rule 3
-   ├─ Pledged qty in holdings                                               → Rule 4
-   ├─ T1 / settlement query                                                 → Rule 5
+   │    (bonus / split / consolidation / demerger / merger /
+   │     amalgamation / eligibility)                                        → Rule 3
+   ├─ Holdings not visible / qty mismatch                                   → Rule 4
+   ├─ Pledged qty in holdings                                               → Rule 5
+   ├─ T1 / settlement query                                                 → Rule 6
    ├─ Discrepancy
    │    (transferred / gift / ESOP / off-market / entry error /
-   │     wrong / incorrect entry by client / P&L / avg)                    → Rule 6
-   ├─ Zerodha-gifted shares — buy average updated for gifted stock,
-   │    or stock name mentioned and recently gifted by Zerodha              → Rule 6h
-   ├─ Loan (LAS) query                                                      → Rule 7
-   ├─ Short delivery query                                                  → Rule 8
-   ├─ Dividend / G-Sec / NCD / bond interest / NCD maturity query           → Rule 9
-   ├─ SGB query (premature redemption / maturity amount credit)             → Rule 9
-   ├─ LIQUIDBEES fractional redemption                                      → Rule 10
-   └─ Holding statement / SOT / SOH / Statement of Transaction              → Rule 11
+   │     wrong / incorrect entry by client / P&L / avg)                    → Rule 7
+   ├─ Loan (LAS) query                                                      → Rule 8
+   ├─ Short delivery query                                                  → Rule 9
+   ├─ Dividend / G-Sec / NCD / bond interest query                          → Rule 10
+   ├─ LIQUIDBEES fractional redemption                                      → Rule 11
+   ├─ XIRR query (how to check / "-" displayed / issue with value)          → Rule 12
+   └─ BSDA query                                                            → Rule 13
 ```
 
 ### Fallback
 
-If no route matches, interpret holdings data using Section A. If no root cause is identified → escalate.
+If no route matches → escalate.
 
 ---
 
 ## Section C: Rules
 
-### Rule 1 — Buy Average Handling
+---
 
-**1a. Buy average differs from expected**
+### Rule 1 — Escalation Triggers (Early Exit)
+
+Escalate immediately for all triggers below. Include client ID, `tradingsymbol`(s), specific issue description, and relevant data.
+
+| Trigger | Data to include |
+|---|---|
+| `failure_date` populated (any value) | Client ID, `tradingsymbol`, `failure_date`. |
+| `tradingsymbol` contains an ISIN-format alphanumeric entry (non-demerger context) | Client ID and the ISIN entry. |
+| Unlisted stock (confirmed after verification) | Client ID, `tradingsymbol`, ISIN. |
+| Suspended / inactive stock (confirmed after verification) | Client ID, `tradingsymbol`, ISIN. |
+| Rights entitlement (RE) query | Client ID, `tradingsymbol`, query details. |
+| Rights issue query | Client ID, `tradingsymbol`, query details. |
+| Employer-mandated account deactivation / closure | Client ID and client's stated reason. |
+| Account closure request (client-initiated, non-employer-mandated) | Client ID and client's stated reason. |
+
+---
+
+### Rule 2 — Buy Average Handling
+
+**2a. Buy average differs from expected**
 1. Explain FIFO basis (A3). Point to View breakdown on Kite / Console.
 2. Sold + bought back same day → intraday exception (A3).
-3. Same-day change in invested value / buy average → invoke Kite_Order_History and invoke Kite_Positions and check for today's executed sell trades. If found → partial sell FIFO impact (A3).
+3. Same-day change in invested value / buy average → invoke `kite_order_history` and `kite_positions` for today's executed sell trades. If found → partial sell FIFO impact (A3).
 
-**1b. `buy_average` is null / N/A**
+**2b. `buy_average` is null / N/A**
 - `discrepant` > 0:
-  1. If client reports a specific purchase (date, qty, or price) → run diagnostic checklist in Rule 3 first.
-  2. Verify current exchange status via Kite holdings or instrument search. If listed → continue; if still unlisted/suspended → escalate.
+  1. If client reports a specific purchase (date, qty, or price) → run diagnostic checklist in Rule 4 first.
+  2. Verify current exchange status via Kite holdings or instrument search. If listed → continue; if still unlisted/suspended → Rule 1.
   3. Invoke `console_eq_external_trades` for an entry for this ISIN:
      - Entry exists AND processing → buy average updates per A2.
      - Entry exists AND processed but avg still N/A → escalate.
-     - No entry AND client did not buy on Zerodha → route to Rule 6.
+     - No entry AND client did not buy on Zerodha → route to Rule 7.
   4. Client confirms purchase before 31 Jan 2018 with no records → apply grandfather clause (A3).
 - `discrepant` = 0 AND `pending` > 0 → CA buy average adjustment in progress (A2).
 
-**1c. `buy_average` = ₹0 AND `total_quantity` > 0**
+**2c. `buy_average` = ₹0 AND `total_quantity` > 0**
 1. Invoke `console_eq_holdings_breakdown`; check for entries with `exchange` = "BONUS".
 2. Found → apply ₹0 buy average reason per A3.
 3. Not found → escalate.
 
-**1d. Buy average wrong after corporate action**
+**2d. Buy average wrong after corporate action**
 - Within 2 weeks of CA → adjustment in progress (A2).
-- 3+ weeks post-CA → escalate.
+- 3+ weeks post-CA → escalate with expected vs actual.
 
-**1e. Investment value mismatch**
+**2e. Investment value mismatch**
 - Common causes:
   - Recent CA → adjustment in progress (A2).
   - `discrepant` > 0 → invested value inaccurate until purchase details added (A7). For NCDs/bonds, note A7 market-value behavior and share A13 links.
-  - Ensure equity-only comparison; Console dashboard may include mutual fund values separately.
+- Kite vs Console value difference: invoke `kite_holdings`; cross-reference against console holdings. For any stock with a proper `tradingsymbol` (not ISIN-format) where qty > 0 in console but the stock is absent from `kite_holdings` → stock may be delisted / suspended / GSM Stage 2 or above / IRP or similar. Collect `tradingsymbol`, `isin`, qty, and invested value for each such stock → escalate with all details.
 
 ---
 
-### Rule 2 — Corporate Action Handling
+### Rule 3 — Corporate Action Handling
 
-**2a. Bonus — not credited / not visible**
+**3a. Bonus — not credited / not visible**
 1. Invoke `console_eq_external_trades`; check for a system-posted CA credit entry (e.g., `external_trade_type` = devolved or CA-related) for this ISIN.
-   - If investigation at any step reveals REs (Rights Entitlements) or PPs (Partly Paid shares) instead of bonus shares → escalate. Do not proceed further. Do not draft any response.
 2. Entry found but not in holdings → credit is in system; holdings update within ~1 trading day.
 3. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
    - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
-   - Mismatch → escalate.
+   - Mismatch → escalate with both values.
 4. No entry AND within bonus credit window (A2) → temp ISIN → perm ISIN conversion pending; CDSL SMS on credit. Temporary P&L drop is expected and auto-corrects.
 5. Beyond 5 trading days from record date → escalate.
 
-**2b. Split — qty / price**
+**3b. Split — qty / price**
 1. Use `total_quantity`, `available`, `pending` from this report as source of truth — do not derive from recent trade history.
 2. Invoke `kite_holdings`; check for post-split credit.
 3. Full post-split qty in `kite_holdings` → split credit confirmed. Avg update timeline per A2; client can sell in the interim without P&L impact.
 4. Partial / not credited → credit timeline per A2.
 5. Beyond 5 trading days from record date → escalate.
 
-**2c. Demerger — new shares or avg**
-1. Shares not credited → new entity credit timeline per A2.
-2. Avg not updated → split per Cost of Acquisition (COA) ratio announced by company (A5); Zerodha updates the buy average once the Cost of Acquisition is announced by the company.
-3. COA announced but avg still not updated after 3 weeks → escalate.
+**3c. Demerger — new shares, avg, or P&L**
 
-**2d. Merger — share swap**
-- Explain swap mechanics per A5. Fractional shares → cash to primary bank (A4).
+1. Invoke `console_eq_pseudo_holdings`; check for each demerged entity — there may be more than one (a company can demerge into multiple entities), each with its own temporary ISIN going through the process independently.
 
-**2e. Corporate action eligibility**
+2. Demerged entity `tradingsymbol` appears as temporary ISIN:
+   - Shares have been credited to demat but are not yet listed on the exchange.
+   - A temporary ISIN is assigned at credit; a permanent ISIN and actual trading symbol are assigned only after exchange listing.
+   - No market price will be shown while the temporary ISIN is active — this is expected.
+   - Client cannot sell until the temporary ISIN is replaced by the actual trading symbol.
+   - Listing timeline per A2 (30–45 days from record date).
+   - P&L for both the original company and the demerged entity will be inaccurate until COA is announced and buy averages are updated — this is expected.
+   - Buy average for both the original company and the demerged entity will update once the company announces the COA; Zerodha updates after COA announcement.
+
+3. Demerged entity `tradingsymbol` shows actual trading symbol:
+   - Permanent ISIN and trading symbol assigned; shares are listed and tradeable.
+   - Buy average not yet updated for demerged entity → COA not yet announced; pending.
+   - Buy average not yet updated for original company → same; COA pending.
+   - COA announced but avg still not updated after 3 weeks for either entity → escalate.
+
+4. Demerged entity not found in pseudo_holdings at all:
+   - Within 30–45 days from record date → credit pending; share timeline per A2.
+   - Beyond 45 days → escalate.
+
+5. P&L or investment value looks wrong:
+   - Expected until COA is announced and buy averages are updated for all entities (original company + all demerged entities).
+
+**3d. Merger / Amalgamation — share swap**
+
+1. Invoke `console_eq_holdings`; check the amalgamating entity:
+   - `available` = 0 → shares have been debited; merger is in process. Continue to step 2.
+   - `available` > 0 → shares not yet debited; merger processing may still be pending. Escalate with amalgamating entity `tradingsymbol` and full holdings data.
+
+2. Check the surviving entity in `console_eq_holdings`:
+
+   **Client already holds the surviving entity (`available` > 0):**
+   - `pending` > 0 → client has existing shares + allotted shares pending credit; new shares not yet credited. Escalate with existing qty, pending qty, and allotment ratio if known.
+   - `pending` = 0 → verify total qty = existing qty + expected allotted qty.
+     - Matches → allotment credited; resolved.
+     - Does not match → escalate with both values.
+
+   **Client does not hold surviving entity:**
+   - Invoke `console_eq_pseudo_holdings`; check for surviving entity.
+   - Not in pseudo_holdings → shares not yet credited. Escalate with amalgamating entity `tradingsymbol`, pending qty, and allotment ratio if known.
+   - Found in pseudo_holdings → shares credited; confirm qty matches allotment ratio. If mismatch → escalate with both values.
+
+3. Fractional surviving entity shares → settled in cash to primary bank (A5).
+
+**3e. Corporate action eligibility**
 - Answer from A4 (general, sold-on-ex-date, pledged, settlement holiday / short delivery exceptions).
-- Purchase made ≤ 1 trading day before the ex-date with a possible settlement holiday between trade and record date → invoke `settlement_date_calculator` to verify the shares settled into demat by the record date before confirming eligibility.
-- If client reports missing CA benefit due to short delivery → route to Rule 8.
+- If client reports missing CA benefit due to short delivery → route to Rule 9.
 
 ---
 
-### Rule 3 — Quantity Mismatch Handling
+### Rule 4 — Quantity Mismatch Handling
 
-1. Invoke `console_eq_pseudo_holdings`; check for the same ISIN:
-     - Present (held in demat):
-         a. Invoke `kite_holdings`; look up the same ISIN.
-         b. Present in `kite_holdings`   → display / sync issue → request screenshot and continue with the checks below.
-         c. Absent from `kite_holdings`  → suspended / delisted / unlisted / not actively trading
-            (Kite holdings lists only tradeable instruments) → escalate.
-     - Not present (not in demat) → continue to step 2
+1. Invoke `get_all_client_data` and check `account blocks` to identify any active restrictions on the account. Invoke `console_eq_pseudo_holdings`; cross-reference `available` qty with this report for the same ISIN:
+   - Both match → qty is correct; display-only issue. Request screenshot of the holdings page and continue with the checks below.
+   - Mismatch → escalate with both values.
 2. If stock was purchased within the last 90 days → invoke `console_eq_tradebook_prepared`; check for a subsequent sell trade:
    - Sell trade found → inform client of sale (date, qty, price); proceeds credited. Stop.
 3. Diagnose by quantity field:
    - `t1` > 0 → T+1 settlement in progress (A1, A2); if a settlement holiday may intervene, invoke `settlement_date_calculator` for the exact settlement date.
    - `pending` > 0 → CA credit pending; timeline per A2.
    - `margin` > 0 → pledged as collateral (A9).
-   - `loan` > 0 → LAS or external NBFC lending (A10); escalate.
-   - **All fields = 0 and stock not found:** confirm `tradingsymbol` / ISIN with client and whether the purchase has settled. (If `tradingsymbol` is an ISIN-format string → unlisted / duplicate ISIN → escalate.)
+   - `loan` > 0 → LAS or external NBFC lending (A10) → escalate.
+   - All fields = 0 and stock not found → confirm `tradingsymbol` / ISIN and whether purchase has settled.
 
 **Diagnostic checklist** (when client reports a discrepancy or a specific purchase that doesn't match holdings):
 1. Invoke `console_eq_tradebook_prepared`; fetch all trades from 1-Apr-2017 to date for that `tradingsymbol`.
@@ -352,11 +412,11 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 3. If client describes a sale/redemption event, invoke `ledger_report`; check for matching credit entries.
 4. Compare calculated qty with `available` qty in this report:
    - Calculated = available → bought on Zerodha, display/sync issue → escalate.
-   - Calculated ≠ available AND no matching sale proceeds → likely transferred/gifted/IPO/off-market → route to Rule 6.
+   - Calculated ≠ available AND no matching sale proceeds → likely transferred/gifted/IPO/off-market → route to Rule 7.
 
 ---
 
-### Rule 4 — Pledge Handling
+### Rule 5 — Pledge Handling
 
 1. Describe `margin` field per A9 — pledged but still in client demat.
 2. Selling pledged shares → CNC sell on Kite allowed without unpledge (A9).
@@ -365,119 +425,117 @@ If no route matches, interpret holdings data using Section A. If no root cause i
 
 ---
 
-### Rule 5 — T1 Handling
+### Rule 6 — T1 Handling
 
 - `t1` > 0 → T+1 settlement; moves to `available` by end of today; visible in regular holdings from next trading day (A1, A2).
 - If a settlement holiday may delay the roll-over, invoke `settlement_date_calculator` to give the client the exact date the T1 qty becomes available/sellable.
 
 ---
 
-### Rule 6 — Discrepancy Handling
+### Rule 7 — Discrepancy Handling
 
-**6a. Transferred / ESOP / off-market shares**
+**7a. Transferred / ESOP / off-market shares**
 1. Invoke `console_eq_external_trades`; check for an existing entry for this ISIN.
 2. Entry exists AND processing → buy average updates per A2.
 3. Entry exists AND processed but discrepancy not resolved → continue with `console_eq_external_trades` (that protocol's routing handles the appropriate path).
 4. No entry:
-   - Client says they already added details → go to 6d.
-   - Client got an error when adding entry → go to 6g.
-   - Client has no purchase details → go to 6f.
+   - Client says they already added details → go to 7d.
+   - Client got an error when adding entry → go to 7g.
+   - Client has no purchase details → go to 7f.
+   - Client asking how to transfer shares from another broker to Zerodha or from Zerodha to another account → share A13 — Share transfer via CDSL Easiest.
    - Otherwise → guide through self-resolution path per A7 (include entry rules).
 
-**6b. Gift transfer in**
+**7b. Gift transfer in**
 1. Invoke `console_eq_external_trades`; check for `external_trade_type` = gift.
 2. Entry found → gift shares recorded at closing price on transfer date (A8); buy average reflects once processed.
-3. No entry → escalate.
+3. No entry → escalate (system should have auto-posted).
 
-**6c. Gift / off-market P&L or avg queries**
+**7c. Gift / off-market P&L or avg queries**
 - Gift in (avg/P&L) → A8; client can use discrepancy flow for actual acquisition cost; advise CA for tax filing.
 - Off-market in (avg/P&L) → A8; manual add via discrepancy flow (A7).
 - Gift out → A8 (exit date = transfer date, exit price = closing price).
-- Off-market out → A8 (share transfer details for reversal, or update Tax P&L manually).
+- Off-market out → share A13 — Share transfer via CDSL Easiest; escalate if further assistance needed.
 
-**6d. Client says they already added details**
+**7d. Client says they already added details**
 1. Invoke `console_eq_external_trades` first.
 2. Entry exists → continue with `console_eq_external_trades` (that protocol's routing handles the appropriate path: recalc-stuck, incorrect entry by client, or deletion).
 3. No entry → guide through self-resolution path per A7.
 
-**6e. NCD / bond transferred from another broker**
+**7e. NCD / bond transferred from another broker**
 - `discrepant` > 0 → self-resolution path per A7. Note NCD market-value behavior (A7). Share A13 links (discrepancy explanation, add external trades).
 
-**6f. Client doesn't have purchase details**
+**7f. Client doesn't have purchase details**
 - Advise client to obtain details from previous broker (A7).
 
-**6g. Error when adding entry**
+**7g. Error when adding entry**
 1. Invoke `console_eq_external_trades` first — entry may have posted despite the error.
 2. Entry found → buy average updates per A2.
 3. No entry → evaluate A7 cannot-resolve conditions. Verify current exchange status via Kite holdings / instrument search before applying the unlisted/inactive exception:
    - Trading holiday → try next trading day.
-   - Inactive / suspended (confirmed) → escalate.
-   - Unlisted (confirmed) → escalate.
+   - Inactive / suspended (confirmed) → route to Rule 1.
+   - Unlisted (confirmed) → route to Rule 1.
    - CA within 10 days → try after 10 days from CA date.
    - IPO within 3 days → try after 3 days from listing.
 
-**6h. Zerodha-gifted shares — buy average double entry**
-1. Invoke `stock_gift_requests`; verify Zerodha gift for this ISIN / stock.
-2. Gift confirmed → invoke `console_eq_external_trades`; check for a client-added entry for the same ISIN.
-3. Client-added entry exists → double entry risk (Zerodha auto-updates buy average; client has also added an entry manually) → escalate. Do not draft any client-facing response.
-4. No client-added entry → buy average will be updated automatically by Zerodha; no further action required.
+---
+
+### Rule 8 — Loan (LAS) Handling
+
+- `loan` > 0 → shares are either pledged via LAS or lent externally to an NBFC (A10). → escalate.
 
 ---
 
-### Rule 7 — Loan (LAS) Handling
-
-- `loan` > 0 → shares are either pledged via LAS or lent externally to an NBFC (A10). Escalate.
-
----
-
-### Rule 8 — Short Delivery Handling
+### Rule 9 — Short Delivery Handling
 
 - Explain per A6 (two scenarios; auction vs close-out).
-- Counter-party default — share the auction timeline and the T+3 see/sell rule (A6). Invoke `settlement_date_calculator` to compute the exact auction (T+1), demat-credit (T+2 EOD), and see/sell (T+3 working day) dates when a settlement holiday falls in the window.
-- Specific short delivery case reported by client → escalate.
+- Counter-party default: share the auction timeline (T+1 auction, T+2 EOD demat credit) and T+3 working day see/sell rule (A6). If a settlement holiday falls in the window, invoke `settlement_date_calculator` to give the client the exact T+1 (auction), T+2 (demat credit), and T+3 (see/sell) dates.
+- Specific short delivery case reported by client → escalate with client ID, `tradingsymbol`, and trade details.
 
 ---
 
-### Rule 9 — Dividend, Debt Instrument Interest, and SGB Handling
+### Rule 10 — Dividend and Debt Instrument Interest Handling
 
-**9a. Dividend not received**
+**10a. Dividend not received**
+- Invoke `get_all_client_data` and check `bank account` to confirm the registered primary bank account where the dividend credit is expected.
 - Credited to primary bank; timeline per A2.
-- Contact RTA (lookup per A11) — Zerodha does not process dividend payments. Escalate.
+- Contact RTA (lookup per A11) — Zerodha does not process dividend payments. → escalate.
 
-**9b. Dividend amount less than expected**
-- TDS deducted before credit reduces the net amount received (per A11).
+**10b. Dividend amount less than expected**
+- TDS deducted before credit (rates per A11).
 
-**9c. Dividend tracking**
+**10c. Dividend tracking**
 - Kite and Console paths per A11.
 
-**9d. G-Sec / NCD / bond interest**
+**10d. G-Sec / NCD / bond interest**
 - Credited by RBI / paying agent to primary bank; not through Zerodha.
 - Timeline and eligibility per A2.
 - RBI schedule and client tracking options per A11.
 
-**9e. NCD maturity proceeds**
-- Credited to primary bank within 15 working days from maturity date (A2, A11).
-- For maturity date, coupon rate, or bond type → share the bond information lookup path per A11 (N series on NSE / BSE).
-
-**9f. SGB — premature redemption**
-- Share A13 — SGB premature redemption article.
-
-**9g. SGB — maturity amount credit**
-- Share A13 — SGB maturity amount credit article.
-
 ---
 
-### Rule 10 — LIQUIDBEES Fractional Redemption
+### Rule 11 — LIQUIDBEES Fractional Redemption
 
 - Fractional units not sellable on secondary market → off-market transfer to AMC via CDSL Easiest (A12).
 - Share A13 link for step-by-step process.
-- **No Re-KYC required** for fractional redemption / closure, even if account is dormant (A12).
-- If client also wants to sell whole number LIQUIDBEES units AND account is dormant → Re-KYC required first per A12.
+- Invoke `get_all_client_data` and check `dormant` to confirm dormancy status. Dormant account (> 24 months inactive) → Re-KYC required first (A12).
 
 ---
 
-### Rule 11 — Holding Statement / SOT / SOH Request
+### Rule 12 — XIRR Handling
 
-1. If client requests for visa purposes or requests a signed / stamped copy → escalate.
-2. Console holdings statement for a specific date is available at console.zerodha.com/portfolio/holdings.
-3. For a PDF-based statement covering both holdings and transactions, the client can download the SOT / SOH (Statement of Transactions / Statement of Holdings) directly — share A13 — SOT / SOH holding statement article.
+**12a. Client asking how to check XIRR**
+- When calculating returns on investments over multiple years with various transactions, relying only on absolute returns — which ignore the investment time period — may not provide an accurate result. For more accuracy, especially when dealing with multiple investments at different times such as SIPs, XIRR can be used.
+- Share A13 — Portfolio XIRR explanation.
+
+**12b. Client reporting an issue with XIRR / "-" displayed**
+- If the majority of investments are less than a year, XIRR would be greater than the actual percentage return. This is not the correct way to measure returns in such cases, so a "-" is displayed for portfolio XIRR.
+- Share A13 — Portfolio XIRR explanation.
+
+---
+
+### Rule 13 — BSDA Handling
+
+- Invoke `get_all_client_data` and check `account type/category` to confirm the account type, then explain BSDA eligibility per A14 (both conditions must be met: single demat account per PAN across all brokers and depositories, and holdings value not exceeded ₹10,00,000).
+- BSDA status is set and updated periodically by CDSL — Zerodha does not control enrollment; clients are enrolled automatically when eligible.
+- NRI or non-individual account → not eligible for BSDA; standard AMC applies.
+- If the above does not resolve the query → escalate.

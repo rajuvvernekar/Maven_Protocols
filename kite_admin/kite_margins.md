@@ -34,6 +34,7 @@ TAGS: margins
 
 ## Protocol
 
+
 # KITE MARGINS PROTOCOL
 
 ## Section A: Reference Data
@@ -145,6 +146,8 @@ TAGS: margins
 | Approved securities (pledge haircuts) | https://zerodha.com/approved-securities |
 | Physical settlement policy | https://support.zerodha.com/category/trading-and-markets/trading-faqs/f-otrading/articles/policy-on-physical-settlement |
 
+---
+
 ### A9 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
 
 | Day | Margin Requirement |
@@ -183,7 +186,9 @@ Route by scenario
    ├─ MTM explanation → Rule 11
    ├─ Balance negative + ITM stock options near expiry → Rule 12
    ├─ MCX / commodity margin or single ledger query → Rule 13
-   └─ Collateral not reflecting / collateral value decreased → Rule 14
+   ├─ Collateral not reflecting / collateral value decreased → Rule 14
+   └─ Withdrawal query (unable to withdraw, balance not updated,
+      withdrawal balance not showing, proceeds not reflected) → Rule 15
 ```
 
 ### Fallback
@@ -246,9 +251,23 @@ If no root cause is found, escalate.
 
 ### Rule 6 — Payin / Payout Query
 
-1. Weekend payins appear on Monday.
-2. For payin verification → invoke `cashier_payins` and check for the funds added. If funds were added on a weekend, they will appear on Monday.
-3. For payout verification → invoke `withdrawal_request` and check for entries where `payout_date` = today with the matching amount.
+1. Check `payin` from `kite_margins`:
+   - `payin` > 0 → funds were added today. Same-day withdrawal of today's payin is
+     not permitted.
+   - Invoke `settlement_date_calculator` with today's date to get the next
+     trading/settlement working day. Communicate that a fresh payin made today is
+     available for withdrawal from T+1 and name any holiday that delays it.
+
+2. **Payin not showing after adding funds on a weekend:**
+   - Invoke `cashier_payins` to confirm the payment was received.
+   - Invoke `settlement_date_calculator` to confirm the payment date falls on a
+     Saturday or Sunday.
+   - Communicate that payins made on Saturday or Sunday will reflect under `payin`
+     on Monday.
+
+3. Check `payout` from `kite_margins`:
+   - `payout` > 0 → a withdrawal was already processed today for that amount.
+   - For status details of the withdrawal → invoke `withdrawal_request`.
 
 ---
 
@@ -310,8 +329,9 @@ If no root cause is found, escalate.
 ### Rule 13 — MCX / Commodity Margin and Single Ledger
 
 1. No separate funds are needed for MCX and Equity — the same funds cover both segments when the single ledger is active.
-2. If `zbl_mcx_status` = active → single ledger is active; the same funds are available for trading across both Equity and Commodity (MCX) segments.
-3. If `zbl_mcx_status` is not active and client wants to trade in commodities → guide to activate the single ledger; invoke `account_modification_report`.
+2. Invoke `get_all_client_data` and check `segments` to confirm whether the COM segment is enabled for the client.
+3. If `zbl_mcx_status` = active → single ledger is active; the same funds are available for trading across both Equity and Commodity (MCX) segments.
+4. If `zbl_mcx_status` is not active and client wants to trade in commodities → guide to activate the single ledger; invoke `account_modification_report`.
 
 ---
 
@@ -322,3 +342,64 @@ If no root cause is found, escalate.
 
 **Collateral value decreased:**
 - Invoke `pledge_request_report` and check the reason for the reduction and guide accordingly.
+
+---
+
+### Rule 15 — Withdrawal Balance Not Updated / Unable to Withdraw
+
+**Step 1 — Check current state:**
+Share `available_cash` and `opening_balance`.
+If either is negative → no withdrawal possible; apply Rule 3.
+If `available_cash` = 0 or lower than expected → proceed to Step 2.
+
+---
+
+**Step 2 — Identify the cause of the balance difference:**
+
+If `available_cash` ≠ `opening_balance`, one or more of the following occurred today:
+stocks sold, positions closed, funds added/withdrawn, or charges applied.
+
+---
+
+**Step 3 — CNC stock sale today:**
+
+Invoke `kite_orders` and filter `type` = SELL and `product` = CNC.
+
+If CNC SELL orders found:
+- For each instrument with both BUY and SELL orders today, apply FIFO logic:
+  match SELL quantities against the oldest BUY lots to determine the net quantity
+  sold from settled (pre-existing) holdings.
+- Net CNC sale value per instrument = `filled_quantity` × `average_price` from the
+  SELL order for the settled portion.
+- Sum net sale values across all instruments.
+
+If no CNC SELL orders found → proceed to Step 4.
+
+---
+
+**Step 4 — Overnight position or intraday profit:**
+
+If the balance change is not from a CNC sale:
+- Overnight position closed today → apply Rule 1.
+- Intraday profit (equity MIS or F&O) → apply Rule 2.
+
+---
+
+**Step 5 — BTST check:**
+
+If expected CNC proceeds are not visible in `available_cash` → apply Rule 9.
+
+---
+
+**Step 6 — Same-day payin:**
+
+If the client added funds today and wants to withdraw immediately → apply Rule 6.
+
+---
+
+**Step 7 — Withdrawal timing (all scenarios):**
+
+Invoke `settlement_date_calculator` once with today's date to get T+1 (the next
+trading/settlement working day). Communicate the specific date funds are available
+for withdrawal and name any holiday that delays it. Advise the client to raise the
+withdrawal request via Console → Funds → Withdraw on or after that date.

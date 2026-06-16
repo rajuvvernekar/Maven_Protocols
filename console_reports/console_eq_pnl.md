@@ -21,9 +21,8 @@ TAGS: reports, holdings
 
 ## Protocol
 
-# CONSOLE EQ P&L PROTOCOL
 
----
+# CONSOLE EQ P&L PROTOCOL
 
 ## Section A: Reference Data
 
@@ -121,26 +120,11 @@ The two reports serve different purposes. Console P&L is an aggregate realized P
 **S7 — Tax P&L Editable:**
 Tax P&L allows manual cost basis adjustments for gifted shares, transferred shares, or other special cases where the system-recorded cost of acquisition is not accurate. Edit path: Console → Reports → Tax P&L → Edit.
 
-**S8 — Bonus P&L:**
-Bonus shares are credited at ₹0 cost. When FIFO consumes bonus shares on a sale, the entire sell value appears as profit — this is correct accounting behavior, not an error. The client's actual investment is recovered through FIFO consumption of the originally purchased shares.
-
-**S9 — Split P&L:**
-A stock split adjusts both quantity and price proportionally, leaving total investment value and P&L unchanged. No distortion occurs — the numbers simply reflect the post-split adjusted figures.
-
-**S10 — Demerger P&L:**
-Post-demerger, cost of acquisition is split between original and new entity per the COA ratio announced by the company. Until the ratio is applied in the system, P&L may appear incorrect — this is temporary and expected.
-
-**S11 — Merger P&L:**
-Post-merger, shares swap at the defined ratio and the original acquisition cost carries over to the new shares. P&L is calculated on this carried-over cost, not on the merger swap price.
-
-**S12 — Fractional Share P&L:**
-Fractional shares arising from a corporate action are settled in cash and show up as a small realized P&L entry for the fractional quantity. This is correct and expected behavior.
-
-**S13 — Orphan Unrealized Entry:**
+**S8 — Orphan Unrealized Entry:**
 A stock appears in unrealized P&L but no active holdings exist for it. This is a system/data error — an orphan lot that has not been cleaned up. Needs backend correction.
 
-**S14 — Bonus Shares ₹0 Buy Price in Tax P&L:**
-When all originally purchased shares have been sold via FIFO and the remaining or sold shares are entirely bonus shares, the buy price correctly shows ₹0. Bonus shares have zero cost of acquisition by definition. This is not an error — it is the correct FIFO outcome when only bonus shares remain.
+**S9 — P&L report charges are period-level, not per-scrip:**
+Filtering the P&L report by one stock shows that stock's realized P&L but the charges for the whole selected period — charges are never split per scrip.
 
 ---
 
@@ -159,7 +143,7 @@ When all originally purchased shares have been sold via FIFO and the remaining o
 ### Routing
 
 ```
-Query relates to equity P&L →
+Route by scenario
 │
 ├─ Buy average or holdings qty issue is the underlying cause → invoke
 │  `console_eq_holdings` first; P&L will follow once avg is corrected
@@ -171,7 +155,8 @@ Query relates to equity P&L →
 ├─ Same-day buy + sell classification (intraday vs delivery) → Rule 6
 ├─ P&L after bonus / split / demerger / merger / fractional shares → Rule 7
 ├─ Tax P&L vs Console P&L values differ → Rule 8
-└─ Stock in unrealized P&L despite all shares sold → Rule 9
+├─ Stock in unrealized P&L despite all shares sold → Rule 9
+└─ Charged more brokerage for a stock / charges high for one filtered stock → Rule 10
 ```
 
 ### Fallback
@@ -232,14 +217,9 @@ Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shar
 
 ### Rule 7 — Corporate Action Impact on P&L
 
-1. Identify the CA type from the client's query and apply the relevant interpretation:
-   - **Bonus** → See A6-S8 and A5 for impact details.
-   - **Bonus shares showing ₹0 buy price in Tax P&L** → invoke `console_eq_holdings_breakdown` to check whether remaining or sold shares are entirely bonus shares. If all originally purchased shares were sold via FIFO and only bonus shares remain or were sold, the ₹0 buy price is correct. See A6-S14.
-   - **Split** → See A6-S9 and A5 for impact details.
-   - **Demerger** → See A6-S10 and A5 for impact details.
-   - **Merger** → See A6-S11 and A5 for impact details.
-   - **Fractional shares** → See A6-S12 and A5 for impact details.
-2. If the CA occurred 3+ weeks ago and P&L still appears wrong → escalate.
+1. Identify the CA type from the client's query and apply the relevant row in **A5** (Corporate Action P&L Impact) — Bonus, Split, Demerger, Merger, or Fractional shares.
+2. **Bonus shares showing ₹0 buy price in Tax P&L** → invoke `console_eq_holdings_breakdown` to check whether remaining or sold shares are entirely bonus shares. If all originally purchased shares were sold via FIFO and only bonus shares remain or were sold, the ₹0 buy price is correct (per A5 Bonus row).
+3. If the CA occurred 3+ weeks ago and P&L still appears wrong → escalate.
 
 ---
 
@@ -254,4 +234,11 @@ Example: Client buys 100 shares of CDSL using CNC on 30 March and sells 100 shar
 ### Rule 9 — Unrealized P&L Orphan Entry
 
 1. Invoke `console_eq_holdings` for that stock.
-2. If no holdings found but unrealized P&L still shows an entry → data error (orphan lot, see A6-S13) → escalate.
+2. If no holdings found but unrealized P&L still shows an entry → data error (orphan lot, see A6-S8) → escalate.
+
+---
+
+### Rule 10 — Per-Scrip Charges in P&L Report
+
+1. State per **A6-S9**: filtered P&L report charges are period-level, not per-scrip.
+2. Genuine discrepancy after this → escalate.
