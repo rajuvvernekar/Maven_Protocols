@@ -207,7 +207,7 @@ If no root cause is identified → escalate.
 
 ### Rule 1: Early Exit
 
-- Invoke `get_all_client_data` and check `bo_sub_status`, `pis_bank_1_name`, and `pis_bank_2_name` per **A10**.`
+- Invoke `get_all_client_data` and check `bo_sub_status`, `pis_bank_1_name`, and `pis_bank_2_name` per **A10**.
 - If account is **NRE PIS** or **NRO PIS** → escalate.
 - NRE / NRO non-PIS and resident accounts → continue with normal routing.
 
@@ -282,8 +282,7 @@ Invoke `cashier_payins` with the UTR / reference number in **`bank_reference`**,
 
 **Step 3 — Bank account match:**
 
-`Invoke ``get_all_client_data`` and check the source account against the client's registered bank accounts (`bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number`):`
-Against the Bank account from which client transferred the funds
+Invoke `get_all_client_data` and check the source account (the bank account from which the client transferred the funds) against the client's registered bank accounts (`bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number`):
 | Status | Action |
 |---|---|
 | Matches a registered bank | Funds need a manual push to the trading account → escalate. |
@@ -310,7 +309,7 @@ Apply A3 per account/bank type.
 
 **Third-party / spouse:** Only bank accounts registered in the client's name and linked to their Zerodha account can be used for payins. Per SEBI regulations, transfers from third-party accounts are not accepted. Share the unmapped-transfer link from A9.
 
-`**IDFC 3-in-1 block:** Invoke ``get_all_client_data`` and check `idfc_3_in_1_status`. If "Yes" → inform the client that the IDFC 3-in-1 block facility prevents adding funds from secondary bank accounts and direct them to disable it at console.zerodha.com/account/bank → "Disable IDFC 3-in-1 account." Share the IDFC link from A9.`
+**IDFC 3-in-1 block:** Invoke `get_all_client_data` and check `idfc_3_in_1_status`. If "Yes" → inform the client that the IDFC 3-in-1 block facility prevents adding funds from secondary bank accounts and direct them to disable it at console.zerodha.com/account/bank → "Disable IDFC 3-in-1 account." Share the IDFC link from A9.
 
 ---
 
@@ -327,7 +326,7 @@ Apply A3 per account/bank type.
 ### Rule 9: Balance Lower Than Expected / Negative
 
 1. Confirm payin per Rule 8 format.
-2. If orders exist on the payin date → orders placed that day reduced the available balance. If no orders on the payin date → do not mention trading.
+2. Invoke `kite_orders` and check for orders on the payin date. If orders exist on the payin date → orders placed that day reduced the available balance. If no orders on the payin date → do not mention trading.
 3. Invoke `ledger_report` for: negative opening balance, AMC charges, NSE/BSE charges, trading debit obligations, delayed payment charges, prior QS payouts.
 4. A pre-existing negative balance is adjusted against the new deposit, resulting in a lower current balance. Identify the specific reason from the ledger.
 5. If the ledger doesn't explain the gap → escalate.
