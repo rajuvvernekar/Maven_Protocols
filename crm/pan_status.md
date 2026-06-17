@@ -15,7 +15,7 @@ When clients:
 
 TRIGGER KEYWORDS: "PAN verification failed", "name mismatch", "DOB mismatch", "name not matching", "income tax database", "ITD mismatch", "change name", "update name", "PAN blocked", "PAN invalid", "segment rejected name"
 
-PREREQUISITE: Always run get_all_client_data FIRST to obtain client_name, pan, dob before checking pan_status.
+PREREQUISITE: Always run `get_all_client_data` FIRST to obtain client_name, pan, dob before checking pan_status.
 
 TAGS: account
 
@@ -32,7 +32,7 @@ TAGS: account
 
 - Zerodha's name record is sourced from ITD, not from submitted documents — the two may differ. Name/DOB mismatch blocks transactions until resolved.
 
-- **pan_status inputs:**: client_name, pan, dob — must be sourced from get_all_client_data via an explicit call with fields=[client_name, pan, dob]; these are not returned by the mandatory fetch.
+- **pan_status inputs:**: client_name, pan, dob — must be sourced from `get_all_client_data` via an explicit call with fields=[client_name, pan, dob]; these are not returned by the mandatory fetch.
 
 ---
 

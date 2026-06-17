@@ -282,7 +282,7 @@ Invoke `cashier_payins` with the UTR / reference number in **`bank_reference`**,
 
 **Step 3 — Bank account match:**
 
-`Invoke `get_all_client_data` and check the source account against the client's registered bank accounts (`bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number`):`
+`Invoke ``get_all_client_data`` and check the source account against the client's registered bank accounts (`bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number`):`
 Against the Bank account from which client transferred the funds
 | Status | Action |
 |---|---|
@@ -310,7 +310,7 @@ Apply A3 per account/bank type.
 
 **Third-party / spouse:** Only bank accounts registered in the client's name and linked to their Zerodha account can be used for payins. Per SEBI regulations, transfers from third-party accounts are not accepted. Share the unmapped-transfer link from A9.
 
-`**IDFC 3-in-1 block:** Invoke `get_all_client_data` and check `idfc_3_in_1_status`. If "Yes" → inform the client that the IDFC 3-in-1 block facility prevents adding funds from secondary bank accounts and direct them to disable it at console.zerodha.com/account/bank → "Disable IDFC 3-in-1 account." Share the IDFC link from A9.`
+`**IDFC 3-in-1 block:** Invoke ``get_all_client_data`` and check `idfc_3_in_1_status`. If "Yes" → inform the client that the IDFC 3-in-1 block facility prevents adding funds from secondary bank accounts and direct them to disable it at console.zerodha.com/account/bank → "Disable IDFC 3-in-1 account." Share the IDFC link from A9.`
 
 ---
 

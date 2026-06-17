@@ -100,7 +100,7 @@ GTT triggers based on ticks recorded by the system — missed ticks mean GTT may
 
 ```
 Route by scenario
-   ├─ Looking for current/active GTT → invoke 'kite_gtt'
+   ├─ Looking for current/active GTT → invoke `kite_gtt`
    ├─ Old/missing GTT — initial lookup before status is known → Rule 1
    ├─ Status = Triggered → Rule 2
    ├─ Status = Cancelled → Rule 3

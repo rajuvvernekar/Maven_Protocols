@@ -31,7 +31,7 @@ TAGS: investments
 
 - Available for lumpsum only.
 - Trigger check uses T-1 day NAV. Actual allotment/redemption NAV = T day NAV (will differ from trigger price).
-- Once triggered, the order moves to 'mf_order_history'. No longer visible in this tool.
+- Once triggered, the order moves to `mf_order_history`. No longer visible in this tool.
 - Valid for 365 days. Auto-rejected after expiry.
 - Payment is not debited at placement. Client must pay manually (UPI/Netbanking) after trigger notification. No payment held = no refund on expiry/cancellation.
 - "Redeem all" is not available with conditional orders — client must enter exact unit count manually.

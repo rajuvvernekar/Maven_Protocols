@@ -607,7 +607,7 @@ When NSE and BSE statuses for the same segment type differ — one shows Activat
 If any segment (per **A4** field pairs) shows as Rejected, Activation_rejected, or Deactivated AND the corresponding remarks field contains "PAN Verification Failed":
 
 1. Invoke `pan_status` to retrieve the specific rejection reason.
-2. If `pan_status` returns a specific, actionable mismatch → follow the 'pan_status' tool's resolution guidance.
+2. If `pan_status` returns a specific, actionable mismatch → follow the `pan_status` tool's resolution guidance.
 3. For all other `pan_status` results (no issues found, ambiguous, or unclear) → escalate.
 
 ---

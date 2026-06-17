@@ -304,7 +304,7 @@ Non-direct settlement banks report payments to the exchange on the next working 
 
 - List all orders for the queried fund in the relevant date range.
 - Diagnose each order independently and report the status of every order to the client.
-- Map each order to its `fund_allocation_report` entry using either `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) or `settlement_id` (mf_order_history) = `settlement_number` (fund_allocation_report). Both columns should typically be populated for a mapped payment.
+- Map each order to its `fund_allocation_report` entry using either `exchange_order_id` (mf_order_history) = `order_number` (`fund_allocation_report`) or `settlement_id` (mf_order_history) = `settlement_number` (`fund_allocation_report`). Both columns should typically be populated for a mapped payment.
 - Check `payment_confirmed` and `status` for each order.
 - If the query is about an order older than 180 days, invoke `console_mf_tradebook` for older data before proceeding.
 
@@ -355,7 +355,7 @@ If `tag` contains `"product": "nfo"`, the order follows NFO logic:
 **3 — payment_confirmed = true**
 
 **3.1 — Map the order to `fund_allocation_report`:**
-Map each order to its `fund_allocation_report` entry using either `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) or `settlement_id` (mf_order_history) = `settlement_number` (fund_allocation_report). Both columns should typically be populated for a mapped payment.
+Map each order to its `fund_allocation_report` entry using either `exchange_order_id` (mf_order_history) = `order_number` (`fund_allocation_report`) or `settlement_id` (mf_order_history) = `settlement_number` (`fund_allocation_report`). Both columns should typically be populated for a mapped payment.
 
 Check `error_remarks` first:
 - "INVALID BANK ACCOUNT DETAIL" → escalate.
@@ -381,7 +381,7 @@ If `payment_updated_at` is not yet populated → use `payment_initiated_at` as r
 - If `exchange_timestamp` is populated and differs from the T-day above → use `exchange_timestamp` as actual T-day. Verify against `payment_date` in `fund_allocation_report`. Invoke `settlement_date_calculator` to identify any holidays within the allotment window and name them.
 - If `exchange_timestamp` is not yet populated → use the T-day determined in 3.2 to communicate the expected allotment date (T+1 from T-day per A8).
 
-**3.4 — Allotment status — fund_allocation_report flags:**
+**3.4 — Allotment status — `fund_allocation_report` flags:**
 
 - `settled_flag` = Y, `allotment_flag` = Y, status still Processing → units have been allotted by the AMC. Units will be credited to the demat account on the next trading day from `exchange_timestamp` per **A8**. If not credited on the expected date → escalate.
 - `settled_flag` = Y, `allotment_flag` = N, `mf_order_history` status = "Allotted" → allotment is finalised; units will be credited to the demat account on the next trading day from `exchange_timestamp` per A8.
@@ -406,7 +406,7 @@ If `variety` = sip → section 4.2. If `variety` = regular → section 4.1.
 
 **4.1 — Non-SIP orders (`variety` = regular):**
 1. Check `payment_error_code` and `payment_error_description` (non-shareable per **A7** — use for internal diagnosis only). If either is populated → payment failed. Communicate that the payment was not confirmed and advise placing a new order. If the client's bank was debited, apply A4 refund language.
-2. No error code → invoke `fund_allocation_report`, mapping using `exchange_order_id` (mf_order_history) = `order_number` (fund_allocation_report) or `settlement_id` (mf_order_history) = `settlement_number` (fund_allocation_report). If an entry exists → use its data to confirm what happened to the payment.
+2. No error code → invoke `fund_allocation_report`, mapping using `exchange_order_id` (mf_order_history) = `order_number` (`fund_allocation_report`) or `settlement_id` (mf_order_history) = `settlement_number` (`fund_allocation_report`). If an entry exists → use its data to confirm what happened to the payment.
 3. No matching entry → data is inconclusive. Apply A4 refund language conditionally (if the client's bank was debited, the refund will apply).
 
 **4.2 — SIP orders (`variety` = sip):**
@@ -414,8 +414,8 @@ Invoke `sip_report` and check `fund_source`:
 - `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check the debit entry on the order date:
   - `success` → bank was debited; payment is in processing. Apply A4 refund language.
   - `draft` → debit instruction sent to the bank, not yet executed. Communicate debit is scheduled.
-  - `pending` → debit has an issue at the bank level. Check `remark` per mandate_debit_report A4 for the cause. This is not an exchange or order status.
-  - `failed` → bank rejected the debit. Communicate the reason from `remark` per mandate_debit_report A4. No payment was debited this cycle.
+  - `pending` → debit has an issue at the bank level. Check `remark` per `mandate_debit_report` A4 for the cause. This is not an exchange or order status.
+  - `failed` → bank rejected the debit. Communicate the reason from `remark` per `mandate_debit_report` A4. No payment was debited this cycle.
   - No debit record → no mandate debit was initiated for this cycle.
 - Otherwise → no mandate linked. No payment was debited.
 
@@ -580,11 +580,11 @@ Triggered by `status_message` = PAYMENT NOT INITIATED FROM CLIENT END.
 Check `variety`:
 
 - `variety` = regular → payment was not initiated for this lumpsum order. `payment_confirmed` will be false. Communicate that no payment was made and advise placing a fresh order. Apply A4 refund language conditionally (if the client's bank was debited despite this status).
-- `variety` = sip → invoke `sip_report` and check `fund_source` per sip_report A4:
+- `variety` = sip → invoke `sip_report` and check `fund_source` per `sip_report` A4:
   - `fund_source` = `rp-pg`, `pool`, or blank → no mandate is linked to this SIP. Invoke `mandate_report` (365-day range) and check for any mandate with `status` = `success`:
     - Active mandate exists → advise client to link the mandate to the SIP. Share the mandate link from A9.
     - No active mandate → advise client to create a mandate and link it to the SIP. Share the mandate link from A9.
-  - `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check debit status for the order date. Apply mandate_debit_report A3 status interpretation.
+  - `fund_source` = `digio-mandates` or `upi-mandates` → mandate is linked. Invoke `mandate_debit_report` and check debit status for the order date. Apply `mandate_debit_report` A3 status interpretation.
 
 ---
 

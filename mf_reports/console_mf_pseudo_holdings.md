@@ -156,7 +156,7 @@ Route by scenario
 ├─ Discrepancy signals (discrepant > 0, "fix discrepancy" message, or "NA" invested amount) → Rule 2
 ├─ Client cannot see mutual fund details on Coin app → Rule 2
 ├─ Client reports missing or incorrect units → Rule 2
-├─ Mismatch between this tool and console_mf_holdings → Rule 3
+├─ Mismatch between this tool and `console_mf_holdings` → Rule 3
 ├─ Pledged units blocking redemption/SWP, or collateral margin query → Rule 5
 ├─ Client asks about transferring MF units to or from Zerodha (demat or non-demat) → Rule 7
 ├─ Fund still showing in portfolio after full redemption (residual decimal units) → Rule 8
@@ -165,7 +165,7 @@ Route by scenario
 ├─ Holdings not showing on RTA/CAMS/AMC websites → Rule 13
 ├─ TER/BER or expense ratio query → Rule 14
 ├─ Unable to redeem after NRI account conversion → Rule 15
-└─ General MF holdings query → Check data here first; invoke console_mf_holdings only if `available`, `holdings_date`, or `total_quantity` is needed
+└─ General MF holdings query → Check data here first; invoke `console_mf_holdings` only if `available`, `holdings_date`, or `total_quantity` is needed
 ```
 
 ### Fallback

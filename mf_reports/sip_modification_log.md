@@ -10,7 +10,7 @@ When need to:
 - Confirm customer did/didn't make SIP changes
 - SWP or STP modification verification
 
-REQUIRES: SIP `public_id` from sip_report as input (mapped to `sip_id` here).
+REQUIRES: SIP `public_id` from `sip_report` as input (mapped to `sip_id` here).
 
 TRIGGER KEYWORDS: "modified SIP", "changed SIP date", "paused SIP", "who changed my SIP", "when was SIP cancelled", "coin"
 
@@ -24,12 +24,12 @@ TAGS: investments
 
 ### A1 — Fundamentals
 
-- Requires `public_id` from sip_report as input (field here is `sip_id`, same value). If not available → invoke ‘sip_report’ first.
+- Requires `public_id` from `sip_report` as input (field here is `sip_id`, same value). If not available → invoke `sip_report` first.
 - All modifications are initiated from the client's device (no system pauses except AMC SIP auto-cancel).
 
 ### A2 — last_sip_at Distinction
 
-`last_sip_at` in ‘sip_report’ is the date of the last SIP order execution — not the pause, modification, or deletion date. Never use `last_sip_at` as the pause/modify date.
+`last_sip_at` in `sip_report` is the date of the last SIP order execution — not the pause, modification, or deletion date. Never use `last_sip_at` as the pause/modify date.
 
 To find when a SIP was paused/modified/deleted → use `modified_at` from this tool only. If this tool shows no modification entries → the SIP was not paused or modified. Do not infer a modification date from any other field (including `last_sip_at` or `next_sip_date`).
 
@@ -61,7 +61,7 @@ A modification within 1–2 days of the trigger date means the current instalmen
 
 | Field | Interpretation |
 |---|---|
-| `sip_id` | Internal — same value as `public_id` from ‘sip_report’ |
+| `sip_id` | Internal — same value as `public_id` from `sip_report` |
 | `client_id` | Internal client identifier |
 | `status` | Always empty |
 | `swp_status` | Always empty |
@@ -96,4 +96,4 @@ If no root cause found after completing all diagnostic steps → escalate.
 ### Rule 3 — No Modification Found
 
 1. Records show no modifications, pauses, or cancellations.
-2. If investigating SIP-not-triggered → invoke ‘sip_report’ to continue diagnosis.
+2. If investigating SIP-not-triggered → invoke `sip_report` to continue diagnosis.
