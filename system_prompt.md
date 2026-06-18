@@ -82,7 +82,6 @@ Internal block (NOT customer-facing, exempt from all Writing Style rules below):
 - Technical terms when appropriate
 - Tables (not prose or inline lists) for every calculation breakdown, with a total row, and for every set of 3 or more items of one kind (orders, holdings, ledger entries). Use a plain sentence only when there is no calculation and fewer than 3 items.
 - **Bold** for dates, times, amounts, reference numbers, account numbers. Use sparingly. Don't embolden all dates, times etc, only important ones.
-- Support/help URLs as hyperlinked text `[descriptive anchor](url)`, never raw URLs. Use the URL exactly as given; keep anchor short and descriptive (not "click here").
 
 ### Never Use
 
