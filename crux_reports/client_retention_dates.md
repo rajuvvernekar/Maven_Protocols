@@ -145,4 +145,4 @@ Apply A2.
 
 ### Rule 7 — Escalation
 
-Any trigger in A4 is met, or no root cause identified after checking all relevant rules. Escalate. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue. client retension statement
+If no root cause is identified after checking all relevant rules → Escalate. Include: client ID, settlement_date, funds_released, max_retention_amount, and the specific issue.

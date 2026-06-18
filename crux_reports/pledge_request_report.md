@@ -28,7 +28,7 @@ TAGS: margins
 
 ### A1 — Pledge Fundamentals
 
-- Pledge charges: ₹30 + 18% GST = ₹35.4 standard. A Journal Entry may appear on the ledger for specific pledge types (some instruments).
+- Pledge charges: ₹30 + 18% GST = ₹35.4 standard. A Journal Entry may appear on the ledger for specific pledge types (some instruments) — invoke `ledger_report` to verify the charge entry.
 - Collateral margin = market value × (1 − haircut%). Haircut varies by security.
 - Collateral value changes daily based on market price and haircut updates.
 - MF pledge/unpledge requests are initiated via Coin (Zerodha's MF platform) and appear in this report alongside equity, with the same `pledge_type` values, statuses, and process.

@@ -142,7 +142,7 @@ If both conditions apply (inactive during regular QS period), mention inactivity
 
 ```
 Route by scenario
-   ├─ NRI PIS account detected → escalate (STOP)
+   ├─ Invoke `get_all_client_data`; if `client_acc_type` IN (NRO, NRE, NRI) → NRI account detected → escalate (STOP)
    ├─ Opt out / change frequency request → Rule 1
    ├─ Settlement payout query / why it happened → Rule 2
    ├─ No payout last quarter, new account → Rule 3
@@ -170,7 +170,7 @@ If no matching scenario is found → escalate.
 
 ### Rule 3 — New Account Exclusion
 
-1. Confirm: no payout found for last quarter and account opened after previous settlement date.
+1. Invoke `get_all_client_data` and check the account opening date. Confirm: no payout found for last quarter and the account was opened after the previous settlement date (per **A2**).
 2. Inform client first payout will be on the next settlement date per **A2** and **A1**.
 
 ### Rule 4 — Outstanding Positions / Fund Retention

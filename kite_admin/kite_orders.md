@@ -234,7 +234,7 @@ TAGS: orders, margins
 | Lot size revision bulletin | https://zerodha.com/marketintel/bulletin/429705/revision-in-lot-size-of-index-derivative-contracts-from-december-30-2025 |
 | Market Protection | https://support.zerodha.com/category/trading-and-markets/charts-and-orders/order/articles/market-price-protection-on-the-order-window |
 
-### A18 — Negative Opening Balance with Negative Option Premium
+### A17 — Negative Opening Balance with Negative Option Premium
 
 - When `opening_balance` is negative, blocks all fresh positions.
 - If `option_premium` is also negative (premium paid for buying options), proceeds from exiting long options or entering short options can only be used for new long option trades in the same segment on the same day; available for other trades from next trading day.
@@ -295,7 +295,7 @@ If no root cause found after completing all diagnostic steps → escalate.
 1. Read `rejection_reason` and match against **A12**.
 2. For margin rejections:
    a. Check if client has multiple pending sell orders for same instrument. Excess orders treated as fresh short positions requiring full margin. Direct client to cancel excess pending sells and place a single sell matching position quantity.
-   b. Invoke `kite_margins`. Check `opening_balance` first. Per **A18**, negative opening balance blocks all fresh positions — direct client to add funds. If `option_premium` is also negative, include option premium context per **A18**.
+   b. Invoke `kite_margins`. Check `opening_balance` first. Per **A17**, negative opening balance blocks all fresh positions — direct client to add funds. If `option_premium` is also negative, include option premium context per **A17**.
    c. If `opening_balance` is not negative, identify specific shortfall from `available_margin`, `used_margin`, `available_cash`.
 3. For market order blocks → match against **A10** for the reason. Advise the client to either use a limit order or enable Market Protection on the order window (link per **A16**) to place the order. For index options via AMO, Market Protection is not available — limit order is the only option.
 4. For MIS blocks → invoke `get_all_client_data` and check `segments` to confirm the client is enabled for the relevant segment, then match against **A11**, respond with reason + resolution.
