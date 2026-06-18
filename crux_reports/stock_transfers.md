@@ -138,8 +138,9 @@ If no root cause is identified after checking all relevant rules → Escalate
 ### Rule 3 — Transferred Stocks Not Visible
 
 1. Confirm status = Stocks Transferred (per **A4**).
-2. Stocks should be visible within 24 working hours of transfer completion.
-3. If more than 24 working hours have passed since completion and stocks are still not visible → Escalate.
+2. Invoke `console_eq_pseudo_holdings` and verify whether the transferred stocks appear there.
+   - Stocks shown → confirm the transfer has reflected; stocks should be visible within 24 working hours of completion.
+   - Stocks not shown AND more than 24 working hours since completion → Escalate.
 
 ### Rule 4 — Buy Average After Transfer
 

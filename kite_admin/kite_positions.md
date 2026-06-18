@@ -207,7 +207,7 @@ TAGS: holdings, margins
 
 ---
 
-### A13 — F&O Ban Period Delta Rules
+### A12 — F&O Ban Period Delta Rules
 
 When a stock enters F&O ban period, fresh positions that increase net delta exposure are blocked. Positions that reduce or offset delta exposure are permitted. Exit of existing positions is always allowed.
 
@@ -350,8 +350,8 @@ Per **A10**, intraday profits (equity and F&O) are not available on T day — av
 
 1. If client holds F&O position in a stock in ban period and asks what trades are permitted:
    a. Identify position type (long/short calls/puts/futures) from `kite_positions`.
-   b. Per **A13**, tailor permitted/blocked trades to actual position held. Once OI falls below 80% of market-wide limit, all trades will be allowed again.
-2. If order rejected due to ban period → invoke `kite_orders` to confirm rejection reason. Apply **A13** delta context.
+   b. Per **A12**, tailor permitted/blocked trades to actual position held. Once OI falls below 80% of market-wide limit, all trades will be allowed again.
+2. If order rejected due to ban period → invoke `kite_orders` to confirm rejection reason. Apply **A12** delta context.
 3. If client asks when ban will lift → OI must fall below 80% of market-wide position limit. Direct client to bulletin per **A11** for current ban list.
 
 ---

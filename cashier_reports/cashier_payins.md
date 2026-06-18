@@ -24,7 +24,7 @@ TAGS: funds
 
 ## Section A: Reference Data
 
-### A1: Payment Methods & Specs
+### A1 — Payment Methods & Specs
 
 | Method | Charge | Credit Timeline | Refund Timeline | Limits / Notes |
 |---|---|---|---|---|
@@ -37,7 +37,7 @@ TAGS: funds
 
 ---
 
-### A2: Important Timelines
+### A2 — Important Timelines
 
 - **Unregistered bank transfer reversal:** 2–3 days.
 - **Batch window:** Transfers between 12 AM–7:30 AM reflect in Kite only after 7:30 AM (daily, including weekends).
@@ -45,7 +45,7 @@ TAGS: funds
 
 ---
 
-### A3: Account & Bank Restrictions
+### A3 — Account & Bank Restrictions
 
 | Account/Bank Type | Restriction |
 |---|---|
@@ -59,7 +59,7 @@ TAGS: funds
 
 ---
 
-### A4: Zerodha Bank Details (NEFT/RTGS/IMPS)
+### A4 — Zerodha Bank Details (NEFT/RTGS/IMPS)
 
 **Primary:**
 | Field | Value |
@@ -85,7 +85,7 @@ TAGS: funds
 
 ---
 
-### A5: UPI Error Translations
+### A5 — UPI Error Translations
 
 | Error Code | Cause | Suggested Resolution |
 |---|---|---|
@@ -101,13 +101,13 @@ TAGS: funds
 
 ---
 
-### A6: Official Zerodha UPI IDs
+### A6 — Official Zerodha UPI IDs
 
 zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.brk@validaxis · zerodhabroking@hdfcbank · zerodha.broking@icici · zerodhabroking@axisbank · zerodhabroking@yesbank
 
 ---
 
-### A7: Field Rules
+### A7 — Field Rules
 
 **Shareable with client:**
 
@@ -128,7 +128,7 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 ---
 
-### A8: Payin Update Timings — Kite vs Console
+### A8 — Payin Update Timings — Kite vs Console
 
 | Scenario | Kite Balance | Console Ledger |
 |---|---|---|
@@ -142,7 +142,7 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 ---
 
-### A9: Links
+### A9 — Links
 
 | Purpose | URL |
 |---|---|
@@ -155,7 +155,7 @@ zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.
 
 ---
 
-### A10: NRI / PIS Detection
+### A10 — NRI / PIS Detection
 
 | Account Type | Detection |
 |---|---|
@@ -205,7 +205,7 @@ If no root cause is identified → escalate.
 
 ## Section C: Rules
 
-### Rule 1: Early Exit
+### Rule 1 — Early Exit
 
 - Invoke `get_all_client_data` and check `bo_sub_status`, `pis_bank_1_name`, and `pis_bank_2_name` per **A10**.
 - If account is **NRE PIS** or **NRO PIS** → escalate.
@@ -213,7 +213,7 @@ If no root cause is identified → escalate.
 
 ---
 
-### Rule 2: UPI Status
+### Rule 2 — UPI Status
 
 | Status | Meaning |
 |---|---|
@@ -225,7 +225,7 @@ If client provides bank confirmation that the payment was successful at the bank
 
 ---
 
-### Rule 3: Netbanking Status
+### Rule 3 — Netbanking Status
 
 Applies when `transfer_mode` = netbanking.
 
@@ -247,7 +247,7 @@ For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no a
 
 ---
 
-### Rule 4: UPI Failure Troubleshooting
+### Rule 4 — UPI Failure Troubleshooting
 
 1. Identify cause from A5.
 2. **U30 (bank-side failure)** → escalate.
@@ -260,7 +260,7 @@ For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no a
 
 ---
 
-### Rule 5: Payment Not Reflected (NEFT / IMPS / RTGS)
+### Rule 5 — Payment Not Reflected (NEFT / IMPS / RTGS)
 
 Applies when the client says they added funds via NEFT / IMPS / RTGS but the payin isn't reflected — directly, in a screenshot, or with a UTR / bank receipt.
 
@@ -290,7 +290,7 @@ Invoke `get_all_client_data` and check the source account (the bank account from
 
 ---
 
-### Rule 6: Date Mismatch
+### Rule 6 — Date Mismatch
 
 When no transaction matches the client's stated date, use **amount-matching** on nearby dates.
 
@@ -301,7 +301,7 @@ When no transaction matches the client's stated date, use **amount-matching** on
 
 ---
 
-### Rule 7: Account Restrictions
+### Rule 7 — Account Restrictions
 
 Apply A3 per account/bank type.
 
@@ -313,7 +313,7 @@ Apply A3 per account/bank type.
 
 ---
 
-### Rule 8: Payin Confirmed but "Not Visible"
+### Rule 8 — Payin Confirmed but "Not Visible"
 
 1. Invoke `kite_margins` — authoritative source for available balance.
 2. Apply the Kite-vs-Console timing in **A8** for the payin's day/time (weekday/weekend, before/after 7:30 AM), including the weekend "Payin line on Monday" behaviour. `bank_reference` available confirms the credit.
@@ -323,7 +323,7 @@ Apply A3 per account/bank type.
 
 ---
 
-### Rule 9: Balance Lower Than Expected / Negative
+### Rule 9 — Balance Lower Than Expected / Negative
 
 1. Confirm payin per Rule 8 format.
 2. Invoke `kite_orders` and check for orders on the payin date. If orders exist on the payin date → orders placed that day reduced the available balance. If no orders on the payin date → do not mention trading.
@@ -335,7 +335,7 @@ Apply A3 per account/bank type.
 
 ---
 
-### Rule 10: QS Check (Old Payin, Balance Not As Expected)
+### Rule 10 — QS Check (Old Payin, Balance Not As Expected)
 
 Applies when an old payin is not reflecting, or the balance differs from what the client expected, and QS may have moved funds out.
 
@@ -346,7 +346,7 @@ Applies when an old payin is not reflecting, or the balance differs from what th
 
 ---
 
-### Rule 11: Multiple Same-Day Transactions
+### Rule 11 — Multiple Same-Day Transactions
 
 **Detail the last 5 transactions in a single response.** Clients often retry multiple times when a payin fails — a broader window helps identify whether the failure is a consistent issue (same bank, same error code, etc.). Summarize any remaining transactions briefly.
 
@@ -358,7 +358,7 @@ Apply Rule 2 or Rule 3 per transaction based on `transfer_mode` and `Status`. Ad
 
 ---
 
-### Rule 12: Fresh Account Payin Failures
+### Rule 12 — Fresh Account Payin Failures
 
 Applies: `account_activation_date` within last 24h AND payin date = activation date. New accounts only — not REKYC or segment activation.
 
@@ -366,7 +366,7 @@ Inform the client: your account was recently opened and it will take up to 24 wo
 
 ---
 
-### Rule 13: Penny Drop / Test Deposit
+### Rule 13 — Penny Drop / Test Deposit
 
 If customer asks about a ₹1 credit from "ZERODHA BR" via IMPS:
 
@@ -374,12 +374,12 @@ Inform the client: the ₹1 credit is a standard test deposit that occurs when c
 
 ---
 
-### Rule 14: Same-Day Withdrawal after Deposit
+### Rule 14 — Same-Day Withdrawal after Deposit
 
 If the client adds funds and asks about withdrawing the same day → same-day withdrawal is not permitted; a T+1 restriction applies. Invoke `settlement_date_calculator` to identify the next settlement working day and tell the client the withdrawal request can be placed from that date onwards.
 
 ---
 
-### Rule 15: Bank Details Request
+### Rule 15 — Bank Details Request
 
 Share Zerodha's bank details from A4. Lead with Primary; provide Alternate only if the client requests a numeric account number or cannot use "ZERNSE". HDFC account holders can also use the eCMS facility per A9.

@@ -97,7 +97,7 @@ TAGS: margins
 | F&O segment not active — request pending | "Pledge is not allowed for your account" or similar; activation request already found in `account_modification_report` |
 | F&O segment not active — no request placed | "Pledge is not allowed for your account" or similar; no activation request found in `account_modification_report` |
 
-### A7 — Scenarios
+### A6 — Scenarios
 
 | Scenario | Meaning / Interpretation |
 |---|---|
@@ -159,40 +159,40 @@ Route by scenario
 
 ### Rule 3 — Collateral Not Reflecting After Successful Pledge
 
-1. If pledge was within the last 30 minutes → per A7.
+1. If pledge was within the last 30 minutes → per A6.
 2. If more than 30 minutes since `pledge_creation` and still no collateral → escalate.
 
 ---
 
 ### Rule 4 — Pledge Failed (Diagnose Reason)
 
-1. Identify failure reason per A5 and apply per A7:
+1. Identify failure reason per A5 and apply per A6:
    - "Something went wrong" error → unapproved security.
    - T1 shares.
    - Insufficient qty → invoke `console_eq_holdings` for available qty.
    - "Pledge is not allowed for your account" or similar account-level restriction → check Segments in `get_all_client_data`. If F&O is not active → invoke `account_modification_report` to check if an activation request is already placed:
-     - Request found → per A7: F&O segment not active — request pending.
-     - No request found → per A7: F&O segment not active — no request placed.
+     - Request found → per A6: F&O segment not active — request pending.
+     - No request found → per A6: F&O segment not active — no request placed.
 2. If none of the above explains the failure → escalate.
 
 ---
 
 ### Rule 5 — Unpledge Rejected (Margin Utilized)
 
-- `pledge_type` = Unpledge AND status = Failure AND margin is in use → per A7.
+- `pledge_type` = Unpledge AND status = Failure AND margin is in use → per A6.
 
 ---
 
 ### Rule 6 — Overdue Pledge Request
 
-1. Status = Overdue → request not successful (possible share lock-in or intermittent issue). Inform client the same quantity cannot be pledged again today; retry on the next trading day (per A4 / A7).
+1. Status = Overdue → request not successful (possible share lock-in or intermittent issue). Inform client the same quantity cannot be pledged again today; retry on the next trading day (per A4 / A6).
 2. If it recurs on the next trading day → escalate.
 
 ---
 
 ### Rule 7 — Holdings Showing Zero After Pledge
 
-1. Apply per A7.
+1. Apply per A6.
 2. Invoke `console_eq_holdings` to confirm qty is present.
 3. If holdings qty mismatch suspected → invoke `console_eq_pseudo_holdings` to cross-check SOT data.
 4. If qty = 0 in Console as well → escalate.
@@ -202,7 +202,7 @@ Route by scenario
 ### Rule 8 — MTF Auto-Pledge vs Client Pledge
 
 1. Check `pledge_type` and invoke `console_mtf_holdings` to cross-reference.
-2. Apply per A7.
+2. Apply per A6.
 
 ---
 

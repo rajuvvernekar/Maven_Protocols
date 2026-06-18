@@ -93,7 +93,7 @@ TAGS: margins
 | SPAN | Margins blocked for F&O portfolios. Exchanges use Standard Portfolio Analysis of Risk (SPAN) to calculate risk. |
 | Exposure | Margin charged over and above SPAN to cover risks that SPAN may not account for (index: 2% of contract value; stock: 3.5% or 1.5 SD). |
 | SPAN + Exposure | Initial Margin required by exchange for F&O. |
-| Delivery Margin | Physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry. Physical delivery margin increases progressively from 4 days before expiry to expiry day — see **A9** for the full schedule. |
+| Delivery Margin | Physical delivery margin for ITM stock options during expiry week + additional MCX margin near expiry. Physical delivery margin increases progressively from 4 days before expiry to expiry day — see **A8** for the full schedule. |
 | M2M Realised | Realised MTM P&L from closed F&O positions. Mark to Market is the daily revaluation of open futures positions at the closing price — profits or losses are settled to the client's account daily. Options do not have MTM settlement. |
 | M2M Unrealised | Unrealised MTM P&L from open F&O positions (internal use only). |
 
@@ -148,7 +148,7 @@ TAGS: margins
 
 ---
 
-### A9 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
+### A8 — Physical Delivery Margin Schedule (Stock F&O Expiry Week)
 
 | Day | Margin Requirement |
 |---|---|
@@ -225,7 +225,7 @@ If no root cause is found, escalate.
 ### Rule 3 — Negative Available Cash
 
 1. `available_cash` < 0 → negative cash attracts interest at 0.05%/day (18% p.a.) per **A5**. Advise adding funds to clear the deficit. If not cleared, open positions may be squared off.
-2. If client holds ITM stock option positions approaching expiry → invoke `ledger_report` and check `remarks` for the ledger entry in **A9**. If found → route to Rule 12. If not found → continue with step 1 above — explain interest charge and advise adding funds.
+2. If client holds ITM stock option positions approaching expiry → invoke `ledger_report` and check `remarks` for the ledger entry in **A8**. If found → route to Rule 12. If not found → continue with step 1 above — explain interest charge and advise adding funds.
 
 ---
 
@@ -243,7 +243,7 @@ If no root cause is found, escalate.
 ### Rule 5 — SPAN / Exposure / Delivery Margin
 
 1. Per **A3**: SPAN + Exposure = Initial Margin required by exchange for F&O.
-2. For physical delivery margin near expiry → share **A9** schedule. Margin calculator per **A7**.
+2. For physical delivery margin near expiry → share **A8** schedule. Margin calculator per **A7**.
 3. If client asks which position is blocking margin → invoke `kite_positions`.
 4. If client asks about a specific order's margin requirement → invoke `kite_orders` and check `filled_quantity` and `average_price` for OPEN and COMPLETE orders.
 
@@ -319,8 +319,8 @@ If no root cause is found, escalate.
 ### Rule 12 — Balance Negative Due to Physical Delivery Margin
 
 1. If the client's fund balance went negative near F&O expiry and client holds ITM stock option positions:
-   a. Invoke `ledger_report` and check `remarks` for the ledger entry in **A9** with a corresponding `debit` entry.
-   b. If found → physical delivery margin has been blocked for the ITM stock option position approaching expiry. Share the margin schedule from **A9** and the debit amount from the ledger. Physical settlement policy per **A7**.
+   a. Invoke `ledger_report` and check `remarks` for the ledger entry in **A8** with a corresponding `debit` entry.
+   b. If found → physical delivery margin has been blocked for the ITM stock option position approaching expiry. Share the margin schedule from **A8** and the debit amount from the ledger. Physical settlement policy per **A7**.
    c. If not found → route to Rule 3.
 2. If client asks about the position → invoke `kite_positions`.
 

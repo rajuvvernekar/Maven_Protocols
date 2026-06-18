@@ -290,7 +290,7 @@ If no route matches after all checks → escalate.
 
 ## Section C: Rules
 
-### Rule 1: Early Exit — Escalate
+### Rule 1 — Early Exit — Escalate
 
 If any condition below matches, escalate immediately. Do not share any account or bank details with the client.
 
@@ -301,7 +301,7 @@ If any condition below matches, escalate immediately. Do not share any account o
 
 ---
 
-### Rule 2: Instant Withdrawal Issues
+### Rule 2 — Instant Withdrawal Issues
 
 Invoke orders per A3 for the query date (today → `kite_orders`; past date → `kite_order_history`). Invoke `kite_positions` (current positions).
 
@@ -328,7 +328,7 @@ After 09:25, with no blockers and funds settled, if instant still fails → dire
 
 ---
 
-### Rule 3: Partial Withdrawals
+### Rule 3 — Partial Withdrawals
 
 Invoke `ledger_report` (±5 days). Applies when amount − processed_amount > ₹0 (and processed_amount > 0; processed_amount = 0 → route to Rule 4).
 
@@ -346,7 +346,7 @@ Confirm withdrawable balance covers the remaining amount. If cause is same-day d
 
 ---
 
-### Rule 4: Withdrawal Request Failure
+### Rule 4 — Withdrawal Request Failure
 
 Invoke `ledger_report` (±3 days from creation date). Two cases:
 
@@ -367,7 +367,7 @@ If the client's balance remains negative and the cause cannot be fully explained
 
 ---
 
-### Rule 5: Funds Not Received (Status = Processed)
+### Rule 5 — Funds Not Received (Status = Processed)
 
 `modified` and `bank_ref_no` per A2, evaluated against the query date per A3.
 
@@ -380,7 +380,7 @@ If the client's balance remains negative and the cause cannot be fully explained
 
 ---
 
-### Rule 6: Stock Sale — Funds Not Available
+### Rule 6 — Stock Sale — Funds Not Available
 
 **Step 1:** Invoke `kite_order_history` for the stated sale date and verify sell trades actually exist.
    - No sell trades found → invoke `ledger_report` for a DP charge entry ("DP Charges for Sale of [STOCK]") for the stock in question to confirm whether a sale actually occurred; explain to client what the ledger shows; clarify that share sale proceeds do not auto-credit the bank account — a withdrawal request must be placed manually after T+1 settlement.
@@ -399,7 +399,7 @@ If the client's balance remains negative and the cause cannot be fully explained
 
 ---
 
-### Rule 7: Multiple / Repeat Withdrawals
+### Rule 7 — Multiple / Repeat Withdrawals
 
 | Scenario | Action |
 |---|---|
@@ -411,7 +411,7 @@ If the client's balance remains negative and the cause cannot be fully explained
 
 ---
 
-### Rule 8: Status / Timeline / Expedite / Cancellation
+### Rule 8 — Status / Timeline / Expedite / Cancellation
 
 **Step 1 — Status / timeline inquiry:**
 Share current `status` per A2 with expected processing timeline per A5 based on withdrawal type and day:
@@ -426,7 +426,7 @@ Regular withdrawals cannot be expedited. Inform the client of the applicable pro
 
 ---
 
-### Rule 9: App / UI Troubleshooting
+### Rule 9 — App / UI Troubleshooting
 
 **Step 1:** Route to Console web withdrawal page per A11.
 
@@ -434,7 +434,7 @@ Regular withdrawals cannot be expedited. Inform the client of the applicable pro
 
 ---
 
-### Rule 10: Zero / Low / Negative Balance
+### Rule 10 — Zero / Low / Negative Balance
 
 **Step 1:** Invoke `kite_margins` and `ledger_report` (5 days). Read `available_cash` (not `available_margin`) for the withdrawable figure per A10; for collateral accounts use `ledger_report` as the accurate source (per A10). Identify cause from ledger per A9.
 
@@ -442,7 +442,7 @@ Regular withdrawals cannot be expedited. Inform the client of the applicable pro
 Invoke `kite_margins` and check the `payin` field — same-day payins reflect immediately (per A10), reliable even before the EOD ledger update. If `payin` shows a same-day deposit (or the ledger shows a Bank Receipts entry on the query date) → apply the instant/regular availability per A9 (weekday / Saturday–Sunday / settlement holiday).
 
 **Step 3 — Quarterly settlement:**
-If ledger contains a "Bank Payments" entry matching either QS remark per A9 ("Funds auto-settled to the primary bank account" or "Funds transferred back as part of quarterly settlement (inactive)") → funds were paid out to the client's bank as part of quarterly settlement. Client should check their bank account for the credited amount.
+If ledger contains a "Bank Payments" entry matching either QS remark per A9 ("Funds auto-settled to the primary bank account" or "Funds transferred back as part of quarterly settlement (inactive)") → funds were paid out to the client's bank as part of quarterly settlement. Invoke `crux_qs_payouts` for the same date the QS entry is posted to `ledger_report`, to fetch the bank reference number and share it with the client. Client should check their bank account for the credited amount.
 
 **Step 4 — Delayed payment charges:**
 If ledger shows "Delayed payment charges" (Journal Entry per A9) → client has outstanding dues. They must add funds to clear the balance before a withdrawal can be placed.
@@ -454,7 +454,7 @@ If the cause identified is a stock-sale / trade settlement (T+1), hand off to Ru
 
 ---
 
-### Rule 11: No Records / Charges
+### Rule 11 — No Records / Charges
 
 | Scenario | Action |
 |---|---|

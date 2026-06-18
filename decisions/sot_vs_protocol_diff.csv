@@ -1,0 +1,118 @@
+Tool,Dependency,Direction,Action
+cashier_payins,delayed_payment_charges,in-SOT-not-invoked,REVIEW: gap-or-stale
+cashier_payins,kite_orders,in-SOT-not-invoked,REVIEW: gap-or-stale
+console_eq_external_trades,console_eq_tradebook_prepared,invoked-not-in-SOT,ADD to SOT
+console_eq_external_trades,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+console_eq_external_trades,console_eq_tradebook,in-SOT-not-invoked,REMOVE (disabled)
+console_eq_holdings,kite_order_history,invoked-not-in-SOT,ADD to SOT
+console_eq_holdings,kite_positions,invoked-not-in-SOT,ADD to SOT
+console_eq_holdings_breakdown,console_eq_tradebook_prepared,invoked-not-in-SOT,ADD to SOT
+console_eq_holdings_breakdown,console_eq_pnl,in-SOT-not-invoked,REVIEW: gap-or-stale
+console_eq_holdings_breakdown,console_eq_tradebook,in-SOT-not-invoked,REMOVE (disabled)
+console_eq_tradebook_prepared,console_eq_holdings,invoked-not-in-SOT,ADD to SOT
+console_eq_tradebook_prepared,console_eq_holdings_breakdown,invoked-not-in-SOT,ADD to SOT
+console_eq_tradebook_prepared,kite_order_history,invoked-not-in-SOT,ADD to SOT
+console_eq_tradebook_prepared,ledger_report,invoked-not-in-SOT,ADD to SOT
+console_eq_tradebook_prepared,console_eq_pnl,in-SOT-not-invoked,REVIEW: gap-or-stale
+console_eq_tradebook_prepared,console_eq_tradebook,in-SOT-not-invoked,REMOVE (disabled)
+console_fno_pnl,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+console_fno_positions,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+console_fno_positions,console_fno_tradebook,in-SOT-not-invoked,REMOVE (disabled)
+console_fno_tradebook_prepared,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+console_fno_tradebook_prepared,console_fno_pnl,in-SOT-not-invoked,REVIEW: gap-or-stale
+console_fno_tradebook_prepared,console_fno_tradebook,in-SOT-not-invoked,REMOVE (disabled)
+console_instant_pledge,account_modification_report,invoked-not-in-SOT,ADD to SOT
+console_instant_pledge,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+console_mf_external_trades,console_mf_holdings,in-SOT-not-invoked,REVIEW: gap-or-stale
+console_mf_external_trades,console_mf_pseudo_holdings,in-SOT-not-invoked,REVIEW: gap-or-stale
+console_mf_pseudo_holdings,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+console_mf_pseudo_holdings,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+console_mf_tradebook,mf_order_history,invoked-not-in-SOT,ADD to SOT
+console_mf_tradebook,console_mf_holdings,in-SOT-not-invoked,REVIEW: gap-or-stale
+console_mtf_conversion,kite_order_history,invoked-not-in-SOT,ADD to SOT
+console_mtf_holdings,ledger_report,invoked-not-in-SOT,ADD to SOT
+contract_note_charges,tradewise_charges_report,invoked-not-in-SOT,ADD to SOT
+contract_note_charges,ledger_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+corporate_action_orders,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+corporate_action_orders,console_eq_pnl,in-SOT-not-invoked,REVIEW: gap-or-stale
+crux_qs_payouts,withdrawal_request,invoked-not-in-SOT,ADD to SOT
+crux_qs_payouts,get_all_client_data,in-SOT-not-invoked,REVIEW: gap-or-stale
+e_mandate_report,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+e_mandate_report,mandate_report,invoked-not-in-SOT,ADD to SOT
+e_mandate_report,auto_debit_payins,in-SOT-not-invoked,REVIEW: gap-or-stale
+e_mandate_report,e_mandate_schedule_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+e_mandate_schedule_report,kite_order_history,invoked-not-in-SOT,ADD to SOT
+e_mandate_schedule_report,e_mandate_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+fund_allocation_report,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+ipo_application,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+kite_gtt,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+kite_gtt,kite_orders,in-SOT-not-invoked,REVIEW: gap-or-stale
+kite_gtt_archived,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+kite_holdings,console_eq_external_trades,invoked-not-in-SOT,ADD to SOT
+kite_holdings,console_eq_pseudo_holdings,invoked-not-in-SOT,ADD to SOT
+kite_holdings,console_eq_tradebook_prepared,invoked-not-in-SOT,ADD to SOT
+kite_holdings,pledge_request_report,invoked-not-in-SOT,ADD to SOT
+kite_holdings,console_mtf_holdings,in-SOT-not-invoked,REVIEW: gap-or-stale
+kite_margins,account_modification_report,invoked-not-in-SOT,ADD to SOT
+kite_margins,cashier_payins,invoked-not-in-SOT,ADD to SOT
+kite_margins,console_eq_holdings,invoked-not-in-SOT,ADD to SOT
+kite_margins,console_fno_positions,invoked-not-in-SOT,ADD to SOT
+kite_margins,console_instant_pledge,invoked-not-in-SOT,ADD to SOT
+kite_margins,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+kite_margins,pledge_request_report,invoked-not-in-SOT,ADD to SOT
+kite_margins,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+kite_margins,withdrawal_request,invoked-not-in-SOT,ADD to SOT
+kite_order_history,console_eq_holdings,invoked-not-in-SOT,ADD to SOT
+kite_order_history,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+kite_order_history,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+kite_orders,console_eq_holdings,invoked-not-in-SOT,ADD to SOT
+kite_orders,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+kite_orders,pan_status,invoked-not-in-SOT,ADD to SOT
+kite_orders,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+kite_orders,kite_gtt,in-SOT-not-invoked,REVIEW: gap-or-stale
+kite_positions,console_eq_holdings,invoked-not-in-SOT,ADD to SOT
+kite_positions,console_fno_positions,invoked-not-in-SOT,ADD to SOT
+kite_positions,console_fno_tradebook_prepared,invoked-not-in-SOT,ADD to SOT
+kite_positions,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+kite_positions,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+ledger_report,amc_charges,invoked-not-in-SOT,ADD to SOT
+ledger_report,console_mtf_holdings,invoked-not-in-SOT,ADD to SOT
+ledger_report,crux_qs_payouts,invoked-not-in-SOT,ADD to SOT
+ledger_report,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+ledger_report,kite_order_history,invoked-not-in-SOT,ADD to SOT
+ledger_report,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+ledger_report,withdrawal_request,invoked-not-in-SOT,ADD to SOT
+mandate_debit_report,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+mandate_report,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+mandate_report,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+mandate_report,mandate_debit_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+mf_order_history,console_mf_holdings,invoked-not-in-SOT,ADD to SOT
+mf_order_history,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+mf_order_history,mandate_report,invoked-not-in-SOT,ADD to SOT
+mf_order_history,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+mf_order_history,sip_modification_log,invoked-not-in-SOT,ADD to SOT
+minor_account_opening,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+pledge_request_report,console_instant_pledge,invoked-not-in-SOT,ADD to SOT
+pledge_request_report,delayed_payment_charges,in-SOT-not-invoked,REVIEW: gap-or-stale
+pledge_request_report,ledger_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+sip_report,console_mf_tradebook,invoked-not-in-SOT,ADD to SOT
+sip_report,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+sip_report,fund_allocation_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+sip_report,stp_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+sip_report,swp_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+stock_gift_requests,stock_gift_requests,in-SOT-not-invoked,REMOVE (self-ref)
+stock_transfers,account_modification_report,invoked-not-in-SOT,ADD to SOT
+stock_transfers,console_eq_holdings,in-SOT-not-invoked,REVIEW: gap-or-stale
+stock_transfers,stock_gift_requests,in-SOT-not-invoked,REVIEW: gap-or-stale
+stp_report,fund_allocation_report,invoked-not-in-SOT,ADD to SOT
+stp_report,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+stp_report,mandate_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+swp_report,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+swp_report,stp_report,in-SOT-not-invoked,REVIEW: gap-or-stale
+tradewise_charges_report,get_all_client_data,invoked-not-in-SOT,ADD to SOT
+tradewise_charges_report,contract_note_charges,in-SOT-not-invoked,REVIEW: gap-or-stale
+tradewise_charges_report,kite_order_history,in-SOT-not-invoked,REVIEW: gap-or-stale
+withdrawal_request,kite_holdings,invoked-not-in-SOT,ADD to SOT
+withdrawal_request,kite_order_history,invoked-not-in-SOT,ADD to SOT
+withdrawal_request,settlement_date_calculator,invoked-not-in-SOT,ADD to SOT
+withdrawal_request,crux_qs_payouts,in-SOT-not-invoked,REVIEW: gap-or-stale

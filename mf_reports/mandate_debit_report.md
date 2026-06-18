@@ -111,8 +111,8 @@ Route by scenario
    ├─ Debit status = draft → Rule 2
    ├─ Debit status = success → Rule 3
    ├─ Debit status = pending → Rule 4
-   ├─ Debit status = failed → Rule 5
-   └─ How to delete a mandate (Coin) → Rule 6
+   ├─ Debit status = failed → Rule 4
+   └─ How to delete a mandate (Coin) → Rule 5
 ```
 
 ### Fallback
@@ -177,6 +177,6 @@ If the client reports the order has not been allotted yet:
 
 ---
 
-### Rule 6 — Mandate Deletion (Coin)
+### Rule 5 — Mandate Deletion (Coin)
 
 The mandate deletion process is handled by `mandate_report`. Invoke `mandate_report` for the full deletion process and any follow-up.
