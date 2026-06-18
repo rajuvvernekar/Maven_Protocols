@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cashier_payins — protocol view (prototype)</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --line:#2a2f3a;
+    --ink:#e7eaf0; --muted:#9aa3b2; --accent:#4a90d9; --accent2:#387ed1;
+    --green:#2ecc71; --red:#ff5c5c; --amber:#f5a623; --code:#ffd479;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,Inter,Segoe UI,Roboto,sans-serif}
+  header.top{position:sticky;top:0;z-index:10;background:#11141a;border-bottom:1px solid var(--line);
+    padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header.top h1{font-size:18px;margin:0;font-weight:650}
+  header.top .tool{color:var(--code);font-family:ui-monospace,Menlo,monospace}
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted)}
+  .chip.dep{border-color:#2d4a6b;color:#bcd6f5;background:#15202f;font-family:ui-monospace,monospace}
+  .spacer{flex:1}
+  button{background:var(--accent2);color:#fff;border:0;border-radius:7px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:600}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 22px 120px}
+  h2.sec{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:34px 0 12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .card h3{margin:0 0 8px;font-size:15px}
+  .card.rule h3{color:#cfe0f5}
+  details summary{cursor:pointer;font-weight:600;color:#cfe0f5;font-size:14px}
+  details[open] summary{margin-bottom:8px}
+  table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600}
+  code{background:#0c0e12;color:var(--code);padding:1px 5px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+  .invoke{color:#9fe6b0;font-weight:600}
+  .esc{color:var(--red);font-weight:600}
+  ul{margin:6px 0;padding-left:20px}
+  /* routing flow */
+  .flow{display:flex;flex-direction:column;gap:4px}
+  .route{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 12px;font-size:13px}
+  .route .cond{flex:1}
+  .route .arrow{color:var(--muted)}
+  .route a{color:#bcd6f5;text-decoration:none;font-weight:600;border-bottom:1px dashed #2d4a6b}
+  .route .toesc{color:var(--red);font-weight:600}
+  .precheck{background:#15202f;border:1px solid #2d4a6b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13.5px}
+  textarea{width:100%;background:#0c0e12;color:var(--ink);border:1px solid var(--line);border-radius:6px;
+    font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5;padding:10px;resize:vertical;display:none}
+  .card.editing .rendered{display:none}
+  .card.editing textarea{display:block;min-height:120px}
+  .editbar{margin-top:6px}
+  .editbar button{font-size:11px;padding:3px 9px;background:transparent;border:1px solid var(--line);color:var(--muted)}
+  dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;max-width:900px;width:92%;padding:0}
+  dialog header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+  dialog pre{margin:0;padding:16px;max-height:65vh;overflow:auto;font-size:12px;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace}
+  .note{color:var(--muted);font-size:12px;margin:4px 0 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Protocol view <span class="tool">cashier_payins</span></h1>
+  <div class="tags" id="tags"></div>
+  <div class="spacer"></div>
+  <button class="ghost" id="editToggle">Edit rules</button>
+  <button id="exportBtn">Export → Markdown</button>
+</header>
+
+<div class="wrap">
+  <p class="note">Prototype (Interpretation B). Markdown stays the source of truth; this renders <code>cashier_payins.md</code> for review, lets you edit rules inline, and exports clean markdown to paste back. Routing arrows jump to the rule. Tools invoked are shown as dependency chips up top.</p>
+
+  <h2 class="sec">Dependencies (tools this protocol invokes)</h2>
+  <div class="tags" id="deps"></div>
+
+  <h2 class="sec">Description</h2>
+  <div class="card" id="descCard"></div>
+
+  <h2 class="sec">Section B — Decision Flow</h2>
+  <div id="sectionB"></div>
+
+  <h2 class="sec">Section C — Rules</h2>
+  <div id="rules"></div>
+
+  <h2 class="sec">Section A — Reference Data</h2>
+  <div id="sectionA"></div>
+</div>
+
+<dialog id="exportDlg">
+  <header><strong>Exported markdown</strong> <button class="ghost" onclick="exportDlg.close()">Close</button></header>
+  <pre id="exportOut"></pre>
+  <header><span class="note">Copy this back into cashier_payins.md after review.</span><button id="copyBtn">Copy</button></header>
+</dialog>
+
+<script id="raw" type="text/markdown">
+# cashier_payins
+
+## Description
+
+WHEN TO USE:
+
+When clients:
+- Ask how to add funds using a specific payment method (UPI, Netbanking, Bank Transfer, Cheque)
+- Report a payment failed or was rejected with an error message
+- Say money was deducted from their bank account but hasn't appeared in Zerodha yet
+- Report receiving only partial amount in their Zerodha account vs what they sent
+- Have questions about payment limits, charges, or timelines for fund additions
+- Need to understand why a specific payment method is not available to them
+- Ask about Zerodha's bank details for fund transfers
+
+TRIGGER KEYWORDS: "add funds", "add money", "transfer", "payin", "payment failed", "not reflected", "not credited", "deducted but not showing", "money not added", "how to add", "fund", "UPI", "netbanking", "bank transfer", "IMPS", "NEFT", "RTGS", "deposit", "unregistered bank", "unmapped account", "bank details"
+
+TAGS: funds
+
+## Protocol
+
+
+# CASHIER PAYINS PROTOCOL
+
+## Section A: Reference Data
+
+### A1 — Payment Methods & Specs
+
+| Method | Charge | Credit Timeline | Refund Timeline | Limits / Notes |
+|---|---|---|---|---|
+| UPI | ₹0 | Instant | 72 working hours | Max ₹5,00,000/txn (NPCI/gateway limit, not Zerodha) · Max 35 txn/day · Must use "Add Funds" in Kite — direct UPI transfers fail |
+| Netbanking | ₹10.62 (₹9 + 18% GST) | By 1:00 PM on T+1 banking working day (or instant) | By 5:00 PM on T+2 banking working day | Min ₹50 · Up to 25 transfers/day · No amount limit |
+| IMPS | ₹0 | 10 min | — | No Zerodha-imposed limits (banks typically cap ₹2L/txn) |
+| NEFT | ₹0 | 2 hours | — | No Zerodha-imposed limits |
+| RTGS | ₹0 | 2 hours | — | No Zerodha-imposed limits |
+| Cheque | ₹0 (bounce: ₹413 incl. GST) | 3–5 days | — | — |
+
+---
+
+### A2 — Important Timelines
+
+- **Unregistered bank transfer reversal:** 2–3 days.
+- **Batch window:** Transfers between 12 AM–7:30 AM reflect in Kite only after 7:30 AM (daily, including weekends).
+- **Cashier Payin report visibility:** Netbanking (gateway) is visible for 7 days only — invoke `ledger_report` for older transactions. UPI and NEFT/IMPS are available beyond 7 days.
+
+---
+
+### A3 — Account & Bank Restrictions
+
+| Account/Bank Type | Restriction |
+|---|---|
+| Current account | No gateway (UPI/netbanking). IMPS/NEFT/RTGS only. |
+| Joint account | UPI/gateway only. IMPS/NEFT/RTGS auto-reversed. |
+| IDFC 3-in-1 block enabled | Secondary bank accounts cannot be used for payins. Detected via `idfc_3_in_1_status` = "Yes" in `get_all_client_data`. Disable at console.zerodha.com/account/bank. |
+| Third-party accounts (spouse, family, others) | Not accepted. Only the account holder's own registered bank accounts. Transfers from others → rejected/auto-reversed. |
+| HUF | No UPI. Use netbanking, NEFT, RTGS, IMPS, or cheque. |
+
+- **Bank account limits:** Primary: 1. Secondary: 2. Both primary and secondary accepted for payins.
+
+---
+
+### A4 — Zerodha Bank Details (NEFT/RTGS/IMPS)
+
+**Primary:**
+| Field | Value |
+|---|---|
+| Bank | HDFC Bank |
+| Account Title | ZERODHA BROKING LTD |
+| Account Number | ZERNSE |
+| Account Type | Current |
+| Branch | Sandoz Branch, Mumbai |
+| IFSC | HDFC0000240 |
+
+**Alternate:**
+| Field | Value |
+|---|---|
+| Bank | HDFC Bank |
+| Account Title | ZERODHA BROKING LTD |
+| Account Number | 57500000302010 |
+| Account Type | Current |
+| Branch | Richmond Road, Bangalore |
+| IFSC | HDFC0000523 |
+
+- HDFC Bank holders can also use the eCMS facility (see A9).
+
+---
+
+### A5 — UPI Error Translations
+
+| Error Code | Cause | Suggested Resolution |
+|---|---|---|
+| U30 | Bank-side failure | Client to contact their bank |
+| U66 | Device mismatch | Use the device registered with the bank, or retry after 24 hours |
+| U69 | Transaction expired (UPI 5-minute approval window) | Retry |
+| Z8 | Daily UPI limit exceeded | Reduce the amount or retry the next day |
+| Z9 | Insufficient funds in source bank | Verify balance and retry |
+| ZA | Transaction declined by client | — |
+| ZE | UPI ID (VPA) blocked at the bank | Client to contact bank to unblock |
+| ZH | Invalid UPI ID | Verify and retry |
+| ZM | Incorrect UPI PIN | — |
+
+---
+
+### A6 — Official Zerodha UPI IDs
+
+zerodhabroking.brk@validhdfc · zerodhabroking.brk@validicici · zerodhabroking.brk@validaxis · zerodhabroking@hdfcbank · zerodha.broking@icici · zerodhabroking@axisbank · zerodhabroking@yesbank
+
+---
+
+### A7 — Field Rules
+
+**Shareable with client:**
+
+| Field | Interpretation |
+|---|---|
+| `bank_reference` | Bank reference number (when available) |
+| `transfer_mode` | Payment method used (UPI, netbanking, NEFT, IMPS, RTGS, cheque) |
+
+**Non-shareable:**
+
+| Field | Interpretation |
+|---|---|
+| `status` | Internal payment status — interpret via Rule 2 (UPI) / Rule 3 (Netbanking) |
+| `nest_status` | Internal NEST update flag indicating push to trading account |
+| `cashier_reference` | Internal cashier reference identifier |
+| `bank_account_number` | Source bank account number |
+| Error codes | Internal UPI error codes — translate via A5 |
+
+---
+
+### A8 — Payin Update Timings — Kite vs Console
+
+| Scenario | Kite Balance | Console Ledger |
+|---|---|---|
+| Weekday, after 7:30 AM | Instant | EOD (7–9 PM) |
+| Weekday, 12 AM–7:30 AM | After 7:30 AM | EOD (7–9 PM) |
+| Weekend, after 7:30 AM | Instant | Monday EOD (7–9 PM) |
+| Weekend, 12 AM–7:30 AM | After 7:30 AM | Monday EOD (7–9 PM) |
+
+- **Weekend payin on Monday:** Funds added Sat/Sun appear under the "Payin" line in `kite_margins` on Monday (not in opening balance, which carries forward from Friday's close).
+- **Single ledger:** The fund balance in the Equity segment is available across Equity, F&O, and Commodity trades.
+
+---
+
+### A9 — Links
+
+| Purpose | URL |
+|---|---|
+| Unmapped bank transfer info | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/can-funds-be-transferred-using-imps-neft-rtgs-or-cheque-from-bank-accounts-not-linked-to-the-zerodha-account |
+| IDFC 3-in-1 facility | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/idfc-3-in-1-with-blocking-facility |
+| Adding funds via IMPS / NEFT / RTGS (step-by-step) | https://support.zerodha.com/category/funds/adding-funds/how-to-add-funds/articles/how-do-i-add-money-to-my-trading-account-using-imps-neft-or-rtgs |
+| HDFC eCMS facility | https://support.zerodha.com/category/funds/adding-bank-accounts/other-bank-related-queries/articles/how-do-i-add-money-through-hdfc-netbanking |
+| Payment gateway charge explanation | https://support.zerodha.com/category/account-opening/resident-individual/ri-charges/articles/i-see-a-deduction-of-rs-10-62-on-my-ledger-what-is-this-for |
+| Payment gateway pending / not showing up | https://support.zerodha.com/category/funds/adding-funds/fund-addition-timeline/articles/money-added-on-payment-gateway-not-showing-up |
+
+---
+
+### A10 — NRI / PIS Detection
+
+| Account Type | Detection |
+|---|---|
+| NRE PIS | `bo_sub_status` contains "RepatriableWith" AND (`pis_bank_1_name` OR `pis_bank_2_name` is populated) |
+| NRO PIS | `bo_sub_status` contains "NonRepatriableWith" AND (`pis_bank_1_name` OR `pis_bank_2_name` is populated) |
+| NRE non-PIS | `bo_sub_status` contains "RepatriableWith" AND no PIS bank populated |
+| NRO non-PIS | `bo_sub_status` contains "NonRepatriableWith" AND no PIS bank populated |
+| Resident | `bo_sub_status` contains "Individual-ResidentNegative Nomination" OR "Individual - Resident With Nomination" |
+
+---
+
+## Section B: Decision Flow
+
+### Mandatory Pre-Check (Every Query)
+
+Before routing by scenario, always invoke `get_all_client_data` and check `bo_sub_status`, `pis_bank_1_name`, `pis_bank_2_name` per A10. If account is NRE PIS or NRO PIS → Rule 1 (escalate immediately). Only proceed to scenario routing if account is resident or non-PIS NRI.
+
+### Routing
+
+```
+Route by scenario
+├─ NRE PIS / NRO PIS account                                            → Rule 1
+├─ Cheque debited but no system entry                                   → escalate
+├─ Customer outside India / NRI conversion request                      → escalate
+├─ UPI status interpretation (Success / Failed / Unknown)               → Rule 2
+├─ Netbanking status (Success / Failed / Unknown / pending)             → Rule 3
+├─ UPI failure troubleshooting (error codes, retries, alternatives)     → Rule 4
+├─ Verify a Zerodha UPI ID is genuine (suspected fake / fraud check)    → share official UPI IDs from A6
+├─ NEFT / IMPS / RTGS payin not reflected (UTR / bank receipt provided) → Rule 5
+├─ Date mismatch (stated date has no match; amount-match on nearby)     → Rule 6
+├─ Account / bank-type restriction (joint, HUF, current, IDFC 3-in-1)   → Rule 7
+├─ Payin confirmed but "not visible"                                    → Rule 8
+├─ Balance lower than expected / negative                               → Rule 9
+├─ Old payin not reflecting, balance not as client expected             → Rule 10
+├─ Multiple same-day transactions                                       → Rule 11
+├─ Fresh account payin failures (≤24h since activation)                 → Rule 12
+├─ Penny drop / ₹1 test deposit from "ZERODHA BR"                       → Rule 13
+├─ Same-day withdrawal request after a deposit (T+1 restriction)        → Rule 14
+└─ Bank details request (NEFT / RTGS / IMPS)                            → Rule 15
+```
+
+### Fallback
+
+If no root cause is identified → escalate.
+
+---
+
+## Section C: Rules
+
+### Rule 1 — Early Exit
+
+- Invoke `get_all_client_data` and check `bo_sub_status`, `pis_bank_1_name`, and `pis_bank_2_name` per **A10**.
+- If account is **NRE PIS** or **NRO PIS** → escalate.
+- NRE / NRO non-PIS and resident accounts → continue with normal routing.
+
+---
+
+### Rule 2 — UPI Status
+
+| Status | Meaning |
+|---|---|
+| Success | Payment credited to the trading account. |
+| Failed | Payment did not reach the trading account. Refund to source bank within 72 working hours (per **A1**). |
+| Unknown | Treat as Failed — payment did not reach the trading account. Refund to source bank within 72 working hours (per **A1**). |
+
+If client provides bank confirmation that the payment was successful at the bank but Zerodha shows Failed / Unknown → escalate.
+
+---
+
+### Rule 3 — Netbanking Status
+
+Applies when `transfer_mode` = netbanking.
+
+**Status = Success:** Funds are credited to the trading account. Netbanking payins carry a ₹10.62 (₹9 + 18% GST) gateway charge per transaction — share the A9 payment gateway charge article. For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no amount limit per A1).
+
+**Status = Failed:** The payment failed. If the amount was debited from the source bank, it will be reversed within the netbanking refund timeline (per **A1**). If client provides bank confirmation that the payment was successful at the bank but Zerodha shows Failed → escalate. For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no amount limit per A1).
+
+**Status = Unknown:** Pending at the bank — not failed. Evaluate the timeline state:
+
+| Timeline state | Meaning |
+|---|---|
+| Credit deadline NOT passed | Payment pending at the bank. Will either be credited by 1:00 PM on T+1 banking working day or refunded to source bank by 5:00 PM on T+2 banking working day (per **A1**). |
+| Credit deadline PASSED, refund deadline NOT passed | Payment not credited within the processing window. If debited from source bank, refund by 5:00 PM on T+2 banking working day (per **A1**). If not debited, no action needed. |
+| Both deadlines PASSED | Payment unsuccessful. If debited and not yet refunded, request bank statement screenshot (debit proof) → escalate. If not debited, no action needed. |
+
+For Unknown status, share **A9** — payment gateway pending / not showing up.
+
+For future payins, suggest NEFT/IMPS/RTGS as free alternatives (no charges, no amount limit per A1).
+
+---
+
+### Rule 4 — UPI Failure Troubleshooting
+
+1. Identify cause from A5.
+2. **U30 (bank-side failure)** → escalate.
+3. Check A1 UPI limits (₹5L/txn, 35 txn/day).
+4. Alternatives in order:
+   - Suggest a different UPI app linked to the primary bank account (e.g., Google Pay, PhonePe, BHIM).
+   - Always suggest NEFT/IMPS/RTGS as free alternatives; share the step-by-step link from A9.
+   - Inactive registered bank → suggest adding another active bank via Console → Profile → Bank accounts.
+   - Customer outside India → escalate.
+
+---
+
+### Rule 5 — Payment Not Reflected (NEFT / IMPS / RTGS)
+
+Applies when the client says they added funds via NEFT / IMPS / RTGS but the payin isn't reflected — directly, in a screenshot, or with a UTR / bank receipt.
+
+UPI cases → **Rule 2**. Netbanking cases → **Rule 3**.
+
+**Step 1 — Get the UTR / reference number:**
+
+- Provided → go to Step 2.
+- Not provided → request the UTR / bank reference number from the client and escalate.
+
+**Step 2 — UTR re-query:**
+
+Invoke `cashier_payins` with the UTR / reference number in **`bank_reference`**, and set the required `from_date` / `to_date` to a 30-day range (`from_date` = 30 days before the current date, `to_date` = current date). If the transaction isn't found, widen the range and retry. The `bank_reference` lookup needs only the date range — no client ID. For NEFT / IMPS / RTGS, `status` is always Success when the transaction is located — only `nest_status` and the bank-account match determine the next step.
+
+| Result | Action |
+|---|---|
+| Found — `nest_status` = N/A or Pending | Transfer has reached Zerodha but hasn't been pushed to the trading account yet. Go to Step 3. |
+| Not found | Request a bank statement screenshot showing debit date, amount, UTR/reference, and destination account + IFSC → escalate. |
+
+**Step 3 — Bank account match:**
+
+Invoke `get_all_client_data` and check the source account (the bank account from which the client transferred the funds) against the client's registered bank accounts (`bank_1_account_number`, `bank_2_account_number`, `bank_3_account_number`):
+| Status | Action |
+|---|---|
+| Matches a registered bank | Funds need a manual push to the trading account → escalate. |
+| Doesn't match any registered account | Transfer sent from an unlinked account. Per SEBI regulations, the amount will be reversed to the source bank within 2–3 days (per **A2**). Share **A9** unmapped transfer link. |
+
+---
+
+### Rule 6 — Date Mismatch
+
+When no transaction matches the client's stated date, use **amount-matching** on nearby dates.
+
+1. Check the amount the client mentioned in their screenshot or query.
+2. Invoke `cashier_payins` with the required `from_date` / `to_date` set to the client's stated date ±5 days, and check whether the same amount appears in that window.
+3. Matching-amount transaction found on a nearby date → apply Rule 2, 3, or 5 per the matched transaction's `transfer_mode` and `Status`.
+4. No matching-amount transaction on any nearby date → request a bank statement screenshot (amount, date, reference number) → escalate.
+
+---
+
+### Rule 7 — Account Restrictions
+
+Apply A3 per account/bank type.
+
+**Dormant accounts:** Dormancy does not restrict fund addition — all methods are available. Only trading and order placement are restricted. Inform the client that ReKYC is required to resume trading. Treat fund addition as unaffected by dormancy.
+
+**Third-party / spouse:** Only bank accounts registered in the client's name and linked to their Zerodha account can be used for payins. Per SEBI regulations, transfers from third-party accounts are not accepted. Share the unmapped-transfer link from A9.
+
+**IDFC 3-in-1 block:** Invoke `get_all_client_data` and check `idfc_3_in_1_status`. If "Yes" → inform the client that the IDFC 3-in-1 block facility prevents adding funds from secondary bank accounts and direct them to disable it at console.zerodha.com/account/bank → "Disable IDFC 3-in-1 account." Share the IDFC link from A9.
+
+---
+
+### Rule 8 — Payin Confirmed but "Not Visible"
+
+1. Invoke `kite_margins` — authoritative source for available balance.
+2. Apply the Kite-vs-Console timing in **A8** for the payin's day/time (weekday/weekend, before/after 7:30 AM), including the weekend "Payin line on Monday" behaviour. `bank_reference` available confirms the credit.
+3. Invoke `ledger_report`: found → verify via Console ledger; not found → funds are available in Kite but ledger entry is not yet posted (posted between 7–9 PM EOD per **A8**). Inform the client that funds are reflected in Kite and available for trading — the ledger will update by EOD. Do not treat a missing ledger entry as a failed payin.
+4. Balance confirmed but client insists not visible → Privacy mode may be enabled on Kite (hides account details). To disable: tap the user ID in the Kite app → tap the Privacy mode toggle. Disabling requires biometric authentication or 2FA.
+5. When confirming a successful payin, state that funds are available for **trading only**. Do NOT say "available for withdrawal" — same-day withdrawal is not permitted (T+1 restriction per **Rule 14**). Withdrawal can be placed from the next working day onwards.
+
+---
+
+### Rule 9 — Balance Lower Than Expected / Negative
+
+1. Confirm payin per Rule 8 format.
+2. Invoke `kite_orders` and check for orders on the payin date. If orders exist on the payin date → orders placed that day reduced the available balance. If no orders on the payin date → do not mention trading.
+3. Invoke `ledger_report` for: negative opening balance, AMC charges, NSE/BSE charges, trading debit obligations, delayed payment charges, prior QS payouts.
+4. A pre-existing negative balance is adjusted against the new deposit, resulting in a lower current balance. Identify the specific reason from the ledger.
+5. If the ledger doesn't explain the gap → escalate.
+
+**MTF margin shortfall:** If `ledger_report` shows MTF debits → account has an MTF margin shortfall. Uncleared shortfalls may trigger square-off of open MTF positions; an email notification is sent regarding this shortage.
+
+---
+
+### Rule 10 — QS Check (Old Payin, Balance Not As Expected)
+
+Applies when an old payin is not reflecting, or the balance differs from what the client expected, and QS may have moved funds out.
+
+1. **Invoke `ledger_report` for the last 60 days** and check for any QS (Quarterly Settlement) entry.
+2. **QS entry found in the ledger** → invoke `crux_qs_payouts` for the date the QS entry is posted to the ledger.
+3. **QS confirmed in `crux_qs_payouts`** → the idle balance from the payin was transferred back to the client's bank account via Quarterly Settlement on the QS date.
+4. **No QS entry in the ledger, OR ledger entry found but not confirmed in `crux_qs_payouts`** → escalate.
+
+---
+
+### Rule 11 — Multiple Same-Day Transactions
+
+**Detail the last 5 transactions in a single response.** Clients often retry multiple times when a payin fails — a broader window helps identify whether the failure is a consistent issue (same bank, same error code, etc.). Summarize any remaining transactions briefly.
+
+Apply Rule 2 or Rule 3 per transaction based on `transfer_mode` and `Status`. Address both successful AND failed/pending transactions — a success does not cancel explanation of a failure.
+
+**>5 transactions:** Detail the 5 most recent. For the rest, summarize the count and direct the client to Kite → Funds for the full list, or to write back for details on a specific transaction.
+
+**Multiple failed UPI:** Count of failed attempts, source bank, and date range. None credited. Any debited amounts refund to the source bank within 72 working hours (per **A1**).
+
+---
+
+### Rule 12 — Fresh Account Payin Failures
+
+Applies: `account_activation_date` within last 24h AND payin date = activation date. New accounts only — not REKYC or segment activation.
+
+Inform the client: your account was recently opened and it will take up to 24 working hours for the account to be active at the exchanges. Errors adding funds or placing orders are expected during this period. Please try again after 24 hours.
+
+---
+
+### Rule 13 — Penny Drop / Test Deposit
+
+If customer asks about a ₹1 credit from "ZERODHA BR" via IMPS:
+
+Inform the client: the ₹1 credit is a standard test deposit that occurs when creating a mandate or adding a bank account. It is normal and does not impact the account.
+
+---
+
+### Rule 14 — Same-Day Withdrawal after Deposit
+
+If the client adds funds and asks about withdrawing the same day → same-day withdrawal is not permitted; a T+1 restriction applies. Invoke `settlement_date_calculator` to identify the next settlement working day and tell the client the withdrawal request can be placed from that date onwards.
+
+---
+
+### Rule 15 — Bank Details Request
+
+Share Zerodha's bank details from A4. Lead with Primary; provide Alternate only if the client requests a numeric account number or cannot use "ZERNSE". HDFC account holders can also use the eCMS facility per A9.
+
+</script>
+
+<script>
+const RAW = document.getElementById('raw').textContent.replace(/^\n/,'');
+
+// ---------- tiny inline markdown ----------
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function inline(s){
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, (m,c)=>{
+    const cls = /^(get_all_client_data|ledger_report|kite_margins|kite_orders|crux_qs_payouts|settlement_date_calculator|cashier_payins)$/.test(c) ? 'code invoke-ref':'code';
+    return `<code>${c}</code>`;
+  });
+  s = s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  s = s.replace(/\binvoke\b/gi, m=>`<span class="invoke">${m}</span>`);
+  s = s.replace(/\bescalate\b/gi, m=>`<span class="esc">${m}</span>`);
+  return s;
+}
+// ---------- block renderer (tables, lists, paragraphs) ----------
+function renderBlocks(md){
+  const lines = md.split('\n'); let html=''; let i=0;
+  while(i<lines.length){
+    let ln=lines[i];
+    if(/^\s*\|/.test(ln)){ // table
+      const tbl=[]; while(i<lines.length && /^\s*\|/.test(lines[i])){tbl.push(lines[i]);i++;}
+      const rows=tbl.filter(r=>!/^\s*\|[\s|:-]+\|\s*$/.test(r));
+      html+='<table>';
+      rows.forEach((r,ri)=>{
+        const cells=r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>c.trim());
+        const tag=ri===0?'th':'td';
+        html+='<tr>'+cells.map(c=>`<${tag}>${inline(c)}</${tag}>`).join('')+'</tr>';
+      });
+      html+='</table>'; continue;
+    }
+    if(/^\s*[-*]\s+/.test(ln)){ // list
+      html+='<ul>'; while(i<lines.length && /^\s*[-*]\s+/.test(lines[i])){
+        html+='<li>'+inline(lines[i].replace(/^\s*[-*]\s+/,''))+'</li>';i++;
+      } html+='</ul>'; continue;
+    }
+    if(/^\s*\d+\.\s+/.test(ln)){ // ordered
+      html+='<ol>'; while(i<lines.length && /^\s*\d+\.\s+/.test(lines[i])){
+        html+='<li>'+inline(lines[i].replace(/^\s*\d+\.\s+/,''))+'</li>';i++;
+      } html+='</ol>'; continue;
+    }
+    if(ln.trim()===''){i++;continue;}
+    if(/^```/.test(ln)){ i++; while(i<lines.length && !/^```/.test(lines[i]))i++; i++; continue; }
+    html+='<p>'+inline(ln)+'</p>'; i++;
+  }
+  return html;
+}
+
+// ---------- parse the protocol ----------
+function section(name){ // returns [start,end) indices in RAW for a ## section
+  const re=new RegExp('^## '+name+'.*$','m');
+}
+const protoStart = RAW.indexOf('# CASHIER PAYINS PROTOCOL');
+const descMd = RAW.slice(RAW.indexOf('## Description'), protoStart).replace('## Description','').trim();
+const body = RAW.slice(protoStart);
+const idxA = body.indexOf('## Section A');
+const idxB = body.indexOf('## Section B');
+const idxC = body.indexOf('## Section C');
+const secA = body.slice(idxA, idxB);
+const secB = body.slice(idxB, idxC);
+const secC = body.slice(idxC);
+
+// dependencies
+const deps=[...new Set([...RAW.matchAll(/invoke `([a-z_]+)`/gi)].map(m=>m[1]))].sort();
+document.getElementById('deps').innerHTML = deps.map(d=>`<span class="chip dep">${d}</span>`).join('') || '<span class="note">none</span>';
+// tags
+const tagm = descMd.match(/TAGS:\s*(.+)/);
+document.getElementById('tags').innerHTML = (tagm?tagm[1].split(',').map(t=>`<span class="chip">${t.trim()}</span>`).join(''):'');
+
+// description card
+document.getElementById('descCard').innerHTML = renderBlocks(descMd.replace(/TAGS:.*/,''));
+
+// Section A → collapsible cards per ### A
+const aParts = secA.split(/(?=^### A\d+)/m).filter(s=>s.trim().startsWith('### A'));
+document.getElementById('sectionA').innerHTML = aParts.map(p=>{
+  const title=p.split('\n')[0].replace('### ','');
+  const rest=p.split('\n').slice(1).join('\n').replace(/^\s*---\s*$/gm,'');
+  return `<div class="card"><details><summary>${title}</summary>${renderBlocks(rest)}</details></div>`;
+}).join('');
+
+// Section B → pre-check + routing flow + fallback
+const precheck = (secB.match(/### Mandatory Pre-Check[\s\S]*?(?=### Routing)/)||[''])[0].replace(/### Mandatory Pre-Check.*\n/,'');
+const routingBlock = (secB.match(/```([\s\S]*?)```/)||['',''])[1];
+const fallback = (secB.match(/### Fallback\s*([\s\S]*?)(?=---|\n## )/)||['',''])[1];
+let bHtml='';
+if(precheck.trim()) bHtml+=`<div class="precheck"><strong>Mandatory pre-check:</strong> ${inline(precheck.trim())}</div>`;
+bHtml+='<div class="flow">';
+routingBlock.split('\n').forEach(l=>{
+  const m=l.match(/[├└]─\s*(.+?)\s*→\s*(.+)$/);
+  if(!m)return;
+  const cond=m[1].trim(); let target=m[2].trim();
+  let tgtHtml;
+  if(/Rule\s*\d+/.test(target)){ const n=target.match(/Rule\s*(\d+)/)[1]; tgtHtml=`<a href="#rule${n}">${target}</a>`; }
+  else if(/escalate/i.test(target)) tgtHtml=`<span class="toesc">${target}</span>`;
+  else tgtHtml=inline(target);
+  bHtml+=`<div class="route"><span class="cond">${inline(cond)}</span><span class="arrow">→</span><span>${tgtHtml}</span></div>`;
+});
+bHtml+='</div>';
+if(fallback.trim()) bHtml+=`<div class="precheck" style="margin-top:12px"><strong>Fallback:</strong> ${inline(fallback.trim())}</div>`;
+document.getElementById('sectionB').innerHTML=bHtml;
+
+// Section C → editable rule cards
+const ruleParts = secC.split(/(?=^### Rule \d+)/m).filter(s=>s.trim().startsWith('### Rule'));
+const ruleStore=[]; // {num, raw, title}
+document.getElementById('rules').innerHTML = ruleParts.map(p=>{
+  const head=p.split('\n')[0];
+  const num=head.match(/Rule (\d+)/)[1];
+  const title=head.replace('### ','');
+  const rawBlock=p.replace(/\n*---\s*$/,'').replace(/\s+$/,'');
+  ruleStore.push({num, raw:rawBlock});
+  const bodyMd=p.split('\n').slice(1).join('\n').replace(/^\s*---\s*$/gm,'');
+  return `<div class="card rule" id="rule${num}" data-num="${num}">
+    <h3>${title}</h3>
+    <div class="rendered">${renderBlocks(bodyMd)}</div>
+    <textarea data-rulenum="${num}">${esc(rawBlock)}</textarea>
+  </div>`;
+}).join('');
+
+// edit toggle
+let editing=false;
+document.getElementById('editToggle').onclick=()=>{
+  editing=!editing;
+  document.querySelectorAll('.card.rule').forEach(c=>c.classList.toggle('editing',editing));
+  document.getElementById('editToggle').textContent=editing?'Done editing':'Edit rules';
+};
+
+// export → reconstruct markdown via exact substring replacement (untouched parts stay byte-identical)
+document.getElementById('exportBtn').onclick=()=>{
+  let out=RAW;
+  document.querySelectorAll('textarea[data-rulenum]').forEach(t=>{
+    const orig=ruleStore.find(r=>r.num===t.dataset.rulenum).raw;
+    const edited=t.value.replace(/\s+$/,'');
+    if(orig!==edited && out.includes(orig)) out=out.replace(orig, edited);
+  });
+  document.getElementById('exportOut').textContent=out.trim()+'\n';
+  document.getElementById('exportDlg').showModal();
+};
+document.getElementById('copyBtn').onclick=()=>{
+  navigator.clipboard.writeText(document.getElementById('exportOut').textContent);
+  document.getElementById('copyBtn').textContent='Copied';
+  setTimeout(()=>document.getElementById('copyBtn').textContent='Copy',1200);
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maven Protocol Viewer</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212b;--line:#2a2f3a;--ink:#e7eaf0;--muted:#9aa3b2;--accent2:#387ed1;--red:#ff5c5c;--code:#ffd479}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,Inter,Segoe UI,Roboto,sans-serif}
+  header.top{position:sticky;top:0;z-index:10;background:#11141a;border-bottom:1px solid var(--line);padding:12px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header.top h1{font-size:16px;margin:0;font-weight:650}
+  select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:13px;font-family:ui-monospace,Menlo,monospace}
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted)}
+  .chip.dep{border-color:#2d4a6b;color:#bcd6f5;background:#15202f;font-family:ui-monospace,monospace}
+  .spacer{flex:1}
+  button{background:var(--accent2);color:#fff;border:0;border-radius:7px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:600}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 22px 120px}
+  h2.sec{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:30px 0 12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .card h3{margin:0 0 8px;font-size:15px;color:#cfe0f5}
+  details summary{cursor:pointer;font-weight:600;color:#cfe0f5;font-size:14px}
+  details[open] summary{margin-bottom:8px}
+  table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600}
+  code{background:#0c0e12;color:var(--code);padding:1px 5px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+  .invoke{color:#9fe6b0;font-weight:600}.esc{color:var(--red);font-weight:600}
+  ul,ol{margin:6px 0;padding-left:20px}
+  .flow{display:flex;flex-direction:column;gap:4px}
+  .route{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 12px;font-size:13px}
+  .route .cond{flex:1}.route .arrow{color:var(--muted)}
+  .route a{color:#bcd6f5;text-decoration:none;font-weight:600;border-bottom:1px dashed #2d4a6b}
+  .route .toesc{color:var(--red);font-weight:600}
+  .precheck{background:#15202f;border:1px solid #2d4a6b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13.5px}
+  textarea{width:100%;background:#0c0e12;color:var(--ink);border:1px solid var(--line);border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5;padding:10px;resize:vertical;display:none}
+  .card.rule.editing .rendered{display:none}
+  .card.rule.editing textarea{display:block;min-height:120px}
+  dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;max-width:900px;width:92%;padding:0}
+  dialog header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+  dialog pre{margin:0;padding:16px;max-height:65vh;overflow:auto;font-size:12px;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace}
+  .note{color:var(--muted);font-size:12px;margin:4px 0 0}
+  .meta{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Maven Protocol Viewer</h1>
+  <select id="picker"></select>
+  <span class="meta" id="genmeta"></span>
+  <div class="spacer"></div>
+  <button class="ghost" id="editToggle">Edit rules</button>
+  <button id="exportBtn">Export → Markdown</button>
+</header>
+<div class="wrap">
+  <p class="note">Read-only review + inline edit for any Maven protocol. Markdown stays the source of truth (in the repo). Pick a tool above. Routing arrows jump to rules; <span class="invoke">invoke</span>/<span class="esc">escalate</span> are highlighted; dependency chips list every tool this protocol invokes. "Export → Markdown" regenerates the file with only your edits changed — paste it back into the .md.</p>
+  <h2 class="sec">Dependencies (tools this protocol invokes)</h2>
+  <div class="tags" id="deps"></div>
+  <h2 class="sec">Description</h2>
+  <div class="card" id="descCard"></div>
+  <h2 class="sec">Section B — Decision Flow</h2>
+  <div id="sectionB"></div>
+  <h2 class="sec">Section C — Rules</h2>
+  <div id="rules"></div>
+  <h2 class="sec">Section A — Reference Data</h2>
+  <div id="sectionA"></div>
+</div>
+<dialog id="exportDlg">
+  <header><strong>Exported markdown — <span id="exportTool"></span></strong> <button class="ghost" onclick="exportDlg.close()">Close</button></header>
+  <pre id="exportOut"></pre>
+  <header><span class="note">Copy back into the .md after review.</span><button id="copyBtn">Copy</button></header>
+</dialog>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const TOOLS = new Set(DATA.tools);
+let RAW="", ruleStore=[], editing=false;
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function inline(s){
+  s=esc(s);
+  s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  s=s.replace(/\binvoke\b/gi,m=>`<span class="invoke">${m}</span>`);
+  s=s.replace(/\bescalate\b/gi,m=>`<span class="esc">${m}</span>`);
+  return s;
+}
+function renderBlocks(md){
+  const L=md.split('\n');let h='',i=0;
+  while(i<L.length){let ln=L[i];
+    if(/^\s*\|/.test(ln)){const t=[];while(i<L.length&&/^\s*\|/.test(L[i])){t.push(L[i]);i++;}
+      const rows=t.filter(r=>!/^\s*\|[\s|:-]+\|\s*$/.test(r));h+='<table>';
+      rows.forEach((r,ri)=>{const c=r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(x=>x.trim());
+        const tg=ri===0?'th':'td';h+='<tr>'+c.map(x=>`<${tg}>${inline(x)}</${tg}>`).join('')+'</tr>';});
+      h+='</table>';continue;}
+    if(/^\s*[-*]\s+/.test(ln)){h+='<ul>';while(i<L.length&&/^\s*[-*]\s+/.test(L[i])){h+='<li>'+inline(L[i].replace(/^\s*[-*]\s+/,''))+'</li>';i++;}h+='</ul>';continue;}
+    if(/^\s*\d+\.\s+/.test(ln)){h+='<ol>';while(i<L.length&&/^\s*\d+\.\s+/.test(L[i])){h+='<li>'+inline(L[i].replace(/^\s*\d+\.\s+/,''))+'</li>';i++;}h+='</ol>';continue;}
+    if(/^```/.test(ln)){i++;while(i<L.length&&!/^```/.test(L[i]))i++;i++;continue;}
+    if(ln.trim()===''){i++;continue;}
+    h+='<p>'+inline(ln)+'</p>';i++;}
+  return h;
+}
+function render(tool){
+  RAW=DATA.protocols[tool].md; ruleStore=[]; editing=false;
+  document.getElementById('editToggle').textContent='Edit rules';
+  const protoStart=Math.max(RAW.indexOf('# '+tool.toUpperCase().replace(/_/g,' ')+' PROTOCOL'), RAW.search(/^# .+ PROTOCOL/m));
+  const descStart=RAW.indexOf('## Description');
+  const descMd = descStart>=0 ? RAW.slice(descStart, protoStart>0?protoStart:undefined).replace('## Description','').trim() : '';
+  const body = protoStart>=0?RAW.slice(protoStart):RAW;
+  const iA=body.indexOf('## Section A'),iB=body.indexOf('## Section B'),iC=body.indexOf('## Section C');
+  const secA = iA>=0?body.slice(iA, iB>=0?iB:undefined):'';
+  const secB = iB>=0?body.slice(iB, iC>=0?iC:undefined):'';
+  const secC = iC>=0?body.slice(iC):'';
+
+  // deps
+  const deps=[...new Set([...RAW.matchAll(/`([a-z_]+)`/g)].map(m=>m[1]).filter(t=>TOOLS.has(t)&&t!==tool))].sort();
+  document.getElementById('deps').innerHTML=deps.map(d=>`<span class="chip dep">${d}</span>`).join('')||'<span class="note">none</span>';
+  // tags
+  const tg=descMd.match(/TAGS:\s*(.+)/);
+  // desc
+  document.getElementById('descCard').innerHTML = (descMd?renderBlocks(descMd.replace(/TAGS:.*/,'')):'<span class="note">No description block (e.g. default-fetch tool).</span>')
+    + (tg?`<div class="tags" style="margin-top:8px">`+tg[1].split(',').map(t=>`<span class="chip">${t.trim()}</span>`).join('')+`</div>`:'');
+  // section A
+  const aParts=secA.split(/(?=^### A\d+)/m).filter(s=>s.trim().startsWith('### A'));
+  document.getElementById('sectionA').innerHTML=aParts.map(p=>{
+    const title=p.split('\n')[0].replace('### ','');
+    const rest=p.split('\n').slice(1).join('\n').replace(/^\s*---\s*$/gm,'');
+    return `<div class="card"><details><summary>${title}</summary>${renderBlocks(rest)}</details></div>`;}).join('')||'<span class="note">—</span>';
+  // section B
+  let bH='';
+  const pre=(secB.match(/### Mandatory Pre-Check[\s\S]*?(?=### Routing|```)/)||[''])[0].replace(/### Mandatory Pre-Check.*\n/,'');
+  if(pre.trim()) bH+=`<div class="precheck"><strong>Pre-check:</strong> ${inline(pre.trim())}</div>`;
+  const rb=(secB.match(/```([\s\S]*?)```/)||['',''])[1];
+  bH+='<div class="flow">';
+  rb.split('\n').forEach(l=>{const m=l.match(/[├└|]─?\s*(.+?)\s*→\s*(.+)$/);if(!m)return;
+    let tgt=m[2].trim(),th;
+    if(/Rule\s*\d+/.test(tgt)){const n=tgt.match(/Rule\s*(\d+)/)[1];th=`<a href="#${tool}-rule${n}">${inline(tgt)}</a>`;}
+    else if(/escalate/i.test(tgt))th=`<span class="toesc">${tgt}</span>`;else th=inline(tgt);
+    bH+=`<div class="route"><span class="cond">${inline(m[1].trim())}</span><span class="arrow">→</span><span>${th}</span></div>`;});
+  bH+='</div>';
+  const fb=(secB.match(/### Fallback\s*([\s\S]*?)(?=\n---|\n## |$)/)||['',''])[1];
+  if(fb.trim()) bH+=`<div class="precheck" style="margin-top:12px"><strong>Fallback:</strong> ${inline(fb.trim())}</div>`;
+  document.getElementById('sectionB').innerHTML=bH||'<span class="note">—</span>';
+  // section C
+  const rp=secC.split(/(?=^### Rule \d+)/m).filter(s=>s.trim().startsWith('### Rule'));
+  document.getElementById('rules').innerHTML=rp.map(p=>{
+    const head=p.split('\n')[0],num=(head.match(/Rule (\d+)/)||[,'?'])[1],title=head.replace('### ','');
+    const rawBlock=p.replace(/\n*---\s*$/,'').replace(/\s+$/,'');
+    ruleStore.push({num,raw:rawBlock});
+    const bodyMd=p.split('\n').slice(1).join('\n').replace(/^\s*---\s*$/gm,'');
+    return `<div class="card rule" id="${tool}-rule${num}"><h3>${title}</h3><div class="rendered">${renderBlocks(bodyMd)}</div><textarea data-rulenum="${num}">${esc(rawBlock)}</textarea></div>`;}).join('')||'<span class="note">—</span>';
+}
+// picker grouped by category
+const picker=document.getElementById('picker');
+const byCat={};
+Object.entries(DATA.protocols).forEach(([t,o])=>{(byCat[o.cat]=byCat[o.cat]||[]).push(t);});
+Object.keys(byCat).sort().forEach(cat=>{
+  const og=document.createElement('optgroup');og.label=cat;
+  byCat[cat].sort().forEach(t=>{const op=document.createElement('option');op.value=t;op.textContent=t;og.appendChild(op);});
+  picker.appendChild(og);});
+picker.onchange=()=>{render(picker.value);location.hash='';};
+document.getElementById('genmeta').textContent=DATA.tools.length+' tools · generated '+DATA.generated;
+document.getElementById('editToggle').onclick=()=>{editing=!editing;document.querySelectorAll('.card.rule').forEach(c=>c.classList.toggle('editing',editing));document.getElementById('editToggle').textContent=editing?'Done editing':'Edit rules';};
+document.getElementById('exportBtn').onclick=()=>{let out=RAW;
+  document.querySelectorAll('textarea[data-rulenum]').forEach(t=>{const o=ruleStore.find(r=>r.num===t.dataset.rulenum);if(!o)return;const ed=t.value.replace(/\s+$/,'');if(o.raw!==ed&&out.includes(o.raw))out=out.replace(o.raw,ed);});
+  document.getElementById('exportTool').textContent=picker.value;document.getElementById('exportOut').textContent=out.trim()+'\n';document.getElementById('exportDlg').showModal();};
+document.getElementById('copyBtn').onclick=()=>{navigator.clipboard.writeText(document.getElementById('exportOut').textContent);document.getElementById('copyBtn').textContent='Copied';setTimeout(()=>document.getElementById('copyBtn').textContent='Copy',1200);};
+// initial
+picker.value = DATA.protocols['cashier_payins']?'cashier_payins':picker.options[0].value;
+render(picker.value);
+</script>
+</body>
+</html>
