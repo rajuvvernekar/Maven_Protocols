@@ -10,7 +10,7 @@ When need to cross-check:
 - Total quantity of units held (`total_quantity`)
 - Mismatch between demat records and Coin-facing holdings
 
-**This is the SECONDARY tool. Always check console_mf_pseudo_holdings first for MF holdings queries. Invoke this tool only for the specific fields listed above.**
+**This is the SECONDARY tool. Always check `console_mf_pseudo_holdings` first for MF holdings queries. Invoke this tool only for the specific fields listed above.**
 
 TRIGGER KEYWORDS: "available units", "demat holdings", "units for redemption", "coin"
 
@@ -59,7 +59,7 @@ TAGS: investments, holdings
 | Field | Interpretation |
 |---|---|
 | `holdings_date` | Latest demat credit — internal |
-| `failure_date` | invoke console_mf_pseudo_holdings |
+| `failure_date` | invoke `console_mf_pseudo_holdings` |
 | `available` | Critical for redemption/SWP checks — internal reasoning |
 | `discrepant` | Cross-check only |
 | `loan` | Internal |
@@ -85,15 +85,15 @@ TAGS: investments, holdings
 Route by scenario
    ├─ Need to verify units available for redemption/SWP → Rule 1
    ├─ Units not visible after allotment → Rule 2
-   ├─ Discrepancy cross-check (requested by console_mf_pseudo_holdings) → Rule 3
-   ├─ Buy average incorrect (flagged by console_mf_pseudo_holdings) → Rule 4
+   ├─ Discrepancy cross-check (requested by `console_mf_pseudo_holdings`) → Rule 3
+   ├─ Buy average incorrect (flagged by `console_mf_pseudo_holdings`) → Rule 4
    ├─ failure_date seen in data → Rule 5
    └─ Console vs Coin value difference → Rule 6
 ```
 
 ### Fallback
 
-Route to console_mf_pseudo_holdings.
+Route to `console_mf_pseudo_holdings`.
 
 ## Section C: Rules
 
@@ -101,14 +101,14 @@ Route to console_mf_pseudo_holdings.
 
 1. Check `available` field.
 2. If `available` = 0 or insufficient → inform client units not available for redemption/SWP.
-3. If `available` > 0 but redemption is failing → check pledged status via console_mf_pseudo_holdings (`margin` field).
+3. If `available` > 0 but redemption is failing → check pledged status via `console_mf_pseudo_holdings` (`margin` field).
 
 ### Rule 2 — Units Not Visible After Allotment
 
 1. Invoke `console_mf_pseudo_holdings` for discrepancy diagnosis.
 2. Use this tool only to verify `holdings_date` (latest demat credit) and `total_quantity`.
 3. If within settlement timeline per **A2** → units will be visible by the timeline.
-4. If beyond timeline → check `holdings_date` for latest credit date. Route full discrepancy diagnosis to console_mf_pseudo_holdings.
+4. If beyond timeline → check `holdings_date` for latest credit date. Route full discrepancy diagnosis to `console_mf_pseudo_holdings`.
 
 ### Rule 3 — Discrepancy Cross-Check
 

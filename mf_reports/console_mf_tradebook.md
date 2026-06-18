@@ -68,7 +68,7 @@ TAGS: investments, reports
 ```
 Route by scenario
    ├─ Client asks when ELSS units can be redeemed → Rule 1
-   ├─ Order allotted but units missing (flagged by ‘mf_order_history’) → Rule 2
+   ├─ Order allotted but units missing (flagged by `mf_order_history`) → Rule 2
    └─ Client disputes MF P&L → Rule 3
 ```
 

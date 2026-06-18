@@ -141,13 +141,13 @@ Invoke `console_mf_pseudo_holdings` (`margin`) and `console_mf_holdings` (`avail
 
 2. If no recent modification (or modification older than 5 days), verify funds were debited:
    - Invoke `mandate_debit_report` for debit entries matching the STP trigger date.
-   - Get `cashier_reference` from mandate_debit_report.
+   - Get `cashier_reference` from `mandate_debit_report`.
    - Match `cashier_reference` with `fund_allocation_report` → get respective `order_number`.
    - Match `order_number` with `exchange_order_id` in `mf_order_history`.
-   - Verify `fund` in ‘stp_report’ matches `fund` in mf_order_history.
+   - Verify `fund` in ‘stp_report’ matches `fund` in `mf_order_history`.
    - If all matches confirmed → funds debited and purchase order placed at AMC; order is being processed.
 
-3. If no entries in mandate_debit_report:
+3. If no entries in `mandate_debit_report`:
    - Invoke `sip_report` via `view_sips` for mandate linkage status.
    - If no mandate linked → ensure an active mandate is linked to the target fund.
    - If mandate linked but no debit → escalate with STP details, source fund, target fund(s), and "STP purchase leg repeated rejection — mandate linked but no debit attempt found."

@@ -23,7 +23,7 @@ TAGS: investments
 
 ### A1 — SWP Fundamentals
 
-- SWP triggers at 10:00 AM on the scheduled date. For non-DDPI/POA accounts, client receives a T-PIN authorization request after the trigger. Authorization must be completed before 3:00 PM the same day. If not completed, the SWP order for that cycle is cancelled — rejection shows as "UNRID" or "UNITS NOT AUTHORISED" in mf_order_history.
+- SWP triggers at 10:00 AM on the scheduled date. For non-DDPI/POA accounts, client receives a T-PIN authorization request after the trigger. Authorization must be completed before 3:00 PM the same day. If not completed, the SWP order for that cycle is cancelled — rejection shows as "UNRID" or "UNITS NOT AUTHORISED" in `mf_order_history`.
 - Units redeemed = instalment_amount ÷ T-1 NAV. Actual redemption happens at T day NAV (may differ from estimate).
 - SWP created within 2 working days of next instalment → starts from the next cycle, not the current one.
 

@@ -19,7 +19,7 @@ console_instant_pledge,5,"account_modification_report, console_eq_holdings, cons
 console_mf_external_trades,1,console_mf_tradebook
 console_mf_holdings,3,"console_mf_external_trades, console_mf_pseudo_holdings, console_mf_tradebook"
 console_mf_pseudo_holdings,6,"console_mf_external_trades, console_mf_holdings, console_mf_tradebook, get_all_client_data, mf_order_history, settlement_date_calculator"
-console_mf_tradebook,2,"console_mf_external_trades, console_mf_pseudo_holdings"
+console_mf_tradebook,3,"console_mf_external_trades, console_mf_pseudo_holdings, mf_order_history"
 console_mtf_conversion,3,"console_eq_holdings, console_mtf_holdings, kite_order_history"
 console_mtf_holdings,4,"console_eq_holdings, console_eq_holdings_breakdown, console_mtf_conversion, ledger_report"
 contract_note_charges,1,tradewise_charges_report
@@ -45,7 +45,7 @@ mf_order_history,11,"console_eq_external_trades, console_mf_holdings, console_mf
 minor_account_opening,1,get_all_client_data
 pan_status,1,get_all_client_data
 pledge_request_report,1,console_instant_pledge
-sip_modification_log,0,
+sip_modification_log,1,sip_report
 sip_report,8,"console_mf_pseudo_holdings, console_mf_tradebook, get_all_client_data, mandate_debit_report, mandate_report, mf_order_history, settlement_date_calculator, sip_modification_log"
 stock_gift_requests,2,"console_eq_external_trades, console_eq_holdings"
 stock_transfers,2,"account_modification_report, console_eq_external_trades"
